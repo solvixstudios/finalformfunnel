@@ -1,0 +1,120 @@
+/**
+ * Summary Editor Component
+ * Configure order summary display settings
+ */
+
+import { Eye, EyeOff, Receipt } from 'lucide-react';
+import { useFormStore } from '../../../stores';
+
+export const SummaryEditor = () => {
+    const formConfig = useFormStore((state) => state.formConfig);
+    const setFormConfig = useFormStore((state) => state.setFormConfig);
+
+    const hideShippingInSummary = formConfig.hideShippingInSummary || false;
+    const enableSummarySection = formConfig.enableSummarySection !== false;
+
+    return (
+        <div className="space-y-6">
+            {/* Header */}
+            <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-600 to-slate-800 flex items-center justify-center text-white shadow-lg">
+                    <Receipt size={20} />
+                </div>
+                <div>
+                    <h3 className="text-sm font-bold text-slate-800">Order Summary Settings</h3>
+                    <p className="text-xs text-slate-500">Configure summary display and visibility</p>
+                </div>
+            </div>
+
+            {/* Main Toggle */}
+            <div className="bg-gradient-to-br from-indigo-50 to-indigo-100/50 border-2 border-indigo-200 rounded-xl p-4">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        {formConfig.enableSummarySection ? (
+                            <Eye size={18} className="text-indigo-600" />
+                        ) : (
+                            <EyeOff size={18} className="text-slate-400" />
+                        )}
+                        <div>
+                            <span className="block text-sm font-bold text-slate-800">Show Summary Section</span>
+                            <span className="block text-xs text-slate-500 mt-0.5">
+                                Display order total breakdown
+                            </span>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() =>
+                            setFormConfig({
+                                ...formConfig,
+                                enableSummarySection: !formConfig.enableSummarySection,
+                            })
+                        }
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${formConfig.enableSummarySection ? 'bg-indigo-600' : 'bg-slate-300'
+                            }`}
+                    >
+                        <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formConfig.enableSummarySection ? 'translate-x-6' : 'translate-x-1'
+                                }`}
+                        />
+                    </button>
+                </div>
+            </div>
+
+            {formConfig.enableSummarySection && (
+                <>
+                    {/* Hide Shipping in Summary */}
+                    <div className="bg-white border border-slate-200 rounded-xl p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <span className="block text-sm font-semibold text-slate-800">
+                                    Hide Shipping in Summary (UI Only)
+                                </span>
+                                <span className="block text-xs text-slate-500 mt-1">
+                                    Shipping will still be calculated in total, just not shown as a line item
+                                </span>
+                            </div>
+                            <button
+                                onClick={() =>
+                                    setFormConfig({
+                                        ...formConfig,
+                                        hideShippingInSummary: !hideShippingInSummary,
+                                    })
+                                }
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${hideShippingInSummary ? 'bg-indigo-600' : 'bg-slate-300'
+                                    }`}
+                            >
+                                <span
+                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${hideShippingInSummary ? 'translate-x-6' : 'translate-x-1'
+                                        }`}
+                                />
+                            </button>
+                        </div>
+                    </div>
+                </>
+            )}
+
+            {/* Info Box */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex gap-2">
+                <div className="text-blue-600 flex-shrink-0">
+                    <svg
+                        className="w-4 h-4 mt-0.5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                    >
+                        <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                    </svg>
+                </div>
+                <p className="text-xs text-blue-700 leading-relaxed">
+                    The summary section displays the order breakdown. Hiding shipping in the summary will
+                    only affect the UI display - the actual calculation will still include shipping costs.
+                </p>
+            </div>
+        </div>
+    );
+};

@@ -1,0 +1,266 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "shopify/products",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [1376, 480],
+      "id": "4d7026c7-1ca6-4ec4-8c0e-046ea4e3eafe",
+      "name": "Webhook",
+      "webhookId": "8caf245b-733d-460c-b3cf-9df3e5a10110"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://{{ $json.body.subdomain }}.myshopify.com/admin/oauth/access_token",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/x-www-form-urlencoded"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "client_credentials"
+            },
+            {
+              "name": "client_id",
+              "value": "={{ $json.body.clientId }}"
+            },
+            {
+              "name": "client_secret",
+              "value": "={{ $json.body.clientSecret }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [1600, 480],
+      "id": "19098ec3-cdba-4a8e-a149-0aa44bb27d23",
+      "name": "GetToken",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "url": "=https://{{ $('Webhook').item.json.body.subdomain }}.myshopify.com/admin/api/2026-01/products/count.json",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "title",
+              "value": "={{ $('Webhook').item.json.body.search ? $('Webhook').item.json.body.search : undefined }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Shopify-Access-Token",
+              "value": "={{ $json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [1808, 368],
+      "id": "ae818cc6-3977-476d-8045-f3e5601aeded",
+      "name": "GetCount"
+    },
+    {
+      "parameters": {
+        "url": "=https://{{ $('Webhook').item.json.body.subdomain }}.myshopify.com/admin/api/2026-01/products.json",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "limit",
+              "value": "={{ $('Webhook').item.json.body.limit || 250 }}"
+            },
+            {
+              "name": "fields",
+              "value": "id,title,handle,status,variants,options,images,vendor,product_type,published_at"
+            },
+            {
+              "name": "title",
+              "value": "={{ !$('Webhook').item.json.body.page_info && $('Webhook').item.json.body.search ? $('Webhook').item.json.body.search : undefined }}"
+            },
+            {
+              "name": "page_info",
+              "value": "={{ $('Webhook').item.json.body.page_info || undefined }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Shopify-Access-Token",
+              "value": "={{ $json.access_token }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [1808, 592],
+      "id": "56141b29-001c-48e9-a372-501efdfcb71a",
+      "name": "GetProducts"
+    },
+    {
+      "parameters": {
+        "jsCode": "const headers = $input.item.json.headers;\nconst linkHeader = headers.link || headers.Link || '';\nlet next = null;\nlet prev = null;\n\nif (linkHeader) {\n  const links = linkHeader.split(',');\n  links.forEach(link => {\n    if (link.includes('rel=\"next\"')) {\n      const match = link.match(/page_info=([^>&]+)/);\n      if (match) next = match[1];\n    }\n    if (link.includes('rel=\"previous\"')) {\n      const match = link.match(/page_info=([^>&]+)/);\n      if (match) prev = match[1];\n    }\n  });\n}\n\nreturn {\n  products: $input.item.json.body.products,\n  next_page_info: next,\n  prev_page_info: prev\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2032, 592],
+      "id": "8e0682f0-2330-4f54-aaf7-2bf10e3a9765",
+      "name": "ParsePagination"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "mergeByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2.1,
+      "position": [2256, 480],
+      "id": "a052042c-e2a4-4893-8340-fe212450ae0e",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"count\": {{ $json.count }},\n  \"products\": {{ JSON.stringify($json.products) }},\n  \"next_page_info\": \"{{ $json.next_page_info || '' }}\",\n  \"prev_page_info\": \"{{ $json.prev_page_info || '' }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [2448, 480],
+      "id": "9973cfef-7f22-4944-8e54-ccb90aab1190",
+      "name": "Success"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"error\": \"Connection Failed\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [1808, 768],
+      "id": "bee599ff-4ee8-4e8e-bc11-ae3084d05104",
+      "name": "Connect Error"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "GetToken",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GetToken": {
+      "main": [
+        [
+          {
+            "node": "GetCount",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "GetProducts",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Connect Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GetCount": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GetProducts": {
+      "main": [
+        [
+          {
+            "node": "ParsePagination",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ParsePagination": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "587aef964d83a99e849af5b6a53cd904631a6643f9c8db8007015f2aa820bf9d"
+  }
+}

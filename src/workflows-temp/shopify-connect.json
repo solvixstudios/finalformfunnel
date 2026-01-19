@@ -1,0 +1,161 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "shopify/connect",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [-600, 100],
+      "id": "webhook-connect",
+      "name": "Receive Connect Request",
+      "webhookId": "shopify-connect-webhook"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://{{ $json.body.subdomain }}.myshopify.com/admin/oauth/access_token",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/x-www-form-urlencoded"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            { "name": "grant_type", "value": "client_credentials" },
+            { "name": "client_id", "value": "={{ $json.body.clientId }}" },
+            { "name": "client_secret", "value": "={{ $json.body.clientSecret }}" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [-360, 100],
+      "id": "get-token",
+      "name": "Get Access Token",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "url": "=https://{{ $('Receive Connect Request').item.json.body.subdomain }}.myshopify.com/admin/api/2024-01/shop.json",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            {
+              "name": "X-Shopify-Access-Token",
+              "value": "={{ $json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [-120, 100],
+      "id": "get-shop",
+      "name": "Get Shop Details",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "url": "=https://{{ $('Receive Connect Request').item.json.body.subdomain }}.myshopify.com/admin/api/2024-01/script_tags.json",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            {
+              "name": "X-Shopify-Access-Token",
+              "value": "={{ $('Get Access Token').item.json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [120, 100],
+      "id": "check-scripts",
+      "name": "Check Existing ScriptTags",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"success\": true,\n  \"shop\": {{ JSON.stringify($('Get Shop Details').item.json.shop) }},\n  \"loaderInstalled\": {{ ($json.script_tags || []).filter(t => t.src.includes('address-sync-studio') || t.src.includes('finalform')).length > 0 }},\n  \"accessToken\": \"{{ $('Get Access Token').item.json.access_token }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [360, 100],
+      "id": "set-response",
+      "name": "Set Success Response"
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {
+          "responseHeaders": {
+            "entries": [{ "name": "Access-Control-Allow-Origin", "value": "*" }]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [600, 100],
+      "id": "respond-success",
+      "name": "Return Success"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": \"Connection failed. Please verify your credentials.\"\n}",
+        "options": { "responseCode": 401 }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [-360, 300],
+      "id": "respond-error",
+      "name": "Return Error"
+    }
+  ],
+  "connections": {
+    "Receive Connect Request": {
+      "main": [[{ "node": "Get Access Token", "type": "main", "index": 0 }]]
+    },
+    "Get Access Token": {
+      "main": [
+        [{ "node": "Get Shop Details", "type": "main", "index": 0 }],
+        [{ "node": "Return Error", "type": "main", "index": 0 }]
+      ]
+    },
+    "Get Shop Details": {
+      "main": [
+        [{ "node": "Check Existing ScriptTags", "type": "main", "index": 0 }],
+        [{ "node": "Return Error", "type": "main", "index": 0 }]
+      ]
+    },
+    "Check Existing ScriptTags": {
+      "main": [[{ "node": "Set Success Response", "type": "main", "index": 0 }]]
+    },
+    "Set Success Response": {
+      "main": [[{ "node": "Return Success", "type": "main", "index": 0 }]]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "587aef964d83a99e849af5b6a53cd904631a6643f9c8db8007015f2aa820bf9d"
+  }
+}

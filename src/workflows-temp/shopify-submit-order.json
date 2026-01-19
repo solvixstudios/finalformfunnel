@@ -1,0 +1,217 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "order/submit",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [-1136, -16],
+      "id": "f5ce28a2-a7f6-44c9-92f6-2ad00428dd7d",
+      "name": "Receive Order",
+      "webhookId": "order-submit-webhook"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"name\": \"{{ $json.body.name }}\",\n  \"phone\": \"{{ $json.body.phone }}\",\n  \"wilaya\": \"{{ $json.body.wilaya }}\",\n  \"commune\": \"{{ $json.body.commune || '' }}\",\n  \"address\": \"{{ $json.body.address || '' }}\",\n  \"note\": \"{{ $json.body.note || '' }}\",\n  \"variant\": \"{{ $json.body.variant || '' }}\",\n  \"offer\": \"{{ $json.body.offer || '' }}\",\n  \"delivery\": \"{{ $json.body.delivery || 'home' }}\",\n  \"promo\": \"{{ $json.body.promo || '' }}\",\n  \"shopDomain\": \"{{ $json.body.shopDomain }}\",\n  \"productId\": \"{{ $json.body.productId || '' }}\",\n  \"productHandle\": \"{{ $json.body.productHandle || '' }}\",\n  \"productTitle\": \"{{ $json.body.productTitle || '' }}\",\n  \"productPrice\": \"{{ $json.body.productPrice || 0 }}\",\n  \"createdAt\": \"{{ new Date().toISOString() }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [-896, -16],
+      "id": "4b3c9148-3f4b-4c74-8306-9f0733e1e4d0",
+      "name": "Parse Order Data"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Validate required fields\nconst order = $input.first().json;\nconst errors = [];\n\nif (!order.name || order.name.trim() === '') errors.push('Name is required');\nif (!order.phone || order.phone.trim() === '') errors.push('Phone is required');\nif (!order.wilaya || order.wilaya.trim() === '') errors.push('Wilaya is required');\nif (!order.shopDomain) errors.push('Shop domain is required');\n\nif (errors.length > 0) {\n  return [{ json: { valid: false, errors } }];\n}\n\nreturn [{ json: { valid: true, order } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-656, -16],
+      "id": "4ceca64e-f52f-42f0-a803-17a141ccc404",
+      "name": "Validate Order"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "valid-check",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [-416, -16],
+      "id": "14232c3f-07e3-4298-9147-c252629af85f",
+      "name": "Is Valid?"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Create Shopify draft order\nconst order = $input.first().json.order;\n\n// TODO: Integrate with Shopify API to create draft order\n// For now, just return the order data\n\nreturn [{ json: {\n  orderId: 'FF-' + Date.now(),\n  status: 'pending',\n  ...order\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-176, -112],
+      "id": "cc4f957b-c08d-4945-bcb5-15fccf1648ab",
+      "name": "Create Order"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"success\": true,\n  \"orderId\": \"{{ $json.orderId }}\",\n  \"message\": \"Order received successfully\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [64, -112],
+      "id": "80df8c3f-3552-4c85-8c5b-e84c81ffd912",
+      "name": "Success Response"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [304, -16],
+      "id": "10855a05-2993-453a-9b95-909469cead88",
+      "name": "Respond"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"success\": false,\n  \"errors\": {{ JSON.stringify($json.errors) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [64, 96],
+      "id": "aa4e0088-b334-4fc2-b5a7-aa62f1fc0c5b",
+      "name": "Error Response"
+    }
+  ],
+  "connections": {
+    "Receive Order": {
+      "main": [
+        [
+          {
+            "node": "Parse Order Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Order Data": {
+      "main": [
+        [
+          {
+            "node": "Validate Order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Order": {
+      "main": [
+        [
+          {
+            "node": "Is Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Valid?": {
+      "main": [
+        [
+          {
+            "node": "Create Order",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Order": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Success Response": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error Response": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "587aef964d83a99e849af5b6a53cd904631a6643f9c8db8007015f2aa820bf9d"
+  }
+}

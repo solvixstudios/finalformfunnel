@@ -1,0 +1,129 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "form-config",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [-700, 300],
+      "id": "webhook-config",
+      "name": "Receive Config Request",
+      "webhookId": "form-config-webhook"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"domain\": \"{{ $json.query.domain }}\",\n  \"productId\": \"{{ $json.query.productId || '' }}\",\n  \"productHandle\": \"{{ $json.query.productHandle || '' }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [-460, 300],
+      "id": "parse-params",
+      "name": "Parse Query Parameters"
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * Form Assignment Lookup - Firebase Firestore Integration\n * \n * This queries Firebase to find the correct form assignment.\n * Priority: Product-specific > Store-default\n * \n * REQUIRED: Set up Firebase credentials in n8n:\n * 1. Create a Firebase service account JSON\n * 2. Add it as n8n credential (type: Firebase Admin)\n * 3. Reference it in this code node\n */\n\nconst admin = require('firebase-admin');\n\n// Initialize Firebase if not already done\nif (!admin.apps.length) {\n  // Get credentials from n8n credential store\n  // You'll need to configure this in n8n Settings > Credentials\n  const serviceAccount = $credentials.firebase;\n  \n  admin.initializeApp({\n    credential: admin.credential.cert(serviceAccount),\n    projectId: serviceAccount.project_id\n  });\n}\n\nconst db = admin.firestore();\n\nconst domain = $input.first().json.domain;\nconst productId = $input.first().json.productId;\nconst productHandle = $input.first().json.productHandle;\n\nlet assignment = null;\nlet formConfig = null;\nlet storeInfo = null;\n\ntry {\n  // First, find the store by domain\n  const storesSnapshot = await db.collection('stores')\n    .where('url', '==', domain)\n    .where('status', '==', 'connected')\n    .limit(1)\n    .get();\n  \n  if (storesSnapshot.empty) {\n    // Try with myshopify.com suffix\n    const altSnapshot = await db.collection('stores')\n      .where('url', '==', domain.replace('.myshopify.com', ''))\n      .where('status', '==', 'connected')\n      .limit(1)\n      .get();\n    \n    if (!altSnapshot.empty) {\n      storeInfo = { id: altSnapshot.docs[0].id, ...altSnapshot.docs[0].data() };\n    }\n  } else {\n    storeInfo = { id: storesSnapshot.docs[0].id, ...storesSnapshot.docs[0].data() };\n  }\n  \n  if (!storeInfo) {\n    return [{ json: { error: 'Store not found', domain } }];\n  }\n  \n  // Try to find product-specific assignment first\n  if (productId || productHandle) {\n    let productQuery = db.collection('assignments')\n      .where('storeId', '==', storeInfo.id)\n      .where('assignmentType', '==', 'product')\n      .where('isActive', '==', true);\n    \n    if (productId) {\n      productQuery = productQuery.where('productId', '==', productId);\n    } else if (productHandle) {\n      productQuery = productQuery.where('productHandle', '==', productHandle);\n    }\n    \n    const productAssignments = await productQuery.limit(1).get();\n    \n    if (!productAssignments.empty) {\n      assignment = { id: productAssignments.docs[0].id, ...productAssignments.docs[0].data() };\n    }\n  }\n  \n  // Fall back to store-level assignment\n  if (!assignment) {\n    const storeAssignments = await db.collection('assignments')\n      .where('storeId', '==', storeInfo.id)\n      .where('assignmentType', '==', 'store')\n      .where('isActive', '==', true)\n      .orderBy('priority', 'desc')\n      .limit(1)\n      .get();\n    \n    if (!storeAssignments.empty) {\n      assignment = { id: storeAssignments.docs[0].id, ...storeAssignments.docs[0].data() };\n    }\n  }\n  \n  if (!assignment) {\n    return [{ json: { error: 'No form assignment found', domain, storeId: storeInfo.id } }];\n  }\n  \n  // Get the form config\n  const formDoc = await db.collection('forms').doc(assignment.formId).get();\n  \n  if (!formDoc.exists) {\n    return [{ json: { error: 'Form not found', formId: assignment.formId } }];\n  }\n  \n  const formData = formDoc.data();\n  formConfig = formData.config;\n  \n  // Return the complete response\n  const response = {\n    formId: assignment.formId,\n    formName: formData.name,\n    assignment: {\n      id: assignment.id,\n      type: assignment.assignmentType,\n      storeId: assignment.storeId,\n      shopifyDomain: domain,\n      productId: assignment.productId || null,\n      productHandle: assignment.productHandle || null,\n      priority: assignment.priority,\n      createdAt: assignment.createdAt\n    },\n    store: {\n      id: storeInfo.id,\n      name: storeInfo.name,\n      domain: domain,\n      platform: storeInfo.platform,\n      loaderInstalled: storeInfo.loaderInstalled || false\n    },\n    config: formConfig\n  };\n  \n  return [{ json: response }];\n  \n} catch (error) {\n  console.error('Firebase lookup error:', error);\n  return [{ json: { error: error.message, domain } }];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-200, 300],
+      "id": "lookup-assignment",
+      "name": "Lookup Form Assignment",
+      "credentials": {
+        "firebase": {
+          "id": "YOUR_FIREBASE_CREDENTIAL_ID",
+          "name": "Firebase Admin"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "loose" },
+          "conditions": [
+            {
+              "id": "has-error",
+              "leftValue": "={{ $json.error }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEquals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [40, 300],
+      "id": "check-error",
+      "name": "Has Error?"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseCode": 404,
+          "responseHeaders": {
+            "entries": [
+              { "name": "Access-Control-Allow-Origin", "value": "*" },
+              { "name": "Cache-Control", "value": "no-cache" }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [280, 400],
+      "id": "respond-error",
+      "name": "Error Response"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              { "name": "Access-Control-Allow-Origin", "value": "*" },
+              { "name": "Cache-Control", "value": "public, max-age=300" }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [280, 200],
+      "id": "respond-config",
+      "name": "Return Config"
+    }
+  ],
+  "connections": {
+    "Receive Config Request": {
+      "main": [[{ "node": "Parse Query Parameters", "type": "main", "index": 0 }]]
+    },
+    "Parse Query Parameters": {
+      "main": [[{ "node": "Lookup Form Assignment", "type": "main", "index": 0 }]]
+    },
+    "Lookup Form Assignment": {
+      "main": [[{ "node": "Has Error?", "type": "main", "index": 0 }]]
+    },
+    "Has Error?": {
+      "main": [
+        [{ "node": "Error Response", "type": "main", "index": 0 }],
+        [{ "node": "Return Config", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "587aef964d83a99e849af5b6a53cd904631a6643f9c8db8007015f2aa820bf9d"
+  }
+}

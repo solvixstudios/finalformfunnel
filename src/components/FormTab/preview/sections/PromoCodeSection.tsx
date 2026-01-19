@@ -1,0 +1,136 @@
+/**
+ * Promo Code Section Component
+ * Displays promo code input with validation
+ */
+
+import type { Language } from '@/types';
+import { Check, X } from 'lucide-react';
+import React from 'react';
+import { SectionLabel } from '../components/SectionLabel';
+
+interface PromoCodeSectionProps {
+    config: {
+        accentColor: string;
+        textColor?: string;
+        borderRadius: string;
+        inputBackground?: string;
+        inputBorderColor?: string;
+        inputTextColor?: string;
+        inputPlaceholderColor?: string;
+        promoCode?: {
+            enabled?: boolean;
+            placeholder?: { fr: string; ar: string };
+            buttonText?: { fr: string; ar: string };
+            successText?: { fr: string; ar: string };
+            errorText?: { fr: string; ar: string };
+        };
+        sectionSettings?: {
+            promoCode?: { showTitle?: boolean };
+        };
+        translations: {
+            promoCode?: { fr: string; ar: string };
+            [key: string]: any;
+        };
+    };
+    lang: Language;
+    promoCodeInput: string;
+    setPromoCodeInput: (value: string) => void;
+    promoCodeError: boolean;
+    promoCodeSuccess: boolean;
+    appliedPromoCode: { code: string } | null;
+    onApply: () => void;
+    onRemove: () => void;
+    marginStyle?: React.CSSProperties;
+}
+
+export const PromoCodeSection: React.FC<PromoCodeSectionProps> = ({
+    config,
+    lang,
+    promoCodeInput,
+    setPromoCodeInput,
+    promoCodeError,
+    promoCodeSuccess,
+    appliedPromoCode,
+    onApply,
+    onRemove,
+    marginStyle,
+}) => {
+    if (!config.promoCode?.enabled) return null;
+
+    const txt = (key: string) =>
+        config.translations[key]?.[lang] || config.translations[key]?.fr || '';
+
+    const promoConfig = config.promoCode;
+    const placeholder = promoConfig?.placeholder?.[lang] || promoConfig?.placeholder?.fr || 'Code promo';
+    const buttonText = promoConfig?.buttonText?.[lang] || promoConfig?.buttonText?.fr || 'Appliquer';
+
+    return (
+        <div style={marginStyle}>
+            {config.sectionSettings?.promoCode?.showTitle !== false && (
+                <SectionLabel accentColor={config.accentColor}>{txt('promoCode')}</SectionLabel>
+            )}
+
+            {/* Applied promo code display */}
+            {appliedPromoCode ? (
+                <div
+                    className="flex items-center justify-between p-3 border-2 rounded-xl"
+                    style={{
+                        borderColor: '#10b981',
+                        backgroundColor: '#10b98110',
+                        borderRadius: config.borderRadius,
+                    }}
+                >
+                    <div className="flex items-center gap-2">
+                        <Check size={16} className="text-emerald-600" />
+                        <span className="text-sm font-bold text-emerald-700">{appliedPromoCode.code}</span>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={onRemove}
+                        className="w-6 h-6 rounded-full flex items-center justify-center hover:bg-red-100 transition-colors"
+                    >
+                        <X size={14} className="text-red-500" />
+                    </button>
+                </div>
+            ) : (
+                <div className="flex gap-2">
+                    <div className="flex-1 relative">
+                        <input
+                            type="text"
+                            value={promoCodeInput}
+                            onChange={(e) => setPromoCodeInput(e.target.value)}
+                            placeholder={placeholder}
+                            className={`w-full px-4 py-3 text-sm font-semibold border-2 outline-none transition-all ${promoCodeError ? 'border-red-400 bg-red-50' : ''
+                                }`}
+                            style={{
+                                borderRadius: config.borderRadius,
+                                backgroundColor: promoCodeError ? '#fef2f2' : (config.inputBackground || '#f8fafc'),
+                                borderColor: promoCodeError ? '#f87171' : (config.inputBorderColor || '#e2e8f0'),
+                                color: config.inputTextColor || '#1e293b',
+                            }}
+                            onKeyDown={(e) => e.key === 'Enter' && onApply()}
+                        />
+                    </div>
+                    <button
+                        type="button"
+                        onClick={onApply}
+                        className="px-4 py-3 text-sm font-bold text-white transition-all hover:opacity-90"
+                        style={{
+                            backgroundColor: config.accentColor,
+                            borderRadius: config.borderRadius,
+                        }}
+                    >
+                        {buttonText}
+                    </button>
+                </div>
+            )}
+
+            {/* Error message */}
+            {promoCodeError && !appliedPromoCode && (
+                <p className="text-xs text-red-500 mt-1.5 font-medium">
+                    {promoConfig?.errorText?.[lang] || promoConfig?.errorText?.fr || 'Code invalide'}
+                </p>
+            )}
+        </div>
+    );
+};

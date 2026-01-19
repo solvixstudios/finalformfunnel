@@ -1,0 +1,189 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "shopify/enable-loader",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [420, -100],
+      "id": "webhook-enable",
+      "name": "Receive Enable Request",
+      "webhookId": "enable-loader-webhook"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://{{ $json.body.subdomain }}.myshopify.com/admin/oauth/access_token",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/x-www-form-urlencoded"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "client_credentials"
+            },
+            {
+              "name": "client_id",
+              "value": "={{ $json.body.clientId }}"
+            },
+            {
+              "name": "client_secret",
+              "value": "={{ $json.body.clientSecret }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [640, -100],
+      "id": "get-token",
+      "name": "Get Access Token",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://{{ $('Receive Enable Request').item.json.body.subdomain }}.myshopify.com/admin/api/2024-01/storefront_access_tokens.json",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Shopify-Access-Token",
+              "value": "={{ $('Get Access Token').item.json.access_token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"storefront_access_token\":{\"title\":\"FinalForm Loader\"}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [880, -100],
+      "id": "create-sf-token",
+      "name": "Create SF Token",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://{{ $('Receive Enable Request').item.json.body.subdomain }}.myshopify.com/admin/api/2024-01/script_tags.json",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Shopify-Access-Token",
+              "value": "={{ $('Get Access Token').item.json.access_token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"script_tag\": {\n    \"event\": \"onload\",\n    \"src\": \"https://finalformfunnel.web.app/loader.js?sf_token={{ $json.body.storefront_access_token.access_token }}\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [1120, -100],
+      "id": "inject-script-tag",
+      "name": "Inject Script Tag",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"version\": \"1.1.0\",\n  \"alreadyInstalled\": false\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [1360, -200],
+      "id": "respond-success",
+      "name": "Success Response"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": \"{{ $json.message || 'Error configuring loader' }}\"\n}",
+        "options": {
+          "responseCode": 500
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [1360, 20],
+      "id": "respond-error",
+      "name": "Error Response"
+    }
+  ],
+  "connections": {
+    "Receive Enable Request": {
+      "main": [
+        [
+          {
+            "node": "Get Access Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Access Token": {
+      "main": [
+        [
+          {
+            "node": "Create SF Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create SF Token": {
+      "main": [
+        [
+          {
+            "node": "Inject Script Tag",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inject Script Tag": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
