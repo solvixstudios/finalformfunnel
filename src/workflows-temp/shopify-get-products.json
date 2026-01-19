@@ -58,7 +58,7 @@
     },
     {
       "parameters": {
-        "url": "=https://{{ $('Webhook').item.json.body.subdomain }}.myshopify.com/admin/api/2026-01/products/count.json",
+        "url": "=https://{{ $('Webhook').item.json.body.subdomain }}.myshopify.com/admin/api/2024-01/products/count.json",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
@@ -83,11 +83,12 @@
       "typeVersion": 4.3,
       "position": [1808, 368],
       "id": "ae818cc6-3977-476d-8045-f3e5601aeded",
-      "name": "GetCount"
+      "name": "GetCount",
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
-        "url": "=https://{{ $('Webhook').item.json.body.subdomain }}.myshopify.com/admin/api/2026-01/products.json",
+        "url": "=https://{{ $('Webhook').item.json.body.subdomain }}.myshopify.com/admin/api/2024-01/products.json",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
@@ -130,7 +131,8 @@
       "typeVersion": 4.3,
       "position": [1808, 592],
       "id": "56141b29-001c-48e9-a372-501efdfcb71a",
-      "name": "GetProducts"
+      "name": "GetProducts",
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -156,27 +158,77 @@
     },
     {
       "parameters": {
-        "respondWith": "json",
-        "responseBody": "={\n  \"count\": {{ $json.count }},\n  \"products\": {{ JSON.stringify($json.products) }},\n  \"next_page_info\": \"{{ $json.next_page_info || '' }}\",\n  \"prev_page_info\": \"{{ $json.prev_page_info || '' }}\"\n}",
-        "options": {}
+        "jsCode": "// Format the response with proper JSON structure\nconst count = $input.first().json.count || 0;\nconst products = $input.first().json.products || [];\nconst next = $input.first().json.next_page_info || '';\nconst prev = $input.first().json.prev_page_info || '';\n\nreturn [{\n  json: {\n    count: count,\n    products: products,\n    next_page_info: next,\n    prev_page_info: prev\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2400, 480],
+      "id": "format-response",
+      "name": "Format Response"
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [2448, 480],
+      "position": [2620, 480],
       "id": "9973cfef-7f22-4944-8e54-ccb90aab1190",
       "name": "Success"
     },
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "{\n  \"error\": \"Connection Failed\"\n}",
-        "options": {}
+        "responseBody": "={\n  \"success\": false,\n  \"error\": \"{{ $json.error || $json.message || 'Connection Failed' }}\"\n}",
+        "options": {
+          "responseCode": 401,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [1808, 768],
       "id": "bee599ff-4ee8-4e8e-bc11-ae3084d05104",
       "name": "Connect Error"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": \"{{ $json.error || $json.message || 'Failed to fetch products' }}\"\n}",
+        "options": {
+          "responseCode": 500,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [2032, 768],
+      "id": "products-error",
+      "name": "Products Error"
     }
   ],
   "connections": {
@@ -222,6 +274,13 @@
             "type": "main",
             "index": 0
           }
+        ],
+        [
+          {
+            "node": "Products Error",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
@@ -230,6 +289,13 @@
         [
           {
             "node": "ParsePagination",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Products Error",
             "type": "main",
             "index": 0
           }
@@ -248,6 +314,17 @@
       ]
     },
     "Merge": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Response": {
       "main": [
         [
           {

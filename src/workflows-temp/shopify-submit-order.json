@@ -18,12 +18,10 @@
     },
     {
       "parameters": {
-        "mode": "raw",
-        "jsonOutput": "={\n  \"name\": \"{{ $json.body.name }}\",\n  \"phone\": \"{{ $json.body.phone }}\",\n  \"wilaya\": \"{{ $json.body.wilaya }}\",\n  \"commune\": \"{{ $json.body.commune || '' }}\",\n  \"address\": \"{{ $json.body.address || '' }}\",\n  \"note\": \"{{ $json.body.note || '' }}\",\n  \"variant\": \"{{ $json.body.variant || '' }}\",\n  \"offer\": \"{{ $json.body.offer || '' }}\",\n  \"delivery\": \"{{ $json.body.delivery || 'home' }}\",\n  \"promo\": \"{{ $json.body.promo || '' }}\",\n  \"shopDomain\": \"{{ $json.body.shopDomain }}\",\n  \"productId\": \"{{ $json.body.productId || '' }}\",\n  \"productHandle\": \"{{ $json.body.productHandle || '' }}\",\n  \"productTitle\": \"{{ $json.body.productTitle || '' }}\",\n  \"productPrice\": \"{{ $json.body.productPrice || 0 }}\",\n  \"createdAt\": \"{{ new Date().toISOString() }}\"\n}",
-        "options": {}
+        "jsCode": "// Parse and structure the order data\nconst body = $input.first().json.body;\n\nreturn [{\n  json: {\n    name: body.name || '',\n    phone: body.phone || '',\n    wilaya: body.wilaya || '',\n    commune: body.commune || '',\n    address: body.address || '',\n    note: body.note || '',\n    variant: body.variant || '',\n    offer: body.offer || '',\n    delivery: body.delivery || 'home',\n    promo: body.promo || '',\n    shopDomain: body.shopDomain || '',\n    productId: body.productId || '',\n    productHandle: body.productHandle || '',\n    productTitle: body.productTitle || '',\n    productPrice: body.productPrice || 0,\n    createdAt: new Date().toISOString()\n  }\n}];"
       },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [-896, -16],
       "id": "4b3c9148-3f4b-4c74-8306-9f0733e1e4d0",
       "name": "Parse Order Data"
@@ -71,7 +69,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Create Shopify draft order\nconst order = $input.first().json.order;\n\n// TODO: Integrate with Shopify API to create draft order\n// For now, just return the order data\n\nreturn [{ json: {\n  orderId: 'FF-' + Date.now(),\n  status: 'pending',\n  ...order\n} }];"
+        "jsCode": "// Create order (TODO: Integrate with Shopify API to create draft order)\nconst order = $input.first().json.order;\n\n// For now, just return the order data with a generated ID\nreturn [{ \n  json: {\n    orderId: 'FF-' + Date.now(),\n    status: 'pending',\n    ...order\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -81,19 +79,17 @@
     },
     {
       "parameters": {
-        "mode": "raw",
-        "jsonOutput": "={\n  \"success\": true,\n  \"orderId\": \"{{ $json.orderId }}\",\n  \"message\": \"Order received successfully\"\n}",
-        "options": {}
+        "jsCode": "// Format success response\nconst orderId = $input.first().json.orderId;\n\nreturn [{\n  json: {\n    success: true,\n    orderId: orderId,\n    message: 'Order received successfully'\n  }\n}];"
       },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [64, -112],
       "id": "80df8c3f-3552-4c85-8c5b-e84c81ffd912",
       "name": "Success Response"
     },
     {
       "parameters": {
-        "respondWith": "allIncomingItems",
+        "respondWith": "firstIncomingItem",
         "options": {
           "responseHeaders": {
             "entries": [
@@ -113,12 +109,10 @@
     },
     {
       "parameters": {
-        "mode": "raw",
-        "jsonOutput": "={\n  \"success\": false,\n  \"errors\": {{ JSON.stringify($json.errors) }}\n}",
-        "options": {}
+        "jsCode": "// Format error response with proper JSON structure\nconst errors = $input.first().json.errors || ['Unknown error'];\n\nreturn [{\n  json: {\n    success: false,\n    errors: errors\n  }\n}];"
       },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [64, 96],
       "id": "aa4e0088-b334-4fc2-b5a7-aa62f1fc0c5b",
       "name": "Error Response"

@@ -53,7 +53,8 @@
       "typeVersion": 4.3,
       "position": [220, 0],
       "id": "get-access-token",
-      "name": "Get Access Token"
+      "name": "Get Access Token",
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -98,22 +99,14 @@
       "typeVersion": 4.3,
       "position": [440, 200],
       "id": "get-shop-id",
-      "name": "Get Shop ID"
+      "name": "Get Shop ID",
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
-        "keepOnlySet": true,
-        "values": {
-          "string": [
-            {
-              "name": "finalOwnerId",
-              "value": "={{ $('Get Shop ID').item.json.data.shop.id }}"
-            }
-          ]
-        },
-        "options": {}
+        "jsCode": "// Determine the final owner ID\nconst webhookData = $('Webhook Start').item.json.body;\nconst shopId = $input.first().json.data?.shop?.id;\n\n// Use shop ID from GraphQL response\nconst finalOwnerId = shopId || null;\n\nif (!finalOwnerId) {\n  throw new Error('Could not determine Shop ID');\n}\n\nreturn [{ json: { finalOwnerId } }];"
       },
-      "type": "n8n-nodes-base.set",
+      "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [660, 200],
       "id": "set-shop-owner",
@@ -121,18 +114,9 @@
     },
     {
       "parameters": {
-        "keepOnlySet": true,
-        "values": {
-          "string": [
-            {
-              "name": "finalOwnerId",
-              "value": "={{ $('Webhook Start').item.json.body.ownerId.match(/^gid:\\/\\//) ? $('Webhook Start').item.json.body.ownerId : 'gid://shopify/Product/' + $('Webhook Start').item.json.body.ownerId }}"
-            }
-          ]
-        },
-        "options": {}
+        "jsCode": "// Format owner ID for product-level assignment\nconst webhookData = $('Webhook Start').item.json.body;\nconst ownerId = webhookData.ownerId;\n\n// Ensure it's a proper GID format\nlet finalOwnerId;\nif (ownerId.startsWith('gid://')) {\n  finalOwnerId = ownerId;\n} else {\n  finalOwnerId = `gid://shopify/Product/${ownerId}`;\n}\n\nreturn [{ json: { finalOwnerId } }];"
       },
-      "type": "n8n-nodes-base.set",
+      "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [660, -100],
       "id": "format-product-owner",
@@ -157,6 +141,16 @@
     },
     {
       "parameters": {
+        "jsCode": "// Prepare the GraphQL mutation with properly stringified config\nconst webhookData = $('Webhook Start').item.json.body;\nconst configData = webhookData.data;\nconst finalOwnerId = $input.first().json.finalOwnerId;\n\n// Stringify the config data for the metafield value\nconst configString = JSON.stringify(configData);\n\n// Build the GraphQL request body\nconst requestBody = {\n  query: `mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) {\n    metafieldsSet(metafields: $metafields) {\n      metafields { id }\n      userErrors { field message }\n    }\n  }`,\n  variables: {\n    metafields: [{\n      namespace: \"finalform\",\n      key: \"config\",\n      type: \"json\",\n      value: configString,\n      ownerId: finalOwnerId\n    }]\n  }\n};\n\nreturn [{ json: { requestBody, finalOwnerId } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1000, -100],
+      "id": "prepare-metafield-request",
+      "name": "Prepare Metafield Request"
+    },
+    {
+      "parameters": {
         "method": "POST",
         "url": "=https://{{ $('Webhook Start').item.json.body.subdomain }}.myshopify.com/admin/api/2024-01/graphql.json",
         "sendHeaders": true,
@@ -174,14 +168,15 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"query\": \"mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) { metafieldsSet(metafields: $metafields) { metafields { id } userErrors { field message } } }\",\n  \"variables\": {\n    \"metafields\": [\n      {\n        \"namespace\": \"finalform\",\n        \"key\": \"config\",\n        \"type\": \"json\",\n        \"value\": JSON.stringify($('Webhook Start').item.json.body.data),\n        \"ownerId\": \"{{ $json.finalOwnerId }}\"\n      }\n    ]\n  }\n}",
+        "jsonBody": "={{ JSON.stringify($json.requestBody) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
-      "position": [1100, -100],
+      "position": [1220, -100],
       "id": "set-metafield",
-      "name": "Set Metafield"
+      "name": "Set Metafield",
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -207,9 +202,10 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
-      "position": [1100, 200],
+      "position": [1000, 200],
       "id": "get-metafield-id",
-      "name": "Find Metafield ID"
+      "name": "Find Metafield ID",
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -224,7 +220,7 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [1320, 200],
+      "position": [1220, 200],
       "id": "metafield-exists",
       "name": "Metafield Exists?"
     },
@@ -252,9 +248,10 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
-      "position": [1540, 200],
+      "position": [1440, 200],
       "id": "delete-metafield",
-      "name": "Delete Metafield"
+      "name": "Delete Metafield",
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -264,7 +261,7 @@
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [1760, 0],
+      "position": [1660, 0],
       "id": "respond-success",
       "name": "Success Response"
     },
@@ -276,23 +273,37 @@
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [1540, 400],
+      "position": [1440, 400],
       "id": "respond-no-op",
       "name": "No-Op Response"
     },
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "{\n  \"success\": false,\n  \"error\": \"{{ $json.message || 'Operation failed' }}\"\n}",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": \"{{ $json.error || $json.message || $json.data?.metafieldsSet?.userErrors?.[0]?.message || 'Operation failed' }}\"\n}",
         "options": {
           "responseCode": 500
         }
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [1760, 400],
+      "position": [1660, 400],
       "id": "respond-error",
       "name": "Error Response"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": \"{{ $json.error || $json.message || 'Authentication failed' }}\"\n}",
+        "options": {
+          "responseCode": 401
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [440, 400],
+      "id": "respond-auth-error",
+      "name": "Auth Error Response"
     }
   ],
   "connections": {
@@ -312,6 +323,13 @@
         [
           {
             "node": "Has Owner ID?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Auth Error Response",
             "type": "main",
             "index": 0
           }
@@ -341,6 +359,13 @@
         [
           {
             "node": "Set Shop Owner",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Response",
             "type": "main",
             "index": 0
           }
@@ -380,7 +405,36 @@
         ],
         [
           {
+            "node": "Prepare Metafield Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Metafield Request": {
+      "main": [
+        [
+          {
             "node": "Set Metafield",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Metafield": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Response",
             "type": "main",
             "index": 0
           }
@@ -392,6 +446,13 @@
         [
           {
             "node": "Metafield Exists?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Response",
             "type": "main",
             "index": 0
           }
@@ -416,7 +477,7 @@
         ]
       ]
     },
-    "Set Metafield": {
+    "Delete Metafield": {
       "main": [
         [
           {
@@ -424,14 +485,10 @@
             "type": "main",
             "index": 0
           }
-        ]
-      ]
-    },
-    "Delete Metafield": {
-      "main": [
+        ],
         [
           {
-            "node": "Success Response",
+            "node": "Error Response",
             "type": "main",
             "index": 0
           }

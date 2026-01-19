@@ -93,15 +93,13 @@
     },
     {
       "parameters": {
-        "mode": "raw",
-        "jsonOutput": "={\n  \"success\": true,\n  \"shop\": {{ JSON.stringify($('Get Shop Details').item.json.shop) }},\n  \"loaderInstalled\": {{ ($json.script_tags || []).filter(t => t.src.includes('address-sync-studio') || t.src.includes('finalform')).length > 0 }},\n  \"accessToken\": \"{{ $('Get Access Token').item.json.access_token }}\"\n}",
-        "options": {}
+        "jsCode": "// Build the success response with proper JSON structure\nconst shopData = $('Get Shop Details').item.json.shop;\nconst accessToken = $('Get Access Token').item.json.access_token;\nconst scriptTags = $input.first().json.script_tags || [];\n\n// Check if FinalForm loader is installed\nconst loaderInstalled = scriptTags.some(t => \n  t.src && (t.src.includes('address-sync-studio') || t.src.includes('finalform'))\n);\n\nreturn [{\n  json: {\n    success: true,\n    shop: shopData,\n    loaderInstalled: loaderInstalled,\n    accessToken: accessToken\n  }\n}];"
       },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [360, 100],
       "id": "set-response",
-      "name": "Set Success Response"
+      "name": "Format Success Response"
     },
     {
       "parameters": {
@@ -121,14 +119,36 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={\n  \"success\": false,\n  \"error\": \"Connection failed. Please verify your credentials.\"\n}",
-        "options": { "responseCode": 401 }
+        "responseBody": "={\n  \"success\": false,\n  \"error\": \"{{ $json.error || $json.message || 'Connection failed. Please verify your credentials.' }}\"\n}",
+        "options": {
+          "responseCode": 401,
+          "responseHeaders": {
+            "entries": [{ "name": "Access-Control-Allow-Origin", "value": "*" }]
+          }
+        }
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [-360, 300],
       "id": "respond-error",
       "name": "Return Error"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": \"{{ $json.error || $json.message || 'Failed to retrieve shop details' }}\"\n}",
+        "options": {
+          "responseCode": 500,
+          "responseHeaders": {
+            "entries": [{ "name": "Access-Control-Allow-Origin", "value": "*" }]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [-120, 300],
+      "id": "respond-shop-error",
+      "name": "Shop Error"
     }
   ],
   "connections": {
@@ -144,13 +164,13 @@
     "Get Shop Details": {
       "main": [
         [{ "node": "Check Existing ScriptTags", "type": "main", "index": 0 }],
-        [{ "node": "Return Error", "type": "main", "index": 0 }]
+        [{ "node": "Shop Error", "type": "main", "index": 0 }]
       ]
     },
     "Check Existing ScriptTags": {
-      "main": [[{ "node": "Set Success Response", "type": "main", "index": 0 }]]
+      "main": [[{ "node": "Format Success Response", "type": "main", "index": 0 }]]
     },
-    "Set Success Response": {
+    "Format Success Response": {
       "main": [[{ "node": "Return Success", "type": "main", "index": 0 }]]
     }
   },
