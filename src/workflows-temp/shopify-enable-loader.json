@@ -96,7 +96,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"script_tag\": {\n    \"event\": \"onload\",\n    \"src\": \"https://finalformfunnel.web.app/loader.js?sf_token={{ $json.body.storefront_access_token.access_token }}\"\n  }\n}",
+        "jsonBody": "={\n  \"script_tag\": {\n    \"event\": \"onload\",\n    \"src\": \"https://finalformfunnel.web.app/finalform-loader.js?sf_token={{ $json.body.storefront_access_token.access_token }}\"\n  }\n}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",

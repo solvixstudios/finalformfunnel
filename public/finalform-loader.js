@@ -76,27 +76,151 @@
     return window.location.hostname;
   }
 
+  function getStorefrontToken() {
+    try {
+      if (document.currentScript) {
+        const url = new URL(document.currentScript.src);
+        const token = url.searchParams.get("sf_token");
+        if (token) return token;
+      }
+      // Fallback
+      const script = document.querySelector(
+        'script[src*="finalform-loader.js"][src*="sf_token"]',
+      );
+      if (script) {
+        const url = new URL(script.src);
+        return url.searchParams.get("sf_token");
+      }
+    } catch (e) {
+      console.warn("[FinalForm] Error parsing token:", e);
+    }
+    return null;
+  }
+
   function getProductContext() {
     if (window.ShopifyAnalytics?.meta?.product) {
       const p = window.ShopifyAnalytics.meta.product;
-      return { id: p.id, handle: p.handle, title: p.name || p.title };
+      // Ensure IDs are strings
+      return {
+        id: p.id ? String(p.id) : null,
+        handle: p.handle,
+        title: p.name || p.title,
+      };
     }
-    const match = window.location.pathname.match(/\/products\/([^\/\?]+)/);
-    return match ? { handle: match[1] } : null;
+    // Fallback parsing from URL
+    const match = window.location.pathname.match(/\/products\/([^/?]+)/);
+    if (match) {
+      return { handle: match[1] };
+    }
+
+    // Check meta.page for product handle
+    if (
+      window.meta?.page?.resourceType === "product" &&
+      window.meta.page.resourceId
+    ) {
+      // We might not have handle here easily, but let's try
+    }
+
+    return null;
   }
 
-  async function fetchConfig(domain, product) {
-    const cached = getCachedConfig(domain, product);
-    if (cached) return cached;
+  // --- CONFIG FETCHING ---
 
+  // 1. Metafield Strategy (Fastest)
+  async function fetchMetafieldConfig(handle, token) {
+    if (!token || !handle) return null;
+
+    const query = `
+       query ($handle: String!) {
+         product(handle: $handle) {
+           metafield(namespace: "finalform", key: "config") {
+             value
+           }
+         }
+       }
+     `;
+
+    try {
+      const response = await fetch(`/api/2024-01/graphql.json`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Shopify-Storefront-Access-Token": token,
+        },
+        body: JSON.stringify({ query, variables: { handle } }),
+      });
+
+      const result = await response.json();
+      const value = result.data?.product?.metafield?.value;
+
+      if (value) {
+        console.log("[FinalForm] Loaded config from Metafield");
+        return JSON.parse(value);
+      }
+    } catch (e) {
+      console.warn("[FinalForm] Metafield fetch failed:", e);
+    }
+    return null;
+  }
+
+  async function fetchConfig(domain, product, sfToken) {
+    const cached = getCachedConfig(domain, product);
+    if (cached) {
+      console.log("[FinalForm] Using cached config");
+      return cached;
+    }
+
+    // Try Metafield first
+    if (sfToken && product?.handle) {
+      const metaConfig = await fetchMetafieldConfig(product.handle, sfToken);
+      if (metaConfig) {
+        // Ensure structure is compatible with builder
+        // If stored data is just { config: ... }, wrap it if needed or return as is.
+        // Our master workflow saves: { config: ... } (the 'data' payload).
+        // This loader expects { config: { ... } } structure usually.
+        // Let's assume the stored data is the FULL config object.
+        cacheConfig(domain, product, metaConfig);
+        return metaConfig;
+      }
+    }
+
+    // Fallback to API
+    console.log("[FinalForm] Fallback to API");
     const params = new URLSearchParams({ domain });
     if (product?.id) params.set("productId", product.id);
     if (product?.handle) params.set("productHandle", product.handle);
 
     try {
       const res = await fetch(`${CONFIG_API}?${params}`);
-      if (!res.ok) throw new Error("Config fetch failed");
-      const data = await res.json();
+      if (!res.ok) {
+        // Check for empty response specifically
+        const text = await res.text();
+        if (!text || text.trim().length === 0) {
+          console.warn("[FinalForm] API returned empty response (0 bytes)");
+          return null;
+        }
+        throw new Error("Config fetch failed: " + res.status);
+      }
+
+      // Handle the "empty body" case even if 200 OK
+      const text = await res.text();
+      if (!text || text.trim().length === 0) {
+        console.warn("[FinalForm] API returned empty response (0 bytes)");
+        return null;
+      }
+
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        // Try to recover from <pre> if n8n returns HTML error
+        const match = text.match(/<pre[^>]*>([^<]+)<\/pre>/);
+        if (match) data = JSON.parse(match[1]);
+        else throw e;
+      }
+
+      if (data && data.error) return null;
+
       cacheConfig(domain, product, data);
       return data;
     } catch (e) {
@@ -124,18 +248,9 @@
     try {
       sessionStorage.setItem(
         getCacheKey(domain, product),
-        JSON.stringify({ data, ts: Date.now() })
+        JSON.stringify({ data, ts: Date.now() }),
       );
     } catch {}
-  }
-
-  async function fetchProduct(handle) {
-    try {
-      const res = await fetch(`/products/${handle}.json`);
-      return res.ok ? await res.json() : null;
-    } catch {
-      return null;
-    }
   }
 
   function formatCurrency(amount, lang = "fr") {
@@ -291,7 +406,7 @@
                 lang === "ar" ? "دج" : "DA"
               }</span>
             </label>
-          `
+          `,
             )
             .join("")}
         </div>
@@ -316,14 +431,14 @@
     // Name
     if (fields.name?.visible) {
       html += `<input type="text" name="ff_name" class="${inputClass}" placeholder="${getPlaceholder(
-        "name"
+        "name",
       )}${isRequired("name")}" ${fields.name?.required ? "required" : ""} />`;
     }
 
     // Phone
     if (fields.phone?.visible) {
       html += `<input type="tel" name="ff_phone" class="${inputClass}" placeholder="${getPlaceholder(
-        "phone"
+        "phone",
       )}${isRequired("phone")}" ${fields.phone?.required ? "required" : ""} />`;
     }
 
@@ -332,13 +447,13 @@
       html += `
         <div class="ff-select-wrap">
           <select name="ff_wilaya" class="${inputClass}" ${
-        fields.wilaya?.required ? "required" : ""
-      }>
+            fields.wilaya?.required ? "required" : ""
+          }>
             <option value="">${getPlaceholder("wilaya")}${isRequired(
-        "wilaya"
-      )}</option>
+              "wilaya",
+            )}</option>
             ${WILAYAS.map((w) => `<option value="${w.id}">${w.name}</option>`).join(
-              ""
+              "",
             )}
           </select>
           <svg class="ff-select-arrow" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
@@ -351,11 +466,11 @@
       html += `
         <div class="ff-select-wrap">
           <select name="ff_commune" class="${inputClass}" ${
-        fields.commune?.required ? "required" : ""
-      } disabled>
+            fields.commune?.required ? "required" : ""
+          } disabled>
             <option value="">${getPlaceholder("commune")}${isRequired(
-        "commune"
-      )}</option>
+              "commune",
+            )}</option>
           </select>
           <svg class="ff-select-arrow" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
         </div>
@@ -365,7 +480,7 @@
     // Address
     if (fields.address?.visible) {
       html += `<textarea name="ff_address" class="${inputClass}" placeholder="${getPlaceholder(
-        "address"
+        "address",
       )}${isRequired("address")}" rows="2" ${
         fields.address?.required ? "required" : ""
       }></textarea>`;
@@ -374,7 +489,7 @@
     // Note
     if (fields.note?.visible) {
       html += `<textarea name="ff_note" class="${inputClass}" placeholder="${getPlaceholder(
-        "note"
+        "note",
       )}${isRequired("note")}" rows="2"></textarea>`;
     }
 
@@ -407,8 +522,8 @@
               <input type="radio" name="ff_delivery" value="home" checked />
               <span class="ff-delivery-label">${home}</span>
               <span class="ff-delivery-price">${homePrice} ${
-                  lang === "ar" ? "دج" : "DA"
-                }</span>
+                lang === "ar" ? "دج" : "DA"
+              }</span>
             </label>
           `
               : ""
@@ -420,8 +535,8 @@
               <input type="radio" name="ff_delivery" value="desk" />
               <span class="ff-delivery-label">${desk}</span>
               <span class="ff-delivery-price">${deskPrice} ${
-                  lang === "ar" ? "دج" : "DA"
-                }</span>
+                lang === "ar" ? "دج" : "DA"
+              }</span>
             </label>
           `
               : ""
@@ -464,7 +579,7 @@
                   : ""
               }
             </label>
-          `
+          `,
             )
             .join("")}
         </div>
@@ -564,22 +679,22 @@
     return `
       <div class="ff-section ff-urgency-timer ff-urgency-timer--${style}" data-hours="${h}" data-minutes="${m}" data-seconds="${s}">
         <span class="ff-timer-segment"><span class="ff-timer-value ff-timer-h">${String(
-          h
+          h,
         ).padStart(2, "0")}</span><span class="ff-timer-label">${
-      lang === "ar" ? "س" : "h"
-    }</span></span>
+          lang === "ar" ? "س" : "h"
+        }</span></span>
         <span class="ff-timer-sep">:</span>
         <span class="ff-timer-segment"><span class="ff-timer-value ff-timer-m">${String(
-          m
+          m,
         ).padStart(2, "0")}</span><span class="ff-timer-label">${
-      lang === "ar" ? "د" : "m"
-    }</span></span>
+          lang === "ar" ? "د" : "m"
+        }</span></span>
         <span class="ff-timer-sep">:</span>
         <span class="ff-timer-segment"><span class="ff-timer-value ff-timer-s">${String(
-          s
+          s,
         ).padStart(2, "0")}</span><span class="ff-timer-label">${
-      lang === "ar" ? "ث" : "s"
-    }</span></span>
+          lang === "ar" ? "ث" : "s"
+        }</span></span>
       </div>
     `;
   }
@@ -938,18 +1053,30 @@
     const shadow = container.attachShadow({ mode: "open" });
     shadow.innerHTML = `<style>${getStyles(config)}</style>${buildForm(
       config,
-      productData
+      productData,
     )}`;
     attachHandlers(shadow, config);
   }
 
   // --- INIT ---
+  // --- INIT ---
   async function init() {
     const domain = getShopDomain();
     const product = getProductContext();
-    console.log("[FinalForm] Initializing...", { domain, product });
+    const sfToken = getStorefrontToken();
+    console.log("[FinalForm] Initializing v2.0...", { domain, product });
 
-    const config = await fetchConfig(domain, product);
+    // If not a product page or no product context found, we might still check for 'shop-level' forms if we wanted.
+    // But currently logical flow requires product context for product forms.
+    // If we support "Shop Wide" forms on non-product pages, we should allow product=null.
+    // fetchConfig handles product=null/undefined gracefully (checks for id/handle).
+
+    // However, getProductContext currently tries to return an object or null.
+    // If we are on Home page, product is null.
+    // Let's rely on fetchConfig to decide if it finds something for "store" scope.
+
+    const config = await fetchConfig(domain, product, sfToken);
+
     if (!config) {
       console.log("[FinalForm] No config for this page");
       return;

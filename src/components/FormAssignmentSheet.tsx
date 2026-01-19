@@ -138,14 +138,15 @@ export function FormAssignmentSheet({
                     type: 'store',
                 });
 
-                // Sync to Shopify Metafield
+                // Sync to Shopify Metafield (Shop Level)
                 if (selectedForm?.config && selectedStore?.clientId && selectedStore?.clientSecret) {
                     const subdomain = selectedStore.url.replace('.myshopify.com', '').replace(/https?:\/\//, '');
                     await assignFormToShopify(
                         subdomain,
                         selectedStore.clientId,
                         selectedStore.clientSecret,
-                        selectedForm.config
+                        selectedForm.config,
+                        undefined // No ownerId means Shop Level
                     ).catch(err => {
                         console.error('Failed to sync to Shopify:', err);
                         toast.error('Saved to app but failed to sync to Shopify');
@@ -184,7 +185,7 @@ export function FormAssignmentSheet({
                                 selectedStore.clientId!,
                                 selectedStore.clientSecret!,
                                 selectedForm.config,
-                                pid
+                                pid // Passing Product ID (numeric)
                             )
                         ));
                     } catch (err) {
@@ -210,6 +211,32 @@ export function FormAssignmentSheet({
 
     const handleRemoveAssignment = async (assignmentId: string) => {
         try {
+            // First find the assignment to get details
+            const assignment = assignments.find(a => a.id === assignmentId);
+            if (assignment) {
+                const store = stores.find(s => s.id === assignment.storeId);
+                if (store && store.clientId && store.clientSecret) {
+                    const subdomain = store.url.replace('.myshopify.com', '').replace(/https?:\/\//, '');
+
+                    // Determine ownerId: if product type, use productId. If store type, use undefined (Shop)
+                    const ownerId = assignment.assignmentType === 'product' ? assignment.productId : undefined;
+
+                    // Call API to remove metafield
+                    await import('@/lib/api').then(mod =>
+                        mod.removeFormFromShopify(
+                            subdomain,
+                            store.clientId!,
+                            store.clientSecret!,
+                            undefined, // metafieldId unknown
+                            ownerId
+                        )
+                    ).catch(err => {
+                        console.error("Failed to remove from Shopify:", err);
+                        toast.error("Removed from app, but failed to remove from Shopify");
+                    });
+                }
+            }
+
             await deleteAssignment(assignmentId);
             toast.success('Assignment removed');
         } catch (e) {

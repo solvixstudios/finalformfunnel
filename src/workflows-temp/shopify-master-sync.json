@@ -1,0 +1,442 @@
+{
+  "name": "Shopify Master Form Sync",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "shopify/master-sync",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "id": "webhook-start",
+      "name": "Webhook Start"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://{{ $json.body.subdomain }}.myshopify.com/admin/oauth/access_token",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/x-www-form-urlencoded"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "client_credentials"
+            },
+            {
+              "name": "client_id",
+              "value": "={{ $json.body.clientId }}"
+            },
+            {
+              "name": "client_secret",
+              "value": "={{ $json.body.clientSecret }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [220, 0],
+      "id": "get-access-token",
+      "name": "Get Access Token"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ !!$('Webhook Start').item.json.body.ownerId }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [440, 0],
+      "id": "has-owner-id",
+      "name": "Has Owner ID?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://{{ $('Webhook Start').item.json.body.subdomain }}.myshopify.com/admin/api/2024-01/graphql.json",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Shopify-Access-Token",
+              "value": "={{ $('Get Access Token').item.json.access_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"query\": \"{ shop { id } }\"}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [440, 200],
+      "id": "get-shop-id",
+      "name": "Get Shop ID"
+    },
+    {
+      "parameters": {
+        "keepOnlySet": true,
+        "values": {
+          "string": [
+            {
+              "name": "finalOwnerId",
+              "value": "={{ $('Get Shop ID').item.json.data.shop.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [660, 200],
+      "id": "set-shop-owner",
+      "name": "Set Shop Owner"
+    },
+    {
+      "parameters": {
+        "keepOnlySet": true,
+        "values": {
+          "string": [
+            {
+              "name": "finalOwnerId",
+              "value": "={{ $('Webhook Start').item.json.body.ownerId.match(/^gid:\\/\\//) ? $('Webhook Start').item.json.body.ownerId : 'gid://shopify/Product/' + $('Webhook Start').item.json.body.ownerId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [660, -100],
+      "id": "format-product-owner",
+      "name": "Format Product Owner"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $('Webhook Start').item.json.body.action }}",
+              "value2": "delete"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [880, 0],
+      "id": "check-action",
+      "name": "Is Delete?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://{{ $('Webhook Start').item.json.body.subdomain }}.myshopify.com/admin/api/2024-01/graphql.json",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Shopify-Access-Token",
+              "value": "={{ $('Get Access Token').item.json.access_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"query\": \"mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) { metafieldsSet(metafields: $metafields) { metafields { id } userErrors { field message } } }\",\n  \"variables\": {\n    \"metafields\": [\n      {\n        \"namespace\": \"finalform\",\n        \"key\": \"config\",\n        \"type\": \"json\",\n        \"value\": JSON.stringify($('Webhook Start').item.json.body.data),\n        \"ownerId\": \"{{ $json.finalOwnerId }}\"\n      }\n    ]\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [1100, -100],
+      "id": "set-metafield",
+      "name": "Set Metafield"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://{{ $('Webhook Start').item.json.body.subdomain }}.myshopify.com/admin/api/2024-01/graphql.json",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Shopify-Access-Token",
+              "value": "={{ $('Get Access Token').item.json.access_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"query\": \"query GetMetafieldId($ownerId: ID!) { node(id: $ownerId) { ... on Product { metafield(namespace: \\\"finalform\\\", key: \\\"config\\\") { id } } ... on Shop { metafield(namespace: \\\"finalform\\\", key: \\\"config\\\") { id } } } }\",\n  \"variables\": {\n    \"ownerId\": \"{{ $json.finalOwnerId }}\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [1100, 200],
+      "id": "get-metafield-id",
+      "name": "Find Metafield ID"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ !!($json.data.node.metafield && $json.data.node.metafield.id) }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1320, 200],
+      "id": "metafield-exists",
+      "name": "Metafield Exists?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://{{ $('Webhook Start').item.json.body.subdomain }}.myshopify.com/admin/api/2024-01/graphql.json",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Shopify-Access-Token",
+              "value": "={{ $('Get Access Token').item.json.access_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"query\": \"mutation metafieldDelete($input: MetafieldDeleteInput!) { metafieldDelete(input: $input) { deletedId userErrors { field message } } }\",\n  \"variables\": {\n    \"input\": {\n      \"id\": \"{{ $json.data.node.metafield.id }}\"\n    }\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [1540, 200],
+      "id": "delete-metafield",
+      "name": "Delete Metafield"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"success\": true\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1760, 0],
+      "id": "respond-success",
+      "name": "Success Response"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n \"success\": true,\n \"message\": \"Nothing to delete\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1540, 400],
+      "id": "respond-no-op",
+      "name": "No-Op Response"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"success\": false,\n  \"error\": \"{{ $json.message || 'Operation failed' }}\"\n}",
+        "options": {
+          "responseCode": 500
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1760, 400],
+      "id": "respond-error",
+      "name": "Error Response"
+    }
+  ],
+  "connections": {
+    "Webhook Start": {
+      "main": [
+        [
+          {
+            "node": "Get Access Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Access Token": {
+      "main": [
+        [
+          {
+            "node": "Has Owner ID?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Owner ID?": {
+      "main": [
+        [
+          {
+            "node": "Format Product Owner",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Shop ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Shop ID": {
+      "main": [
+        [
+          {
+            "node": "Set Shop Owner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Shop Owner": {
+      "main": [
+        [
+          {
+            "node": "Is Delete?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Product Owner": {
+      "main": [
+        [
+          {
+            "node": "Is Delete?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Delete?": {
+      "main": [
+        [
+          {
+            "node": "Find Metafield ID",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Metafield",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Metafield ID": {
+      "main": [
+        [
+          {
+            "node": "Metafield Exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Metafield Exists?": {
+      "main": [
+        [
+          {
+            "node": "Delete Metafield",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No-Op Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Metafield": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Metafield": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
