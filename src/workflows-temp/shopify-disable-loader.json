@@ -11,8 +11,8 @@
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [-600, 100],
-      "id": "webhook-disable",
+      "position": [-1200, -16],
+      "id": "59a66b04-21ff-4002-abdc-493d8db8c955",
       "name": "Receive Disable Request",
       "webhookId": "disable-loader-webhook"
     },
@@ -33,17 +33,26 @@
         "contentType": "form-urlencoded",
         "bodyParameters": {
           "parameters": [
-            { "name": "grant_type", "value": "client_credentials" },
-            { "name": "client_id", "value": "={{ $json.body.clientId }}" },
-            { "name": "client_secret", "value": "={{ $json.body.clientSecret }}" }
+            {
+              "name": "grant_type",
+              "value": "client_credentials"
+            },
+            {
+              "name": "client_id",
+              "value": "={{ $json.body.clientId }}"
+            },
+            {
+              "name": "client_secret",
+              "value": "={{ $json.body.clientSecret }}"
+            }
           ]
         },
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
-      "position": [-360, 100],
-      "id": "get-token",
+      "position": [-960, -16],
+      "id": "89fcea72-d006-4d85-8899-8bcab2f5af81",
       "name": "GetToken",
       "onError": "continueErrorOutput"
     },
@@ -53,7 +62,10 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Content-Type", "value": "application/json" },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
             {
               "name": "X-Shopify-Access-Token",
               "value": "={{ $json.access_token }}"
@@ -64,8 +76,8 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
-      "position": [-120, 100],
-      "id": "get-scripts",
+      "position": [-720, -16],
+      "id": "94579f36-d3fa-4363-b8a7-2ec61b96192b",
       "name": "Get Existing ScriptTags",
       "onError": "continueErrorOutput"
     },
@@ -75,20 +87,26 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [120, 100],
-      "id": "find-loader",
+      "position": [-480, -16],
+      "id": "770e52f7-ef63-4b94-90b6-478f75644ca5",
       "name": "Find Loader Script"
     },
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "typeValidation": "loose" },
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
           "conditions": [
             {
               "id": "found-check",
               "leftValue": "={{ $json.found }}",
               "rightValue": true,
-              "operator": { "type": "boolean", "operation": "equals" }
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
             }
           ],
           "combinator": "and"
@@ -98,8 +116,8 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [360, 100],
-      "id": "if-found",
+      "position": [-240, -16],
+      "id": "c5617233-6712-47e8-944d-d2ad93039356",
       "name": "Is Loader Found?"
     },
     {
@@ -119,8 +137,8 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
-      "position": [600, 0],
-      "id": "delete-loader",
+      "position": [0, -112],
+      "id": "25ee387a-78a9-452f-9235-6329f8724bb7",
       "name": "Delete Loader Script",
       "onError": "continueErrorOutput"
     },
@@ -132,8 +150,8 @@
       },
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [840, 0],
-      "id": "success-removed",
+      "position": [240, -112],
+      "id": "bf0402d7-b45e-4115-b786-06c96a9ef15f",
       "name": "Success (Removed)"
     },
     {
@@ -144,68 +162,146 @@
       },
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [840, 200],
-      "id": "not-found",
+      "position": [240, 96],
+      "id": "51c3abad-ef12-4d2c-a146-5bcb6ccc711a",
       "name": "Not Found"
     },
     {
       "parameters": {
-        "respondWith": "firstIncomingItem",
         "options": {
           "responseHeaders": {
-            "entries": [{ "name": "Access-Control-Allow-Origin", "value": "*" }]
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
           }
         }
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [1080, 100],
-      "id": "respond",
+      "position": [480, -16],
+      "id": "1a533bbe-ccbb-4953-88af-9be48f263d21",
       "name": "Respond"
     },
     {
       "parameters": {
         "respondWith": "json",
         "responseBody": "={\n  \"success\": false,\n  \"error\": \"Token exchange failed. Please verify your credentials.\"\n}",
-        "options": { "responseCode": 401 }
+        "options": {
+          "responseCode": 401
+        }
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [-360, 300],
-      "id": "error-token",
+      "position": [-960, 192],
+      "id": "f2a4a788-9d64-42ae-b1e8-fc27074b456c",
       "name": "Token Error Response"
     }
   ],
   "connections": {
     "Receive Disable Request": {
-      "main": [[{ "node": "GetToken", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "GetToken",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "GetToken": {
       "main": [
-        [{ "node": "Get Existing ScriptTags", "type": "main", "index": 0 }],
-        [{ "node": "Token Error Response", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Get Existing ScriptTags",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Token Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Get Existing ScriptTags": {
-      "main": [[{ "node": "Find Loader Script", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Find Loader Script",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Find Loader Script": {
-      "main": [[{ "node": "Is Loader Found?", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Is Loader Found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Is Loader Found?": {
       "main": [
-        [{ "node": "Delete Loader Script", "type": "main", "index": 0 }],
-        [{ "node": "Not Found", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Delete Loader Script",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Not Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Delete Loader Script": {
-      "main": [[{ "node": "Success (Removed)", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Success (Removed)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Success (Removed)": {
-      "main": [[{ "node": "Respond", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Not Found": {
-      "main": [[{ "node": "Respond", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "pinData": {},
