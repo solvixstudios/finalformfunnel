@@ -9,10 +9,49 @@
 (function () {
   "use strict";
 
-  const CONFIG_API = "https://finalform.app.n8n.cloud/webhook/form-config";
   const ORDER_API = "https://finalform.app.n8n.cloud/webhook/order/submit";
   const CACHE_KEY = "ff_config";
   const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+  // Default config used when no metafield config exists
+  const DEFAULT_CONFIG = {
+    config: {
+      header: { enabled: true, style: "classic", defaultLanguage: "fr" },
+      fields: {
+        name: {
+          visible: true,
+          required: true,
+          placeholder: { fr: "Nom complet", ar: "الاسم الكامل" },
+        },
+        phone: {
+          visible: true,
+          required: true,
+          placeholder: { fr: "Téléphone", ar: "الهاتف" },
+        },
+        wilaya: {
+          visible: true,
+          required: true,
+          placeholder: { fr: "Wilaya", ar: "الولاية" },
+        },
+        address: {
+          visible: true,
+          required: false,
+          placeholder: { fr: "Adresse", ar: "العنوان" },
+        },
+      },
+      shipping: { standard: { home: 600, desk: 400 } },
+      enableHomeDelivery: true,
+      enableDeskDelivery: true,
+      translations: {
+        cta: { fr: "Commander maintenant", ar: "اطلب الآن" },
+        home: { fr: "Livraison à domicile", ar: "التوصيل للمنزل" },
+        desk: { fr: "Stop desk", ar: "نقطة استلام" },
+      },
+      ctaVariant: "solid",
+      ctaColor: "#4f46e5",
+      accentColor: "#6366f1",
+    },
+  };
 
   // Global state to hold current config and context
   let currentConfig = null;
@@ -126,21 +165,32 @@
 
   // --- CONFIG FETCHING ---
 
-  // 1. Metafield Strategy (Fastest)
-  async function fetchMetafieldConfig(handle, token) {
-    if (!token || !handle) return null;
+  /**
+   * Fetch product-level metafield config via Storefront API
+   * @param {string} handle - Product handle
+   * @param {string} token - Storefront Access Token
+   * @returns {Object|null} - Parsed config or null
+   */
+  async function fetchProductMetafieldConfig(handle, token) {
+    if (!token || !handle) {
+      console.log(
+        "[FinalForm] ❌ Cannot fetch product metafield: missing token or handle",
+      );
+      return null;
+    }
 
     const query = `
-       query ($handle: String!) {
-         product(handle: $handle) {
-           metafield(namespace: "finalform", key: "config") {
-             value
-           }
-         }
-       }
-     `;
+      query ($handle: String!) {
+        product(handle: $handle) {
+          metafield(namespace: "finalform", key: "config") {
+            value
+          }
+        }
+      }
+    `;
 
     try {
+      console.log("[FinalForm] 🔍 Checking product metafield for handle:", handle);
       const response = await fetch(`/api/2024-01/graphql.json`, {
         method: "POST",
         headers: {
@@ -154,79 +204,118 @@
       const value = result.data?.product?.metafield?.value;
 
       if (value) {
-        console.log("[FinalForm] Loaded config from Metafield");
+        console.log("[FinalForm] ✅ CONFIG SOURCE: Product Metafield");
         return JSON.parse(value);
+      } else {
+        console.log("[FinalForm] ⚠️ Product metafield not found or empty");
       }
     } catch (e) {
-      console.warn("[FinalForm] Metafield fetch failed:", e);
+      console.warn("[FinalForm] ❌ Product metafield fetch failed:", e);
     }
     return null;
   }
 
+  /**
+   * Fetch store-level metafield config via Storefront API
+   * @param {string} token - Storefront Access Token
+   * @returns {Object|null} - Parsed config or null
+   */
+  async function fetchStoreMetafieldConfig(token) {
+    if (!token) {
+      console.log("[FinalForm] ❌ Cannot fetch store metafield: missing token");
+      return null;
+    }
+
+    const query = `
+      query {
+        shop {
+          metafield(namespace: "finalform", key: "config") {
+            value
+          }
+        }
+      }
+    `;
+
+    try {
+      console.log("[FinalForm] 🔍 Checking store metafield...");
+      const response = await fetch(`/api/2024-01/graphql.json`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Shopify-Storefront-Access-Token": token,
+        },
+        body: JSON.stringify({ query }),
+      });
+
+      const result = await response.json();
+      const value = result.data?.shop?.metafield?.value;
+
+      if (value) {
+        console.log("[FinalForm] ✅ CONFIG SOURCE: Store Metafield");
+        return JSON.parse(value);
+      } else {
+        console.log("[FinalForm] ⚠️ Store metafield not found or empty");
+      }
+    } catch (e) {
+      console.warn("[FinalForm] ❌ Store metafield fetch failed:", e);
+    }
+    return null;
+  }
+
+  /**
+   * Main config fetching function
+   * Priority: 1) Cache -> 2) Product Metafield -> 3) Store Metafield -> 4) Default Config
+   * NO n8n fallback - purely metafield-based
+   */
   async function fetchConfig(domain, product, sfToken) {
+    console.log("[FinalForm] 📦 Starting config resolution...");
+    console.log("[FinalForm] Domain:", domain);
+    console.log("[FinalForm] Product:", product?.handle || "N/A");
+    console.log(
+      "[FinalForm] Storefront Token:",
+      sfToken ? "✓ Present" : "✗ Missing",
+    );
+
+    // Step 1: Check cache first
     const cached = getCachedConfig(domain, product);
     if (cached) {
-      console.log("[FinalForm] Using cached config");
+      console.log("[FinalForm] ✅ CONFIG SOURCE: Cache");
       return cached;
     }
 
-    // Try Metafield first
+    // Step 2: Try product-level metafield (if on a product page)
     if (sfToken && product?.handle) {
-      const metaConfig = await fetchMetafieldConfig(product.handle, sfToken);
-      if (metaConfig) {
-        // Ensure structure is compatible with builder
-        // If stored data is just { config: ... }, wrap it if needed or return as is.
-        // Our master workflow saves: { config: ... } (the 'data' payload).
-        // This loader expects { config: { ... } } structure usually.
-        // Let's assume the stored data is the FULL config object.
-        cacheConfig(domain, product, metaConfig);
-        return metaConfig;
+      const productConfig = await fetchProductMetafieldConfig(
+        product.handle,
+        sfToken,
+      );
+      if (productConfig) {
+        cacheConfig(domain, product, productConfig);
+        return productConfig;
       }
     }
 
-    // Fallback to API
-    console.log("[FinalForm] Fallback to API");
-    const params = new URLSearchParams({ domain });
-    if (product?.id) params.set("productId", product.id);
-    if (product?.handle) params.set("productHandle", product.handle);
-
-    try {
-      const res = await fetch(`${CONFIG_API}?${params}`);
-      if (!res.ok) {
-        // Check for empty response specifically
-        const text = await res.text();
-        if (!text || text.trim().length === 0) {
-          console.warn("[FinalForm] API returned empty response (0 bytes)");
-          return null;
-        }
-        throw new Error("Config fetch failed: " + res.status);
+    // Step 3: Try store-level metafield (fallback for all products)
+    if (sfToken) {
+      const storeConfig = await fetchStoreMetafieldConfig(sfToken);
+      if (storeConfig) {
+        cacheConfig(domain, product, storeConfig);
+        return storeConfig;
       }
-
-      // Handle the "empty body" case even if 200 OK
-      const text = await res.text();
-      if (!text || text.trim().length === 0) {
-        console.warn("[FinalForm] API returned empty response (0 bytes)");
-        return null;
-      }
-
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch (e) {
-        // Try to recover from <pre> if n8n returns HTML error
-        const match = text.match(/<pre[^>]*>([^<]+)<\/pre>/);
-        if (match) data = JSON.parse(match[1]);
-        else throw e;
-      }
-
-      if (data && data.error) return null;
-
-      cacheConfig(domain, product, data);
-      return data;
-    } catch (e) {
-      console.warn("[FinalForm] Config fetch error:", e);
-      return null;
     }
+
+    // Step 4: Use default config (no external API calls)
+    console.log(
+      "[FinalForm] ✅ CONFIG SOURCE: Default Config (no metafields found)",
+    );
+    console.log(
+      "[FinalForm] ℹ️ To customize, assign a form to this product or store via the FinalForm dashboard",
+    );
+
+    // Return a copy of default config to avoid mutations
+    const defaultCopy = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+    cacheConfig(domain, product, defaultCopy);
+    return defaultCopy;
   }
 
   function getCacheKey(domain, product) {
@@ -1059,28 +1148,33 @@
   }
 
   // --- INIT ---
-  // --- INIT ---
   async function init() {
+    console.log("[FinalForm] 🚀 Initializing v2.1 (Metafield-only mode)...");
+
     const domain = getShopDomain();
     const product = getProductContext();
     const sfToken = getStorefrontToken();
-    console.log("[FinalForm] Initializing v2.0...", { domain, product });
 
-    // If not a product page or no product context found, we might still check for 'shop-level' forms if we wanted.
-    // But currently logical flow requires product context for product forms.
-    // If we support "Shop Wide" forms on non-product pages, we should allow product=null.
-    // fetchConfig handles product=null/undefined gracefully (checks for id/handle).
+    console.log("[FinalForm] Context:", {
+      domain,
+      product: product?.handle || "N/A",
+    });
 
-    // However, getProductContext currently tries to return an object or null.
-    // If we are on Home page, product is null.
-    // Let's rely on fetchConfig to decide if it finds something for "store" scope.
-
+    // fetchConfig handles all scenarios:
+    // - Product page with product metafield
+    // - Product page falling back to store metafield
+    // - Any page using store metafield
+    // - Default config as final fallback
     const config = await fetchConfig(domain, product, sfToken);
 
     if (!config) {
-      console.log("[FinalForm] No config for this page");
+      console.log(
+        "[FinalForm] ❌ No config could be loaded (unexpected - default should always be available)",
+      );
       return;
     }
+
+    console.log("[FinalForm] ✅ Config loaded successfully");
 
     // Store globally for order submission
     currentConfig = config;
