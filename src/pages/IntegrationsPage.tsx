@@ -210,9 +210,9 @@ export default function IntegrationsPage({ userId }: IntegrationsPageProps) {
 
   // Form State
   const [shopifyForm, setShopifyForm] = useState({
-    subdomain: '2fgsxx-rs',
-    clientId: '49ceb3f741f3a8c92c21e8c49e9405c4',
-    clientSecret: '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'
+    subdomain: 'baraaelectromenager-com',
+    clientId: '3267facf7b3733a5e74e1e9c3b077437',
+    clientSecret: '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'
   });
   const [isConnecting, setIsConnecting] = useState(false);
 

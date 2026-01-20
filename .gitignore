@@ -34,3 +34,4 @@ ui-debug.log*
 .firebase/hosting.*
 .firebase/hosting.*.cache
 .firebase/
+code-style-guide.md
