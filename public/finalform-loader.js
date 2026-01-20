@@ -16,7 +16,7 @@
   }
   window.__FINALFORM_INITIALIZED__ = true;
 
-  const LOADER_VERSION = "2.2.0";
+  const LOADER_VERSION = "2.4.0";
   const ORDER_API = "https://finalform.app.n8n.cloud/webhook/order/submit";
 
   // Default config used when no metafield config exists
@@ -661,11 +661,12 @@
     const deskPrice = c.shipping?.standard?.desk || 400;
     const enableHome = c.enableHomeDelivery !== false;
     const enableDesk = c.enableDeskDelivery !== false;
+    const currency = lang === "ar" ? "دج" : "DA";
 
     return `
       <div class="ff-section ff-delivery">
         ${
-          c.sectionSettings?.delivery?.showTitle
+          c.sectionSettings?.delivery?.showTitle !== false
             ? `<div class="ff-section-title">${
                 c.translations?.delivery?.[lang] || "Delivery"
               }</div>`
@@ -677,10 +678,14 @@
               ? `
             <label class="ff-delivery-option ff-delivery-option--selected" data-type="home">
               <input type="radio" name="ff_delivery" value="home" checked />
+              <div class="ff-delivery-check">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </div>
+              <div class="ff-delivery-icon">🏠</div>
               <span class="ff-delivery-label">${home}</span>
-              <span class="ff-delivery-price">${homePrice} ${
-                lang === "ar" ? "دج" : "DA"
-              }</span>
+              <span class="ff-delivery-price">${homePrice} ${currency}</span>
             </label>
           `
               : ""
@@ -690,10 +695,10 @@
               ? `
             <label class="ff-delivery-option" data-type="desk">
               <input type="radio" name="ff_delivery" value="desk" />
+              <div class="ff-delivery-check"></div>
+              <div class="ff-delivery-icon">📦</div>
               <span class="ff-delivery-label">${desk}</span>
-              <span class="ff-delivery-price">${deskPrice} ${
-                lang === "ar" ? "دج" : "DA"
-              }</span>
+              <span class="ff-delivery-price">${deskPrice} ${currency}</span>
             </label>
           `
               : ""
@@ -902,7 +907,7 @@
 
   // --- STYLES ---
   function getStyles(c) {
-    const cfg = c.config || {};
+    const cfg = c.config || c; // Handle both nested and flat config
     const accent = cfg.accentColor || "#6366f1";
     const cta = cfg.ctaColor || "#4f46e5";
     const radius = cfg.borderRadius || "12px";
@@ -912,117 +917,476 @@
     const inputBorder = cfg.inputBorderColor || "#e2e8f0";
     const inputText = cfg.inputTextColor || "#1e293b";
     const inputPlaceholder = cfg.inputPlaceholderColor || "#94a3b8";
+    const inputSpacing = cfg.inputSpacing || 12;
+    const sectionSpacing = cfg.sectionSpacing || 20;
+    const isFilled = cfg.inputVariant === "filled";
+
+    // Font loading
+    const fontFr = cfg.fontFamily?.fr || "Inter";
+    const fontAr = cfg.fontFamily?.ar || "Cairo";
 
     return `
-      * { box-sizing: border-box; }
+      /* Font Loading */
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Cairo:wght@400;500;600;700;800;900&display=swap');
+
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      
       .ff-root {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+        font-family: "${fontFr}", system-ui, -apple-system, sans-serif;
         background: ${bg};
         color: ${text};
-        border-radius: ${radius};
-        border: 1px solid ${inputBorder};
+        border-radius: 16px;
         overflow: hidden;
-        margin: 20px 0;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        position: relative;
       }
+      [dir="rtl"] .ff-root {
+        font-family: "${fontAr}", system-ui, -apple-system, sans-serif;
+      }
+
+      /* Header Styles */
       .ff-header {
         display: flex;
-        gap: 12px;
-        padding: 16px;
+        gap: 16px;
+        padding: 20px;
         border-bottom: 1px solid ${inputBorder};
         align-items: center;
       }
-      .ff-header-img { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; }
-      .ff-header-title { margin: 0; font-size: 16px; font-weight: 600; }
-      .ff-header-price { margin: 4px 0 0; font-size: 18px; font-weight: 700; color: ${accent}; }
-      .ff-currency { font-size: 12px; opacity: 0.7; }
-      .ff-body { padding: 16px; }
-      .ff-section { margin-bottom: 20px; }
-      .ff-section-title { font-size: 13px; font-weight: 600; color: ${text}; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
-      .ff-section-title::before { content: ''; width: 3px; height: 14px; background: ${accent}; border-radius: 2px; }
-      
-      .ff-input {
-        width: 100%; padding: 12px 14px; border: 2px solid ${inputBorder};
-        border-radius: 8px; font-size: 14px; background: ${inputBg}; color: ${inputText};
-        margin-bottom: 10px; outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+      .ff-header--minimal {
+        padding: 16px 20px;
+        flex-direction: column;
+        text-align: center;
       }
-      .ff-input:focus { border-color: ${accent}; box-shadow: 0 0 0 3px ${accent}20; }
-      .ff-input::placeholder { color: ${inputPlaceholder}; }
+      .ff-header-img { 
+        width: 90px; 
+        height: 90px; 
+        object-fit: cover; 
+        border-radius: 12px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      }
+      .ff-header-content { flex: 1; }
+      .ff-header-title { 
+        margin: 0; 
+        font-size: 17px; 
+        font-weight: 700;
+        line-height: 1.3;
+      }
+      .ff-header-price { 
+        margin: 6px 0 0; 
+        font-size: 20px; 
+        font-weight: 800; 
+        color: ${accent}; 
+      }
+      .ff-currency { font-size: 13px; opacity: 0.7; margin-left: 2px; }
+      [dir="rtl"] .ff-currency { margin-left: 0; margin-right: 2px; }
+
+      /* Body & Sections */
+      .ff-body { padding: 20px; }
+      .ff-section { margin-bottom: ${sectionSpacing}px; }
+      .ff-section:last-child { margin-bottom: 0; }
       
-      .ff-select-wrap { position: relative; }
-      .ff-select-wrap select { appearance: none; padding-right: 36px; cursor: pointer; }
-      .ff-select-arrow { position: absolute; right: 12px; top: 50%; transform: translateY(-70%); width: 16px; height: 16px; pointer-events: none; fill: none; stroke: ${inputPlaceholder}; stroke-width: 2; }
-      [dir="rtl"] .ff-select-wrap select { padding-right: 14px; padding-left: 36px; }
-      [dir="rtl"] .ff-select-arrow { right: auto; left: 12px; }
+      .ff-section-title { 
+        font-size: 13px; 
+        font-weight: 700; 
+        color: ${text}; 
+        margin-bottom: 12px; 
+        display: flex; 
+        align-items: center; 
+        gap: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.025em;
+      }
+      .ff-section-title::before { 
+        content: ''; 
+        width: 4px; 
+        height: 16px; 
+        background: ${accent}; 
+        border-radius: 2px; 
+      }
 
-      .ff-variants-grid { display: flex; flex-wrap: wrap; gap: 8px; }
-      .ff-variant-item { flex: 1; min-width: 80px; padding: 10px 12px; border: 2px solid ${inputBorder}; border-radius: 8px; cursor: pointer; text-align: center; transition: all 0.15s; }
+      /* Input Styling - Matches Tailwind: px-4 py-3.5 text-[13px] font-semibold border-2 */
+      .ff-input {
+        width: 100%;
+        padding: 14px 16px;
+        border: 2px solid ${isFilled ? "transparent" : inputBorder};
+        border-radius: ${radius};
+        font-size: 13px;
+        font-weight: 600;
+        background: ${isFilled ? inputBg : "#ffffff"};
+        color: ${inputText};
+        margin-bottom: ${inputSpacing}px;
+        outline: none;
+        transition: all 0.2s ease;
+        -webkit-appearance: none;
+      }
+      .ff-input:focus { 
+        border-color: ${accent}; 
+        box-shadow: 0 0 0 4px ${accent}20;
+      }
+      .ff-input::placeholder { 
+        color: ${inputPlaceholder};
+        font-weight: 600;
+      }
+      
+      /* Select Dropdown */
+      .ff-select-wrap { position: relative; margin-bottom: ${inputSpacing}px; }
+      .ff-select-wrap select { 
+        appearance: none; 
+        -webkit-appearance: none;
+        padding-right: 40px; 
+        cursor: pointer;
+        margin-bottom: 0;
+      }
+      .ff-select-arrow { 
+        position: absolute; 
+        right: 16px; 
+        top: 50%; 
+        transform: translateY(-50%); 
+        width: 18px; 
+        height: 18px; 
+        pointer-events: none; 
+        fill: none; 
+        stroke: ${inputPlaceholder}; 
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      [dir="rtl"] .ff-select-wrap select { padding-right: 16px; padding-left: 40px; }
+      [dir="rtl"] .ff-select-arrow { right: auto; left: 16px; }
+      textarea.ff-input { resize: none; min-height: 70px; }
+
+      /* Variants */
+      .ff-variants-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+      .ff-variant-item { 
+        flex: 1; 
+        min-width: 90px; 
+        padding: 12px 14px; 
+        border: 2px solid ${inputBorder}; 
+        border-radius: ${radius}; 
+        cursor: pointer; 
+        text-align: center; 
+        transition: all 0.2s ease;
+        background: ${bg};
+      }
+      .ff-variant-item:hover { border-color: ${accent}40; }
       .ff-variant-item input { display: none; }
-      .ff-variant-item--selected { border-color: ${accent}; background: ${accent}10; }
-      .ff-variant-title { display: block; font-weight: 600; font-size: 13px; }
-      .ff-variant-price { display: block; font-size: 12px; color: ${accent}; margin-top: 2px; }
+      .ff-variant-item--selected { 
+        border-color: ${accent}; 
+        background: ${accent}10;
+        box-shadow: 0 4px 12px -2px ${accent}30;
+      }
+      .ff-variant-title { display: block; font-weight: 700; font-size: 13px; color: ${text}; }
+      .ff-variant-price { display: block; font-size: 12px; color: ${accent}; margin-top: 4px; font-weight: 600; }
 
-      .ff-delivery-options { display: flex; gap: 10px; }
-      .ff-delivery-option { flex: 1; padding: 14px; border: 2px solid ${inputBorder}; border-radius: 10px; cursor: pointer; text-align: center; transition: all 0.15s; }
+      /* Delivery Options - Full card style like preview */
+      .ff-delivery-options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      .ff-delivery-option { 
+        position: relative;
+        padding: 16px; 
+        border: 2px solid ${inputBorder}; 
+        border-radius: ${radius}; 
+        cursor: pointer; 
+        text-align: center; 
+        transition: all 0.2s ease;
+        background: ${bg};
+      }
       .ff-delivery-option input { display: none; }
-      .ff-delivery-option--selected { border-color: ${accent}; background: ${accent}10; }
-      .ff-delivery-label { display: block; font-weight: 600; font-size: 13px; }
-      .ff-delivery-price { display: block; font-size: 12px; color: ${accent}; margin-top: 4px; }
+      .ff-delivery-option--selected { 
+        border-color: ${accent}; 
+        background: ${accent};
+        box-shadow: 0 8px 20px -4px ${accent}50;
+      }
+      .ff-delivery-option--selected .ff-delivery-label,
+      .ff-delivery-option--selected .ff-delivery-price { color: white; }
+      .ff-delivery-option--selected .ff-delivery-icon { background: rgba(255,255,255,0.2); color: white; }
+      .ff-delivery-icon {
+        width: 40px;
+        height: 40px;
+        margin: 0 auto 10px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: ${accent}10;
+        color: ${accent};
+        font-size: 20px;
+      }
+      .ff-delivery-label { display: block; font-weight: 700; font-size: 14px; color: ${text}; }
+      .ff-delivery-price { display: block; font-size: 13px; color: ${text}80; margin-top: 4px; font-weight: 600; }
+      .ff-delivery-check {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid ${inputBorder};
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .ff-delivery-option--selected .ff-delivery-check {
+        border-color: white;
+        background: rgba(255,255,255,0.2);
+      }
+      [dir="rtl"] .ff-delivery-check { right: auto; left: 12px; }
 
-      .ff-offers-grid { display: flex; flex-direction: column; gap: 8px; }
-      .ff-offer-card { position: relative; padding: 14px; border: 2px solid ${inputBorder}; border-radius: 10px; cursor: pointer; transition: all 0.15s; }
+      /* Offers */
+      .ff-offers-grid { display: flex; flex-direction: column; gap: 10px; }
+      .ff-offer-card { 
+        position: relative; 
+        padding: 16px; 
+        border: 2px solid ${inputBorder}; 
+        border-radius: ${radius}; 
+        cursor: pointer; 
+        transition: all 0.2s ease;
+        background: ${bg};
+      }
+      .ff-offer-card:hover { border-color: ${accent}40; }
       .ff-offer-card input { display: none; }
-      .ff-offer-card--selected { border-color: ${accent}; background: ${accent}10; }
-      .ff-offer-title { display: block; font-weight: 600; font-size: 14px; }
-      .ff-offer-desc { display: block; font-size: 12px; color: #64748b; margin-top: 2px; }
-      .ff-offer-badge { position: absolute; top: -8px; right: 10px; background: #ef4444; color: white; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; }
-      [dir="rtl"] .ff-offer-badge { right: auto; left: 10px; }
+      .ff-offer-card--selected { 
+        border-color: ${accent}; 
+        background: ${accent}10;
+        box-shadow: 0 4px 15px -2px ${accent}30;
+      }
+      .ff-offer-title { display: block; font-weight: 700; font-size: 15px; color: ${text}; }
+      .ff-offer-desc { display: block; font-size: 13px; color: #64748b; margin-top: 4px; }
+      .ff-offer-badge { 
+        position: absolute; 
+        top: -10px; 
+        right: 12px; 
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); 
+        color: white; 
+        font-size: 11px; 
+        font-weight: 800; 
+        padding: 4px 10px; 
+        border-radius: 20px;
+        box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+      }
+      [dir="rtl"] .ff-offer-badge { right: auto; left: 12px; }
 
-      .ff-promo-input-wrap { display: flex; gap: 8px; }
-      .ff-promo-input { flex: 1; margin-bottom: 0; }
-      .ff-promo-btn { padding: 12px 20px; background: ${accent}; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
-      .ff-promo-message { font-size: 12px; margin-top: 6px; }
+      /* Promo Code */
+      .ff-promo-input-wrap { display: flex; gap: 10px; }
+      .ff-promo-input { flex: 1; margin-bottom: 0 !important; }
+      .ff-promo-btn { 
+        padding: 14px 20px; 
+        background: ${accent}; 
+        color: white; 
+        border: none; 
+        border-radius: ${radius}; 
+        font-weight: 700; 
+        font-size: 13px;
+        cursor: pointer; 
+        white-space: nowrap;
+        transition: all 0.2s ease;
+      }
+      .ff-promo-btn:hover { opacity: 0.9; }
+      .ff-promo-message { font-size: 13px; margin-top: 8px; font-weight: 600; }
       .ff-promo-message.success { color: #10b981; }
       .ff-promo-message.error { color: #ef4444; }
 
-      .ff-summary { background: #f8fafc; padding: 14px; border-radius: 10px; }
-      .ff-summary-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
-      .ff-summary-total { font-weight: 700; font-size: 15px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed ${inputBorder}; }
+      /* Summary */
+      .ff-summary { 
+        background: #f8fafc; 
+        padding: 18px; 
+        border-radius: ${radius};
+        border: 1px solid ${inputBorder};
+      }
+      .ff-summary-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 10px; }
+      .ff-summary-total { 
+        font-weight: 800; 
+        font-size: 16px; 
+        margin-top: 12px; 
+        padding-top: 12px; 
+        border-top: 2px dashed ${inputBorder}; 
+      }
       .ff-summary-total-value { color: ${accent}; }
 
+      /* CTA Button - Matches: py-4 font-black text-sm uppercase tracking-widest */
       .ff-cta {
-        width: 100%; padding: 16px; border: none; border-radius: 10px;
-        font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.15s;
+        width: 100%;
+        padding: 18px;
+        border: none;
+        border-radius: ${radius};
+        font-size: 14px;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
       }
-      .ff-cta--solid { background: ${cta}; color: white; }
-      .ff-cta--outline { background: transparent; border: 2px solid ${cta}; color: ${cta}; }
-      .ff-cta--gradient { background: linear-gradient(135deg, ${cta} 0%, ${accent} 100%); color: white; }
-      .ff-cta--shake { animation: ff-shake 2.5s ease-in-out infinite; animation-delay: 1s; }
-      @keyframes ff-shake { 0%, 84%, 100% { transform: translateX(0); } 85%, 87%, 89%, 91% { transform: translateX(-4px); } 86%, 88%, 90%, 92% { transform: translateX(4px); } 93% { transform: translateX(0); } }
+      .ff-cta:active { transform: scale(0.98); }
+      .ff-cta--solid { 
+        background: ${cta}; 
+        color: white;
+        box-shadow: 0 10px 25px -5px ${cta}40;
+      }
+      .ff-cta--solid:hover { opacity: 0.9; }
+      .ff-cta--outline { 
+        background: transparent; 
+        border: 2px solid ${cta}; 
+        color: ${cta};
+        box-shadow: 0 4px 15px ${cta}20;
+      }
+      .ff-cta--gradient { 
+        background: linear-gradient(135deg, ${cta} 0%, ${accent} 100%); 
+        color: white;
+        box-shadow: 0 10px 25px -5px ${cta}40;
+      }
+      .ff-cta--ghost {
+        background: transparent;
+        color: ${cta};
+      }
 
-      .ff-urgency-text { padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; text-align: center; }
+      /* CTA Animations */
+      .ff-cta--shake { animation: ff-shake 2.5s ease-in-out infinite; }
+      .ff-cta--pulse { animation: ff-pulse 2s ease-in-out infinite; }
+      .ff-cta--bounce { animation: ff-bounce 2s ease-in-out infinite; }
+      .ff-cta--glow { animation: ff-glow 2s ease-in-out infinite; }
+      
+      @keyframes ff-shake { 
+        0%, 84%, 100% { transform: translateX(0); } 
+        85%, 87%, 89%, 91% { transform: translateX(-4px); } 
+        86%, 88%, 90%, 92% { transform: translateX(4px); } 
+        93% { transform: translateX(0); } 
+      }
+      @keyframes ff-pulse {
+        0%, 70%, 100% { transform: scale(1); opacity: 1; }
+        75% { transform: scale(1.02); opacity: 0.9; }
+        80% { transform: scale(1); opacity: 1; }
+      }
+      @keyframes ff-bounce {
+        0%, 70%, 100% { transform: translateY(0); }
+        75% { transform: translateY(-4px); }
+        80% { transform: translateY(0); }
+        85% { transform: translateY(-2px); }
+        90% { transform: translateY(0); }
+      }
+      @keyframes ff-glow {
+        0%, 70%, 100% { box-shadow: 0 10px 25px -5px ${cta}40; }
+        75%, 85% { box-shadow: 0 0 30px ${cta}60, 0 10px 25px -5px ${cta}40; }
+      }
+
+      /* Urgency Text */
+      .ff-urgency-text { 
+        padding: 12px 16px; 
+        border-radius: ${radius}; 
+        font-size: 14px; 
+        font-weight: 700; 
+        text-align: center;
+      }
       .ff-urgency-text--banner { background: #fef3c7; color: #92400e; }
-      .ff-urgency-text--pill { background: #fee2e2; color: #b91c1c; border-radius: 20px; }
+      .ff-urgency-text--pill { background: #fee2e2; color: #b91c1c; border-radius: 25px; }
 
-      .ff-urgency-qty { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: #fef2f2; border-radius: 8px; font-size: 13px; font-weight: 600; color: #dc2626; }
-      .ff-urgency-qty-icon { font-size: 16px; }
+      /* Urgency Quantity */
+      .ff-urgency-qty { 
+        display: flex; 
+        align-items: center; 
+        justify-content: center;
+        gap: 10px; 
+        padding: 12px 16px; 
+        background: #fef2f2; 
+        border-radius: ${radius}; 
+        font-size: 14px; 
+        font-weight: 700; 
+        color: #dc2626;
+      }
+      .ff-urgency-qty-icon { font-size: 18px; }
 
-      .ff-urgency-timer { display: flex; justify-content: center; gap: 4px; padding: 12px; background: #1e293b; color: white; border-radius: 8px; font-weight: 700; }
-      .ff-timer-segment { display: flex; flex-direction: column; align-items: center; min-width: 40px; }
-      .ff-timer-value { font-size: 24px; }
-      .ff-timer-label { font-size: 10px; opacity: 0.7; }
-      .ff-timer-sep { font-size: 24px; line-height: 1; margin-top: 4px; }
+      /* Urgency Timer */
+      .ff-urgency-timer { 
+        display: flex; 
+        justify-content: center; 
+        gap: 6px; 
+        padding: 16px; 
+        background: #1e293b; 
+        color: white; 
+        border-radius: ${radius}; 
+        font-weight: 800;
+      }
+      .ff-timer-segment { 
+        display: flex; 
+        flex-direction: column; 
+        align-items: center; 
+        min-width: 50px;
+        padding: 8px;
+        background: rgba(255,255,255,0.1);
+        border-radius: 8px;
+      }
+      .ff-timer-value { font-size: 28px; line-height: 1; }
+      .ff-timer-label { font-size: 11px; opacity: 0.7; margin-top: 4px; text-transform: uppercase; }
+      .ff-timer-sep { font-size: 28px; line-height: 1; margin-top: 8px; opacity: 0.5; }
 
-      .ff-trust-grid { display: flex; flex-wrap: wrap; gap: 8px; }
-      .ff-trust-badge { flex: 1; min-width: 120px; display: flex; align-items: center; gap: 6px; padding: 10px 12px; background: #f1f5f9; border-radius: 8px; font-size: 12px; font-weight: 500; }
-      .ff-trust-icon { font-size: 16px; }
+      /* Trust Badges */
+      .ff-trust-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+      .ff-trust-badge { 
+        flex: 1; 
+        min-width: 130px; 
+        display: flex; 
+        align-items: center; 
+        gap: 8px; 
+        padding: 12px 14px; 
+        background: #f1f5f9; 
+        border-radius: ${radius}; 
+        font-size: 13px; 
+        font-weight: 600;
+        color: ${text};
+      }
+      .ff-trust-icon { font-size: 18px; }
 
-      .ff-sticky-cta { position: fixed; bottom: 0; left: 0; right: 0; padding: 12px 16px; background: ${bg}; border-top: 1px solid ${inputBorder}; box-shadow: 0 -4px 20px rgba(0,0,0,0.1); z-index: 1000; display: none; }
+      /* Sticky CTA */
+      .ff-sticky-cta { 
+        position: fixed; 
+        bottom: 0; 
+        left: 0; 
+        right: 0; 
+        padding: 16px 20px; 
+        background: ${bg}; 
+        border-top: 1px solid ${inputBorder}; 
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.1); 
+        z-index: 1000; 
+        display: none;
+      }
       .ff-sticky-cta .ff-cta { margin: 0; }
 
-      .ff-success { text-align: center; padding: 40px 20px; }
-      .ff-success-icon { font-size: 56px; margin-bottom: 16px; }
-      .ff-success-title { font-size: 20px; font-weight: 700; margin: 0 0 8px; }
-      .ff-success-message { color: #64748b; margin: 0; }
+      /* Success State */
+      .ff-success { text-align: center; padding: 50px 20px; }
+      .ff-success-icon { font-size: 64px; margin-bottom: 20px; }
+      .ff-success-title { font-size: 22px; font-weight: 800; margin: 0 0 10px; color: ${text}; }
+      .ff-success-message { color: #64748b; margin: 0; font-size: 15px; }
+
+      /* Language Switcher */
+      .ff-lang-switcher {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        display: flex;
+        gap: 4px;
+        background: ${inputBorder}40;
+        padding: 4px;
+        border-radius: 8px;
+      }
+      .ff-lang-btn {
+        padding: 6px 10px;
+        border: none;
+        background: transparent;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        color: ${text}80;
+      }
+      .ff-lang-btn--active {
+        background: white;
+        color: ${text};
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      }
+      [dir="rtl"] .ff-lang-switcher { right: auto; left: 16px; }
     `;
   }
 
@@ -1072,26 +1436,23 @@
         const formData = collectFormData(shadow);
         const body = shadow.querySelector(".ff-body");
 
-        // Build order payload with full assignment context
+        // Build order payload with full assignment context (flat structure from metafield)
         const orderPayload = {
           // Customer data
           ...formData,
-          // Form & Assignment context
+          // Form & Assignment context (stored flat in metafield)
           formId: config.formId,
           formName: config.formName,
-          assignmentId: config.assignment?.id,
-          assignmentType: config.assignment?.type,
+          assignmentType: config.assignmentType,
           // Store context
-          storeId: config.store?.id || config.assignment?.storeId,
-          shopifyDomain: config.store?.domain || config.assignment?.shopifyDomain,
-          storeName: config.store?.name,
+          storeId: config.storeId,
+          storeName: config.storeName,
+          shopifyDomain: config.shopifyDomain || getShopDomain(),
           // Product context (if product-level assignment)
-          productId: config.assignment?.productId || currentProduct?.id,
-          productHandle: config.assignment?.productHandle || currentProduct?.handle,
-          productTitle: currentProduct?.title || config.assignment?.productTitle,
+          productId: config.productId || currentProduct?.id,
+          productHandle: config.productHandle || currentProduct?.handle,
+          productTitle: currentProduct?.title,
           productPrice: currentProduct?.price,
-          // Assigned products list (for multi-product forms)
-          assignedProducts: config.assignment?.assignedProducts || [],
           // Timestamps
           submittedAt: new Date().toISOString(),
         };
@@ -1220,11 +1581,36 @@
     attachHandlers(shadow, config);
   }
 
+  // --- HIDE THEME ELEMENTS (run early) ---
+  function hideThemeElements() {
+    const styleId = "finalform-hide-elements";
+    if (document.getElementById(styleId)) return;
+
+    const style = document.createElement("style");
+    style.id = styleId;
+    style.textContent = `
+      .product-info__rating,
+      .product-info__title,
+      .product-info__price,
+      .product-info__inventory,
+      .product-info__variant-picker,
+      #easysell,
+      form[action*="/cart/add"] {
+        display: none !important;
+      }
+    `;
+    document.head.appendChild(style);
+    console.log("[FinalForm] 🎨 Injected styles to hide theme elements");
+  }
+
   // --- INIT ---
   async function init() {
     console.log(
       `[FinalForm] 🚀 Initializing v${LOADER_VERSION} (Metafield-only mode)...`,
     );
+
+    // Hide theme elements first for better UX
+    hideThemeElements();
 
     const domain = getShopDomain();
     const product = getProductContext();
@@ -1260,37 +1646,19 @@
       currentProduct = productData?.product || null;
     }
 
+    // Log assignment context - these are stored flat in metafield
     console.log("[FinalForm] Assignment context:", {
-      formId: config.formId,
-      assignmentType: config.assignment?.type,
-      storeId: config.store?.id,
-      productId: config.assignment?.productId,
+      formId: config.formId || "(not set)",
+      assignmentType: config.assignmentType || "(not set)",
+      storeId: config.storeId || "(not set)",
+      productId: config.productId || currentProduct?.id || "(not set)",
     });
 
     render(config, productData);
-    injectGlobalStyles();
-    console.log("[FinalForm] Rendered successfully");
+    console.log("[FinalForm] ✅ Rendered successfully");
   }
 
-  function injectGlobalStyles() {
-    const styleId = "finalform-global-styles";
-    if (document.getElementById(styleId)) return;
-
-    const style = document.createElement("style");
-    style.id = styleId;
-    style.textContent = `
-      .product-info__rating,
-      .product-info__title,
-      .product-info__price,
-      .product-info__inventory,
-      .product-info__variant-picker,
-      #easysell {
-        display: none !important;
-      }
-    `;
-    document.head.appendChild(style);
-    console.log("[FinalForm] Injected global styles to hide theme elements");
-  }
+  // Note: Element hiding is now done early in init() via hideThemeElements()
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);

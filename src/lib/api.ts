@@ -132,9 +132,13 @@ export async function assignFormToShopify(
   ownerId?: string,
   context?: {
     formId?: string;
+    formName?: string;
     assignmentType?: string;
     storeId?: string;
+    storeName?: string;
+    shopifyDomain?: string;
     productId?: string;
+    productHandle?: string;
   },
 ) {
   // Merge context into formConfig so it's saved in the metafield

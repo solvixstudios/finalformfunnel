@@ -161,8 +161,11 @@ export function FormAssignmentSheet({
                         undefined, // No ownerId means Shop Level
                         {
                             formId: selectedFormId,
+                            formName: selectedForm.name,
                             assignmentType: 'shop',
                             storeId: selectedStoreId,
+                            storeName: selectedStore.name,
+                            shopifyDomain: selectedStore.url,
                         }
                     ).catch(err => {
                         console.error('Failed to sync to Shopify:', err);
@@ -209,8 +212,9 @@ export function FormAssignmentSheet({
                     console.log(`[FormAssignment] Syncing ${productIdList.length} products to Shopify...`);
 
                     // Sync each product in parallel
-                    await Promise.all(productIdList.map(pid =>
-                        assignFormToShopify(
+                    await Promise.all(productIdList.map(pid => {
+                        const productInfo = products.find(p => p.id.toString() === pid);
+                        return assignFormToShopify(
                             subdomain,
                             selectedStore.clientId!,
                             selectedStore.clientSecret!,
@@ -218,15 +222,19 @@ export function FormAssignmentSheet({
                             pid, // Passing Product ID (numeric)
                             {
                                 formId: selectedFormId,
+                                formName: selectedForm.name,
                                 assignmentType: 'product',
                                 storeId: selectedStoreId,
+                                storeName: selectedStore.name,
+                                shopifyDomain: selectedStore.url,
                                 productId: pid,
+                                productHandle: productInfo?.handle,
                             }
                         ).catch(err => {
                             console.error(`Failed to sync product ${pid}:`, err);
                             // Don't toast for every failure to avoid spam, maybe just log
-                        })
-                    ));
+                        });
+                    }));
                     toast.success('Synced assignments to Shopify!');
                 }
 
