@@ -113,8 +113,8 @@ export default function StoresPage({ userId }: StoresPageProps) {
             if (result.success) {
                 await updateStore(store.id, {
                     loaderInstalled: false,
-                    loaderVersion: undefined,
-                    loaderInstalledAt: undefined
+                    loaderVersion: null,
+                    loaderInstalledAt: null
                 });
                 toast.success('Loader disabled successfully!');
             } else {
