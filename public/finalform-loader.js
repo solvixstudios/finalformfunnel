@@ -346,6 +346,94 @@
     return lang === "ar" ? `${amount} دج` : `${amount} DA`;
   }
 
+  /**
+   * Fetch product data via Storefront API for rendering
+   * @param {string} handle - Product handle
+   * @returns {Object|null} - Product data or null
+   */
+  async function fetchProduct(handle) {
+    const sfToken = getStorefrontToken();
+    if (!sfToken || !handle) {
+      console.log(
+        "[FinalForm] ⚠️ Cannot fetch product data: missing token or handle",
+      );
+      return null;
+    }
+
+    const query = `
+      query ($handle: String!) {
+        product(handle: $handle) {
+          id
+          title
+          handle
+          description
+          images(first: 5) {
+            edges {
+              node {
+                src: url
+                altText
+              }
+            }
+          }
+          variants(first: 20) {
+            edges {
+              node {
+                id
+                title
+                price {
+                  amount
+                  currencyCode
+                }
+                availableForSale
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    try {
+      const response = await fetch("/api/2026-01/graphql.json", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Shopify-Storefront-Access-Token": sfToken,
+        },
+        body: JSON.stringify({ query, variables: { handle } }),
+      });
+
+      const result = await response.json();
+      const productData = result.data?.product;
+
+      if (productData) {
+        // Transform to simpler format
+        return {
+          product: {
+            id: productData.id,
+            title: productData.title,
+            handle: productData.handle,
+            description: productData.description,
+            images:
+              productData.images?.edges?.map((e) => ({
+                src: e.node.src,
+                alt: e.node.altText,
+              })) || [],
+            variants:
+              productData.variants?.edges?.map((e) => ({
+                id: e.node.id,
+                title: e.node.title,
+                price: e.node.price?.amount,
+                available: e.node.availableForSale,
+              })) || [],
+          },
+        };
+      }
+    } catch (e) {
+      console.warn("[FinalForm] ❌ Failed to fetch product:", e);
+    }
+    return null;
+  }
+
   // --- FORM BUILDER ---
   function buildForm(config, productData) {
     const c = config.config || {};
