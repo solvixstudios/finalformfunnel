@@ -287,7 +287,7 @@
     // Step 1: Check cache first
     const cached = getCachedConfig(domain, product);
     if (cached) {
-      console.log("[FinalForm] ✅ CONFIG SOURCE: Cache");
+      console.log("[FinalForm] ✅ CONFIG SOURCE: Cache (hit)");
       return cached;
     }
 
@@ -298,6 +298,10 @@
         sfToken,
       );
       if (productConfig) {
+        console.log(
+          "[FinalForm] 📋 Product Config Loaded:",
+          JSON.stringify(productConfig, null, 2),
+        );
         cacheConfig(domain, product, productConfig);
         return productConfig;
       }
@@ -307,6 +311,10 @@
     if (sfToken) {
       const storeConfig = await fetchStoreMetafieldConfig(sfToken);
       if (storeConfig) {
+        console.log(
+          "[FinalForm] 📋 Store Config Loaded:",
+          JSON.stringify(storeConfig, null, 2),
+        );
         cacheConfig(domain, product, storeConfig);
         return storeConfig;
       }

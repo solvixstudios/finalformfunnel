@@ -58,7 +58,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const body = $('Webhook Start').first().json.body;\nconst rawOwnerId = body.ownerId;\nconst subdomain = body.subdomain;\nconst action = body.action || 'save'; // save, delete\nconst configData = body.data;\nconst metafieldId = body.metafieldId; // We need this for PUT and DELETE\n\n// 1. Determine Scope and Path\nlet resourcePath = '';\nlet scope = 'SHOP';\n\nif (rawOwnerId) {\n  let numericId = String(rawOwnerId);\n  if (numericId.includes('/')) {\n    const parts = numericId.split('/');\n    numericId = parts[parts.length - 1];\n  }\n  \n  if (/^\\d+$/.test(numericId)) {\n    scope = 'PRODUCT';\n    resourcePath = `/products/${numericId}`;\n  }\n}\n\n// 2. Base API URL (2026-01)\nconst baseUrl = `https://${subdomain}.myshopify.com/admin/api/2026-01`;\n\n// 3. Endpoint Logic\n// If we have a metafieldId, the URL must point to that specific resource\nlet metafieldsEndpoint = `${baseUrl}${resourcePath}/metafields.json`;\nif (metafieldId && (action === 'update' || action === 'delete')) {\n    metafieldsEndpoint = `${baseUrl}${resourcePath}/metafields/${metafieldId}.json`;\n}\n\nreturn [{\n  json: {\n    scope,\n    baseUrl,\n    metafieldsEndpoint,\n    action,\n    metafieldId,\n    configString: configData ? JSON.stringify(configData) : null\n  }\n}];"
+        "jsCode": "const body = $('Webhook Start').first().json.body;\nconst rawOwnerId = body.ownerId;\nconst subdomain = body.subdomain;\nconst action = body.action || 'save';\nconst configData = body.data;\nconst metafieldId = body.metafieldId;\n\n// Validate config data for save action\nif (action === 'save' && !configData) {\n  throw new Error('Missing config data in request body');\n}\n\n// 1. Determine Scope and Path\nlet resourcePath = '';\nlet scope = 'SHOP';\n\nif (rawOwnerId) {\n  let numericId = String(rawOwnerId);\n  if (numericId.includes('/')) {\n    const parts = numericId.split('/');\n    numericId = parts[parts.length - 1];\n  }\n  \n  if (/^\\d+$/.test(numericId)) {\n    scope = 'PRODUCT';\n    resourcePath = `/products/${numericId}`;\n  }\n}\n\n// 2. Base API URL (2026-01)\nconst baseUrl = `https://${subdomain}.myshopify.com/admin/api/2026-01`;\n\n// 3. Endpoint Logic\nlet metafieldsEndpoint = `${baseUrl}${resourcePath}/metafields.json`;\nif (metafieldId && (action === 'update' || action === 'delete')) {\n    metafieldsEndpoint = `${baseUrl}${resourcePath}/metafields/${metafieldId}.json`;\n}\n\n// 4. Stringify config properly - ensure it's a valid JSON string\nconst configString = configData ? JSON.stringify(configData) : '';\n\nreturn [{\n  json: {\n    scope,\n    baseUrl,\n    metafieldsEndpoint,\n    action,\n    metafieldId,\n    configString\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -253,7 +253,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"metafield\": {\n    \"id\": {{ $json.metafields[0].id }},\n    \"value\": {{$('Prepare Context').first().json.configString}},\n    \"type\": \"json\"\n  }\n}",
+        "jsonBody": "={\n  \"metafield\": {\n    \"id\": {{ $json.metafields[0].id }},\n    \"value\": \"{{ $('Prepare Context').first().json.configString.replace(/\"/g, '\\\\\"') }}\",\n    \"type\": \"json\"\n  }\n}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -282,7 +282,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"metafield\": {\n    \"namespace\": \"finalform\",\n    \"key\": \"config\",\n    \"value\": \"{\\\"test\\\":\\\"test\\\"}\",\n    \"type\": \"json\"\n  }\n}",
+        "jsonBody": "={\n  \"metafield\": {\n    \"namespace\": \"finalform\",\n    \"key\": \"config\",\n    \"value\": \"{{ $('Prepare Context').first().json.configString.replace(/\"/g, '\\\\\"') }}\",\n    \"type\": \"json\"\n  }\n}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",

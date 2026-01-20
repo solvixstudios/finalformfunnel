@@ -59,6 +59,64 @@
     {
       "parameters": {
         "method": "POST",
+        "url": "=https://{{ $('Receive Enable Request').item.json.body.subdomain }}.myshopify.com/admin/api/2024-01/graphql.json",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Shopify-Access-Token",
+              "value": "={{ $('Get Access Token').item.json.access_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"query\": \"mutation CreateProductMetafieldDef { metafieldDefinitionCreate(definition: { name: \\\"FinalForm Config\\\", namespace: \\\"finalform\\\", key: \\\"config\\\", type: \\\"json\\\", ownerType: PRODUCT, access: { storefront: PUBLIC_READ } }) { createdDefinition { id } userErrors { field message } } }\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [-304, -450],
+      "id": "create-product-metafield-def",
+      "name": "Create Product Metafield Definition",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://{{ $('Receive Enable Request').item.json.body.subdomain }}.myshopify.com/admin/api/2024-01/graphql.json",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Shopify-Access-Token",
+              "value": "={{ $('Get Access Token').item.json.access_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"query\": \"mutation CreateShopMetafieldDef { metafieldDefinitionCreate(definition: { name: \\\"FinalForm Config\\\", namespace: \\\"finalform\\\", key: \\\"config\\\", type: \\\"json\\\", ownerType: SHOP, access: { storefront: PUBLIC_READ } }) { createdDefinition { id } userErrors { field message } } }\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [-64, -450],
+      "id": "create-shop-metafield-def",
+      "name": "Create Shop Metafield Definition",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
         "url": "=https://{{ $('Receive Enable Request').item.json.body.subdomain }}.myshopify.com/admin/api/2024-01/storefront_access_tokens.json",
         "sendHeaders": true,
         "headerParameters": {
@@ -76,7 +134,7 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
-      "position": [-304, -352],
+      "position": [176, -450],
       "id": "1517abbb-1fe4-4126-806e-5e244e593a0e",
       "name": "Create SF Token",
       "onError": "continueErrorOutput"
@@ -101,7 +159,7 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
-      "position": [-64, -352],
+      "position": [416, -450],
       "id": "91a5fa60-6d27-40a1-96f7-bed66ee43ea3",
       "name": "Inject Script Tag",
       "onError": "continueErrorOutput"
@@ -114,7 +172,7 @@
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [176, -448],
+      "position": [656, -450],
       "id": "a01c80ca-edd1-4d09-ab80-620824471dc3",
       "name": "Success Response"
     },
@@ -149,7 +207,7 @@
       "main": [
         [
           {
-            "node": "Create SF Token",
+            "node": "Create Product Metafield Definition",
             "type": "main",
             "index": 0
           }
@@ -157,6 +215,28 @@
         [
           {
             "node": "Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Product Metafield Definition": {
+      "main": [
+        [
+          {
+            "node": "Create Shop Metafield Definition",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Shop Metafield Definition": {
+      "main": [
+        [
+          {
+            "node": "Create SF Token",
             "type": "main",
             "index": 0
           }
