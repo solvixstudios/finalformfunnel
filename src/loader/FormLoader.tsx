@@ -25,7 +25,28 @@ import { usePreviewCalculations } from '@/components/FormTab/preview/hooks/usePr
 import { usePromoCode } from '@/components/FormTab/preview/hooks/usePromoCode';
 import { useStickyObserver } from '@/components/FormTab/preview/hooks/useStickyObserver';
 
-export const FormLoader = ({ config, product, offers, shipping, sectionWrapper }: any) => {
+// Types
+interface Variant {
+    id: number;
+    title: string;
+    option1: string | null;
+    option2: string | null;
+    option3: string | null;
+    price: number | string;
+    featured_image?: { src: string } | null;
+}
+
+interface Product {
+    id: number;
+    title: string;
+    images: string[];
+    variants: Variant[];
+    options: { name: string; values: string[] }[];
+    featuredImage?: { url: string };
+    featured_image?: string;
+}
+
+export const FormLoader = ({ config, product, offers, shipping, sectionWrapper }: { config: any, product: Product, offers: any[], shipping: any, sectionWrapper?: any }) => {
     // --- STATE ---
     const [lang, setLang] = useState<'fr' | 'ar'>(config.header?.defaultLanguage || 'fr');
     // ... (lines 31-177 unchanged)
@@ -37,9 +58,47 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper }
         address: '',
         note: '',
         offerId: offers[0]?.id || '',
-        variant: 'Modèle A', // Default fallback
+        variant: product?.variants?.[0]?.title || '',
+        quantity: 1,
         shippingType: 'home' as 'home' | 'desk',
     });
+
+    const [selectedVariantId, setSelectedVariantId] = useState<number | null>(
+        product?.variants?.[0]?.id || null
+    );
+
+    // Track selected options (e.g. { "Size": "Small", "Color": "Red" })
+    const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>(() => {
+        const initialOptions: Record<string, string> = {};
+        if (product?.options && product.variants?.length > 0) {
+            const firstVariant = product.variants[0];
+            product.options.forEach((opt, index) => {
+                const optKey = `option${index + 1}` as keyof Variant;
+                const val = firstVariant[optKey];
+                if (typeof val === 'string') {
+                    initialOptions[opt.name] = val;
+                }
+            });
+        }
+        return initialOptions;
+    });
+
+    // Update variant ID when options change
+    useEffect(() => {
+        if (!product?.variants || !product.options) return;
+
+        const match = product.variants.find(v => {
+            return product.options.every((opt, index) => {
+                const optKey = `option${index + 1}` as keyof Variant;
+                return v[optKey] === selectedOptions[opt.name];
+            });
+        });
+
+        if (match) {
+            setSelectedVariantId(match.id);
+            setFormData(prev => ({ ...prev, variant: match.title }));
+        }
+    }, [selectedOptions, product]);
     const [showThankYou, setShowThankYou] = useState(false);
 
     // Refs
@@ -74,7 +133,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper }
     // Handle both default Shopify REST API (from .js) and Storefront/GraphQL shapes
     const getProductPrice = () => {
         if (!product) return 2500;
-        const v = product.variants?.[0];
+        const v = product.variants?.find(v => v.id === selectedVariantId) || product.variants?.[0];
         if (!v) return 2500;
 
         // Storefront API shape (price is object { amount, currencyCode })
@@ -100,8 +159,15 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper }
         if (product.featuredImage?.url) return product.featuredImage.url;
         // Fallback arrays
         if (product.images?.[0]) {
-            return typeof product.images[0] === 'string' ? product.images[0] : product.images[0].src;
+            return typeof product.images[0] === 'string' ? product.images[0] : (product.images[0] as any).src;
         }
+
+        // Variant image
+        const currentVariant = product.variants?.find(v => v.id === selectedVariantId);
+        if (currentVariant?.featured_image?.src) {
+            return currentVariant.featured_image.src;
+        }
+
         return undefined;
     };
 
@@ -209,10 +275,51 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper }
         return { ...base, backgroundColor: config.ctaColor };
     };
 
-    const handleFormSubmit = () => {
-        // TODO: Implement actual submission logic (Shopify AJAX API)
-        // For now just show thank you
-        setShowThankYou(true);
+    const handleFormSubmit = async () => {
+        // Final validation
+        if (!selectedVariantId && product?.variants?.length > 0) {
+            console.warn("No variant ID selected (should match options)");
+        }
+
+        const payload = {
+            ...formData,
+            variantId: selectedVariantId, // Use the resolved ID
+            totalPrice: calculations.displayedTotal,
+            currency: 'DZD',
+            productId: product.id,
+            shopName: window.location.hostname
+        };
+
+        console.log('Submitting Order:', payload);
+
+        // Only if we have a valid variant ID
+        if (selectedVariantId) {
+            try {
+                const formBody = new FormData();
+                formBody.append('items[0][id]', selectedVariantId.toString());
+                formBody.append('items[0][quantity]', '1');
+
+                // Add properties
+                Object.entries(payload).forEach(([key, value]) => {
+                    if (key !== 'variantId' && key !== 'quantity' && typeof value === 'string') {
+                        formBody.append(`items[0][properties][${key}]`, value);
+                    }
+                });
+
+                await fetch(window.location.origin + '/cart/add.js', {
+                    method: 'POST',
+                    body: formBody
+                });
+
+                window.location.href = '/checkout';
+
+            } catch (err) {
+                console.error("Cart add failed", err);
+                setShowThankYou(true); // Fallback
+            }
+        } else {
+            setShowThankYou(true);
+        }
     };
 
     // --- RENDER HELPERS ---
@@ -293,8 +400,25 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper }
                                     config={config}
                                     lang={lang}
                                     variants={variants}
+                                    options={product.options}
+                                    selectedOptions={selectedOptions}
+                                    onOptionSelect={(optName, val) => {
+                                        setSelectedOptions(prev => ({
+                                            ...prev,
+                                            [optName]: val
+                                        }));
+                                    }}
+                                    // Legacy fallback
                                     selectedVariant={formData.variant}
-                                    onSelect={(v) => setFormData({ ...formData, variant: v })}
+                                    onSelect={(v) => {
+                                        const varObj = product.variants?.find((pv: any) => pv.title === v);
+                                        if (varObj) {
+                                            setSelectedVariantId(varObj.id);
+                                            setFormData({ ...formData, variant: v });
+                                        } else {
+                                            setFormData({ ...formData, variant: v });
+                                        }
+                                    }}
                                 />,
                                 index
                             );
@@ -546,7 +670,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper }
                 textColor={config.textColor || '#334155'}
                 accentColor={config.accentColor}
                 productTitle={productTitle}
-                productThumbnail={productImage}
+                productImage={productImage}
                 totalPrice={formatCurrency(calculations.displayedTotal)}
             />
         </div>

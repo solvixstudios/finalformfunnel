@@ -25,17 +25,26 @@ interface VariantsSectionProps {
         };
     };
     lang: Language;
-    variants: string[];
-    selectedVariant: string;
-    onSelect: (variant: string) => void;
+    variants?: string[]; // Legacy support (optional)
+    options?: { name: string; values: string[] }[];
+    selectedOptions?: Record<string, string>;
+    onOptionSelect?: (optionName: string, value: string) => void;
+
+    // Legacy props (kept for potential backward compatibility or simple lists)
+    selectedVariant?: string;
+    onSelect?: (variant: string) => void;
+
     marginStyle?: React.CSSProperties;
 }
 
 export const VariantsSection: React.FC<VariantsSectionProps> = ({
     config,
     lang,
-    variants,
+    variants = [],
+    options = [],
+    selectedOptions = {},
     selectedVariant,
+    onOptionSelect,
     onSelect,
     marginStyle,
 }) => {
@@ -44,126 +53,45 @@ export const VariantsSection: React.FC<VariantsSectionProps> = ({
 
     const style = config.variantStyle || 'buttons';
 
-    return (
-        <div style={marginStyle}>
-            {config.sectionSettings?.variants?.showTitle !== false && (
-                <SectionLabel accentColor={config.accentColor}>{txt('variants')}</SectionLabel>
-            )}
+    // Helper to render a single option group
+    const renderOptionGroup = (optionName: string, values: string[]) => (
+        <div key={optionName} className="mb-4 last:mb-0">
+            <h4 className="text-xs font-bold mb-2 ml-1 opacity-80" style={{ color: config.textColor }}>
+                {optionName}
+            </h4>
 
-            {/* Buttons style */}
-            {style === 'buttons' && (
-                <div className="flex gap-2 overflow-x-auto overflow-y-visible pt-3 pb-1 scrollbar-hide -mx-1 px-1">
-                    {variants.map((v, i) => {
-                        const isSelected = selectedVariant === v;
-                        return (
-                            <button
-                                key={i}
-                                onClick={() => onSelect(v)}
-                                className={`relative px-5 py-3 whitespace-nowrap text-xs font-bold transition-all duration-200 flex items-center gap-2 ${isSelected ? 'text-white shadow-lg' : 'border-2'
-                                    }`}
-                                style={{
-                                    borderRadius: config.borderRadius,
-                                    backgroundColor: isSelected ? config.accentColor : (config.formBackground || '#ffffff'),
-                                    borderColor: isSelected ? config.accentColor : (config.inputBorderColor || '#e2e8f0'),
-                                    color: isSelected ? '#ffffff' : (config.textColor || '#475569'),
-                                    boxShadow: isSelected ? `0 8px 20px -4px ${config.accentColor}50` : undefined,
-                                }}
-                            >
-                                <div
-                                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${isSelected ? 'border-white bg-white/20' : ''
-                                        }`}
-                                    style={{
-                                        borderColor: isSelected ? undefined : config.inputBorderColor || '#e2e8f0',
-                                    }}
-                                >
-                                    {isSelected && <Check size={10} strokeWidth={4} className="text-white" />}
-                                </div>
-                                {v}
-                            </button>
-                        );
-                    })}
-                </div>
-            )}
-
-            {/* Cards style */}
-            {style === 'cards' && (
-                <div className="space-y-2">
-                    {variants.map((v, i) => {
-                        const isSelected = selectedVariant === v;
-                        return (
-                            <button
-                                key={i}
-                                onClick={() => onSelect(v)}
-                                className={`relative w-full p-4 border-2 flex items-center gap-4 transition-all duration-200 ${isSelected ? 'text-white shadow-lg' : ''
-                                    }`}
-                                style={{
-                                    borderRadius: config.borderRadius,
-                                    backgroundColor: isSelected ? config.accentColor : (config.formBackground || '#ffffff'),
-                                    borderColor: isSelected ? config.accentColor : (config.inputBorderColor || '#e2e8f0'),
-                                    color: isSelected ? '#ffffff' : (config.textColor || '#475569'),
-                                    boxShadow: isSelected ? `0 8px 20px -4px ${config.accentColor}50` : undefined,
-                                }}
-                            >
-                                <div
-                                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${isSelected ? 'border-white bg-white/20' : ''
-                                        }`}
-                                    style={{ borderColor: isSelected ? undefined : (config.inputBorderColor || '#e2e8f0') }}
-                                >
-                                    {isSelected && <Check size={10} strokeWidth={4} className="text-white" />}
-                                </div>
-                                <div
-                                    className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg font-black ${isSelected ? 'bg-white/20 text-white' : ''
-                                        }`}
-                                    style={{
-                                        backgroundColor: isSelected ? undefined : `${config.accentColor}10`,
-                                        color: isSelected ? undefined : (config.textColor || '#94a3b8'),
-                                    }}
-                                >
-                                    {String.fromCharCode(65 + i)}
-                                </div>
-                                <span
-                                    className="text-sm font-bold"
-                                    style={{ color: isSelected ? '#ffffff' : (config.textColor || '#334155') }}
-                                >
-                                    {v}
-                                </span>
-                            </button>
-                        );
-                    })}
-                </div>
-            )}
-
-            {/* Pills style */}
-            {style === 'pills' && (
+            {/* BUTTONS / PILLS STYLE */}
+            {(style === 'buttons' || style === 'pills') && (
                 <div className="flex flex-wrap gap-2">
-                    {variants.map((v, i) => {
-                        const isSelected = selectedVariant === v;
+                    {values.map((val) => {
+                        const isSelected = selectedOptions[optionName] === val;
                         return (
                             <button
-                                key={i}
-                                onClick={() => onSelect(v)}
-                                className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${isSelected ? 'text-white shadow-lg' : 'border-2'
-                                    }`}
+                                key={val}
+                                onClick={() => onOptionSelect?.(optionName, val)}
+                                className={`px-4 py-2 text-xs font-bold transition-all duration-200 border-2 ${style === 'pills' ? 'rounded-full' : 'rounded-lg'
+                                    } ${isSelected ? 'text-white shadow-md' : ''}`}
                                 style={{
+                                    borderRadius: style === 'pills' ? '9999px' : config.borderRadius,
                                     backgroundColor: isSelected ? config.accentColor : 'transparent',
-                                    borderColor: config.inputBorderColor || '#e2e8f0',
+                                    borderColor: isSelected ? config.accentColor : (config.inputBorderColor || '#e2e8f0'),
                                     color: isSelected ? '#ffffff' : (config.textColor || '#475569'),
                                 }}
                             >
-                                {v}
+                                {val}
                             </button>
                         );
                     })}
                 </div>
             )}
 
-            {/* Dropdown style */}
+            {/* DROPDOWN STYLE */}
             {style === 'dropdown' && (
                 <div className="relative">
                     <select
-                        value={selectedVariant}
-                        onChange={(e) => onSelect(e.target.value)}
-                        className="w-full px-4 py-3.5 text-sm font-semibold border-2 outline-none appearance-none cursor-pointer"
+                        value={selectedOptions[optionName]}
+                        onChange={(e) => onOptionSelect?.(optionName, e.target.value)}
+                        className="w-full px-4 py-3 text-sm font-semibold border-2 outline-none appearance-none cursor-pointer"
                         style={{
                             borderRadius: config.borderRadius,
                             backgroundColor: config.formBackground || '#ffffff',
@@ -171,9 +99,9 @@ export const VariantsSection: React.FC<VariantsSectionProps> = ({
                             color: config.textColor || '#1e293b',
                         }}
                     >
-                        {variants.map((v, i) => (
-                            <option key={i} value={v}>
-                                {v}
+                        {values.map((val) => (
+                            <option key={val} value={val}>
+                                {val}
                             </option>
                         ))}
                     </select>
@@ -184,6 +112,49 @@ export const VariantsSection: React.FC<VariantsSectionProps> = ({
                     />
                 </div>
             )}
+        </div>
+    );
+
+    // Legacy Render (Simple List) - Fallback if no options structure provided
+    const renderSimpleList = () => (
+        <div className="flex flex-wrap gap-2">
+            {variants.map((v, i) => {
+                const isSelected = selectedVariant === v;
+                return (
+                    <button
+                        key={i}
+                        onClick={() => onSelect?.(v)}
+                        className={`px-4 py-3 text-xs font-bold transition-all duration-200 border-2 rounded-lg flex items-center gap-2 ${isSelected ? 'text-white shadow-md' : ''
+                            }`}
+                        style={{
+                            borderRadius: config.borderRadius,
+                            backgroundColor: isSelected ? config.accentColor : (config.formBackground || '#ffffff'),
+                            borderColor: isSelected ? config.accentColor : (config.inputBorderColor || '#e2e8f0'),
+                            color: isSelected ? '#ffffff' : (config.textColor || '#475569'),
+                        }}
+                    >
+                        {isSelected && <Check size={12} strokeWidth={4} className="text-white" />}
+                        {v}
+                    </button>
+                );
+            })}
+        </div>
+    );
+
+    const hasOptions = options.length > 0;
+
+    return (
+        <div style={marginStyle}>
+            {config.sectionSettings?.variants?.showTitle !== false && (
+                <SectionLabel accentColor={config.accentColor}>{txt('variants')}</SectionLabel>
+            )}
+
+            <div className="space-y-4">
+                {hasOptions
+                    ? options.map(opt => renderOptionGroup(opt.name, opt.values))
+                    : renderSimpleList()
+                }
+            </div>
         </div>
     );
 };

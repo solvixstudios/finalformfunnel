@@ -11,13 +11,25 @@ const CONTAINER_ID = 'finalform-container';
  */
 async function fetchShopifyProduct() {
     try {
-        // Try getting from global objects first
-        if ((window as any).meta?.product) return (window as any).meta.product;
+        // 1. Try getting from global objects first (fastest), BUT ensure it has key data
+        const metaProduct = (window as any).meta?.product;
+        if (metaProduct && metaProduct.id && metaProduct.title) {
+            console.log('FinalForm: Found complete product in window.meta');
+            return metaProduct;
+        } else if (metaProduct) {
+            console.log('FinalForm: window.meta.product found but incomplete (missing title). Fetching full data...');
+        }
 
-        // Fallback to fetching .js
+        // 2. Fallback to fetching .js
         if (window.location.pathname.includes('/products/')) {
+            console.log('FinalForm: Fetching product.js...');
             const res = await fetch(window.location.pathname + '.js');
-            if (res.ok) return await res.json();
+            if (res.ok) {
+                const data = await res.json();
+                console.log('FinalForm: Raw product data', data);
+                // Shopify .js API usually returns { product: { ... } } or just { ... } depending on endpoint
+                return data.product || data;
+            }
         }
     } catch (e) {
         console.warn('FinalForm: Product fetch failed', e);
@@ -29,7 +41,8 @@ async function fetchShopifyProduct() {
  * Initialize the loader
  */
 async function initLoader() {
-    console.log('FinalForm: Initializing...');
+    const version = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'unknown';
+    console.log(`FinalForm: Initializing v${version}...`);
 
     // 1. Helper to parse script params
     const getScriptParams = () => {
@@ -52,6 +65,16 @@ async function initLoader() {
     const shop = params.shop || window.location.hostname;
     const sfToken = params.sf_token;
 
+    // 1.5. Inject Tailwind CDN (Fix for styling issues)
+    const tailwindId = 'finalform-tailwind';
+    if (!document.getElementById(tailwindId)) {
+        const script = document.createElement('script');
+        script.id = tailwindId;
+        script.src = 'https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4';
+        document.head.appendChild(script);
+        console.log('FinalForm: Injected Tailwind CDN');
+    }
+
     // 2. Inject CSS
     // We derive the CSS URL from the script source to ensure version/environment alignment
     const cssId = 'finalform-css';
@@ -73,7 +96,11 @@ async function initLoader() {
         link.id = cssId;
         link.rel = 'stylesheet';
         link.type = 'text/css';
-        link.href = basePath + 'finalform-loader.css';
+
+        // Cache bust with version
+        const version = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : Date.now();
+        link.href = basePath + 'finalform-loader.css?v=' + version;
+
         document.head.appendChild(link);
         console.log('FinalForm: Injected CSS from', link.href);
     }
@@ -101,6 +128,8 @@ async function initLoader() {
         getFormConfig(shop, productId, productHandle),
         fetchShopifyProduct()
     ]);
+
+    console.log('FinalForm: Resolved Data', { config: configRes, product: productData });
 
     if ('error' in configRes) {
         console.error('FinalForm: Config load failed', configRes.error);

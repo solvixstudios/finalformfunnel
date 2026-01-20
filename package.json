@@ -1,12 +1,13 @@
 {
   "name": "vite_react_shadcn_ts",
   "private": true,
-  "version": "3.0.0",
+  "version": "1.0.6",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build && npm run build:loader",
-    "build:loader": "vite build --config vite.loader.config.ts && node scripts/build-loader.js",
+    "build:loader": "node scripts/bump-version.js && vite build --config vite.loader.config.ts && node scripts/build-loader.js",
+    "deploy:loader": "npm run build:loader && firebase deploy --only hosting",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview"

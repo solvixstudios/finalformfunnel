@@ -84,14 +84,18 @@ export const StickyCTA: React.FC<StickyCTAProps> = ({
                         {/* Product Info (Left) */}
                         <div className="flex items-center gap-3 flex-1 min-w-0">
                             <div
-                                className="w-14 h-14 rounded-xl flex-shrink-0 flex items-center justify-center border-2 shadow-md transition-transform hover:scale-105"
+                                className="w-14 h-14 rounded-xl flex-shrink-0 flex items-center justify-center border-2 shadow-md transition-transform hover:scale-105 overflow-hidden bg-white"
                                 style={{
                                     backgroundColor: `${accentColor}18`,
                                     borderColor: `${accentColor}40`,
                                     color: accentColor,
                                 }}
                             >
-                                <Package size={24} strokeWidth={2.5} />
+                                {productImage ? (
+                                    <img src={productImage} alt={productTitle} className="w-full h-full object-cover" />
+                                ) : (
+                                    <Package size={24} strokeWidth={2.5} />
+                                )}
                             </div>
                             <div className="flex flex-col min-w-0">
                                 <span className="text-xs font-bold truncate leading-tight mb-0.5" style={{ color: textColor }}>
