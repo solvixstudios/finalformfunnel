@@ -96,7 +96,9 @@ export async function enableLoader(
     throw new Error("Failed to enable loader");
   }
 
-  return response.json();
+  const data = await response.json();
+  // Handle array response from n8n (e.g. [{ success: true }])
+  return Array.isArray(data) ? data[0] : data;
 }
 
 export async function disableLoader(
@@ -117,7 +119,9 @@ export async function disableLoader(
     throw new Error("Failed to disable loader");
   }
 
-  return response.json();
+  const data = await response.json();
+  // Handle array response from n8n (e.g. [{ success: true }])
+  return Array.isArray(data) ? data[0] : data;
 }
 
 export async function assignFormToShopify(
