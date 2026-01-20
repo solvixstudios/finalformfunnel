@@ -70,6 +70,45 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper }
         containerRef: formContainerRef,
     });
 
+    // --- PRODUCT DATA HELPERS ---
+    // Handle both default Shopify REST API (from .js) and Storefront/GraphQL shapes
+    const getProductPrice = () => {
+        if (!product) return 2500;
+        const v = product.variants?.[0];
+        if (!v) return 2500;
+
+        // Storefront API shape (price is object { amount, currencyCode })
+        if (v.price && typeof v.price === 'object' && 'amount' in v.price) {
+            return parseFloat(v.price.amount) * 100;
+        }
+        // REST API shape (price is number in cents)
+        if (v.price && typeof v.price === 'number') {
+            return v.price;
+        }
+        // REST API shape (string representation)
+        if (v.price && typeof v.price === 'string') {
+            return parseFloat(v.price) * 100;
+        }
+        return 2500;
+    };
+
+    const getProductImage = () => {
+        if (!product) return undefined;
+        // REST API
+        if (product.featured_image) return product.featured_image;
+        // Storefront API
+        if (product.featuredImage?.url) return product.featuredImage.url;
+        // Fallback arrays
+        if (product.images?.[0]) {
+            return typeof product.images[0] === 'string' ? product.images[0] : product.images[0].src;
+        }
+        return undefined;
+    };
+
+    const basePrice = getProductPrice();
+    const productTitle = product?.title || 'Produit Demo';
+    const productImage = getProductImage();
+
     const calculations = usePreviewCalculations({
         offers: offers as any,
         selectedOfferId: formData.offerId,
@@ -78,7 +117,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper }
         shippingType: formData.shippingType,
         appliedPromoCode,
         hideShippingInSummary: config.hideShippingInSummary || false,
-        basePricePerUnit: product?.variants?.[0]?.price?.amount || 2500,
+        basePricePerUnit: basePrice,
     });
 
     // --- EFFECTS ---
@@ -228,7 +267,9 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper }
                             lang={lang}
                             onLanguageToggle={() => setLang(l => l === 'fr' ? 'ar' : 'fr')}
                             formatCurrency={formatCurrency}
-                            basePrice={2500}
+                            basePrice={basePrice}
+                            productTitle={productTitle}
+                            productImage={productImage}
                         />
                     );
 
@@ -381,7 +422,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper }
                                     selectedOfferId={formData.offerId}
                                     onSelect={(id) => setFormData({ ...formData, offerId: id })}
                                     formatCurrency={formatCurrency}
-                                    basePrice={2500}
+                                    basePrice={basePrice}
                                 />,
                                 index
                             );
@@ -504,7 +545,8 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper }
                 borderColor={config.inputBorderColor || '#e2e8f0'}
                 textColor={config.textColor || '#334155'}
                 accentColor={config.accentColor}
-                productTitle={offers.find((o: any) => o.id === formData.offerId)?.title?.[lang]}
+                productTitle={productTitle}
+                productThumbnail={productImage}
                 totalPrice={formatCurrency(calculations.displayedTotal)}
             />
         </div>
