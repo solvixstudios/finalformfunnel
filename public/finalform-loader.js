@@ -1,5 +1,5 @@
 /**
- * Final Form Loader v2.0
+ * Final Form Loader v2.2
  *
  * A lightweight script that renders forms identical to the app's FormPreview.
  * Reads config from API and applies all styling, fields, and logic.
@@ -9,6 +9,14 @@
 (function () {
   "use strict";
 
+  // Prevent duplicate initialization
+  if (window.__FINALFORM_INITIALIZED__) {
+    console.log("[FinalForm] ⚠️ Already initialized, skipping...");
+    return;
+  }
+  window.__FINALFORM_INITIALIZED__ = true;
+
+  const LOADER_VERSION = "2.2.0";
   const ORDER_API = "https://finalform.app.n8n.cloud/webhook/order/submit";
   const CACHE_KEY = "ff_config";
   const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
@@ -1227,7 +1235,12 @@
       }
     }
 
-    const shadow = container.attachShadow({ mode: "open" });
+    // Check if shadow root already exists (prevents re-attach error)
+    let shadow = container.shadowRoot;
+    if (!shadow) {
+      shadow = container.attachShadow({ mode: "open" });
+    }
+
     shadow.innerHTML = `<style>${getStyles(config)}</style>${buildForm(
       config,
       productData,
@@ -1237,7 +1250,9 @@
 
   // --- INIT ---
   async function init() {
-    console.log("[FinalForm] 🚀 Initializing v2.1 (Metafield-only mode)...");
+    console.log(
+      `[FinalForm] 🚀 Initializing v${LOADER_VERSION} (Metafield-only mode)...`,
+    );
 
     const domain = getShopDomain();
     const product = getProductContext();
