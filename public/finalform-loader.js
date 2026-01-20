@@ -18,8 +18,6 @@
 
   const LOADER_VERSION = "2.2.0";
   const ORDER_API = "https://finalform.app.n8n.cloud/webhook/order/submit";
-  const CACHE_KEY = "ff_config";
-  const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
   // Default config used when no metafield config exists
   const DEFAULT_CONFIG = {
@@ -272,7 +270,7 @@
 
   /**
    * Main config fetching function
-   * Priority: 1) Cache -> 2) Product Metafield -> 3) Store Metafield -> 4) Default Config
+   * Priority: 1) Product Metafield -> 2) Store Metafield -> 3) Default Config
    * NO n8n fallback - purely metafield-based
    */
   async function fetchConfig(domain, product, sfToken) {
@@ -284,14 +282,7 @@
       sfToken ? "✓ Present" : "✗ Missing",
     );
 
-    // Step 1: Check cache first
-    const cached = getCachedConfig(domain, product);
-    if (cached) {
-      console.log("[FinalForm] ✅ CONFIG SOURCE: Cache (hit)");
-      return cached;
-    }
-
-    // Step 2: Try product-level metafield (if on a product page)
+    // Step 1: Try product-level metafield (if on a product page)
     if (sfToken && product?.handle) {
       const productConfig = await fetchProductMetafieldConfig(
         product.handle,
@@ -302,12 +293,11 @@
           "[FinalForm] 📋 Product Config Loaded:",
           JSON.stringify(productConfig, null, 2),
         );
-        cacheConfig(domain, product, productConfig);
         return productConfig;
       }
     }
 
-    // Step 3: Try store-level metafield (fallback for all products)
+    // Step 2: Try store-level metafield (fallback for all products)
     if (sfToken) {
       const storeConfig = await fetchStoreMetafieldConfig(sfToken);
       if (storeConfig) {
@@ -315,12 +305,11 @@
           "[FinalForm] 📋 Store Config Loaded:",
           JSON.stringify(storeConfig, null, 2),
         );
-        cacheConfig(domain, product, storeConfig);
         return storeConfig;
       }
     }
 
-    // Step 4: Use default config (no external API calls)
+    // Step 3: Use default config (no external API calls)
     console.log(
       "[FinalForm] ✅ CONFIG SOURCE: Default Config (no metafields found)",
     );
@@ -330,32 +319,7 @@
 
     // Return a copy of default config to avoid mutations
     const defaultCopy = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
-    cacheConfig(domain, product, defaultCopy);
     return defaultCopy;
-  }
-
-  function getCacheKey(domain, product) {
-    return `${CACHE_KEY}_${domain}_${product?.id || product?.handle || "store"}`;
-  }
-
-  function getCachedConfig(domain, product) {
-    try {
-      const raw = sessionStorage.getItem(getCacheKey(domain, product));
-      if (!raw) return null;
-      const { data, ts } = JSON.parse(raw);
-      return Date.now() - ts < CACHE_TTL ? data : null;
-    } catch {
-      return null;
-    }
-  }
-
-  function cacheConfig(domain, product, data) {
-    try {
-      sessionStorage.setItem(
-        getCacheKey(domain, product),
-        JSON.stringify({ data, ts: Date.now() }),
-      );
-    } catch {}
   }
 
   function formatCurrency(amount, lang = "fr") {
@@ -1304,7 +1268,28 @@
     });
 
     render(config, productData);
+    injectGlobalStyles();
     console.log("[FinalForm] Rendered successfully");
+  }
+
+  function injectGlobalStyles() {
+    const styleId = "finalform-global-styles";
+    if (document.getElementById(styleId)) return;
+
+    const style = document.createElement("style");
+    style.id = styleId;
+    style.textContent = `
+      .product-info__rating,
+      .product-info__title,
+      .product-info__price,
+      .product-info__inventory,
+      .product-info__variant-picker,
+      #easysell {
+        display: none !important;
+      }
+    `;
+    document.head.appendChild(style);
+    console.log("[FinalForm] Injected global styles to hide theme elements");
   }
 
   if (document.readyState === "loading") {

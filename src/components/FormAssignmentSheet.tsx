@@ -158,7 +158,12 @@ export function FormAssignmentSheet({
                         selectedStore.clientId,
                         selectedStore.clientSecret,
                         selectedForm.config,
-                        undefined // No ownerId means Shop Level
+                        undefined, // No ownerId means Shop Level
+                        {
+                            formId: selectedFormId,
+                            assignmentType: 'shop',
+                            storeId: selectedStoreId,
+                        }
                     ).catch(err => {
                         console.error('Failed to sync to Shopify:', err);
                         toast.error('Saved to app but failed to sync to Shopify');
@@ -201,21 +206,28 @@ export function FormAssignmentSheet({
                     toast.warning('Saved locally but missing store credentials for Shopify sync');
                 } else if (selectedForm?.config) {
                     const subdomain = selectedStore.url.replace('.myshopify.com', '').replace(/https?:\/\//, '');
-                    console.log('[FormAssignment] Calling master-sync for products:', subdomain, productIdList);
-                    try {
-                        await Promise.all(productIdList.map(pid =>
-                            assignFormToShopify(
-                                subdomain,
-                                selectedStore.clientId!,
-                                selectedStore.clientSecret!,
-                                selectedForm.config,
-                                pid // Passing Product ID (numeric)
-                            )
-                        ));
-                    } catch (err) {
-                        console.error('Failed to sync to Shopify products:', err);
-                        toast.error('Saved to app but failed to sync to some products');
-                    }
+                    console.log(`[FormAssignment] Syncing ${productIdList.length} products to Shopify...`);
+
+                    // Sync each product in parallel
+                    await Promise.all(productIdList.map(pid =>
+                        assignFormToShopify(
+                            subdomain,
+                            selectedStore.clientId!,
+                            selectedStore.clientSecret!,
+                            selectedForm.config,
+                            pid, // Passing Product ID (numeric)
+                            {
+                                formId: selectedFormId,
+                                assignmentType: 'product',
+                                storeId: selectedStoreId,
+                                productId: pid,
+                            }
+                        ).catch(err => {
+                            console.error(`Failed to sync product ${pid}:`, err);
+                            // Don't toast for every failure to avoid spam, maybe just log
+                        })
+                    ));
+                    toast.success('Synced assignments to Shopify!');
                 }
 
                 toast.success(`Form assigned to ${selectedProductIds.length} product(s)!`);

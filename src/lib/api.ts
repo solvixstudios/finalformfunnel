@@ -130,13 +130,22 @@ export async function assignFormToShopify(
   clientSecret: string,
   formConfig: any,
   ownerId?: string,
+  context?: {
+    formId?: string;
+    assignmentType?: string;
+    storeId?: string;
+    productId?: string;
+  },
 ) {
+  // Merge context into formConfig so it's saved in the metafield
+  const data = { ...formConfig, ...context };
+
   const payload: any = {
     subdomain,
     clientId,
     clientSecret,
     action: "save",
-    data: formConfig,
+    data,
   };
 
   if (ownerId) {
@@ -156,10 +165,10 @@ export async function assignFormToShopify(
     },
   );
 
-  const data = await response.json().catch(() => ({}));
+  const responseData = await response.json().catch(() => ({}));
 
   // Handle array response from n8n
-  const result = Array.isArray(data) ? data[0] : data;
+  const result = Array.isArray(responseData) ? responseData[0] : responseData;
 
   // Check for errors in response body (not just HTTP status)
   if (!response.ok || result.error || result.success === false) {
