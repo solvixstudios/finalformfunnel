@@ -139,8 +139,20 @@ export function FormAssignmentSheet({
                 });
 
                 // Sync to Shopify Metafield (Shop Level)
-                if (selectedForm?.config && selectedStore?.clientId && selectedStore?.clientSecret) {
+                console.log('[FormAssignment] Store sync check:', {
+                    hasConfig: !!selectedForm?.config,
+                    hasClientId: !!selectedStore?.clientId,
+                    hasClientSecret: !!selectedStore?.clientSecret,
+                    storeId: selectedStore?.id,
+                    storeName: selectedStore?.name,
+                });
+
+                if (!selectedStore?.clientId || !selectedStore?.clientSecret) {
+                    console.warn('[FormAssignment] Missing clientId or clientSecret - master-sync will NOT be called!');
+                    toast.warning('Saved locally but missing store credentials for Shopify sync');
+                } else if (selectedForm?.config) {
                     const subdomain = selectedStore.url.replace('.myshopify.com', '').replace(/https?:\/\//, '');
+                    console.log('[FormAssignment] Calling master-sync for store:', subdomain);
                     await assignFormToShopify(
                         subdomain,
                         selectedStore.clientId,
@@ -176,8 +188,20 @@ export function FormAssignmentSheet({
                 }
 
                 // Sync to Shopify Metafields (in parallel for speed)
-                if (selectedForm?.config && selectedStore?.clientId && selectedStore?.clientSecret) {
+                console.log('[FormAssignment] Product sync check:', {
+                    hasConfig: !!selectedForm?.config,
+                    hasClientId: !!selectedStore?.clientId,
+                    hasClientSecret: !!selectedStore?.clientSecret,
+                    productCount: productIdList.length,
+                    storeId: selectedStore?.id,
+                });
+
+                if (!selectedStore?.clientId || !selectedStore?.clientSecret) {
+                    console.warn('[FormAssignment] Missing clientId or clientSecret - master-sync will NOT be called for products!');
+                    toast.warning('Saved locally but missing store credentials for Shopify sync');
+                } else if (selectedForm?.config) {
                     const subdomain = selectedStore.url.replace('.myshopify.com', '').replace(/https?:\/\//, '');
+                    console.log('[FormAssignment] Calling master-sync for products:', subdomain, productIdList);
                     try {
                         await Promise.all(productIdList.map(pid =>
                             assignFormToShopify(
