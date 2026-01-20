@@ -74,8 +74,10 @@ async function postProcessLoader() {
   // 3. Write output files to DIST
   console.log("\n📦 Writing output files to dist/...");
 
-  writeFileSync(join(DIST, "finalform-loader.js"), obfuscatedCode);
-  console.log(`   ✅ dist/finalform-loader.js (${obfuscatedCode.length} bytes)`);
+  writeFileSync(join(DIST, "finalform-loader.prod.js"), obfuscatedCode);
+  console.log(
+    `   ✅ dist/finalform-loader.prod.js (${obfuscatedCode.length} bytes)`,
+  );
 
   // Copy CSS to dist as well
   try {

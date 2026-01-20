@@ -25,9 +25,10 @@ import { usePreviewCalculations } from '@/components/FormTab/preview/hooks/usePr
 import { usePromoCode } from '@/components/FormTab/preview/hooks/usePromoCode';
 import { useStickyObserver } from '@/components/FormTab/preview/hooks/useStickyObserver';
 
-export const FormLoader = ({ config, product, offers, shipping }: any) => {
+export const FormLoader = ({ config, product, offers, shipping, sectionWrapper }: any) => {
     // --- STATE ---
     const [lang, setLang] = useState<'fr' | 'ar'>(config.header?.defaultLanguage || 'fr');
+    // ... (lines 31-177 unchanged)
     const [formData, setFormData] = useState({
         name: '',
         phone: '',
@@ -175,6 +176,26 @@ export const FormLoader = ({ config, product, offers, shipping }: any) => {
         setShowThankYou(true);
     };
 
+    // --- RENDER HELPERS ---
+    const renderSectionBlock = (sectionId: string, content: React.ReactNode, index: number, ref?: React.RefObject<HTMLDivElement>) => {
+        const style = getSectionMarginStyle(index === 0);
+
+        if (sectionWrapper) {
+            return sectionWrapper({
+                sectionId,
+                children: content,
+                style,
+                elementRef: ref
+            });
+        }
+
+        return (
+            <div key={sectionId} style={style} ref={ref}>
+                {content}
+            </div>
+        );
+    };
+
     // --- RENDER ---
     return (
         <div
@@ -200,258 +221,270 @@ export const FormLoader = ({ config, product, offers, shipping }: any) => {
 
             <div className="flex-1 overflow-y-auto custom-scroll relative" ref={formContainerRef}>
                 {/* Header Section */}
-                <HeaderSection
-                    config={config}
-                    lang={lang}
-                    onLanguageToggle={() => setLang(l => l === 'fr' ? 'ar' : 'fr')}
-                    formatCurrency={formatCurrency}
-                    basePrice={2500}
-                />
+                {(() => {
+                    const headerContent = (
+                        <HeaderSection
+                            config={config}
+                            lang={lang}
+                            onLanguageToggle={() => setLang(l => l === 'fr' ? 'ar' : 'fr')}
+                            formatCurrency={formatCurrency}
+                            basePrice={2500}
+                        />
+                    );
+
+                    if (sectionWrapper) {
+                        return sectionWrapper({
+                            sectionId: 'header',
+                            children: headerContent,
+                            style: {}, // Header usually has no margin
+                        });
+                    }
+                    return headerContent;
+                })()}
 
                 <div className="p-5">
                     {config.sectionOrder.map((sectionId: string, index: number) => {
-                        const marginStyle = getSectionMarginStyle(index === 0);
-
                         // Variants
                         if (sectionId === 'variants') {
-                            return (
-                                <div key={sectionId} style={marginStyle}>
-                                    <VariantsSection
-                                        config={config}
-                                        lang={lang}
-                                        variants={variants}
-                                        selectedVariant={formData.variant}
-                                        onSelect={(v) => setFormData({ ...formData, variant: v })}
-                                    />
-                                </div>
+                            return renderSectionBlock(
+                                sectionId,
+                                <VariantsSection
+                                    config={config}
+                                    lang={lang}
+                                    variants={variants}
+                                    selectedVariant={formData.variant}
+                                    onSelect={(v) => setFormData({ ...formData, variant: v })}
+                                />,
+                                index
                             );
                         }
 
                         // Shipping Form Fields
                         if (sectionId === 'shipping') {
-                            return (
-                                <div key={sectionId} style={marginStyle}>
-                                    <div className="space-y-4">
-                                        {config.sectionSettings?.shipping?.showTitle && (
-                                            <SectionLabel accentColor={config.accentColor}>{txt('shipping')}</SectionLabel>
-                                        )}
-                                        <div>
-                                            {sortedFields.map(([key, field]: any) => {
-                                                if (key === 'location_block') {
-                                                    return (
-                                                        <div key="location_block">
-                                                            {(isSingleDropdown || isDoubleDropdown) && (
-                                                                <div className={showLocationSideBySide ? 'grid grid-cols-2 gap-3' : 'space-y-0'} style={{ marginBottom: `${inputSpacing}px` }}>
+                            return renderSectionBlock(
+                                sectionId,
+                                <div className="space-y-4">
+                                    {config.sectionSettings?.shipping?.showTitle && (
+                                        <SectionLabel accentColor={config.accentColor}>{txt('shipping')}</SectionLabel>
+                                    )}
+                                    <div>
+                                        {sortedFields.map(([key, field]: any) => {
+                                            if (key === 'location_block') {
+                                                return (
+                                                    <div key="location_block">
+                                                        {(isSingleDropdown || isDoubleDropdown) && (
+                                                            <div className={showLocationSideBySide ? 'grid grid-cols-2 gap-3' : 'space-y-0'} style={{ marginBottom: `${inputSpacing}px` }}>
+                                                                <div className="relative">
+                                                                    <select
+                                                                        value={formData.wilaya}
+                                                                        onChange={(e) => setFormData({ ...formData, wilaya: e.target.value, commune: '' })}
+                                                                        className={`${svxInputClass} appearance-none cursor-pointer`}
+                                                                        style={{ ...inputStyle, marginBottom: showLocationSideBySide ? 0 : inputSpacing }}
+                                                                    >
+                                                                        <option value="">{getFieldTxt('wilaya') + (config.fields.wilaya?.required ? ' *' : '')}</option>
+                                                                        {WILAYAS.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                                                                    </select>
+                                                                    <ChevronDown className={`absolute ${lang === 'ar' ? 'left-4' : 'right-4'} top-4 pointer-events-none`} color={config.inputPlaceholderColor || '#94a3b8'} size={16} />
+                                                                </div>
+                                                                {isDoubleDropdown && config.fields.commune?.visible && (
                                                                     <div className="relative">
                                                                         <select
-                                                                            value={formData.wilaya}
-                                                                            onChange={(e) => setFormData({ ...formData, wilaya: e.target.value, commune: '' })}
                                                                             className={`${svxInputClass} appearance-none cursor-pointer`}
-                                                                            style={{ ...inputStyle, marginBottom: showLocationSideBySide ? 0 : inputSpacing }}
+                                                                            style={{ ...inputStyle, marginBottom: 0 }}
+                                                                            disabled={!formData.wilaya}
                                                                         >
-                                                                            <option value="">{getFieldTxt('wilaya') + (config.fields.wilaya?.required ? ' *' : '')}</option>
-                                                                            {WILAYAS.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                                                                            <option>{getFieldTxt('commune') + (config.fields.commune?.required ? ' *' : '')}</option>
+                                                                            {formData.wilaya && <option>Centre Ville</option>}
                                                                         </select>
                                                                         <ChevronDown className={`absolute ${lang === 'ar' ? 'left-4' : 'right-4'} top-4 pointer-events-none`} color={config.inputPlaceholderColor || '#94a3b8'} size={16} />
                                                                     </div>
-                                                                    {isDoubleDropdown && config.fields.commune?.visible && (
-                                                                        <div className="relative">
-                                                                            <select
-                                                                                className={`${svxInputClass} appearance-none cursor-pointer`}
-                                                                                style={{ ...inputStyle, marginBottom: 0 }}
-                                                                                disabled={!formData.wilaya}
-                                                                            >
-                                                                                <option>{getFieldTxt('commune') + (config.fields.commune?.required ? ' *' : '')}</option>
-                                                                                {formData.wilaya && <option>Centre Ville</option>}
-                                                                            </select>
-                                                                            <ChevronDown className={`absolute ${lang === 'ar' ? 'left-4' : 'right-4'} top-4 pointer-events-none`} color={config.inputPlaceholderColor || '#94a3b8'} size={16} />
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            )}
-                                                            {isFreeText && config.fields.address?.visible !== false && (
-                                                                <input
-                                                                    type="text"
-                                                                    value={formData.address}
-                                                                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                                                                    placeholder={getFieldTxt('address') + (config.fields.address?.required ? ' *' : '')}
-                                                                    className={svxInputClass}
-                                                                    style={inputStyle}
-                                                                />
-                                                            )}
-                                                        </div>
-                                                    );
-                                                }
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                        {isFreeText && config.fields.address?.visible !== false && (
+                                                            <input
+                                                                type="text"
+                                                                value={formData.address}
+                                                                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                                                                placeholder={getFieldTxt('address') + (config.fields.address?.required ? ' *' : '')}
+                                                                className={svxInputClass}
+                                                                style={inputStyle}
+                                                            />
+                                                        )}
+                                                    </div>
+                                                );
+                                            }
 
-                                                if (key === 'name' || key === 'phone') {
-                                                    return (
-                                                        <input
-                                                            key={key}
-                                                            type={key === 'phone' ? 'tel' : 'text'}
-                                                            value={formData[key as keyof typeof formData] as string}
-                                                            onChange={(e) => setFormData({ ...formData, [key]: e.target.value })}
-                                                            placeholder={getFieldTxt(key) + (field.required ? ' *' : '')}
-                                                            className={svxInputClass}
-                                                            style={inputStyle}
-                                                        />
-                                                    );
-                                                }
+                                            if (key === 'name' || key === 'phone') {
+                                                return (
+                                                    <input
+                                                        key={key}
+                                                        type={key === 'phone' ? 'tel' : 'text'}
+                                                        value={formData[key as keyof typeof formData] as string}
+                                                        onChange={(e) => setFormData({ ...formData, [key]: e.target.value })}
+                                                        placeholder={getFieldTxt(key) + (field.required ? ' *' : '')}
+                                                        className={svxInputClass}
+                                                        style={inputStyle}
+                                                    />
+                                                );
+                                            }
 
-                                                if (key === 'note') {
-                                                    return (
-                                                        <textarea
-                                                            key={key}
-                                                            value={formData.note}
-                                                            onChange={(e) => setFormData({ ...formData, note: e.target.value })}
-                                                            placeholder={getFieldTxt(key) + (field.required ? ' *' : '')}
-                                                            className={`${svxInputClass} resize-none`}
-                                                            style={inputStyle}
-                                                            rows={2}
-                                                            readOnly={false}
-                                                        />
-                                                    );
-                                                }
-                                                return null;
-                                            })}
-                                        </div>
+                                            if (key === 'note') {
+                                                return (
+                                                    <textarea
+                                                        key={key}
+                                                        value={formData.note}
+                                                        onChange={(e) => setFormData({ ...formData, note: e.target.value })}
+                                                        placeholder={getFieldTxt(key) + (field.required ? ' *' : '')}
+                                                        className={`${svxInputClass} resize-none`}
+                                                        style={inputStyle}
+                                                        rows={2}
+                                                        readOnly={false}
+                                                    />
+                                                );
+                                            }
+                                            return null;
+                                        })}
                                     </div>
-                                </div>
+                                </div>,
+                                index
                             );
                         }
 
                         // Delivery Type
                         if (sectionId === 'delivery' && showDeliverySection) {
-                            return (
-                                <div key={sectionId} style={marginStyle}>
-                                    <DeliverySection
-                                        config={config}
-                                        lang={lang}
-                                        shippingType={formData.shippingType}
-                                        onSelect={(type) => setFormData({ ...formData, shippingType: type })}
-                                        formatCurrency={formatCurrency}
-                                        homePrice={shipping?.standard.home || 0}
-                                        deskPrice={shipping?.standard.desk || 0}
-                                        showSection={showDeliverySection}
-                                        hasWilaya={!!formData.wilaya}
-                                    />
-                                </div>
+                            return renderSectionBlock(
+                                sectionId,
+                                <DeliverySection
+                                    config={config}
+                                    lang={lang}
+                                    shippingType={formData.shippingType}
+                                    onSelect={(type) => setFormData({ ...formData, shippingType: type })}
+                                    formatCurrency={formatCurrency}
+                                    homePrice={shipping?.standard.home || 0}
+                                    deskPrice={shipping?.standard.desk || 0}
+                                    showSection={showDeliverySection}
+                                    hasWilaya={!!formData.wilaya}
+                                />,
+                                index
                             );
                         }
 
                         // Offers
                         if (sectionId === 'offers') {
-                            return (
-                                <div key={sectionId} style={marginStyle}>
-                                    <OffersSection
-                                        config={config}
-                                        lang={lang}
-                                        offers={offers as any}
-                                        selectedOfferId={formData.offerId}
-                                        onSelect={(id) => setFormData({ ...formData, offerId: id })}
-                                        formatCurrency={formatCurrency}
-                                        basePrice={2500}
-                                    />
-                                </div>
+                            return renderSectionBlock(
+                                sectionId,
+                                <OffersSection
+                                    config={config}
+                                    lang={lang}
+                                    offers={offers as any}
+                                    selectedOfferId={formData.offerId}
+                                    onSelect={(id) => setFormData({ ...formData, offerId: id })}
+                                    formatCurrency={formatCurrency}
+                                    basePrice={2500}
+                                />,
+                                index
                             );
                         }
 
                         // Promo Code
                         if (sectionId === 'promoCode' && config.promoCode?.enabled) {
-                            return (
-                                <div key={sectionId} style={marginStyle}>
-                                    <PromoCodeSection
-                                        config={config}
-                                        lang={lang}
-                                        promoCodeInput={promoCodeInput}
-                                        setPromoCodeInput={setPromoCodeInput}
-                                        promoCodeError={promoCodeError}
-                                        promoCodeSuccess={promoCodeSuccess}
-                                        appliedPromoCode={appliedPromoCode}
-                                        onApply={handleApplyPromoCode}
-                                        onRemove={handleRemovePromoCode}
-                                    />
-                                </div>
+                            return renderSectionBlock(
+                                sectionId,
+                                <PromoCodeSection
+                                    config={config}
+                                    lang={lang}
+                                    promoCodeInput={promoCodeInput}
+                                    setPromoCodeInput={setPromoCodeInput}
+                                    promoCodeError={promoCodeError}
+                                    promoCodeSuccess={promoCodeSuccess}
+                                    appliedPromoCode={appliedPromoCode}
+                                    onApply={handleApplyPromoCode}
+                                    onRemove={handleRemovePromoCode}
+                                />,
+                                index
                             );
                         }
 
                         // Summary
                         if (sectionId === 'summary' && config.enableSummarySection) {
-                            return (
-                                <div key={sectionId} style={marginStyle}>
-                                    <SummarySection
-                                        config={config}
-                                        lang={lang}
-                                        offerPrice={calculations.offerPrice}
-                                        shippingCost={calculations.shippingCost}
-                                        promoDiscount={calculations.promoDiscount}
-                                        totalPromoDiscount={calculations.totalPromoDiscount}
-                                        displayedTotal={calculations.displayedTotal}
-                                        appliedPromoCode={appliedPromoCode}
-                                        formatCurrency={formatCurrency}
-                                    />
-                                </div>
+                            return renderSectionBlock(
+                                sectionId,
+                                <SummarySection
+                                    config={config}
+                                    lang={lang}
+                                    offerPrice={calculations.offerPrice}
+                                    shippingCost={calculations.shippingCost}
+                                    promoDiscount={calculations.promoDiscount}
+                                    totalPromoDiscount={calculations.totalPromoDiscount}
+                                    displayedTotal={calculations.displayedTotal}
+                                    appliedPromoCode={appliedPromoCode}
+                                    formatCurrency={formatCurrency}
+                                />,
+                                index
                             );
                         }
 
                         // CTA
                         if (sectionId === 'cta') {
-                            return (
-                                <div key={sectionId} style={marginStyle} ref={ctaRef}>
-                                    <CtaButton
-                                        config={config}
-                                        text={txt('cta')}
-                                        onClick={handleFormSubmit}
-                                    />
-                                </div>
+                            return renderSectionBlock(
+                                sectionId,
+                                <CtaButton
+                                    config={config}
+                                    text={txt('cta')}
+                                    onClick={handleFormSubmit}
+                                />,
+                                index,
+                                ctaRef
                             );
                         }
 
                         // Urgency Text
                         if (sectionId === 'urgencyText') {
-                            return (
-                                <div key={sectionId} style={marginStyle}>
-                                    <UrgencyTextSection
-                                        config={config}
-                                        lang={lang}
-                                    />
-                                </div>
+                            return renderSectionBlock(
+                                sectionId,
+                                <UrgencyTextSection
+                                    config={config}
+                                    lang={lang}
+                                />,
+                                index
                             );
                         }
 
                         // Urgency Quantity (Stock)
                         if (sectionId === 'urgencyQuantity') {
-                            return (
-                                <div key={sectionId} style={marginStyle}>
-                                    <UrgencyQuantitySection
-                                        config={config}
-                                        lang={lang}
-                                    />
-                                </div>
+                            return renderSectionBlock(
+                                sectionId,
+                                <UrgencyQuantitySection
+                                    config={config}
+                                    lang={lang}
+                                />,
+                                index
                             );
                         }
 
                         // Urgency Timer
                         if (sectionId === 'urgencyTimer') {
-                            return (
-                                <div key={sectionId} style={marginStyle}>
-                                    <UrgencyTimerSection
-                                        config={config}
-                                        lang={lang}
-                                        countdown={countdown}
-                                    />
-                                </div>
+                            return renderSectionBlock(
+                                sectionId,
+                                <UrgencyTimerSection
+                                    config={config}
+                                    lang={lang}
+                                    countdown={countdown}
+                                />,
+                                index
                             );
                         }
 
                         // Trust Badges
                         if (sectionId === 'trustBadges' && config.enableTrustBadges) {
-                            return (
-                                <div key={sectionId} style={marginStyle}>
-                                    <TrustBadgesSection
-                                        config={config}
-                                        lang={lang}
-                                    />
-                                </div>
+                            return renderSectionBlock(
+                                sectionId,
+                                <TrustBadgesSection
+                                    config={config}
+                                    lang={lang}
+                                />,
+                                index
                             );
                         }
 

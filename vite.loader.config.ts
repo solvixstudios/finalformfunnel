@@ -16,6 +16,7 @@ export default defineConfig({
       input: path.resolve(__dirname, "src/loader/index.tsx"),
       output: {
         entryFileNames: "finalform-loader.js",
+        format: "iife",
         assetFileNames: (assetInfo) => {
           if (assetInfo.name === "index.css") return "finalform-loader.css";
           return "assets/[name]-[hash][extname]";

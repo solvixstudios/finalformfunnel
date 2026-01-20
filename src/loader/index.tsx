@@ -1,64 +1,166 @@
-import '@/index.css'; // Import Tailwind directives
+import '@/index.css';
+import { getFormConfig } from '@/lib/api/formConfig';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { FormLoader } from './FormLoader';
 
-// --- CONFIGURATION LOADING ---
-// Expected to be injected on window or passed via init function if we want to expose one.
-// The legacy loader.js looked for specific element id.
-
 const CONTAINER_ID = 'finalform-container';
 
 /**
- * Initializes the loader.
+ * Fetch product data from Shopify AJAX API
  */
-function initLoader() {
-    const container = document.getElementById(CONTAINER_ID);
+async function fetchShopifyProduct() {
+    try {
+        // Try getting from global objects first
+        if ((window as any).meta?.product) return (window as any).meta.product;
 
-    if (!container) {
-        console.warn("FinalForm: Container element not found. Waiting for manual init or ensure #finalform-container exists.");
-        return;
+        // Fallback to fetching .js
+        if (window.location.pathname.includes('/products/')) {
+            const res = await fetch(window.location.pathname + '.js');
+            if (res.ok) return await res.json();
+        }
+    } catch (e) {
+        console.warn('FinalForm: Product fetch failed', e);
     }
-
-    // Get config from global variable or data attributes
-    // In the real Shopify integration, we might want to expose a function `window.FinalForm.render(config)`
-    // But for dropping replacement, we need to replicate some of the auto-init behavior if possible, or assume the snippet assigns config.
-
-    const config = (window as any).FinalFormConfig;
-    const product = (window as any).FinalFormProduct;
-
-    if (!config) {
-        console.error("FinalForm: No configuration found in window.FinalFormConfig");
-        return;
-    }
-
-    // Fallbacks for missing structure
-    const offers = config.offers || [];
-    const shipping = config.shipping || { standard: { home: 600, desk: 400 } };
-
-    const root = createRoot(container);
-    root.render(
-        <React.StrictMode>
-            <FormLoader
-                config={config.config || config} // Handle nested vs flat
-                product={product}
-                offers={offers}
-                shipping={shipping}
-            />
-        </React.StrictMode>
-    );
+    return null;
 }
 
-// Auto-init if window is ready, or wait for it
+/**
+ * Initialize the loader
+ */
+async function initLoader() {
+    console.log('FinalForm: Initializing...');
+
+    // 1. Helper to parse script params
+    const getScriptParams = () => {
+        const scripts = document.querySelectorAll('script');
+        for (let i = 0; i < scripts.length; i++) {
+            const src = scripts[i].src;
+            if (src && (src.includes('finalform-loader.prod.js') || src.includes('finalform-loader.js'))) {
+                try {
+                    const url = new URL(src);
+                    return Object.fromEntries(url.searchParams.entries());
+                } catch (e) {
+                    // Ignore parsing errors
+                }
+            }
+        }
+        return {};
+    };
+
+    const params = getScriptParams();
+    const shop = params.shop || window.location.hostname;
+    const sfToken = params.sf_token;
+
+    // 2. Inject CSS
+    // We derive the CSS URL from the script source to ensure version/environment alignment
+    const cssId = 'finalform-css';
+    if (!document.getElementById(cssId)) {
+        const scripts = document.querySelectorAll('script');
+        let basePath = 'https://finalformfunnel.web.app/'; // Fallback
+        for (let i = 0; i < scripts.length; i++) {
+            const src = scripts[i].src;
+            if (src && (src.includes('finalform-loader.prod.js') || src.includes('finalform-loader.js'))) {
+                const lastSlash = src.lastIndexOf('/');
+                if (lastSlash !== -1) {
+                    basePath = src.substring(0, lastSlash + 1);
+                }
+                break;
+            }
+        }
+
+        const link = document.createElement('link');
+        link.id = cssId;
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = basePath + 'finalform-loader.css';
+        document.head.appendChild(link);
+        console.log('FinalForm: Injected CSS from', link.href);
+    }
+
+    // 3. Identify Product Context
+    let productId = (window as any).meta?.product?.id?.toString();
+    if (!productId && (window as any).ShopifyAnalytics?.meta?.product?.id) {
+        productId = (window as any).ShopifyAnalytics.meta.product.id.toString();
+    }
+
+    // Normalize handle
+    const productHandle = window.location.pathname.split('/products/')[1]?.split('/')[0];
+
+    // Check if we are on a product page (required for product forms)
+    // If we can't find a product ID/handle, we might skip unless it's a specific landing page form
+    if (!productId && !productHandle && !sfToken) {
+        console.log('FinalForm: No product context or token found. Skipping.');
+        return;
+    }
+
+    console.log('FinalForm: Context', { shop, productId, productHandle });
+
+    // 3. Fetch Config and Product Data in parallel
+    const [configRes, productData] = await Promise.all([
+        getFormConfig(shop, productId, productHandle),
+        fetchShopifyProduct()
+    ]);
+
+    if ('error' in configRes) {
+        console.error('FinalForm: Config load failed', configRes.error);
+        return;
+    }
+
+    const { config } = configRes;
+
+    // 4. Inject Container
+    let container = document.getElementById(CONTAINER_ID);
+    if (!container) {
+        container = document.createElement('div');
+        container.id = CONTAINER_ID;
+
+        // Strategy: Look for common Add to Cart forms
+        const cartForm = document.querySelector('form[action*="/cart/add"]');
+
+        if (cartForm && cartForm.parentNode) {
+            console.log('FinalForm: Injecting after cart form');
+            // Insert after the cart form
+            cartForm.parentNode.insertBefore(container, cartForm.nextSibling);
+
+            // Optional: Hide original form if configured
+            // Default to true if not specified
+            if (config.hideOriginalForm !== false) {
+                // cartForm.style.display = 'none'; // Commented out for safety until verified
+            }
+        } else {
+            console.log('FinalForm: Injecting to body');
+            document.body.appendChild(container); // Fallback
+        }
+    }
+
+    // 5. Render
+    if (productData) {
+        const offers = config.offers || [];
+        const shipping = config.shipping || { standard: { home: 0, desk: 0 } };
+
+        const root = createRoot(container);
+        root.render(
+            <React.StrictMode>
+                <FormLoader
+                    config={config}
+                    product={productData}
+                    offers={offers}
+                    shipping={shipping}
+                />
+            </React.StrictMode>
+        );
+    } else {
+        console.warn('FinalForm: Product data not available, cannot render FormLoader');
+    }
+}
+
+// Auto-init
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initLoader);
 } else {
     initLoader();
 }
 
-// Expose a global render function for manual initialization
-(window as any).renderFinalForm = (config: any, productData: any) => {
-    (window as any).FinalFormConfig = config;
-    (window as any).FinalFormProduct = productData;
-    initLoader();
-};
+// Expose manual init
+(window as any).initFinalForm = initLoader;
