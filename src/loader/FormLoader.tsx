@@ -15,8 +15,8 @@ import {
     VariantsSection
 } from '@/components/FormTab/preview/sections';
 import { WILAYAS } from '@/lib/constants';
+import { buildCtaStyles, buildInputStyles, buildRootStyles, buildSectionMargin, getFontFamilyCSS } from '@/lib/utils/cssEngine';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/formatting';
-import { getFontFamilyCSS } from '@/lib/utils/styles';
 import { ChevronDown } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 
@@ -200,26 +200,14 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper }
     const fontFamily = getFontFamilyCSS(config.fontFamily?.[lang] || (lang === 'fr' ? 'Inter' : 'Cairo'));
 
     // Section margin helper
-    const getSectionMarginStyle = (isFirst: boolean = false) => {
-        const sectionSpacing = config.sectionSpacing || 20;
-        const sectionMarginTop = config.sectionMarginTop || 0;
-        const sectionMarginBottom = config.sectionMarginBottom || 0;
-        return isFirst
-            ? { marginTop: `${sectionMarginTop}px`, marginBottom: `${sectionSpacing + sectionMarginBottom}px` }
-            : { marginTop: `${sectionSpacing + sectionMarginTop}px`, marginBottom: `${sectionMarginBottom}px` };
-    };
+    const getSectionMarginStyle = (isFirst: boolean = false) => buildSectionMargin(config as any, isFirst);
 
     // Input styling
+    // Input styling
     const inputSpacing = config.inputSpacing || 12;
-    const isFilled = config.inputVariant === 'filled';
+    // const isFilled = config.inputVariant === 'filled'; // handled by engine
     const svxInputClass = `custom-input w-full px-4 py-3.5 text-[13px] font-semibold outline-none transition-all duration-200 border-2 focus:ring-4`;
-    const inputStyle = {
-        borderRadius: config.borderRadius,
-        marginBottom: `${inputSpacing}px`,
-        backgroundColor: config.inputBackground || (isFilled ? '#f8fafc' : '#ffffff'),
-        borderColor: isFilled ? 'transparent' : (config.inputBorderColor || '#e2e8f0'),
-        color: config.inputTextColor || '#1e293b',
-    } as React.CSSProperties;
+    const inputStyle = buildInputStyles(config as any, config.inputVariant || 'filled');
 
     // Field visibility logic
     const getVisibleFields = () => {
@@ -259,20 +247,15 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper }
         (config.enableHomeDelivery !== false || config.enableDeskDelivery !== false);
 
     // CTA styles (for sticky)
+    // CTA styles (for sticky)
     const getCtaStyles = (): React.CSSProperties => {
-        const ctaVariant = config.ctaVariant || 'solid';
-        const base = { borderRadius: config.borderRadius };
-
-        if (ctaVariant === 'outline') {
-            return { ...base, borderColor: config.ctaColor, color: config.ctaColor };
-        }
-        if (ctaVariant === 'gradient') {
-            return { ...base, background: `linear-gradient(135deg, ${config.ctaColor} 0%, ${config.accentColor} 100%)` };
-        }
-        if (ctaVariant === 'ghost') {
-            return { ...base, color: config.ctaColor };
-        }
-        return { ...base, backgroundColor: config.ctaColor };
+        return buildCtaStyles({
+            ctaColor: config.ctaColor,
+            accentColor: config.accentColor,
+            borderRadius: config.borderRadius,
+            ctaVariant: config.ctaVariant,
+            ctaAnimation: config.ctaAnimation
+        });
     };
 
     const handleFormSubmit = async () => {
@@ -347,12 +330,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper }
         <div
             className="ff-root w-full font-sans relative flex flex-col shadow-2xl select-none"
             dir={lang === 'ar' ? 'rtl' : 'ltr'}
-            style={{
-                borderRadius: '16px',
-                backgroundColor: config.formBackground || '#ffffff',
-                fontFamily: fontFamily,
-                color: config.textColor || '#1e293b',
-            }}
+            style={buildRootStyles(config as any, lang)}
         >
             <style>{`
                 .custom-input::placeholder {

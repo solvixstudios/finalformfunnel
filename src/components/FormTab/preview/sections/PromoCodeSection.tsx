@@ -3,6 +3,7 @@
  * Displays promo code input with validation
  */
 
+import { buildInputStyles } from '@/lib/utils/cssEngine';
 import type { Language } from '@/types';
 import { Check, X } from 'lucide-react';
 import React from 'react';
@@ -103,10 +104,13 @@ export const PromoCodeSection: React.FC<PromoCodeSectionProps> = ({
                             className={`w-full px-4 py-3 text-sm font-semibold border-2 outline-none transition-all ${promoCodeError ? 'border-red-400 bg-red-50' : ''
                                 }`}
                             style={{
-                                borderRadius: config.borderRadius,
-                                backgroundColor: promoCodeError ? '#fef2f2' : (config.inputBackground || '#f8fafc'),
-                                borderColor: promoCodeError ? '#f87171' : (config.inputBorderColor || '#e2e8f0'),
-                                color: config.inputTextColor || '#1e293b',
+                                ...buildInputStyles(config as any, 'filled'),
+                                marginBottom: 0, // Override default margin
+                                // Error state override
+                                ...(promoCodeError ? {
+                                    borderColor: '#f87171',
+                                    backgroundColor: '#fef2f2'
+                                } : {})
                             }}
                             onKeyDown={(e) => e.key === 'Enter' && onApply()}
                         />

@@ -3,6 +3,7 @@
  * Displays order summary with subtotal, shipping, discounts, and total
  */
 
+import { buildTextStyles } from '@/lib/utils/cssEngine';
 import type { Language } from '@/types';
 import { TrendingDown } from 'lucide-react';
 import React from 'react';
@@ -69,8 +70,8 @@ export const SummarySection: React.FC<SummarySectionProps> = ({
             >
                 {/* Subtotal row */}
                 <div className="flex justify-between text-sm">
-                    <span style={{ color: config.textColor || '#64748b' }}>{txt('subtotal')}</span>
-                    <span className="font-bold" style={{ color: config.textColor || '#334155' }}>
+                    <span style={buildTextStyles(config as any, 'body')}>{txt('subtotal')}</span>
+                    <span className="font-bold" style={buildTextStyles(config as any, 'heading')}>
                         {promoDiscount.subtotalDiscount > 0 ? (
                             <>
                                 <span className="line-through text-gray-400 mr-2">
@@ -87,8 +88,8 @@ export const SummarySection: React.FC<SummarySectionProps> = ({
                 {/* Shipping row (if not hidden) */}
                 {!config.hideShippingInSummary && (
                     <div className="flex justify-between text-sm">
-                        <span style={{ color: config.textColor || '#64748b' }}>{txt('shippingLabel')}</span>
-                        <span className="font-bold" style={{ color: config.textColor || '#334155' }}>
+                        <span style={buildTextStyles(config as any, 'body')}>{txt('shippingLabel')}</span>
+                        <span className="font-bold" style={buildTextStyles(config as any, 'heading')}>
                             {promoDiscount.shippingDiscount > 0 ? (
                                 effectiveShipping <= 0 ? (
                                     <span className="text-emerald-600">{txt('free')}</span>
@@ -127,7 +128,7 @@ export const SummarySection: React.FC<SummarySectionProps> = ({
 
                 {/* Total row */}
                 <div className="flex justify-between items-center">
-                    <span className="text-lg font-black" style={{ color: config.textColor || '#0f172a' }}>
+                    <span className="text-lg font-black" style={buildTextStyles(config as any, 'heading')}>
                         {txt('total')}
                     </span>
                     <span

@@ -3,6 +3,7 @@
  * Displays offer selection with pricing and stickers
  */
 
+import { buildOptionCardStyles } from '@/lib/utils/cssEngine';
 import type { Language } from '@/types';
 import { Check } from 'lucide-react';
 import React from 'react';
@@ -87,16 +88,8 @@ export const OffersSection: React.FC<OffersSectionProps> = ({
                             onClick={() => onSelect(o.id)}
                             className={`relative w-full p-4 border-2 flex items-center gap-4 transition-all duration-200 ${isSelected ? 'shadow-lg' : ''
                                 }`}
-                            style={{
-                                borderRadius: config.borderRadius,
-                                backgroundColor: isSelected
-                                    ? config.accentColor
-                                    : config.formBackground || '#ffffff',
-                                borderColor: isSelected
-                                    ? config.accentColor
-                                    : config.inputBorderColor || '#e2e8f0',
-                                boxShadow: isSelected ? `0 8px 20px -4px ${config.accentColor}50` : undefined,
-                            }}
+
+                            style={buildOptionCardStyles(config as any, { selected: isSelected })}
                         >
                             {/* Offer Sticker */}
                             {o.sticker?.enabled && (

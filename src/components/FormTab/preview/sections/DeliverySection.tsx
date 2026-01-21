@@ -3,9 +3,10 @@
  * Displays delivery type selection (home vs desk)
  */
 
+import { buildOptionCardStyles } from '@/lib/utils/cssEngine';
 import type { Language } from '@/types';
 import { Check, Home, Package } from 'lucide-react';
-import React from 'react';
+
 import { SectionLabel } from '../components/SectionLabel';
 
 interface DeliverySectionProps {
@@ -110,18 +111,8 @@ export const DeliverySection: React.FC<DeliverySectionProps> = ({
                                     ? 'p-1.5 text-center block'
                                     : 'p-4 text-center block'
                                 } ${isDisabled ? 'opacity-60 cursor-not-allowed' : ''} ${isSelected && !isDisabled ? 'shadow-lg' : ''}`}
-                            style={{
-                                borderRadius: config.borderRadius,
-                                backgroundColor: isSelected && !isDisabled
-                                    ? config.accentColor
-                                    : (config.formBackground || '#ffffff'),
-                                borderColor: isSelected && !isDisabled
-                                    ? config.accentColor
-                                    : (config.inputBorderColor || '#e2e8f0'),
-                                boxShadow: isSelected && !isDisabled
-                                    ? `0 8px 20px -4px ${config.accentColor}50`
-                                    : undefined,
-                            }}
+
+                            style={buildOptionCardStyles(config as any, { selected: isSelected, disabled: isDisabled })}
                         >
                             {/* Selection indicator */}
                             {!isDisabled && (
@@ -192,6 +183,7 @@ export const DeliverySection: React.FC<DeliverySectionProps> = ({
                     );
                 })}
             </div>
+
         </div>
     );
 };

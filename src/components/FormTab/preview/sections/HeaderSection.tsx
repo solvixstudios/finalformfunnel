@@ -3,6 +3,7 @@
  * Renders the form header with multiple style variants
  */
 
+import { buildHeaderStyles } from '@/lib/utils/cssEngine';
 import type { Language } from '@/types';
 import { Package } from 'lucide-react';
 import React from 'react';
@@ -115,11 +116,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
     );
 
     // Common header wrapper styles
-    const headerBaseStyles = {
-        borderRadius: '16px 16px 0 0',
-        backgroundColor: config.formBackground || '#ffffff',
-        borderColor: config.inputBorderColor || `${config.accentColor}15`,
-    };
+    const headerBaseStyles = buildHeaderStyles(config as any, headerStyle);
 
     // Classic style
     if (headerStyle === 'classic') {
@@ -195,8 +192,8 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
             <div
                 className="relative z-20 p-4 shadow-lg"
                 style={{
-                    borderRadius: '16px 16px 0 0',
-                    backgroundColor: config.accentColor,
+                    ...headerBaseStyles,
+                    // Banner specific overrides are handled in buildHeaderStyles, but we need shadow here if not in base
                     color: '#ffffff',
                 }}
             >

@@ -3,6 +3,7 @@
  * Displays variant/model selection with multiple styles
  */
 
+import { buildOptionCardStyles } from '@/lib/utils/cssEngine';
 import type { Language } from '@/types';
 import { Check, ChevronDown } from 'lucide-react';
 import React from 'react';
@@ -73,9 +74,8 @@ export const VariantsSection: React.FC<VariantsSectionProps> = ({
                                     } ${isSelected ? 'text-white shadow-md' : ''}`}
                                 style={{
                                     borderRadius: style === 'pills' ? '9999px' : config.borderRadius,
-                                    backgroundColor: isSelected ? config.accentColor : 'transparent',
-                                    borderColor: isSelected ? config.accentColor : (config.inputBorderColor || '#e2e8f0'),
-                                    color: isSelected ? '#ffffff' : (config.textColor || '#475569'),
+                                    // Use helper but override for pills shape if needed, mostly helper handles color logic
+                                    ...buildOptionCardStyles(config as any, { selected: isSelected })
                                 }}
                             >
                                 {val}
@@ -83,36 +83,39 @@ export const VariantsSection: React.FC<VariantsSectionProps> = ({
                         );
                     })}
                 </div>
-            )}
+            )
+            }
 
             {/* DROPDOWN STYLE */}
-            {style === 'dropdown' && (
-                <div className="relative">
-                    <select
-                        value={selectedOptions[optionName]}
-                        onChange={(e) => onOptionSelect?.(optionName, e.target.value)}
-                        className="w-full px-4 py-3 text-sm font-semibold border-2 outline-none appearance-none cursor-pointer"
-                        style={{
-                            borderRadius: config.borderRadius,
-                            backgroundColor: config.formBackground || '#ffffff',
-                            borderColor: config.inputBorderColor || '#e2e8f0',
-                            color: config.textColor || '#1e293b',
-                        }}
-                    >
-                        {values.map((val) => (
-                            <option key={val} value={val}>
-                                {val}
-                            </option>
-                        ))}
-                    </select>
-                    <ChevronDown
-                        size={16}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none"
-                        style={{ color: config.textColor || '#94a3b8' }}
-                    />
-                </div>
-            )}
-        </div>
+            {
+                style === 'dropdown' && (
+                    <div className="relative">
+                        <select
+                            value={selectedOptions[optionName]}
+                            onChange={(e) => onOptionSelect?.(optionName, e.target.value)}
+                            className="w-full px-4 py-3 text-sm font-semibold border-2 outline-none appearance-none cursor-pointer"
+                            style={{
+                                borderRadius: config.borderRadius,
+                                backgroundColor: config.formBackground || '#ffffff',
+                                borderColor: config.inputBorderColor || '#e2e8f0',
+                                color: config.textColor || '#1e293b',
+                            }}
+                        >
+                            {values.map((val) => (
+                                <option key={val} value={val}>
+                                    {val}
+                                </option>
+                            ))}
+                        </select>
+                        <ChevronDown
+                            size={16}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none"
+                            style={{ color: config.textColor || '#94a3b8' }}
+                        />
+                    </div>
+                )
+            }
+        </div >
     );
 
     // Legacy Render (Simple List) - Fallback if no options structure provided
@@ -126,12 +129,7 @@ export const VariantsSection: React.FC<VariantsSectionProps> = ({
                         onClick={() => onSelect?.(v)}
                         className={`px-4 py-3 text-xs font-bold transition-all duration-200 border-2 rounded-lg flex items-center gap-2 ${isSelected ? 'text-white shadow-md' : ''
                             }`}
-                        style={{
-                            borderRadius: config.borderRadius,
-                            backgroundColor: isSelected ? config.accentColor : (config.formBackground || '#ffffff'),
-                            borderColor: isSelected ? config.accentColor : (config.inputBorderColor || '#e2e8f0'),
-                            color: isSelected ? '#ffffff' : (config.textColor || '#475569'),
-                        }}
+                        style={buildOptionCardStyles(config as any, { selected: isSelected })}
                     >
                         {isSelected && <Check size={12} strokeWidth={4} className="text-white" />}
                         {v}

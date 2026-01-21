@@ -1,5 +1,8 @@
 import react from "@vitejs/plugin-react-swc";
+import autoprefixer from "autoprefixer";
 import path from "path";
+import remToPx from "postcss-rem-to-pixel";
+import tailwindcss from "tailwindcss";
 import { defineConfig } from "vite";
 
 import { readFileSync } from "fs";
@@ -12,6 +15,22 @@ const APP_VERSION = pkg.version;
 
 export default defineConfig({
   plugins: [react()],
+  css: {
+    postcss: {
+      plugins: [
+        tailwindcss(),
+        autoprefixer(),
+        remToPx({
+          rootValue: 16,
+          propList: ["*"],
+          selectorBlackList: [],
+          replace: true,
+          mediaQuery: false,
+          minPixelValue: 0,
+        }),
+      ],
+    },
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -26,7 +45,7 @@ export default defineConfig({
         entryFileNames: "finalform-loader.js",
         format: "iife",
         assetFileNames: (assetInfo) => {
-          if (assetInfo.name === "index.css") return "finalform-loader.css";
+          if (assetInfo.name?.endsWith(".css")) return "finalform-loader.css";
           return "assets/[name]-[hash][extname]";
         },
         manualChunks: undefined,

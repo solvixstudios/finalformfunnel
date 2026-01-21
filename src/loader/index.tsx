@@ -65,47 +65,9 @@ async function initLoader() {
     const shop = params.shop || window.location.hostname;
     const sfToken = params.sf_token;
 
-    // 1.5. Inject Tailwind CDN (Fix for styling issues)
-    const tailwindId = 'finalform-tailwind';
-    if (!document.getElementById(tailwindId)) {
-        const script = document.createElement('script');
-        script.id = tailwindId;
-        script.src = 'https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4';
-        document.head.appendChild(script);
-        console.log('FinalForm: Injected Tailwind CDN');
-    }
+    // 1.5. Remove Tailwind CDN Injection (We rely on built CSS now)
 
-    // 2. Inject CSS
-    // We derive the CSS URL from the script source to ensure version/environment alignment
-    const cssId = 'finalform-css';
-    if (!document.getElementById(cssId)) {
-        const scripts = document.querySelectorAll('script');
-        let basePath = 'https://finalformfunnel.web.app/'; // Fallback
-        for (let i = 0; i < scripts.length; i++) {
-            const src = scripts[i].src;
-            if (src && (src.includes('finalform-loader.prod.js') || src.includes('finalform-loader.js'))) {
-                const lastSlash = src.lastIndexOf('/');
-                if (lastSlash !== -1) {
-                    basePath = src.substring(0, lastSlash + 1);
-                }
-                break;
-            }
-        }
-
-        const link = document.createElement('link');
-        link.id = cssId;
-        link.rel = 'stylesheet';
-        link.type = 'text/css';
-
-        // Cache bust with version
-        const version = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : Date.now();
-        link.href = basePath + 'finalform-loader.css?v=' + version;
-
-        document.head.appendChild(link);
-        console.log('FinalForm: Injected CSS from', link.href);
-    }
-
-    // 3. Identify Product Context
+    // 2. Identify Product Context
     let productId = (window as any).meta?.product?.id?.toString();
     if (!productId && (window as any).ShopifyAnalytics?.meta?.product?.id) {
         productId = (window as any).ShopifyAnalytics.meta.product.id.toString();
@@ -144,6 +106,13 @@ async function initLoader() {
         container = document.createElement('div');
         container.id = CONTAINER_ID;
 
+        // CSS Reset for the container wrapper in light DOM
+        // This ensures the container itself doesn't inherit weird margins/padding
+        container.style.display = 'block';
+        container.style.width = '100%';
+        container.style.all = 'initial'; // Dangerous if not careful, but good for isolation. resets display to inline usually.
+        container.style.display = 'block'; // set back to block
+
         // Strategy: Look for common Add to Cart forms
         const cartForm = document.querySelector('form[action*="/cart/add"]');
 
@@ -163,20 +132,59 @@ async function initLoader() {
         }
     }
 
-    // 5. Render
+    // 5. Shadow DOM Setup
+    let shadowRoot = container.shadowRoot;
+    if (!shadowRoot) {
+        shadowRoot = container.attachShadow({ mode: 'open' });
+    }
+
+    // 6. Inject CSS into Shadow DOM
+    const cssId = 'finalform-shadow-css';
+    if (!shadowRoot.getElementById(cssId)) {
+        const scripts = document.querySelectorAll('script');
+        let basePath = 'https://finalformfunnel.web.app/'; // Fallback
+        for (let i = 0; i < scripts.length; i++) {
+            const src = scripts[i].src;
+            if (src && (src.includes('finalform-loader.prod.js') || src.includes('finalform-loader.js'))) {
+                const lastSlash = src.lastIndexOf('/');
+                if (lastSlash !== -1) {
+                    basePath = src.substring(0, lastSlash + 1);
+                }
+                break;
+            }
+        }
+
+        const link = document.createElement('link');
+        link.id = cssId;
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+
+        // Cache bust with version
+        const version = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : Date.now();
+        link.href = basePath + 'finalform-loader.css?v=' + version;
+
+        shadowRoot.appendChild(link);
+        console.log('FinalForm: Injected CSS into Shadow DOM', link.href);
+    }
+
+    // 7. Render
     if (productData) {
         const offers = config.offers || [];
         const shipping = config.shipping || { standard: { home: 0, desk: 0 } };
 
-        const root = createRoot(container);
+        // We specifically render into the shadowRoot
+        const root = createRoot(shadowRoot);
         root.render(
             <React.StrictMode>
-                <FormLoader
-                    config={config}
-                    product={productData}
-                    offers={offers}
-                    shipping={shipping}
-                />
+                {/* We might need a wrapper div inside shadow root if changing styles on :host is not enough */}
+                <div id="finalform-shadow-wrapper">
+                    <FormLoader
+                        config={config}
+                        product={productData}
+                        offers={offers}
+                        shipping={shipping}
+                    />
+                </div>
             </React.StrictMode>
         );
     } else {

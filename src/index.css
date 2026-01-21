@@ -99,9 +99,15 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
-  body {
+  body,
+  :host,
+  #finalform-shadow-wrapper {
     @apply bg-background text-foreground font-sans antialiased;
-    font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family:
+      "Inter",
+      -apple-system,
+      BlinkMacSystemFont,
+      sans-serif;
   }
 
   h1,
