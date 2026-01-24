@@ -28,6 +28,8 @@ export interface ConnectedStore {
   name: string;
   platform: "shopify" | "woocommerce";
   url: string;
+  // Normalized Shopify domain for ownership tracking (e.g., "my-store.myshopify.com")
+  shopifyDomain?: string;
   // Shopify Custom App credentials
   clientId?: string;
   clientSecret?: string;
@@ -39,10 +41,19 @@ export interface ConnectedStore {
   // Loader status
   loaderInstalled?: boolean;
   loaderVersion?: string; // e.g., "1.0.0"
+  loaderScriptTagId?: string; // Shopify script tag ID for tracking
   loaderInstalledAt?: string;
   // Timestamps
   createdAt: string;
   updatedAt: string;
+}
+
+// Store ownership tracking - one store per user
+export interface StoreOwner {
+  shopifyDomain: string; // Primary key (document ID)
+  userId: string; // Owner's Firebase UID
+  storeId: string; // Reference to stores collection
+  connectedAt: string; // ISO timestamp
 }
 
 // Form assignment to store or product

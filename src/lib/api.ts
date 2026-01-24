@@ -27,6 +27,8 @@ export interface ShopifyConnectResponse {
   shop?: ShopifyShopInfo;
   error?: string;
   loaderInstalled?: boolean;
+  loaderVersion?: string;
+  loaderScriptTagId?: string;
 }
 
 export async function connectToShopify(
@@ -60,7 +62,8 @@ export async function connectToShopify(
     const data = await response.json();
 
     // Handle array response from n8n (e.g. [{ shop: ... }])
-    const shopData = Array.isArray(data) ? data[0]?.shop : data.shop;
+    const responseData = Array.isArray(data) ? data[0] : data;
+    const shopData = responseData?.shop;
 
     if (!shopData) {
       throw new Error("Invalid response from server: Shop data missing");
@@ -69,6 +72,9 @@ export async function connectToShopify(
     return {
       success: true,
       shop: shopData,
+      loaderInstalled: responseData?.loaderInstalled || false,
+      loaderVersion: responseData?.loaderVersion,
+      loaderScriptTagId: responseData?.loaderScriptTagId,
     };
   } catch (error: any) {
     return {

@@ -77,13 +77,16 @@ export function ShopifyManager({ userId, onAddStore, showHeader = true }: Shopif
                 await updateStore(store.id, {
                     loaderInstalled: true,
                     loaderVersion: result.version || CURRENT_LOADER_VERSION,
+                    loaderScriptTagId: result.scriptTagId,
                     loaderInstalledAt: new Date().toISOString()
                 });
 
-                if (result.alreadyInstalled) {
-                    toast.info('Loader is already enabled.');
+                if (result.upgraded) {
+                    toast.success(`Loader upgraded to v${result.version}!`);
+                } else if (result.alreadyInstalled) {
+                    toast.info(`Loader is already enabled (v${result.version || 'unknown'}).`);
                 } else {
-                    toast.success('Loader enabled successfully!');
+                    toast.success(`Loader v${result.version || CURRENT_LOADER_VERSION} enabled successfully!`);
                 }
             } else {
                 toast.error(result.error || 'Failed to enable loader.');
@@ -310,7 +313,7 @@ export function ShopifyManager({ userId, onAddStore, showHeader = true }: Shopif
                                             {store.loaderInstalled ? (
                                                 <Badge className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 shadow-none font-medium">
                                                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse" />
-                                                    Loader Active v{store.loaderInstalled ? store.loaderVersion : ''}
+                                                    Loader v{store.loaderVersion || 'Unknown'}
                                                 </Badge>
                                             ) : (
                                                 <Badge variant="outline" className="text-[10px] text-slate-400 border-dashed">

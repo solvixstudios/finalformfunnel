@@ -240,20 +240,34 @@ export default function IntegrationsPage({ userId }: IntegrationsPageProps) {
       const result = await connectToShopify(cleanDomain, shopifyForm.clientId.trim(), shopifyForm.clientSecret.trim());
 
       if (result.success && result.shop) {
-        await addStore({
-          name: result.shop.name,
-          platform: 'shopify',
-          url: result.shop.myshopify_domain || `${cleanDomain}.myshopify.com`,
-          clientId: shopifyForm.clientId,
-          clientSecret: shopifyForm.clientSecret,
-          initialSync: true,
-          loaderInstalled: result.loaderInstalled || false,
-          loaderInstalledAt: result.loaderInstalled ? new Date().toISOString() : undefined
-        });
+        const shopifyDomain = result.shop.myshopify_domain || `${cleanDomain}.myshopify.com`;
 
-        toast.success(`Successfully connected ${result.shop.name}!`);
-        setOpenSheet(false);
-        setShopifyForm({ subdomain: '', clientId: '', clientSecret: '' });
+        try {
+          await addStore({
+            name: result.shop.name,
+            platform: 'shopify',
+            url: shopifyDomain,
+            shopifyDomain: shopifyDomain,
+            clientId: shopifyForm.clientId.trim(),
+            clientSecret: shopifyForm.clientSecret.trim(),
+            loaderInstalled: result.loaderInstalled || false,
+            loaderVersion: result.loaderVersion,
+            loaderScriptTagId: result.loaderScriptTagId,
+            loaderInstalledAt: result.loaderInstalled ? new Date().toISOString() : undefined
+          });
+
+          toast.success(`Successfully connected ${result.shop.name}!`);
+          setOpenSheet(false);
+          setShopifyForm({ subdomain: '', clientId: '', clientSecret: '' });
+        } catch (addError: any) {
+          if (addError.message === "STORE_ALREADY_OWNED") {
+            toast.error("This store is already connected to a different account. Please contact support if you believe this is an error.");
+          } else if (addError.message === "STORE_ALREADY_CONNECTED") {
+            toast.error("This store is already connected to your account.");
+          } else {
+            throw addError;
+          }
+        }
       } else {
         toast.error(result.error || 'Connection failed. Please check your credentials.');
       }

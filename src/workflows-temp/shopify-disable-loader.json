@@ -83,7 +83,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Find the finalform script tag\nconst scriptTags = $input.first().json.script_tags || [];\nconst finalformTag = scriptTags.find(t => \n  t.src.includes('address-sync-studio') || \n  t.src.includes('finalform') || \n  t.src.includes('loader.js') || \n  t.src.includes('loader.prod.js')\n);\n\nif (finalformTag) {\n  return [{ json: { scriptTagId: finalformTag.id, found: true } }];\n} else {\n  return [{ json: { found: false } }];\n}"
+        "jsCode": "// Find the finalform script tag\nconst scriptTags = $input.first().json.script_tags || [];\nconst finalformTag = scriptTags.find(t => \n  t.src.includes('finalform')\n);\n\nif (finalformTag) {\n  return [{ json: { scriptTagId: finalformTag.id, found: true } }];\n} else {\n  return [{ json: { found: false } }];\n}"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,

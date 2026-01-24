@@ -11,6 +11,12 @@ import {
 } from "firebase/firestore";
 import { useCallback, useEffect, useState } from "react";
 import { db } from "../firebase";
+import {
+  checkStoreOwnership,
+  claimStoreOwnership,
+  normalizeShopifyDomain,
+  releaseStoreOwnership,
+} from "./storeOwnership";
 import { ConnectedStore, FormAssignment, SavedForm } from "./types";
 
 // ===== FORMS HOOKS =====
@@ -36,7 +42,8 @@ export const useSavedForms = (userId: string) => {
         });
         // Client-side sort if needed, or rely on query order (requires index)
         fetchedForms.sort(
-          (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+          (a, b) =>
+            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
         );
         setForms(fetchedForms);
         setLoading(false);
@@ -46,7 +53,7 @@ export const useSavedForms = (userId: string) => {
         console.error("Error fetching forms:", err);
         setError(err.message);
         setLoading(false);
-      }
+      },
     );
 
     return () => unsubscribe();
@@ -72,7 +79,7 @@ export const useSavedForms = (userId: string) => {
         throw err;
       }
     },
-    [userId]
+    [userId],
   );
 
   const updateForm = useCallback(
@@ -90,7 +97,7 @@ export const useSavedForms = (userId: string) => {
         throw err;
       }
     },
-    [userId]
+    [userId],
   );
 
   const deleteForm = useCallback(
@@ -104,7 +111,7 @@ export const useSavedForms = (userId: string) => {
         throw err;
       }
     },
-    [userId]
+    [userId],
   );
 
   return {
@@ -154,27 +161,54 @@ export const useConnectedStores = (userId: string) => {
       name: string;
       platform: "shopify" | "woocommerce";
       url: string;
+      shopifyDomain?: string;
       clientId?: string;
       clientSecret?: string;
       initialSync?: boolean;
       loaderInstalled?: boolean;
+      loaderVersion?: string;
+      loaderScriptTagId?: string;
       loaderInstalledAt?: string;
     }) => {
       if (!userId) throw new Error("User not authenticated");
+
+      // Normalize the Shopify domain for ownership tracking
+      const shopifyDomain = storeData.shopifyDomain
+        ? normalizeShopifyDomain(storeData.shopifyDomain)
+        : normalizeShopifyDomain(storeData.url);
+
+      // Check if this store is already owned by another user
+      const ownership = await checkStoreOwnership(shopifyDomain);
+      if (ownership.isOwned && ownership.ownerId !== userId) {
+        throw new Error("STORE_ALREADY_OWNED");
+      }
+
+      // Check if this user already has this store connected
+      const existingStore = stores.find(
+        (s) => normalizeShopifyDomain(s.url) === shopifyDomain,
+      );
+      if (existingStore) {
+        throw new Error("STORE_ALREADY_CONNECTED");
+      }
+
       try {
         const newStore: Omit<ConnectedStore, "id"> = {
           userId,
           name: storeData.name,
           platform: storeData.platform,
           url: storeData.url,
+          shopifyDomain,
           status: "connected" as const,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           ...(storeData.clientId && { clientId: storeData.clientId }),
           ...(storeData.clientSecret && { clientSecret: storeData.clientSecret }),
-          ...(storeData.initialSync && { initialSync: storeData.initialSync }),
-          ...(storeData.loaderInstalled && {
+          ...(storeData.loaderInstalled !== undefined && {
             loaderInstalled: storeData.loaderInstalled,
+          }),
+          ...(storeData.loaderVersion && { loaderVersion: storeData.loaderVersion }),
+          ...(storeData.loaderScriptTagId && {
+            loaderScriptTagId: storeData.loaderScriptTagId,
           }),
           ...(storeData.loaderInstalledAt && {
             loaderInstalledAt: storeData.loaderInstalledAt,
@@ -182,6 +216,10 @@ export const useConnectedStores = (userId: string) => {
         };
         const docRef = await addDoc(collection(db, "stores"), newStore);
         const savedStore: ConnectedStore = { id: docRef.id, ...newStore };
+
+        // Claim ownership of this store
+        await claimStoreOwnership(shopifyDomain, userId, docRef.id);
+
         setStores((prev) => [...prev, savedStore]);
         return savedStore;
       } catch (err: any) {
@@ -189,7 +227,7 @@ export const useConnectedStores = (userId: string) => {
         throw err;
       }
     },
-    [userId]
+    [userId, stores],
   );
 
   const updateStore = useCallback(
@@ -203,29 +241,41 @@ export const useConnectedStores = (userId: string) => {
         });
         setStores((prev) =>
           prev.map((store) =>
-            store.id === storeId ? { ...store, ...updates } : store
-          )
+            store.id === storeId ? { ...store, ...updates } : store,
+          ),
         );
       } catch (err: any) {
         setError(err.message);
         throw err;
       }
     },
-    [userId]
+    [userId],
   );
 
   const deleteStore = useCallback(
     async (storeId: string) => {
       if (!userId) throw new Error("User not authenticated");
       try {
+        // Find the store to get its domain for ownership release
+        const storeToDelete = stores.find((s) => s.id === storeId);
+        const shopifyDomain =
+          storeToDelete?.shopifyDomain ||
+          (storeToDelete?.url ? normalizeShopifyDomain(storeToDelete.url) : null);
+
         await deleteDoc(doc(db, "stores", storeId));
+
+        // Release ownership of this store
+        if (shopifyDomain) {
+          await releaseStoreOwnership(shopifyDomain);
+        }
+
         setStores((prev) => prev.filter((s) => s.id !== storeId));
       } catch (err: any) {
         setError(err.message);
         throw err;
       }
     },
-    [userId]
+    [userId, stores],
   );
 
   return {
@@ -303,7 +353,7 @@ export const useFormAssignments = (userId: string) => {
         throw err;
       }
     },
-    [userId]
+    [userId],
   );
 
   const deleteAssignment = useCallback(
@@ -317,7 +367,7 @@ export const useFormAssignments = (userId: string) => {
         throw err;
       }
     },
-    [userId]
+    [userId],
   );
 
   return {

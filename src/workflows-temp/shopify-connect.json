@@ -93,7 +93,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Build the success response with proper JSON structure\nconst shopData = $('Get Shop Details').item.json.shop;\nconst accessToken = $('Get Access Token').item.json.access_token;\nconst scriptTags = $input.first().json.script_tags || [];\n\n// Check if FinalForm loader is installed\nconst loaderInstalled = scriptTags.some(t => \n  t.src && (t.src.includes('address-sync-studio') || t.src.includes('finalform'))\n);\n\nreturn [{\n  json: {\n    success: true,\n    shop: shopData,\n    loaderInstalled: loaderInstalled,\n    accessToken: accessToken\n  }\n}];"
+        "jsCode": "// Build the success response with proper JSON structure\nconst shopData = $('Get Shop Details').item.json.shop;\nconst accessToken = $('Get Access Token').item.json.access_token;\nconst scriptTags = $input.first().json.script_tags || [];\n\n// Find FinalForm loader script tag\nconst loaderTag = scriptTags.find(t => \n  t.src && (t.src.includes('finalform'))\n);\n\nconst loaderInstalled = !!loaderTag;\n\n// Extract version from URL if present (e.g., ?v=1.1.0 or version in filename)\nlet loaderVersion = null;\nif (loaderTag && loaderTag.src) {\n  // Try to extract version from query param\n  const versionMatch = loaderTag.src.match(/[?&]v(?:ersion)?=([0-9]+\\.[0-9]+\\.[0-9]+)/);\n  if (versionMatch) {\n    loaderVersion = versionMatch[1];\n  }\n}\n\nreturn [{\n  json: {\n    success: true,\n    shop: shopData,\n    loaderInstalled: loaderInstalled,\n    loaderVersion: loaderVersion,\n    loaderScriptTagId: loaderTag ? loaderTag.id.toString() : null,\n    accessToken: accessToken\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,

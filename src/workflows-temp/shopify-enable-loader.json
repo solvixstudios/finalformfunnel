@@ -58,6 +58,129 @@
     },
     {
       "parameters": {
+        "url": "=https://{{ $('Receive Enable Request').item.json.body.subdomain }}.myshopify.com/admin/api/2024-01/script_tags.json",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Shopify-Access-Token",
+              "value": "={{ $json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [-304, -352],
+      "id": "check-existing-scripts",
+      "name": "Check Existing Scripts",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const CURRENT_VERSION = '1.1.0';\nconst scriptTags = $input.first().json.script_tags || [];\nconst accessToken = $('Get Access Token').item.json.access_token;\n\n// Find existing FinalForm loader\nconst loaderTag = scriptTags.find(t => \n  t.src && (t.src.includes('finalform'))\n);\n\nif (loaderTag) {\n  // Extract version from URL\n  let existingVersion = null;\n  const versionMatch = loaderTag.src.match(/[?&]v(?:ersion)?=([0-9]+\\.[0-9]+\\.[0-9]+)/);\n  if (versionMatch) {\n    existingVersion = versionMatch[1];\n  }\n  \n  if (existingVersion === CURRENT_VERSION) {\n    // Already installed with same version\n    return [{\n      json: {\n        action: 'already_installed',\n        scriptTagId: loaderTag.id.toString(),\n        version: existingVersion,\n        accessToken\n      }\n    }];\n  } else {\n    // Needs upgrade - delete old, create new\n    return [{\n      json: {\n        action: 'upgrade',\n        oldScriptTagId: loaderTag.id.toString(),\n        oldVersion: existingVersion,\n        newVersion: CURRENT_VERSION,\n        accessToken\n      }\n    }];\n  }\n} else {\n  // No loader installed - proceed with installation\n  return [{\n    json: {\n      action: 'install',\n      version: CURRENT_VERSION,\n      accessToken\n    }\n  }];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-64, -352],
+      "id": "check-loader-status",
+      "name": "Check Loader Status"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "already-installed",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "already_installed",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [176, -352],
+      "id": "is-already-installed",
+      "name": "Already Installed?"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"version\": \"{{ $json.version }}\",\n  \"alreadyInstalled\": true,\n  \"scriptTagId\": \"{{ $json.scriptTagId }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [416, -500],
+      "id": "respond-already-installed",
+      "name": "Already Installed Response"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "needs-upgrade",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "upgrade",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [416, -352],
+      "id": "needs-upgrade",
+      "name": "Needs Upgrade?"
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "=https://{{ $('Receive Enable Request').item.json.body.subdomain }}.myshopify.com/admin/api/2024-01/script_tags/{{ $json.oldScriptTagId }}.json",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Shopify-Access-Token",
+              "value": "={{ $json.accessToken }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [656, -500],
+      "id": "delete-old-script",
+      "name": "Delete Old Script Tag",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
         "method": "POST",
         "url": "=https://{{ $('Receive Enable Request').item.json.body.subdomain }}.myshopify.com/admin/api/2024-01/graphql.json",
         "sendHeaders": true,
@@ -80,7 +203,7 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
-      "position": [-304, -450],
+      "position": [656, -200],
       "id": "create-product-metafield-def",
       "name": "Create Product Metafield Definition",
       "onError": "continueRegularOutput"
@@ -109,7 +232,7 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
-      "position": [-64, -450],
+      "position": [896, -200],
       "id": "create-shop-metafield-def",
       "name": "Create Shop Metafield Definition",
       "onError": "continueRegularOutput"
@@ -134,8 +257,8 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
-      "position": [176, -450],
-      "id": "1517abbb-1fe4-4126-806e-5e244e593a0e",
+      "position": [1136, -200],
+      "id": "create-sf-token",
       "name": "Create SF Token",
       "onError": "continueErrorOutput"
     },
@@ -154,27 +277,89 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"script_tag\": {\n    \"event\": \"onload\",\n    \"src\": \"https://finalformfunnel.web.app/finalform-loader.prod.js?sf_token={{ $json.storefront_access_token.access_token }}\"\n  }\n}",
+        "jsonBody": "={\n  \"script_tag\": {\n    \"event\": \"onload\",\n    \"src\": \"https://finalformfunnel.web.app/finalform-loader.prod.js?sf_token={{ $json.storefront_access_token.access_token }}&v=1.1.0\"\n  }\n}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
-      "position": [416, -450],
-      "id": "91a5fa60-6d27-40a1-96f7-bed66ee43ea3",
+      "position": [1376, -200],
+      "id": "inject-script-tag",
       "name": "Inject Script Tag",
       "onError": "continueErrorOutput"
     },
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={\n  \"success\": true,\n  \"version\": \"1.1.0\",\n  \"alreadyInstalled\": false\n}",
+        "responseBody": "={\n  \"success\": true,\n  \"version\": \"1.1.0\",\n  \"alreadyInstalled\": false,\n  \"scriptTagId\": \"{{ $json.script_tag.id }}\"\n}",
         "options": {}
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [656, -450],
-      "id": "a01c80ca-edd1-4d09-ab80-620824471dc3",
+      "position": [1616, -200],
+      "id": "success-response",
       "name": "Success Response"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://{{ $('Receive Enable Request').item.json.body.subdomain }}.myshopify.com/admin/api/2024-01/storefront_access_tokens.json",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Shopify-Access-Token",
+              "value": "={{ $('Get Access Token').item.json.access_token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"storefront_access_token\":{\"title\":\"FinalForm Loader\"}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [896, -500],
+      "id": "create-sf-token-upgrade",
+      "name": "Create SF Token (Upgrade)",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://{{ $('Receive Enable Request').item.json.body.subdomain }}.myshopify.com/admin/api/2024-01/script_tags.json",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Shopify-Access-Token",
+              "value": "={{ $('Get Access Token').item.json.access_token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"script_tag\": {\n    \"event\": \"onload\",\n    \"src\": \"https://finalformfunnel.web.app/finalform-loader.prod.js?sf_token={{ $json.storefront_access_token.access_token }}&v=1.1.0\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [1136, -500],
+      "id": "inject-script-tag-upgrade",
+      "name": "Inject Script Tag (Upgrade)",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"version\": \"1.1.0\",\n  \"upgraded\": true,\n  \"scriptTagId\": \"{{ $json.script_tag.id }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [1376, -500],
+      "id": "upgrade-success-response",
+      "name": "Upgrade Success Response"
     },
     {
       "parameters": {
@@ -186,8 +371,8 @@
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [176, -224],
-      "id": "1d93470c-3303-4bf5-8530-8b8bd0e28859",
+      "position": [656, 0],
+      "id": "error-response",
       "name": "Error Response"
     }
   ],
@@ -207,7 +392,112 @@
       "main": [
         [
           {
+            "node": "Check Existing Scripts",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Existing Scripts": {
+      "main": [
+        [
+          {
+            "node": "Check Loader Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Loader Status": {
+      "main": [
+        [
+          {
+            "node": "Already Installed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Already Installed?": {
+      "main": [
+        [
+          {
+            "node": "Already Installed Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Needs Upgrade?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needs Upgrade?": {
+      "main": [
+        [
+          {
+            "node": "Delete Old Script Tag",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
             "node": "Create Product Metafield Definition",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Old Script Tag": {
+      "main": [
+        [
+          {
+            "node": "Create SF Token (Upgrade)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create SF Token (Upgrade)": {
+      "main": [
+        [
+          {
+            "node": "Inject Script Tag (Upgrade)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inject Script Tag (Upgrade)": {
+      "main": [
+        [
+          {
+            "node": "Upgrade Success Response",
             "type": "main",
             "index": 0
           }
