@@ -1,8 +1,10 @@
 import '@/index.css';
-import { getFormConfig } from '@/lib/api/formConfig';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { FormLoader } from './FormLoader';
+
+// Declare global variable defined in Vite config
+declare const __APP_VERSION__: string;
 
 const CONTAINER_ID = 'finalform-container';
 
@@ -34,6 +36,102 @@ async function fetchShopifyProduct() {
     } catch (e) {
         console.warn('FinalForm: Product fetch failed', e);
     }
+    return null;
+}
+
+/**
+ * Fetch config from Storefront API
+ * Hierarchy: Product Metafield > Shop Metafield
+ */
+async function fetchConfigFromStorefrontApi(shop: string, token: string, productId?: string, productHandle?: string) {
+    if (!token) {
+        console.error('FinalForm: Missing sf_token in script URL. Cannot fetch config.');
+        return null;
+    }
+
+    console.log('FinalForm: Fetching config via Storefront API...');
+
+    let query = '';
+
+    // If we are on a product page, we want to check Product *and* Shop config
+    if (productHandle) {
+        query = `
+        query getConfigs($handle: String!) {
+            product(handle: $handle) {
+                metafield(namespace: "finalform", key: "config") {
+                    value
+                }
+            }
+            shop {
+                metafield(namespace: "finalform", key: "config") {
+                    value
+                }
+            }
+        }
+        `;
+    } else {
+        // Just Shop config
+        query = `
+        query getShopConfig {
+            shop {
+                metafield(namespace: "finalform", key: "config") {
+                    value
+                }
+            }
+        }
+        `;
+    }
+
+    try {
+        const res = await fetch(`https://${shop}/api/2023-01/graphql.json`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Shopify-Storefront-Access-Token': token,
+            },
+            body: JSON.stringify({
+                query,
+                variables: { handle: productHandle }
+            })
+        });
+
+        if (!res.ok) {
+            console.error('FinalForm: SF API Error', res.statusText);
+            return null;
+        }
+
+        const json = await res.json();
+
+        // Priority 1: Product Config
+        const productConfig = json.data?.product?.metafield?.value;
+        if (productConfig) {
+            try {
+                const parsed = JSON.parse(productConfig);
+                console.log('FinalForm: Using Product-Specific Config');
+                return parsed;
+            } catch (e) {
+                console.error('FinalForm: Invalid JSON in Product Metafield', e);
+            }
+        }
+
+        // Priority 2: Shop Config (Global Fallback)
+        const shopConfig = json.data?.shop?.metafield?.value;
+        if (shopConfig) {
+            try {
+                const parsed = JSON.parse(shopConfig);
+                console.log('FinalForm: Using Global Shop Config');
+                return parsed;
+            } catch (e) {
+                console.error('FinalForm: Invalid JSON in Shop Metafield', e);
+            }
+        }
+
+        console.warn('FinalForm: No configuration found in Metafields (Product or Shop).');
+
+    } catch (e) {
+        console.error('FinalForm: SF API Fetch Exception', e);
+    }
+
     return null;
 }
 
@@ -85,22 +183,26 @@ async function initLoader() {
 
     console.log('FinalForm: Context', { shop, productId, productHandle });
 
-    // 3. Fetch Config and Product Data in parallel
-    const [configRes, productData] = await Promise.all([
-        getFormConfig(shop, productId, productHandle),
-        fetchShopifyProduct()
-    ]);
+    // 3. Resolve Config (Storefront API Only)
+    let config = null;
 
-    console.log('FinalForm: Resolved Data', { config: configRes, product: productData });
+    if (sfToken) {
+        config = await fetchConfigFromStorefrontApi(shop, sfToken, productId, productHandle);
+    } else {
+        console.warn('FinalForm: sf_token missing. Please add ?sf_token=YOUR_TOKEN to the script tag.');
+    }
 
-    if ('error' in configRes) {
-        console.error('FinalForm: Config load failed', configRes.error);
+    if (!config) {
+        console.warn('FinalForm: Config load failed. Aborting.');
         return;
     }
 
-    const { config } = configRes;
+    console.log('FinalForm: Config loaded successfully.');
 
-    // 4. Inject Container
+    // 4. Fetch Product Data (Inventory, Real-time status)
+    const productData = await fetchShopifyProduct();
+
+    // 5. Inject Container
     let container = document.getElementById(CONTAINER_ID);
     if (!container) {
         container = document.createElement('div');
@@ -132,13 +234,13 @@ async function initLoader() {
         }
     }
 
-    // 5. Shadow DOM Setup
+    // 6. Shadow DOM Setup
     let shadowRoot = container.shadowRoot;
     if (!shadowRoot) {
         shadowRoot = container.attachShadow({ mode: 'open' });
     }
 
-    // 6. Inject CSS into Shadow DOM
+    // 7. Inject CSS into Shadow DOM
     const cssId = 'finalform-shadow-css';
     if (!shadowRoot.getElementById(cssId)) {
         const scripts = document.querySelectorAll('script');
@@ -167,7 +269,7 @@ async function initLoader() {
         console.log('FinalForm: Injected CSS into Shadow DOM', link.href);
     }
 
-    // 7. Render
+    // 8. Render
     if (productData) {
         const offers = config.offers || [];
         const shipping = config.shipping || { standard: { home: 0, desk: 0 } };

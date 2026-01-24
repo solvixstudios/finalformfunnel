@@ -1,4 +1,3 @@
-import { FormAssignmentSheet } from '@/components/FormAssignmentSheet';
 import {
     FolderOpen,
     Plus,
@@ -17,20 +16,20 @@ import { toast } from '../components/ui/sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { useFormImportExport } from '../hooks/useFormImportExport';
 import { getStoredUser } from '../lib/authGoogle';
-import { useSavedForms } from '../lib/firebase/hooks';
+import { useFormAssignments, useSavedForms } from '../lib/firebase/hooks';
 import { useFormStore } from '../stores';
 
 export const FormsPage = () => {
     const navigate = useNavigate();
     const user = getStoredUser();
     const { forms, loading, deleteForm, updateForm } = useSavedForms(user?.id || '');
+    const { assignments: allAssignments } = useFormAssignments(user?.id || '');
     const [searchQuery, setSearchQuery] = useState('');
     const [activeTab, setActiveTab] = useState<'forms' | 'templates'>('forms');
     const [isImporting, setIsImporting] = useState(false);
     const { importFromFile } = useFormImportExport();
     const loadFormConfig = useFormStore((state) => state.loadFormConfig);
     const resetToNewForm = useFormStore((state) => state.resetToNewForm);
-    const [activeAssignmentFormId, setActiveAssignmentFormId] = useState<string | null>(null);
 
     // Filter and sort forms
     const sortedForms = useMemo(() => {
@@ -110,14 +109,7 @@ export const FormsPage = () => {
         }
     };
 
-    const handleStatusChange = async (id: string, status: 'draft' | 'published') => {
-        try {
-            await updateForm(id, { status });
-            toast.success(status === 'published' ? 'Form published!' : 'Form set to draft');
-        } catch (e) {
-            toast.error("Failed to update status");
-        }
-    };
+
 
     return (
         <div className="max-w-[1600px] mx-auto p-6 space-y-6 h-full flex flex-col">
@@ -224,11 +216,10 @@ export const FormsPage = () => {
                                 <FormLoadingCard
                                     key={form.id}
                                     form={form}
+                                    assignments={allAssignments.filter(a => a.formId === form.id)}
                                     onClick={() => handleLoadForm(form.id)}
-                                    onAssign={() => setActiveAssignmentFormId(form.id)}
                                     onRename={(name) => handleRenameForm(form.id, name)}
                                     onDelete={() => handleDeleteForm(form.id)}
-                                    onStatusChange={(status) => handleStatusChange(form.id, status)}
                                 />
                             ))}
                         </div>
@@ -249,15 +240,6 @@ export const FormsPage = () => {
                     <TemplateGrid onLoad={handleLoadTemplate} />
                 </TabsContent>
             </Tabs>
-            {/* Assignment Sheet */}
-            {activeAssignmentFormId && (
-                <FormAssignmentSheet
-                    open={!!activeAssignmentFormId}
-                    onOpenChange={(open) => !open && setActiveAssignmentFormId(null)}
-                    userId={user?.id || ''}
-                    initialFormId={activeAssignmentFormId}
-                />
-            )}
         </div>
     );
 };

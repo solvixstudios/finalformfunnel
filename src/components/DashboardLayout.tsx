@@ -16,7 +16,6 @@ import {
   Menu,
   Package,
   Plug,
-  Store,
   User,
   X,
   Zap
@@ -99,12 +98,7 @@ const DashboardLayoutContent = ({
       icon: <Plug size={20} />,
       path: '/dashboard/integrations',
     },
-    {
-      id: 'stores',
-      label: 'Stores',
-      icon: <Store size={20} />,
-      path: '/dashboard/stores',
-    },
+
     {
       id: 'products',
       label: 'Products',

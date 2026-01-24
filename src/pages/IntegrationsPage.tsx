@@ -1,9 +1,17 @@
+import { ShopifyManager } from '@/components/integrations/ShopifyManager';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
@@ -14,8 +22,7 @@ import {
   ExternalLink,
   Loader2,
   Plug,
-  Store,
-  Trash2
+  Store
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -200,12 +207,12 @@ const ShopifyGuide = () => {
 
 export default function IntegrationsPage({ userId }: IntegrationsPageProps) {
   const { t, dir } = useI18n();
-  const { stores, addStore, updateStore, deleteStore } = useConnectedStores(userId);
+  const { stores, addStore } = useConnectedStores(userId);
 
   // UI State
   const [openSheet, setOpenSheet] = useState(false);
   const [activeTab, setActiveTab] = useState('connect');
-  const [storeToDelete, setStoreToDelete] = useState<string | null>(null);
+  const [selectedIntegration, setSelectedIntegration] = useState('all');
 
 
   // Form State
@@ -258,19 +265,6 @@ export default function IntegrationsPage({ userId }: IntegrationsPageProps) {
     }
   };
 
-  const handleDeleteStore = async () => {
-    if (!storeToDelete) return;
-
-    try {
-      await deleteStore(storeToDelete);
-      toast.success('Store disconnected successfully');
-    } catch (error) {
-      console.error(error);
-      toast.error('Failed to disconnect store');
-    } finally {
-      setStoreToDelete(null);
-    }
-  };
 
   return (
     <div className="max-w-[1600px] mx-auto p-6 space-y-6 h-full flex flex-col" dir={dir}>
@@ -285,245 +279,224 @@ export default function IntegrationsPage({ userId }: IntegrationsPageProps) {
             </Badge>
           </h1>
           <p className="text-sm text-slate-500 max-w-2xl">
-            Connect specific store providers to enable product syncing and order management.
+            Select a platform to manage connected stores and settings.
           </p>
         </div>
 
-        {/* Potentially add 'Add Custom Integration' button here in future */}
+        {/* Integration Select Tool */}
+        <div className="flex items-center gap-2">
+          <Label className="text-slate-500 text-sm">Platform:</Label>
+          <Select value={selectedIntegration} onValueChange={setSelectedIntegration}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Integrations</SelectItem>
+              <SelectItem value="shopify">Shopify</SelectItem>
+              <SelectItem value="woocommerce" disabled>WooCommerce</SelectItem>
+              <SelectItem value="sheets" disabled>Google Sheets</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      {/* Active Connections List (if any) */}
-      {stores.length > 0 && (
-        <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-slate-900">Active Connections</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {stores.map(store => (
-              <div key={store.id} className="group relative flex flex-col p-4 rounded-xl border border-slate-200 bg-white shadow-sm hover:shadow-md hover:border-indigo-200 transition-all">
-                {/* Header */}
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-[#95BF47]/10 flex items-center justify-center text-xl flex-shrink-0">
-                      {store.platform === 'shopify' ? '🛍️' : '📦'}
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="font-bold text-slate-900 text-sm">{store.name}</h3>
-                      <a href={`https://${store.url}`} target="_blank" rel="noopener noreferrer" className="text-xs text-slate-500 hover:text-indigo-600 hover:underline flex items-center gap-1">
-                        {store.url}
-                        <ExternalLink size={10} />
-                      </a>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Status Badge */}
-                <div className="flex items-center gap-2 mb-3">
-                  <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px]">
-                    <Check size={10} className="mr-1" />
-                    Connected
-                  </Badge>
-                  {store.loaderInstalled && (
-                    <Badge variant="outline" className="text-[10px] text-slate-500">
-                      Loader Enabled
-                    </Badge>
-                  )}
-                </div>
-
-                <p className="text-[10px] text-slate-500 mb-3">
-                  Go to <strong>Stores</strong> tab to enable the loader and assign forms.
-                </p>
-
-                {/* Actions */}
-                <div className="flex gap-2 mt-auto">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 h-8 text-xs"
-                    onClick={() => window.location.href = '/dashboard/stores'}
-                  >
-                    <Store size={14} className="mr-1.5" />
-                    Manage
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 text-xs text-red-500 hover:text-red-600 hover:bg-red-50"
-                    onClick={() => setStoreToDelete(store.id)}
-                    title="Disconnect"
-                  >
-                    <Trash2 size={14} />
-                  </Button>
-                </div>
+      {/* Main Content Area */}
+      {selectedIntegration === 'all' && (
+        <>
+          {stores.length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-slate-900">Active Connections</h3>
               </div>
-            ))}
+              <ShopifyManager userId={userId} showHeader={false} />
+              {/* Future: <WooManager ... /> */}
+            </div>
+          )}
+
+          <div className="space-y-3 pt-2">
+            <h3 className="text-lg font-semibold text-slate-900">Available Integrations</h3>
           </div>
-        </div>
+        </>
       )}
+
+      {selectedIntegration === 'shopify' ? (
+        <ShopifyManager
+          userId={userId}
+          onAddStore={() => setOpenSheet(true)}
+        />
+      ) : selectedIntegration !== 'all' ? (
+        <div className="flex items-center justify-center p-12 text-slate-400">
+          <p>Integration not supported yet.</p>
+        </div>
+      ) : null}
 
 
       {/* Available Integrations Grid */}
-      <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-slate-900">Available Platforms</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {(selectedIntegration === 'all' || selectedIntegration === 'shopify') && (
+        <div className={cn("space-y-3", selectedIntegration === 'shopify' && "pt-6 border-t border-slate-200")}>
+          {selectedIntegration === 'shopify' && <h3 className="text-sm font-semibold text-slate-900">Add New Integration</h3>}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
 
-          {/* Shopify (Clickable) */}
-          <Sheet open={openSheet} onOpenChange={setOpenSheet}>
-            <SheetTrigger asChild>
-              <Card className="cursor-pointer hover:border-indigo-400 hover:shadow-md transition-all group relative overflow-hidden h-full flex flex-col border-slate-200">
-                <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                <CardHeader className="p-5 pb-3">
-                  <div className="w-12 h-12 rounded-xl bg-[#95BF47]/10 flex items-center justify-center text-2xl mb-3 shadow-sm group-hover:scale-105 transition-transform duration-300">
-                    🛍️
+            {/* Shopify (Clickable) */}
+            <Sheet open={openSheet} onOpenChange={setOpenSheet}>
+              <SheetTrigger asChild>
+                <Card className="cursor-pointer hover:border-indigo-400 hover:shadow-md transition-all group relative overflow-hidden h-full flex flex-col border-slate-200">
+                  <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <CardHeader className="p-5 pb-3">
+                    <div className="w-12 h-12 rounded-xl bg-[#95BF47]/10 flex items-center justify-center text-2xl mb-3 shadow-sm group-hover:scale-105 transition-transform duration-300">
+                      🛍️
+                    </div>
+                    <CardTitle className="text-base font-bold text-slate-900">Shopify</CardTitle>
+                  </CardHeader>
+                  <CardContent className="px-5 pb-5 flex-1 flex flex-col justify-between gap-4">
+                    <p className="text-sm text-slate-500 leading-relaxed">
+                      Connect more Shopify stores.
+                    </p>
+                    <div className="text-xs font-bold text-indigo-600 flex items-center group-hover:translate-x-1 transition-transform uppercase tracking-wider">
+                      Connect <ChevronRight size={14} className="ml-1" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </SheetTrigger>
+
+              <SheetContent className="sm:max-w-lg w-[90vw] flex flex-col h-full p-0 gap-0">
+                <SheetHeader className="px-6 py-5 border-b border-slate-100 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+                  <SheetTitle className="flex items-center gap-2.5 text-xl">
+                    <div className="w-8 h-8 rounded-lg bg-[#95BF47]/20 flex items-center justify-center text-lg">🛍️</div>
+                    Connect Shopify
+                  </SheetTitle>
+                  <SheetDescription>
+                    Connect your Shopify store to sync products and orders.
+                  </SheetDescription>
+                </SheetHeader>
+
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+                  <div className="px-6 pt-4 pb-2">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="connect">Credentials</TabsTrigger>
+                      <TabsTrigger value="guide">Step-by-Step Guide</TabsTrigger>
+                    </TabsList>
                   </div>
-                  <CardTitle className="text-base font-bold text-slate-900">Shopify</CardTitle>
-                </CardHeader>
-                <CardContent className="px-5 pb-5 flex-1 flex flex-col justify-between gap-4">
-                  <p className="text-sm text-slate-500 leading-relaxed">
-                    The leading e-commerce platform. Sync products, inventory, and fulfill orders.
-                  </p>
-                  <div className="text-xs font-bold text-indigo-600 flex items-center group-hover:translate-x-1 transition-transform uppercase tracking-wider">
-                    Connect <ChevronRight size={14} className="ml-1" />
-                  </div>
-                </CardContent>
-              </Card>
-            </SheetTrigger>
 
-            <SheetContent className="sm:max-w-lg w-[90vw] flex flex-col h-full p-0 gap-0">
-              <SheetHeader className="px-6 py-5 border-b border-slate-100 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
-                <SheetTitle className="flex items-center gap-2.5 text-xl">
-                  <div className="w-8 h-8 rounded-lg bg-[#95BF47]/20 flex items-center justify-center text-lg">🛍️</div>
-                  Connect Shopify
-                </SheetTitle>
-                <SheetDescription>
-                  Connect your Shopify store to sync products and orders.
-                </SheetDescription>
-              </SheetHeader>
+                  <ScrollArea className="flex-1 px-6">
+                    <TabsContent value="connect" className="mt-4 space-y-6 pb-8">
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="subdomain">Store Domain</Label>
+                          <div className="flex shadow-sm rounded-md">
+                            <Input
+                              id="subdomain"
+                              placeholder="my-store-name"
+                              value={shopifyForm.subdomain}
+                              onChange={e => setShopifyForm(prev => ({ ...prev, subdomain: e.target.value }))}
+                              className="rounded-r-none focus-visible:ring-0 focus-visible:ring-offset-0 relative z-10"
+                            />
+                            <div className="bg-slate-50 border border-l-0 border-slate-200 px-3 py-2 text-sm text-slate-500 font-medium rounded-r-md flex items-center whitespace-nowrap">
+                              .myshopify.com
+                            </div>
+                          </div>
+                        </div>
 
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-                <div className="px-6 pt-4 pb-2">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="connect">Credentials</TabsTrigger>
-                    <TabsTrigger value="guide">Step-by-Step Guide</TabsTrigger>
-                  </TabsList>
-                </div>
-
-                <ScrollArea className="flex-1 px-6">
-                  <TabsContent value="connect" className="mt-4 space-y-6 pb-8">
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="subdomain">Store Domain</Label>
-                        <div className="flex shadow-sm rounded-md">
-                          <Input
-                            id="subdomain"
-                            placeholder="my-store-name"
-                            value={shopifyForm.subdomain}
-                            onChange={e => setShopifyForm(prev => ({ ...prev, subdomain: e.target.value }))}
-                            className="rounded-r-none focus-visible:ring-0 focus-visible:ring-offset-0 relative z-10"
-                          />
-                          <div className="bg-slate-50 border border-l-0 border-slate-200 px-3 py-2 text-sm text-slate-500 font-medium rounded-r-md flex items-center whitespace-nowrap">
-                            .myshopify.com
+                        <div className="grid gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="clientId">Client ID</Label>
+                            <Input
+                              id="clientId"
+                              value={shopifyForm.clientId}
+                              onChange={e => setShopifyForm(prev => ({ ...prev, clientId: e.target.value }))}
+                              className="font-mono text-sm"
+                              placeholder="From App settings"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="clientSecret">Client Secret</Label>
+                            <Input
+                              id="clientSecret"
+                              type="password"
+                              value={shopifyForm.clientSecret}
+                              onChange={e => setShopifyForm(prev => ({ ...prev, clientSecret: e.target.value }))}
+                              className="font-mono text-sm"
+                              placeholder="From App settings"
+                            />
                           </div>
                         </div>
                       </div>
 
-                      <div className="grid gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="clientId">Client ID</Label>
-                          <Input
-                            id="clientId"
-                            value={shopifyForm.clientId}
-                            onChange={e => setShopifyForm(prev => ({ ...prev, clientId: e.target.value }))}
-                            className="font-mono text-sm"
-                            placeholder="From App settings"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="clientSecret">Client Secret</Label>
-                          <Input
-                            id="clientSecret"
-                            type="password"
-                            value={shopifyForm.clientSecret}
-                            onChange={e => setShopifyForm(prev => ({ ...prev, clientSecret: e.target.value }))}
-                            className="font-mono text-sm"
-                            placeholder="From App settings"
-                          />
-                        </div>
+                      <div className="bg-slate-50 border border-slate-100 rounded-lg p-3 text-xs text-slate-500">
+                        Credentials are used securely to establish the API connection.
                       </div>
-                    </div>
+                    </TabsContent>
 
-                    <div className="bg-slate-50 border border-slate-100 rounded-lg p-3 text-xs text-slate-500">
-                      Credentials are used securely to establish the API connection.
-                    </div>
-                  </TabsContent>
+                    <TabsContent value="guide" className="mt-0 pb-8">
+                      <ShopifyGuide />
+                    </TabsContent>
+                  </ScrollArea>
 
-                  <TabsContent value="guide" className="mt-0 pb-8">
-                    <ShopifyGuide />
-                  </TabsContent>
-                </ScrollArea>
+                  <div className="p-6 border-t border-slate-100 bg-slate-50/50 mt-auto sticky bottom-0 z-10">
+                    {activeTab === 'guide' ? (
+                      <Button className="w-full" onClick={() => setActiveTab('connect')}>
+                        Enter Credentials <ChevronRight size={16} className="ml-2" />
+                      </Button>
+                    ) : (
+                      <Button
+                        className="w-full bg-[#95BF47] hover:bg-[#85AB3E] text-white"
+                        onClick={handleShopifyConnect}
+                        disabled={isConnecting}
+                      >
+                        {isConnecting ? <Loader2 size={16} className="animate-spin mr-2" /> : <Store size={16} className="mr-2" />}
+                        {isConnecting ? 'Verifying...' : 'Connect Store'}
+                      </Button>
+                    )}
+                  </div>
+                </Tabs>
+              </SheetContent>
+            </Sheet>
 
-                <div className="p-6 border-t border-slate-100 bg-slate-50/50 mt-auto sticky bottom-0 z-10">
-                  {activeTab === 'guide' ? (
-                    <Button className="w-full" onClick={() => setActiveTab('connect')}>
-                      Enter Credentials <ChevronRight size={16} className="ml-2" />
-                    </Button>
-                  ) : (
-                    <Button
-                      className="w-full bg-[#95BF47] hover:bg-[#85AB3E] text-white"
-                      onClick={handleShopifyConnect}
-                      disabled={isConnecting}
-                    >
-                      {isConnecting ? <Loader2 size={16} className="animate-spin mr-2" /> : <Store size={16} className="mr-2" />}
-                      {isConnecting ? 'Verifying...' : 'Connect Store'}
-                    </Button>
-                  )}
+            {/* WooCommerce (Coming Soon) */}
+            <Card className="opacity-60 grayscale cursor-not-allowed border-dashed h-full flex flex-col group hover:opacity-75 transition-all">
+              <CardHeader className="p-5 pb-3">
+                <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center text-2xl mb-3">
+                  📦
                 </div>
-              </Tabs>
-            </SheetContent>
-          </Sheet>
+                <CardTitle className="text-base font-bold text-slate-700">WooCommerce</CardTitle>
+              </CardHeader>
+              <CardContent className="px-5 pb-5 flex-1">
+                <p className="text-sm text-slate-400 mb-3">WordPress e-commerce integration.</p>
+                <Badge variant="outline" className="text-slate-400 pointer-events-none">Coming Soon</Badge>
+              </CardContent>
+            </Card>
 
-          {/* WooCommerce (Coming Soon) */}
-          <Card className="opacity-60 grayscale cursor-not-allowed border-dashed h-full flex flex-col group hover:opacity-75 transition-all">
-            <CardHeader className="p-5 pb-3">
-              <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center text-2xl mb-3">
-                📦
-              </div>
-              <CardTitle className="text-base font-bold text-slate-700">WooCommerce</CardTitle>
-            </CardHeader>
-            <CardContent className="px-5 pb-5 flex-1">
-              <p className="text-sm text-slate-400 mb-3">WordPress e-commerce integration.</p>
-              <Badge variant="outline" className="text-slate-400 pointer-events-none">Coming Soon</Badge>
-            </CardContent>
-          </Card>
+            {/* WhatsApp (Coming Soon) */}
+            <Card className="opacity-60 grayscale cursor-not-allowed border-dashed h-full flex flex-col group hover:opacity-75 transition-all">
+              <CardHeader className="p-5 pb-3">
+                <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center text-2xl mb-3">
+                  💬
+                </div>
+                <CardTitle className="text-base font-bold text-slate-700">WhatsApp</CardTitle>
+              </CardHeader>
+              <CardContent className="px-5 pb-5 flex-1">
+                <p className="text-sm text-slate-400 mb-3">Order notifications & support.</p>
+                <Badge variant="outline" className="text-slate-400 pointer-events-none">Coming Soon</Badge>
+              </CardContent>
+            </Card>
 
-          {/* WhatsApp (Coming Soon) */}
-          <Card className="opacity-60 grayscale cursor-not-allowed border-dashed h-full flex flex-col group hover:opacity-75 transition-all">
-            <CardHeader className="p-5 pb-3">
-              <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center text-2xl mb-3">
-                💬
-              </div>
-              <CardTitle className="text-base font-bold text-slate-700">WhatsApp</CardTitle>
-            </CardHeader>
-            <CardContent className="px-5 pb-5 flex-1">
-              <p className="text-sm text-slate-400 mb-3">Order notifications & support.</p>
-              <Badge variant="outline" className="text-slate-400 pointer-events-none">Coming Soon</Badge>
-            </CardContent>
-          </Card>
+            {/* Google Sheets (Coming Soon) */}
+            <Card className="opacity-60 grayscale cursor-not-allowed border-dashed h-full flex flex-col group hover:opacity-75 transition-all">
+              <CardHeader className="p-5 pb-3">
+                <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center text-2xl mb-3">
+                  📊
+                </div>
+                <CardTitle className="text-base font-bold text-slate-700">Google Sheets</CardTitle>
+              </CardHeader>
+              <CardContent className="px-5 pb-5 flex-1">
+                <p className="text-sm text-slate-400 mb-3">Export leads to spreadsheets.</p>
+                <Badge variant="outline" className="text-slate-400 pointer-events-none">Coming Soon</Badge>
+              </CardContent>
+            </Card>
 
-          {/* Google Sheets (Coming Soon) */}
-          <Card className="opacity-60 grayscale cursor-not-allowed border-dashed h-full flex flex-col group hover:opacity-75 transition-all">
-            <CardHeader className="p-5 pb-3">
-              <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center text-2xl mb-3">
-                📊
-              </div>
-              <CardTitle className="text-base font-bold text-slate-700">Google Sheets</CardTitle>
-            </CardHeader>
-            <CardContent className="px-5 pb-5 flex-1">
-              <p className="text-sm text-slate-400 mb-3">Export leads to spreadsheets.</p>
-              <Badge variant="outline" className="text-slate-400 pointer-events-none">Coming Soon</Badge>
-            </CardContent>
-          </Card>
-
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

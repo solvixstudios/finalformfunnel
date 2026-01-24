@@ -6,9 +6,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import { Clock, FileText, MoreVertical, Package, Trash2 } from 'lucide-react';
+import { Clock, FileText, MoreVertical, Trash2 } from 'lucide-react';
 import React from 'react';
-import { Switch } from '../ui/switch';
 
 export interface FormLoadingCardProps {
   form?: {
@@ -22,10 +21,9 @@ export interface FormLoadingCardProps {
   isLoading?: boolean;
   isSelected?: boolean;
   onClick?: () => void;
-  onAssign?: () => void;
   onRename?: (newName: string) => Promise<void>;
   onDelete?: () => Promise<void>;
-  onStatusChange?: (status: 'draft' | 'published') => Promise<void>;
+  assignments?: any[]; // Using any[] for now to avoid circular deps or complex imports, ideally FormAssignment[]
   actionLabel?: string;
   className?: string;
 }
@@ -34,10 +32,9 @@ export const FormLoadingCard: React.FC<FormLoadingCardProps> = ({
   form,
   isLoading = false,
   onClick,
-  onAssign,
   onRename,
   onDelete,
-  onStatusChange,
+  assignments = [],
   className,
 }) => {
   const [isRenaming, setIsRenaming] = React.useState(false);
@@ -58,6 +55,13 @@ export const FormLoadingCard: React.FC<FormLoadingCardProps> = ({
 
   if (!form) return null;
 
+  const activeAssignments = assignments.filter(a => a.isActive);
+  const isPublished = activeAssignments.length > 0;
+
+  // Group assignments by assignmentType
+  const storeAssignment = activeAssignments.find(a => a.assignmentType === 'store');
+  const productAssignments = activeAssignments.filter(a => a.assignmentType === 'product');
+
   const handleRenameSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!renameValue.trim() || renameValue === form.name) {
@@ -75,11 +79,6 @@ export const FormLoadingCard: React.FC<FormLoadingCardProps> = ({
     setRenameValue(form.name);
     setIsRenaming(true);
     setTimeout(() => inputRef.current?.focus(), 0);
-  };
-
-  const handleRenameCancel = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsRenaming(false);
   };
 
   const handleDeleteConfirm = async (e: React.MouseEvent) => {
@@ -142,27 +141,14 @@ export const FormLoadingCard: React.FC<FormLoadingCardProps> = ({
       onClick={!isRenaming ? onClick : undefined}
       className={cn(
         "group relative flex flex-col h-[220px] w-full bg-white rounded-xl border border-slate-200 p-5 transition-all duration-200 shadow-sm hover:shadow-md hover:border-indigo-300 cursor-pointer overflow-hidden",
-        form.status === 'published' && "border-l-4 border-l-green-500",
+        isPublished && "border-green-200 hover:border-green-300 ring-1 ring-green-500/10",
         className
       )}
     >
-      {/* Top Row: Icon + Status */}
+      {/* Top Row: Icon + Menu */}
       <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-50 to-slate-50 border border-slate-100 flex items-center justify-center text-indigo-600 group-hover:scale-105 transition-transform">
-            <FileText size={20} />
-          </div>
-          {/* Publish Toggle */}
-          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-            <Switch
-              checked={form.status === 'published'}
-              onCheckedChange={(checked) => onStatusChange?.(checked ? 'published' : 'draft')}
-              className="data-[state=checked]:bg-green-500"
-            />
-            <span className={cn("text-xs font-medium", form.status === 'published' ? "text-green-600" : "text-slate-400")}>
-              {form.status === 'published' ? 'Published' : 'Draft'}
-            </span>
-          </div>
+        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-50 to-slate-50 border border-slate-100 flex items-center justify-center text-indigo-600 group-hover:scale-105 transition-transform">
+          <FileText size={20} />
         </div>
 
         <DropdownMenu>
@@ -177,16 +163,23 @@ export const FormLoadingCard: React.FC<FormLoadingCardProps> = ({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              className="text-red-600 focus:text-red-600 focus:bg-red-50"
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowDeleteConfirm(true);
-              }}
-            >
-              <Trash2 size={14} className="mr-2" />
-              Delete
-            </DropdownMenuItem>
+            {isPublished ? (
+              <DropdownMenuItem disabled className="text-slate-400 cursor-not-allowed">
+                <Trash2 size={14} className="mr-2" />
+                Cannot delete active form
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem
+                className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowDeleteConfirm(true);
+                }}
+              >
+                <Trash2 size={14} className="mr-2" />
+                Delete
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -218,8 +211,8 @@ export const FormLoadingCard: React.FC<FormLoadingCardProps> = ({
         </p>
       </div>
 
-      {/* Footer: Meta + Actions */}
-      <div className="mt-auto pt-3 flex items-center justify-between border-t border-slate-100">
+      {/* Footer: Published status */}
+      <div className="mt-auto pt-3 flex flex-col gap-2 border-t border-slate-100">
         <div className="flex items-center text-xs text-slate-400">
           <Clock size={12} className="mr-1.5" />
           <span>
@@ -230,27 +223,26 @@ export const FormLoadingCard: React.FC<FormLoadingCardProps> = ({
           </span>
         </div>
 
-        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-          {form.status === 'published' && onAssign && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 text-xs px-2"
-              onClick={onAssign}
-            >
-              <Package size={12} className="mr-1" />
-              Assign
-            </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 text-xs px-2 text-red-500 hover:text-red-600 hover:bg-red-50"
-            onClick={() => setShowDeleteConfirm(true)}
-          >
-            <Trash2 size={12} />
-          </Button>
-        </div>
+        {isPublished ? (
+          <div className="flex flex-wrap gap-1">
+            {storeAssignment && (
+              <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-[10px] font-medium border border-green-200">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                Full Store
+              </div>
+            )}
+            {productAssignments.length > 0 && (
+              <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[10px] font-medium border border-blue-200">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                {productAssignments.length} Product{productAssignments.length !== 1 ? 's' : ''}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="text-[10px] text-slate-400 font-medium italic px-1">
+            Not published
+          </div>
+        )}
       </div>
     </div>
   );

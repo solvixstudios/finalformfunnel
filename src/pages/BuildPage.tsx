@@ -1,6 +1,7 @@
 import { BuilderSkeleton } from '@/components/FormLoading/BuilderSkeleton';
 import { FormLoadDialog } from '@/components/FormLoading/FormLoadDialog';
 import { PreviewInternalHeader } from '@/components/FormTab/components/PreviewInternalHeader';
+import { PublishSheet } from '@/components/PublishSheet';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,7 +18,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import FormTab from '../components/FormTab';
 import { useHeaderActions } from '../contexts/HeaderActionsContext';
-import { useSavedForms } from '../lib/firebase/hooks';
+import { useFormAssignments, useSavedForms } from '../lib/firebase/hooks';
 import { getExportData, loadFormWithValidation } from '../lib/formManagement';
 import { useI18n } from '../lib/i18n/i18nContext';
 import { useFormStore } from '../stores';
@@ -59,6 +60,7 @@ const BuildPage = ({ userId }: BuildPageProps) => {
   const [formDescription, setFormDescription] = useState('');
   const [showSaveSuccess, setShowSaveSuccess] = useState(false);
   const [formStatus, setFormStatus] = useState<'draft' | 'published'>('draft');
+  const [showPublishDialog, setShowPublishDialog] = useState(false);
 
   // Handle route based loading
   useEffect(() => {
@@ -367,28 +369,15 @@ const BuildPage = ({ userId }: BuildPageProps) => {
     }
   }, [formName, formDescription, formId, updateForm, saveForm, exportDataMemoized, setFormName, setFormId, markClean, isNameDuplicate, t, navigate, isSaving, startSaving, saveSuccessAction, saveFailure]);
 
-  // Handle publish/unpublish form
-  const handlePublish = useCallback(async () => {
-    if (!formId) {
-      toast.error('Please save the form first before publishing.');
-      return;
-    }
 
-    const newStatus = formStatus === 'published' ? 'draft' : 'published';
-    try {
-      await updateForm(formId, { status: newStatus });
-      setFormStatus(newStatus);
-      if (newStatus === 'published') {
-        toast.success('Form published! It can now be assigned to stores.');
-      } else {
-        toast.info('Form unpublished. It will no longer appear in store assignments.');
-      }
-    } catch (error) {
-      toast.error('Failed to update form status.');
-      console.error(error);
-    }
-  }, [formId, formStatus, updateForm]);
 
+
+  const { assignments } = useFormAssignments(userId);
+
+  // Calculate publish stats
+  const activeAssignments = assignments.filter(a => a.formId === formId && a.isActive);
+  const storeCount = activeAssignments.filter(a => a.assignmentType === 'store').length;
+  const productCount = activeAssignments.filter(a => a.assignmentType === 'product').length;
 
   // Set Header Actions (Center: Form Controls, Right: Publish)
   useEffect(() => {
@@ -402,36 +391,34 @@ const BuildPage = ({ userId }: BuildPageProps) => {
     );
 
     setActions(
-      <div className="flex items-center gap-2">
-        {formStatus === 'published' && (
+      <div className="flex items-center gap-3">
+        {(storeCount > 0 || productCount > 0) && (
+          <div className="flex flex-col items-end mr-2 text-xs">
+            <span className="font-semibold text-slate-700">Published to:</span>
+            <div className="flex gap-2 text-slate-500">
+              {storeCount > 0 && <span>{storeCount} Store{storeCount !== 1 ? 's' : ''}</span>}
+              {storeCount > 0 && productCount > 0 && <span>•</span>}
+              {productCount > 0 && <span>{productCount} Product{productCount !== 1 ? 's' : ''}</span>}
+            </div>
+          </div>
+        )}
+
+        {formStatus === 'published' && (storeCount === 0 && productCount === 0) && (
           <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
             Published
           </span>
         )}
+
         <Button
-          onClick={handlePublish}
+          onClick={() => setShowPublishDialog(true)}
           disabled={!formId}
           variant="default"
-          className={formStatus === 'published'
-            ? "gap-2 bg-slate-600 hover:bg-slate-700 text-white transition-all duration-200 hover:scale-105 active:scale-95"
-            : "gap-2 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 text-white shadow-lg shadow-indigo-200/50 hover:shadow-xl hover:shadow-indigo-300/50 transition-all duration-200 hover:scale-105 active:scale-95 group"
-          }
+          className="gap-2 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 text-white shadow-lg shadow-indigo-200/50 hover:shadow-xl hover:shadow-indigo-300/50 transition-all duration-200 hover:scale-105 active:scale-95 group"
         >
-          {formStatus === 'published' ? (
-            <>
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-              </svg>
-              <span className="font-bold">Unpublish</span>
-            </>
-          ) : (
-            <>
-              <svg className="w-4 h-4 group-hover:-translate-y-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-              </svg>
-              <span className="font-bold">Publish</span>
-            </>
-          )}
+          <svg className="w-4 h-4 group-hover:-translate-y-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+          </svg>
+          <span className="font-bold">Publish</span>
         </Button>
       </div>
     );
@@ -444,7 +431,7 @@ const BuildPage = ({ userId }: BuildPageProps) => {
       setActions(null);
       setTitleActions(null);
     };
-  }, [setActions, setTitleActions, setCenterContent, handleSaveForm, canSave, showSaveSuccess, formId, formStatus, handlePublish]);
+  }, [setActions, setTitleActions, setCenterContent, handleSaveForm, canSave, showSaveSuccess, formId, formStatus, storeCount, productCount]);
 
 
   // Browser navigation guard - warn on page close/refresh with unsaved changes
@@ -554,6 +541,23 @@ const BuildPage = ({ userId }: BuildPageProps) => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {formId && (
+        <PublishSheet
+          open={showPublishDialog}
+          onOpenChange={setShowPublishDialog}
+          userId={userId}
+          formId={formId}
+          formName={formName}
+          formConfig={formConfig}
+          onPublishSuccess={() => {
+            if (formStatus !== 'published') {
+              updateForm(formId, { status: 'published' });
+              setFormStatus('published');
+            }
+          }}
+        />
+      )}
     </div>
   );
 };
