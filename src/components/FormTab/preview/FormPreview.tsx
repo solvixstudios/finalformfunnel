@@ -91,6 +91,7 @@ export const FormPreview = ({ config, offers, shipping }: FormPreviewProps) => {
                 variants: offers.length > 0 ? offers.map((o: any) => ({ title: o.title?.fr || o.title })) : undefined
             }}
             sectionWrapper={sectionWrapper}
+            previewMode={true}
         />
     );
 };

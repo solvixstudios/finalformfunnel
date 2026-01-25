@@ -90,6 +90,41 @@ async function postProcessLoader() {
     );
   }
 
+  // 4. Process Global Helper Script
+  console.log("\n🌍 Processing Global Helper Script...");
+  const globalJsPath = join(PUBLIC, "finalform-global.js");
+
+  try {
+    const globalJsContent = readFileSync(globalJsPath, "utf-8");
+    console.log(`   JS Size: ${globalJsContent.length} bytes`);
+
+    // Obfuscate Global Script
+    const obfuscatedGlobal = JavaScriptObfuscator.obfuscate(globalJsContent, {
+      compact: true,
+      controlFlowFlattening: false,
+      deadCodeInjection: false,
+      debugProtection: false,
+      disableConsoleOutput: false,
+      identifierNamesGenerator: "mangled-shuffled",
+      log: false,
+      renameGlobals: false,
+      selfDefending: false,
+      simplify: true,
+      stringArray: true,
+      stringArrayThreshold: 0.5,
+      target: "browser",
+    }).getObfuscatedCode();
+
+    writeFileSync(join(DIST, "finalform-global.prod.js"), obfuscatedGlobal);
+    console.log(
+      `   ✅ dist/finalform-global.prod.js (${obfuscatedGlobal.length} bytes)`,
+    );
+  } catch (e) {
+    console.warn(
+      "⚠️  Could not read public/finalform-global.js. Did the global build fail?",
+    );
+  }
+
   console.log("\n✅ Build & Post-process complete!\n");
 }
 

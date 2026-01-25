@@ -1,4 +1,4 @@
-import { Check, ChevronDown, ChevronRight, Layers, Palette, Sparkles, Square, Type } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, Code, Layers, Palette, Sparkles, Square, Type } from "lucide-react";
 import { useState } from "react";
 import { PRESET_CATEGORIES, THEME_PRESETS } from "../../../lib/themePresets";
 import { useFormStore } from "../../../stores";
@@ -499,6 +499,35 @@ export const GlobalDesignEditor = () => {
         </div>
       </CollapsibleSection>
 
+      {/* ===== EMBEDDING SETTINGS SECTION ===== */}
+      <CollapsibleSection title="Réglages d'Intégration" icon={Code}>
+        <div className="space-y-4">
+          <div className="flex items-start justify-between gap-4 p-1">
+            <div className="space-y-1 flex-1">
+              <label className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2">
+                Nettoyage Automatique du Thème
+                <span className="bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded text-[9px] font-black tracking-wide">
+                  RECOMMANDÉ
+                </span>
+              </label>
+              <p className="text-[10px] text-slate-400 leading-relaxed">
+                Masque automatiquement les éléments natifs du thème Shopify (Titre, Prix, Variantes, Boutons, etc.) pour éviter les doublons avec le formulaire.
+              </p>
+            </div>
+            <div className="flex items-center">
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
+                  checked={formConfig.autoHideThemeElements ?? true}
+                  onChange={(e) => setFormConfig({ ...formConfig, autoHideThemeElements: e.target.checked })}
+                />
+                <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+              </label>
+            </div>
+          </div>
+        </div>
+      </CollapsibleSection>
 
     </div>
   );

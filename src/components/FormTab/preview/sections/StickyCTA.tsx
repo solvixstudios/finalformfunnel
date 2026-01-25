@@ -5,7 +5,8 @@
  */
 
 import { Package, ShoppingCart, Zap } from 'lucide-react';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 export interface StickyCTAProps {
     variant?: 'simple' | 'product' | 'compact' | 'card' | 'badge';
@@ -21,6 +22,7 @@ export interface StickyCTAProps {
     productTitle?: string;
     productImage?: string;
     totalPrice?: string;
+    fixed?: boolean;
 }
 
 export const StickyCTA: React.FC<StickyCTAProps> = ({
@@ -36,176 +38,267 @@ export const StickyCTA: React.FC<StickyCTAProps> = ({
     productTitle,
     productImage,
     totalPrice,
+    fixed = false,
 }) => {
+    // Portal Logic
+    const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
+    const [isDesktop, setIsDesktop] = useState(false);
+
+    useEffect(() => {
+        const checkDesktop = () => setIsDesktop(window.innerWidth >= 768);
+        checkDesktop();
+        window.addEventListener('resize', checkDesktop);
+        return () => window.removeEventListener('resize', checkDesktop);
+    }, []);
+
+    useEffect(() => {
+        if (fixed) {
+            // Helper to find or create container
+            const getOrCreateContainer = () => {
+                // 1. Try Global Object (Ideal path)
+                const globalRoot = (window as any).FinalFormGlobal?.root;
+                if (globalRoot) return globalRoot;
+
+                // 2. Try finding the overlay container (Top Level Shadow DOM)
+                const overlayContainer = document.getElementById('finalform-overlay-container');
+                if (overlayContainer && overlayContainer.shadowRoot) {
+                    const portalRoot = overlayContainer.shadowRoot.getElementById('finalform-portal-root');
+                    if (portalRoot) return portalRoot;
+                }
+
+                // 3. Fallback: Try main container (Legacy/Inline)
+                const host = document.getElementById('finalform-overlay-container'); // Keeps compat with old naming if mixed
+                if (host && host.shadowRoot) {
+                    const internalRoot = host.shadowRoot.getElementById('finalform-portal-root');
+                    if (internalRoot) return internalRoot;
+                }
+
+                // 4. Fallback: Create simple overlay in body (Dev mode / Failure)
+                let el = document.getElementById('finalform-overlay-container-fallback');
+                if (!el) {
+                    el = document.createElement('div');
+                    el.id = 'finalform-overlay-container-fallback';
+                    el.style.position = 'fixed';
+                    el.style.top = '0';
+                    el.style.left = '0';
+                    el.style.width = '100vw';
+                    el.style.height = '100vh';
+                    el.style.pointerEvents = 'none';
+                    el.style.zIndex = '2147483647';
+                    document.body.appendChild(el);
+                }
+                return el;
+            };
+
+            setPortalContainer(getOrCreateContainer());
+        }
+    }, [fixed]);
+
     if (!visible) return null;
 
-    // Base styles - using absolute positioning to stay within the form container
-    const baseContainerClass = "absolute bottom-0 left-0 right-0 z-50 transition-all duration-300 ease-out";
-    const animationClass = "animate-in slide-in-from-bottom-4 duration-300";
+    const nav = navigator.userAgent || '';
+    const isMobileDevice = /android|iphone|kindle|ipad/i.test(nav);
 
-    // Simple Variant - Full width button
-    if (variant === 'simple') {
-        return (
-            <div
-                className={`${baseContainerClass} ${animationClass}`}
-                style={{
-                    background: `linear-gradient(to top, ${formBackground} 0%, ${formBackground} 90%, ${formBackground}00 100%)`,
-                    borderTop: `1px solid ${borderColor}`,
-                    boxShadow: '0 -8px 24px -6px rgba(0,0,0,0.12)',
-                }}
-            >
-                <div className="px-4 py-3.5">
-                    <button
-                        onClick={onClick}
-                        className="w-full py-4 font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 transition-all duration-200 active:scale-[0.98] text-white hover:opacity-90 shadow-lg hover:shadow-xl"
-                        style={ctaStyles}
-                    >
-                        {text}
-                    </button>
+    // Force badge on desktop (real desktop browsers), unless specified otherwise
+    // We check !isMobileDevice to avoid forcing badge on tablets if they report large width but are touch
+    // But requirement says "on desktop".
+    const activeVariant = (fixed && isDesktop) ? 'badge' : variant;
+
+    const content = (() => {
+
+        // Base styles
+        // In real form (Shadow DOM), we need 'fixed' to stick to viewport.
+        // In preview (Editor), 'absolute' keeps it inside the phone frame.
+        const positionClass = fixed ? 'fixed' : 'absolute';
+        const baseContainerClass = `${positionClass} bottom-0 left-0 right-0 z-50 transition-all duration-300 ease-out`;
+        const animationClass = "animate-in slide-in-from-bottom-4 duration-300";
+
+        // Simple Variant - Full width button
+        if (activeVariant === 'simple') {
+            const positionClass = fixed && portalContainer ? 'absolute' : (fixed ? 'fixed' : 'absolute');
+            const baseContainerClass = `${positionClass} bottom-0 left-0 right-0 z-50 transition-all duration-300 ease-out pointer-events-auto`;
+
+            return (
+                <div
+                    className={`${baseContainerClass} ${animationClass}`}
+                    style={{
+                        background: `linear-gradient(to top, ${formBackground} 0%, ${formBackground} 90%, ${formBackground}00 100%)`,
+                        borderTop: `1px solid ${borderColor}`,
+                        boxShadow: '0 -8px 24px -6px rgba(0,0,0,0.12)',
+                    }}
+                >
+                    <div className="px-4 py-3.5">
+                        <button
+                            onClick={onClick}
+                            className="w-full py-4 font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 transition-all duration-200 active:scale-[0.98] text-white hover:opacity-90 shadow-lg hover:shadow-xl"
+                            style={ctaStyles}
+                        >
+                            {text}
+                        </button>
+                    </div>
                 </div>
-            </div>
-        );
-    }
+            );
+        }
 
-    // Product Variant - Shows product info + button
-    if (variant === 'product') {
-        return (
-            <div
-                className={`${baseContainerClass} ${animationClass}`}
-                style={{
-                    background: `linear-gradient(to top, ${formBackground} 0%, ${formBackground} 95%, ${formBackground}dd 100%)`,
-                    borderTop: `1px solid ${borderColor}20`,
-                    boxShadow: '0 -8px 32px -8px rgba(0,0,0,0.15)',
-                    backdropFilter: 'blur(12px)',
-                }}
-            >
-                <div className="px-4 py-3.5">
-                    <div className="flex items-center gap-3">
-                        {/* Product Info (Left) */}
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                            <div
-                                className="w-14 h-14 rounded-xl flex-shrink-0 flex items-center justify-center border-2 shadow-md transition-transform hover:scale-105 overflow-hidden bg-white"
-                                style={{
-                                    backgroundColor: `${accentColor}18`,
-                                    borderColor: `${accentColor}40`,
-                                    color: accentColor,
-                                }}
-                            >
-                                {productImage ? (
-                                    <img src={productImage} alt={productTitle} className="w-full h-full object-cover" />
-                                ) : (
-                                    <Package size={24} strokeWidth={2.5} />
-                                )}
-                            </div>
-                            <div className="flex flex-col min-w-0">
-                                <span className="text-xs font-bold truncate leading-tight mb-0.5" style={{ color: textColor }}>
-                                    {productTitle || 'Produit'}
-                                </span>
-                                <span className="text-base font-black" style={{ color: accentColor }}>
-                                    {totalPrice}
-                                </span>
-                            </div>
-                        </div>
+        // Product Variant - Shows product info + button
+        if (activeVariant === 'product') {
+            const positionClass = fixed && portalContainer ? 'absolute' : (fixed ? 'fixed' : 'absolute');
+            const baseContainerClass = `${positionClass} bottom-0 left-0 right-0 z-50 transition-all duration-300 ease-out pointer-events-auto`;
 
-                        {/* Button (Right) */}
-                        <div className="flex-1 max-w-[140px]">
-                            <button
-                                onClick={onClick}
-                                className="w-full py-3 px-4 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98] text-white hover:opacity-90 shadow-lg hover:shadow-xl"
-                                style={ctaStyles}
-                            >
-                                {text}
-                            </button>
+            return (
+                <div
+                    className={`${baseContainerClass} ${animationClass}`}
+                    style={{
+                        background: `linear-gradient(to top, ${formBackground} 0%, ${formBackground} 95%, ${formBackground}dd 100%)`,
+                        borderTop: `1px solid ${borderColor}20`,
+                        boxShadow: '0 -8px 32px -8px rgba(0,0,0,0.15)',
+                        backdropFilter: 'blur(12px)',
+                    }}
+                >
+                    <div className="px-4 py-3.5">
+                        <div className="flex items-center gap-3">
+                            {/* Product Info (Left) */}
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                                <div
+                                    className="w-14 h-14 rounded-xl flex-shrink-0 flex items-center justify-center border-2 shadow-md transition-transform hover:scale-105 overflow-hidden bg-white"
+                                    style={{
+                                        backgroundColor: `${accentColor}18`,
+                                        borderColor: `${accentColor}40`,
+                                        color: accentColor,
+                                    }}
+                                >
+                                    {productImage ? (
+                                        <img src={productImage} alt={productTitle} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <Package size={24} strokeWidth={2.5} />
+                                    )}
+                                </div>
+                                <div className="flex flex-col min-w-0">
+                                    <span className="text-xs font-bold truncate leading-tight mb-0.5" style={{ color: textColor }}>
+                                        {productTitle || 'Produit'}
+                                    </span>
+                                    <span className="text-base font-black" style={{ color: accentColor }}>
+                                        {totalPrice}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Button (Right) */}
+                            <div className="flex-1 max-w-[140px]">
+                                <button
+                                    onClick={onClick}
+                                    className="w-full py-3 px-4 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98] text-white hover:opacity-90 shadow-lg hover:shadow-xl"
+                                    style={ctaStyles}
+                                >
+                                    {text}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        );
-    }
+            );
+        }
 
-    // Compact Variant - Minimal height
-    if (variant === 'compact') {
-        return (
-            <div
-                className={`${baseContainerClass} ${animationClass}`}
-                style={{
-                    background: `linear-gradient(to top, ${formBackground} 0%, ${formBackground} 92%, ${formBackground}00 100%)`,
-                    borderTop: `1px solid ${borderColor}`,
-                    boxShadow: '0 -6px 20px -4px rgba(0,0,0,0.1)',
-                }}
-            >
-                <div className="px-4 py-2.5">
+        // Compact Variant - Minimal height
+        if (activeVariant === 'compact') {
+            const positionClass = fixed && portalContainer ? 'absolute' : (fixed ? 'fixed' : 'absolute');
+            const baseContainerClass = `${positionClass} bottom-0 left-0 right-0 z-50 transition-all duration-300 ease-out pointer-events-auto`;
+
+            return (
+                <div
+                    className={`${baseContainerClass} ${animationClass}`}
+                    style={{
+                        background: `linear-gradient(to top, ${formBackground} 0%, ${formBackground} 92%, ${formBackground}00 100%)`,
+                        borderTop: `1px solid ${borderColor}`,
+                        boxShadow: '0 -6px 20px -4px rgba(0,0,0,0.1)',
+                    }}
+                >
+                    <div className="px-4 py-2.5">
+                        <button
+                            onClick={onClick}
+                            className="w-full py-3 font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98] text-white hover:opacity-90 shadow-md hover:shadow-lg"
+                            style={ctaStyles}
+                        >
+                            <ShoppingCart size={15} strokeWidth={3} />
+                            <span className="font-black">{text}</span>
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        // Card Variant - Card-style with padding and shadow
+        if (activeVariant === 'card') {
+            const positionClass = fixed && portalContainer ? 'absolute' : (fixed ? 'fixed' : 'absolute');
+            const baseContainerClass = `${positionClass} bottom-0 left-0 right-0 z-50 transition-all duration-300 ease-out px-4 pb-4 pointer-events-auto`;
+
+            return (
+                <div
+                    className={`${baseContainerClass} ${animationClass}`}
+                    style={{ pointerEvents: 'none' }}
+                >
+                    <div
+                        className="rounded-2xl p-4 shadow-2xl backdrop-blur-sm"
+                        style={{
+                            background: `${formBackground}f5`,
+                            border: `2px solid ${borderColor}`,
+                            pointerEvents: 'auto',
+                            boxShadow: '0 -10px 40px -12px rgba(0,0,0,0.2), 0 4px 6px -2px rgba(0,0,0,0.1)',
+                        }}
+                    >
+                        {productTitle && totalPrice && (
+                            <div className="flex items-center justify-between mb-3 pb-3" style={{ borderBottom: `1px solid ${borderColor}` }}>
+                                <span className="text-xs font-bold" style={{ color: textColor }}>
+                                    {productTitle}
+                                </span>
+                                <span className="text-sm font-black" style={{ color: accentColor }}>
+                                    {totalPrice}
+                                </span>
+                            </div>
+                        )}
+                        <button
+                            onClick={onClick}
+                            className="w-full py-4 font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98] text-white hover:opacity-90 shadow-xl hover:shadow-2xl"
+                            style={ctaStyles}
+                        >
+                            {text}
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        // Badge Variant - Small floating badge (positioned relative to container, not viewport)
+        if (activeVariant === 'badge') {
+            const positionClass = fixed && portalContainer ? 'absolute' : 'absolute'; // Badge is usually absolute in container? Wait, sticky badge should be fixed to viewport.
+            // Actually for badge, if fixed=true, we want it fixed to screen. 
+            // If portal exists, we want absolute relative to portal (which fills screen).
+
+            return (
+                <div
+                    className={`${positionClass} bottom-6 right-6 z-50 ${animationClass} pointer-events-auto`}
+                >
                     <button
                         onClick={onClick}
-                        className="w-full py-3 font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98] text-white hover:opacity-90 shadow-md hover:shadow-lg"
-                        style={ctaStyles}
+                        className="px-6 py-3.5 font-black text-xs uppercase tracking-wider flex items-center gap-2 transition-all duration-200 hover:scale-110 active:scale-95 text-white shadow-2xl hover:shadow-[0_20px_50px_-12px_rgba(0,0,0,0.3)]"
+                        style={{
+                            ...ctaStyles,
+                            borderRadius: '9999px',
+                        }}
                     >
-                        <ShoppingCart size={15} strokeWidth={3} />
+                        <Zap size={16} fill="currentColor" strokeWidth={0} />
                         <span className="font-black">{text}</span>
                     </button>
                 </div>
-            </div>
-        );
+            );
+        }
+
+        return null;
+    })();
+
+    if (fixed && portalContainer) {
+        return createPortal(content, portalContainer);
     }
 
-    // Card Variant - Card-style with padding and shadow
-    if (variant === 'card') {
-        return (
-            <div
-                className={`${baseContainerClass} ${animationClass} px-4 pb-4`}
-                style={{ pointerEvents: 'none' }}
-            >
-                <div
-                    className="rounded-2xl p-4 shadow-2xl backdrop-blur-sm"
-                    style={{
-                        background: `${formBackground}f5`,
-                        border: `2px solid ${borderColor}`,
-                        pointerEvents: 'auto',
-                        boxShadow: '0 -10px 40px -12px rgba(0,0,0,0.2), 0 4px 6px -2px rgba(0,0,0,0.1)',
-                    }}
-                >
-                    {productTitle && totalPrice && (
-                        <div className="flex items-center justify-between mb-3 pb-3" style={{ borderBottom: `1px solid ${borderColor}` }}>
-                            <span className="text-xs font-bold" style={{ color: textColor }}>
-                                {productTitle}
-                            </span>
-                            <span className="text-sm font-black" style={{ color: accentColor }}>
-                                {totalPrice}
-                            </span>
-                        </div>
-                    )}
-                    <button
-                        onClick={onClick}
-                        className="w-full py-4 font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98] text-white hover:opacity-90 shadow-xl hover:shadow-2xl"
-                        style={ctaStyles}
-                    >
-                        {text}
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
-    // Badge Variant - Small floating badge (positioned relative to container, not viewport)
-    if (variant === 'badge') {
-        return (
-            <div
-                className={`absolute bottom-6 right-6 z-50 ${animationClass}`}
-            >
-                <button
-                    onClick={onClick}
-                    className="px-6 py-3.5 font-black text-xs uppercase tracking-wider flex items-center gap-2 transition-all duration-200 hover:scale-110 active:scale-95 text-white shadow-2xl hover:shadow-[0_20px_50px_-12px_rgba(0,0,0,0.3)]"
-                    style={{
-                        ...ctaStyles,
-                        borderRadius: '9999px',
-                    }}
-                >
-                    <Zap size={16} fill="currentColor" strokeWidth={0} />
-                    <span className="font-black">{text}</span>
-                </button>
-            </div>
-        );
-    }
-
-    return null;
+    return content;
 };

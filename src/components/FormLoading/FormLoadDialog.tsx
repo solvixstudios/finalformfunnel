@@ -16,7 +16,7 @@ interface FormLoadDialogProps {
   forms: SavedForm[];
   isLoading: boolean;
   onLoadForm: (form: SavedForm) => void;
-  onLoadTemplate: (config: Partial<FormConfig>) => void;
+  onLoadTemplate: (config: Partial<FormConfig>, name?: string) => void;
   onImportJson: (config: Partial<FormConfig>) => void;
   onRenameForm?: (id: string, name: string) => Promise<void>;
   onDeleteForm?: (id: string) => Promise<void>;
@@ -276,8 +276,8 @@ export const FormLoadDialog: React.FC<FormLoadDialogProps> = ({
             <TabsContent value="templates" className="flex-1 flex flex-col min-h-0 m-0 outline-none overflow-y-auto bg-slate-50 data-[state=inactive]:hidden">
               <div className="p-6">
                 <TemplateGrid
-                  onLoad={(config) => {
-                    onLoadTemplate(config);
+                  onLoad={(config, name) => {
+                    onLoadTemplate(config, name);
                     onClose();
                   }}
                 />

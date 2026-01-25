@@ -64,20 +64,19 @@ export const VariantsEditor = () => {
           <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
             Style d'affichage
           </label>{" "}
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             {" "}
             {[
-              { id: "buttons", label: "Boutons", icon: "▢▢" },
               { id: "cards", label: "Cartes", icon: "▣" },
-              { id: "pills", label: "Pills", icon: "◯" },
-              { id: "dropdown", label: "Liste", icon: "▼" },
+              { id: "buttons", label: "Liste (Check)", icon: "☑" },
+              { id: "dropdown", label: "Menu", icon: "▼" },
             ].map((style) => (
               <button
                 key={style.id}
                 onClick={() =>
-                  setFormConfig({ ...formConfig, variantStyle: style.id })
+                  setFormConfig({ ...formConfig, variantStyle: style.id as any })
                 }
-                className={`p-3 rounded-xl border-2 flex flex-col items-center gap-1.5 transition-all ${formConfig.variantStyle === style.id || (!formConfig.variantStyle && style.id === "buttons") ? "border-indigo-500 bg-indigo-50 text-indigo-600" : "border-slate-200 bg-white text-slate-500 hover:border-slate-300"}`}
+                className={`p-3 rounded-xl border-2 flex flex-col items-center gap-1.5 transition-all ${formConfig.variantStyle === style.id || (!formConfig.variantStyle && style.id === "cards") ? "border-indigo-500 bg-indigo-50 text-indigo-600" : "border-slate-200 bg-white text-slate-500 hover:border-slate-300"}`}
               >
                 {" "}
                 <span className="text-lg">{style.icon}</span>{" "}

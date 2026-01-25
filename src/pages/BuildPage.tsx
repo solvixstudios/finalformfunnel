@@ -14,11 +14,13 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/sonner';
-import { useCallback, useEffect, useState } from 'react';
+import { UploadCloud } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import FormTab from '../components/FormTab';
 import { useHeaderActions } from '../contexts/HeaderActionsContext';
-import { useFormAssignments, useSavedForms } from '../lib/firebase/hooks';
+import { assignFormToShopify } from '../lib/api';
+import { useConnectedStores, useFormAssignments, useSavedForms } from '../lib/firebase/hooks';
 import { getExportData, loadFormWithValidation } from '../lib/formManagement';
 import { useI18n } from '../lib/i18n/i18nContext';
 import { useFormStore } from '../stores';
@@ -32,6 +34,8 @@ const BuildPage = ({ userId }: BuildPageProps) => {
   const navigate = useNavigate();
   const { t, dir } = useI18n();
   const { saveForm, updateForm, deleteForm, forms, loading: formsLoading } = useSavedForms(userId);
+  const { assignments } = useFormAssignments(userId);
+  const { stores } = useConnectedStores(userId);
   const formConfig = useFormStore((state) => state.formConfig);
   const formName = useFormStore((state) => state.formName);
   const formId = useFormStore((state) => state.formId);
@@ -62,33 +66,40 @@ const BuildPage = ({ userId }: BuildPageProps) => {
   const [formStatus, setFormStatus] = useState<'draft' | 'published'>('draft');
   const [showPublishDialog, setShowPublishDialog] = useState(false);
 
+  // Ref to track form ID we just saved - prevents reload after save
+  const justSavedFormIdRef = useRef<string | null>(null);
+
   // Handle route based loading
   useEffect(() => {
+    // Skip if we just saved this form (prevents flash after save)
+    if (justSavedFormIdRef.current && justSavedFormIdRef.current === routeFormId) {
+      // Clear the ref now that we've skipped the load
+      justSavedFormIdRef.current = null;
+      return;
+    }
+
     // Determine if we need to load a form
     if (routeFormId && routeFormId !== 'new') {
       const targetForm = forms.find(f => f.id === routeFormId);
 
       // If form exists and isn't already loaded (or loaded incorrectly)
       if (targetForm) {
+        // Only load if store doesn't already have this form loaded
         if (formId !== routeFormId) {
           // Load it
           loadFormWithValidation(targetForm, {
             onSuccess: () => {
-              // Silent success or toast? Silent is better for route navigation
+              // Silent success for route navigation
             }
           });
         }
-        // Form ID in URL but not found in list (and list is loaded)
-        // Redirect to new
       } else if (!formsLoading) {
         // Form ID in URL but not found in list (and list is loaded)
-        // Redirect to new
         toast.error("Form not found or has been deleted");
         navigate('/dashboard/build/new');
       }
     } else if (routeFormId === 'new') {
       // Ensure we are in NEW state
-      // Check if we need to reset (if we have an ID currently)
       if (formId) {
         useFormStore.getState().resetToNewForm();
       }
@@ -118,13 +129,15 @@ const BuildPage = ({ userId }: BuildPageProps) => {
       }));
       setSavedFormsList(formsSummary);
 
+      // Skip auto-rename if we just saved (prevents name from changing after save)
+      if (justSavedFormIdRef.current) {
+        return;
+      }
+
       // Unique Naming Fix:
-      // If we are on a NEW form and it's clean (untouched), ensure the name is unique against the newly loaded list.
-      // This covers the case where we came from another page and savedFormsList was empty at creation time.
+      // If we are on a NEW form and it's clean (untouched), ensure the name is unique
       const state = useFormStore.getState();
 
-      // ONLY if route is 'new' or undefined (though main router points here only if build params exist ?)
-      // Actually we should only do this auto-rename if we are truly in a new form flow
       if (routeFormId === 'new' && state.isNewForm && !state.isDirty) {
         const nameExists = (n: string) => formsSummary.some(
           f => f.name.trim().toLowerCase() === n.trim().toLowerCase()
@@ -142,7 +155,7 @@ const BuildPage = ({ userId }: BuildPageProps) => {
 
           if (candidate !== state.formName) {
             state.setFormName(candidate);
-            state.markClean(); // Keep it clean/draft with the new name
+            state.markClean();
           }
         }
       }
@@ -192,25 +205,43 @@ const BuildPage = ({ userId }: BuildPageProps) => {
     });
   };
 
-  const handleLoadTemplate = (config: any) => {
+  const handleLoadTemplate = (config: any, templateName?: string) => {
     // Check for unsaved changes
     const loadTemplate = () => {
       // Use loadFormWithValidation to ensure consistent normalization and validation
       // Templates get a unique ID that will be set to null to mark as new form
+      const nameToUse = formId ? formName : (templateName || 'New Template');
+
       const result = loadFormWithValidation(
         {
           config,
-          name: 'New Template',
+          name: nameToUse,
           id: 'temp-' + Date.now(),
         },
         {
           showWarnings: true,
           showSuccessToast: false,
           onSuccess: () => {
-            // Set to null to mark as new form
-            setFormId(null);
+            // Set to null to mark as new form if we want it to be a new form?
+            // If we are applying a template to an EXISTING form, we probably shouldn't set formId to null, we should keep the ID.
+            // BUT the original code set `setFormId(null)`. This suggests "Load Template" implies "Start Fresh with this Template".
+            // If the user wants to apply a template to an EXISTING form, they might expect to keep the ID but change the config.
+
+            // Discussion: "also when they are loaded it should't change the name"
+            // If I am editing "My Funnel 1" and I click "Load Template", I expect "My Funnel 1" to now have that template's config. I do NOT expect it to become a new unsaved form called "New Template".
+
+            // So:
+            // 1. If formId exists: Keep formId, Keep formName. Only update config.
+            // 2. If formId is null (New): Use template name, setFormId(null).
+
+            if (!formId) {
+              setFormId(null);
+            }
             setShowLoadModal(false);
             toast.success('Template loaded successfully');
+
+            // If we kept the ID, we should probably trigger an auto-save or at least mark dirty.
+            // loadFormWithValidation updates the store.
           },
         }
       );
@@ -333,6 +364,8 @@ const BuildPage = ({ userId }: BuildPageProps) => {
     startSaving();
     setShowSaveSuccess(false);
     try {
+      let savedFormId = formId;
+
       if (formId) {
         // Update existing form
         await updateForm(formId, {
@@ -349,14 +382,61 @@ const BuildPage = ({ userId }: BuildPageProps) => {
         const savedForm = await saveForm(formName.trim(), formDescription.trim(), exportDataMemoized());
         setFormName(savedForm.name);
         setFormId(savedForm.id);
+        savedFormId = savedForm.id;
+
         markClean();
         // Clear history for the new saved state
         useFormStore.getState().clearHistory();
         toast.success(`"${formName}" saved successfully!`);
 
+        // Set ref BEFORE navigate to prevent effects from reloading
+        justSavedFormIdRef.current = savedForm.id;
+
         // Update URL to the new ID
         navigate(`/dashboard/build/${savedForm.id}`, { replace: true });
       }
+
+      // AUTO-PUBLISH: Sync changes to active assignments
+      if (savedFormId) {
+        // We filter for active assignments for this specific form
+        const formAssignments = assignments.filter(a => a.formId === savedFormId && a.isActive);
+
+        if (formAssignments.length > 0) {
+          const toastId = toast.loading("Syncing changes to Shopify...");
+
+          const publishPromises = formAssignments.map(async (assignment) => {
+            const store = stores.find(s => s.id === assignment.storeId);
+            if (store && store.clientId && store.clientSecret) {
+              const subdomain = store.url.replace('.myshopify.com', '').replace(/https?:\/\//, '');
+              const ownerId = assignment.assignmentType === 'product' ? assignment.productId : undefined;
+
+              return assignFormToShopify(
+                subdomain,
+                store.clientId,
+                store.clientSecret,
+                exportDataMemoized(),
+                ownerId,
+                {
+                  formId: savedFormId!,
+                  formName: formName.trim(),
+                  assignmentType: assignment.assignmentType === 'product' ? 'product' : 'shop',
+                  storeId: store.id,
+                  storeName: store.name,
+                  shopifyDomain: store.url,
+                  productId: assignment.productId,
+                  productHandle: assignment.productHandle
+                }
+              );
+            }
+            return Promise.resolve(); // Ensure all map iterations return a promise
+          });
+
+          await Promise.allSettled(publishPromises);
+          toast.dismiss(toastId);
+          toast.success(`Synced to ${formAssignments.length} active destinations`);
+        }
+      }
+
       // Show success indicator briefly
       setShowSaveSuccess(true);
       saveSuccessAction();
@@ -367,12 +447,12 @@ const BuildPage = ({ userId }: BuildPageProps) => {
       console.error('Save error:', err);
       saveFailure(errorMessage);
     }
-  }, [formName, formDescription, formId, updateForm, saveForm, exportDataMemoized, setFormName, setFormId, markClean, isNameDuplicate, t, navigate, isSaving, startSaving, saveSuccessAction, saveFailure]);
+  }, [formName, formDescription, formId, updateForm, saveForm, exportDataMemoized, setFormName, setFormId, markClean, isNameDuplicate, t, navigate, isSaving, startSaving, saveSuccessAction, saveFailure, assignments, stores]);
 
 
 
 
-  const { assignments } = useFormAssignments(userId);
+
 
   // Calculate publish stats
   const activeAssignments = assignments.filter(a => a.formId === formId && a.isActive);
@@ -412,13 +492,13 @@ const BuildPage = ({ userId }: BuildPageProps) => {
         <Button
           onClick={() => setShowPublishDialog(true)}
           disabled={!formId}
-          variant="default"
-          className="gap-2 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 text-white shadow-lg shadow-indigo-200/50 hover:shadow-xl hover:shadow-indigo-300/50 transition-all duration-200 hover:scale-105 active:scale-95 group"
+          size="sm"
+          className="gap-2 bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition-all hover:shadow-md active:scale-95"
         >
-          <svg className="w-4 h-4 group-hover:-translate-y-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-          </svg>
-          <span className="font-bold">Publish</span>
+          <div className="flex items-center gap-2">
+            <UploadCloud size={14} className="text-slate-300" />
+            <span className="font-semibold text-xs tracking-wide">Publish</span>
+          </div>
         </Button>
       </div>
     );

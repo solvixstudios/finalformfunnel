@@ -50,6 +50,7 @@ export const DEFAULT_OFFERS = [
 
 // Default form configuration
 export const DEFAULT_FORM_CONFIG = {
+  version: FORM_CONFIG_SCHEMA_VERSION,
   accentColor: "#6366f1",
   ctaColor: "#4f46e5",
   ctaShake: true,
@@ -343,6 +344,10 @@ export const DEFAULT_FORM_CONFIG = {
     summaryButton: { fr: "Voir le résumé", ar: "عرض ملخص الطلب" },
     whatsappButton: { fr: "Confirmer via WhatsApp", ar: "تأكيد عبر واتساب" },
   },
+
+  // Embedding Settings
+  // Automatically hide default Shopify theme elements (Title, Price, Variants, Buttons)
+  autoHideThemeElements: true,
 };
 
 // Type for form config

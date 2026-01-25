@@ -199,86 +199,142 @@ async function initLoader() {
 
     console.log('FinalForm: Config loaded successfully.');
 
-    // 4. Fetch Product Data (Inventory, Real-time status)
+    // 4. Fetch Product Data
     const productData = await fetchShopifyProduct();
 
-    // 5. Inject Container
+    // 4.5 Process Host Overrides (Auto Hide Theme Elements)
+    if (config) {
+        // Default to true if undefined for backward compatibility with older forms if desired, 
+        // but schema defaults to true.
+        const shouldHide = config.autoHideThemeElements !== false;
+
+        if (shouldHide) {
+            const styleId = 'finalform-host-overrides';
+            if (!document.getElementById(styleId)) {
+                const style = document.createElement('style');
+                style.id = styleId;
+                style.textContent = `
+.product__text,
+.product__title,
+.price__container,
+variant-selects,
+.product-form__quantity,
+.product-form__buttons,
+share-button {
+  display: none !important;
+}
+
+.product__info-wrapper {
+  padding: 0 !important;
+}`;
+                document.head.appendChild(style);
+                console.log('FinalForm: Applied theme cleanup overrides');
+            }
+        }
+    }
+
+    // 5. Inject Main Container (Form)
     let container = document.getElementById(CONTAINER_ID);
     if (!container) {
         container = document.createElement('div');
         container.id = CONTAINER_ID;
-
-        // CSS Reset for the container wrapper in light DOM
-        // This ensures the container itself doesn't inherit weird margins/padding
+        // CSS Reset for the container wrapper
         container.style.display = 'block';
         container.style.width = '100%';
-        container.style.all = 'initial'; // Dangerous if not careful, but good for isolation. resets display to inline usually.
-        container.style.display = 'block'; // set back to block
+        container.style.all = 'initial';
+        container.style.display = 'block';
 
-        // Strategy: Look for common Add to Cart forms
         const cartForm = document.querySelector('form[action*="/cart/add"]');
-
         if (cartForm && cartForm.parentNode) {
             console.log('FinalForm: Injecting after cart form');
-            // Insert after the cart form
             cartForm.parentNode.insertBefore(container, cartForm.nextSibling);
-
-            // Optional: Hide original form if configured
-            // Default to true if not specified
-            if (config.hideOriginalForm !== false) {
-                // cartForm.style.display = 'none'; // Commented out for safety until verified
-            }
         } else {
             console.log('FinalForm: Injecting to body');
             document.body.appendChild(container); // Fallback
         }
     }
 
-    // 6. Shadow DOM Setup
+    // 6. Main Shadow DOM Setup
     let shadowRoot = container.shadowRoot;
     if (!shadowRoot) {
         shadowRoot = container.attachShadow({ mode: 'open' });
     }
 
-    // 7. Inject CSS into Shadow DOM
+    // 7. Inject CSS into Main Shadow DOM
     const cssId = 'finalform-shadow-css';
-    if (!shadowRoot.getElementById(cssId)) {
+
+    // Helper to get CSS Path
+    const getCssPath = () => {
         const scripts = document.querySelectorAll('script');
-        let basePath = 'https://finalformfunnel.web.app/'; // Fallback
+        let basePath = 'https://finalformfunnel.web.app/';
         for (let i = 0; i < scripts.length; i++) {
             const src = scripts[i].src;
             if (src && (src.includes('finalform-loader.prod.js') || src.includes('finalform-loader.js'))) {
                 const lastSlash = src.lastIndexOf('/');
-                if (lastSlash !== -1) {
-                    basePath = src.substring(0, lastSlash + 1);
-                }
+                if (lastSlash !== -1) basePath = src.substring(0, lastSlash + 1);
                 break;
             }
         }
+        const version = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : Date.now();
+        return basePath + 'finalform-loader.css?v=' + version;
+    };
 
+    const cssPath = getCssPath();
+
+    if (!shadowRoot.getElementById(cssId)) {
         const link = document.createElement('link');
         link.id = cssId;
         link.rel = 'stylesheet';
         link.type = 'text/css';
-
-        // Cache bust with version
-        const version = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : Date.now();
-        link.href = basePath + 'finalform-loader.css?v=' + version;
-
+        link.href = cssPath;
         shadowRoot.appendChild(link);
-        console.log('FinalForm: Injected CSS into Shadow DOM', link.href);
     }
 
-    // 8. Render
+    // 7.5 Overlay Container (Top Level, Fixed)
+    const overlayContainerId = 'finalform-overlay-container';
+    let overlayContainer = document.getElementById(overlayContainerId);
+    if (!overlayContainer) {
+        overlayContainer = document.createElement('div');
+        overlayContainer.id = overlayContainerId;
+        // Apply Overlay Styles (Fixed to Viewport)
+        overlayContainer.style.position = 'fixed';
+        overlayContainer.style.top = '0';
+        overlayContainer.style.left = '0';
+        overlayContainer.style.width = '100%';
+        overlayContainer.style.height = '100%';
+        overlayContainer.style.pointerEvents = 'none'; // Allow clicks to pass through by default
+        overlayContainer.style.zIndex = '2147483647'; // Max Z-Index
+
+        document.body.appendChild(overlayContainer);
+
+        // Add dummy element to prevent div:empty
+        const dummy = document.createElement('div');
+        dummy.style.display = 'none';
+        overlayContainer.appendChild(dummy);
+
+        const overlayShadow = overlayContainer.attachShadow({ mode: 'open' });
+
+        // Inject CSS here too so overlays have styles
+        const overlayLink = document.createElement('link');
+        overlayLink.rel = 'stylesheet';
+        overlayLink.type = 'text/css';
+        overlayLink.href = cssPath;
+        overlayShadow.appendChild(overlayLink);
+
+        // Create Portal Root inside Overlay Shadow
+        const portalRoot = document.createElement('div');
+        portalRoot.id = 'finalform-portal-root';
+        overlayShadow.appendChild(portalRoot);
+    }
+
+    // 8. Render Form
     if (productData) {
         const offers = config.offers || [];
         const shipping = config.shipping || { standard: { home: 0, desk: 0 } };
 
-        // We specifically render into the shadowRoot
         const root = createRoot(shadowRoot);
         root.render(
             <React.StrictMode>
-                {/* We might need a wrapper div inside shadow root if changing styles on :host is not enough */}
                 <div id="finalform-shadow-wrapper">
                     <FormLoader
                         config={config}

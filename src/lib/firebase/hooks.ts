@@ -337,8 +337,8 @@ export const useFormAssignments = (userId: string) => {
           storeId,
           shopifyDomain: "", // TODO: Get from store details if needed, or leave empty
           assignmentType: type,
-          productId,
-          productHandle,
+          productId: type === "store" ? null : (productId ?? null),
+          productHandle: type === "store" ? null : (productHandle ?? null),
           priority: type === "product" ? 10 : 1,
           isActive: true,
           createdAt: new Date().toISOString(),

@@ -1,9 +1,10 @@
 import { RefObject, useEffect, useState } from "react";
 
-interface UseStickyObserverOptions {
+export interface UseStickyObserverOptions {
   enabled: boolean;
   targetRef: RefObject<HTMLElement>;
   containerRef: RefObject<HTMLElement>;
+  useWindowRoot?: boolean;
 }
 
 /**
@@ -14,45 +15,68 @@ export function useStickyObserver({
   enabled,
   targetRef,
   containerRef,
+  useWindowRoot = false,
 }: UseStickyObserverOptions): boolean {
   const [isSticky, setIsSticky] = useState(false);
 
   useEffect(() => {
-    if (!enabled || !targetRef.current || !containerRef.current) {
+    if (!enabled || !targetRef.current) {
       setIsSticky(false);
       return;
     }
 
-    const checkVisibility = () => {
-      const targetRect = targetRef.current?.getBoundingClientRect();
-      const containerRect = containerRef.current?.getBoundingClientRect();
+    const target = targetRef.current;
+    const container = containerRef.current; // Might be null if useWindowRoot, or ignored
 
-      if (!targetRect || !containerRect) {
-        setIsSticky(false);
-        return;
+    // Use IntersectionObserver
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsSticky(!entry.isIntersecting);
+      },
+      {
+        root: useWindowRoot ? null : container, // null = viewport
+        threshold: 0,
+        rootMargin: "0px",
+      },
+    );
+
+    observer.observe(target);
+
+    // Backup scroll check
+    const checkVisibility = () => {
+      if (!target) return;
+      const targetRect = target.getBoundingClientRect();
+
+      let isVisible = false;
+      if (useWindowRoot) {
+        // Check against viewport
+        isVisible = targetRect.top < window.innerHeight && targetRect.bottom > 0;
+      } else {
+        // Check against container
+        if (!container) return;
+        const containerRect = container.getBoundingClientRect();
+        isVisible =
+          targetRect.top < containerRect.bottom &&
+          targetRect.bottom > containerRect.top;
       }
 
-      // Check if target is out of view within the container
-      const containerTop = containerRect.top;
-      const containerBottom = containerRect.bottom;
-      const targetTop = targetRect.top;
-      const targetBottom = targetRect.bottom;
-
-      // Target is visible if any part of it is within the container's visible area
-      const isVisible = targetBottom >= containerTop && targetTop <= containerBottom;
       setIsSticky(!isVisible);
     };
 
-    const container = containerRef.current;
-    container?.addEventListener("scroll", checkVisibility);
-    window.addEventListener("scroll", checkVisibility);
     checkVisibility();
 
+    const scrollTarget = useWindowRoot ? window : container;
+    if (scrollTarget) {
+      scrollTarget.addEventListener("scroll", checkVisibility, { passive: true });
+    }
+
     return () => {
-      container?.removeEventListener("scroll", checkVisibility);
-      window.removeEventListener("scroll", checkVisibility);
+      observer.disconnect();
+      if (scrollTarget) {
+        scrollTarget.removeEventListener("scroll", checkVisibility);
+      }
     };
-  }, [enabled, targetRef, containerRef]);
+  }, [enabled, targetRef, containerRef, useWindowRoot]);
 
   return isSticky;
 }

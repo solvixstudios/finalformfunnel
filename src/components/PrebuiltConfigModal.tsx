@@ -9,7 +9,7 @@ interface PrebuiltConfigModalProps {
 }
 
 interface TemplateGridProps {
-  onLoad: (config: Partial<typeof DEFAULT_FORM_CONFIG>) => void;
+  onLoad: (config: Partial<typeof DEFAULT_FORM_CONFIG>, name?: string) => void;
 }
 
 /**
@@ -17,7 +17,7 @@ interface TemplateGridProps {
  */
 export function TemplateGrid({ onLoad }: TemplateGridProps) {
   const handleLoadConfig = (preset: typeof CONFIG_PRESETS[0]) => {
-    onLoad(preset.config);
+    onLoad(preset.config, preset.name);
   };
 
   return (

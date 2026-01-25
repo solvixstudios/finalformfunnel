@@ -46,7 +46,7 @@ interface Product {
     featured_image?: string;
 }
 
-export const FormLoader = ({ config, product, offers, shipping, sectionWrapper }: { config: any, product: Product, offers: any[], shipping: any, sectionWrapper?: any }) => {
+export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, previewMode = false }: { config: any, product: Product, offers: any[], shipping: any, sectionWrapper?: any, previewMode?: boolean }) => {
     // --- STATE ---
     const [lang, setLang] = useState<'fr' | 'ar'>(config.header?.defaultLanguage || 'fr');
     // ... (lines 31-177 unchanged)
@@ -127,6 +127,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper }
         enabled: config.ctaSticky || false,
         targetRef: ctaRef,
         containerRef: formContainerRef,
+        useWindowRoot: !previewMode,
     });
 
     // --- PRODUCT DATA HELPERS ---
@@ -136,9 +137,8 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper }
         const v = product.variants?.find(v => v.id === selectedVariantId) || product.variants?.[0];
         if (!v) return 2500;
 
-        // Storefront API shape (price is object { amount, currencyCode })
-        if (v.price && typeof v.price === 'object' && 'amount' in v.price) {
-            return parseFloat(v.price.amount) * 100;
+        if (v.price && typeof v.price === 'object' && 'amount' in (v.price as any) && (v.price as any).amount) {
+            return parseFloat((v.price as any).amount) * 100;
         }
         // REST API shape (price is number in cents)
         if (v.price && typeof v.price === 'number') {
@@ -259,6 +259,12 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper }
     };
 
     const handleFormSubmit = async () => {
+        // In preview mode, just show thank you popup without submitting
+        if (previewMode) {
+            setShowThankYou(true);
+            return;
+        }
+
         // Final validation
         if (!selectedVariantId && product?.variants?.length > 0) {
             console.warn("No variant ID selected (should match options)");
@@ -278,26 +284,18 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper }
         // Only if we have a valid variant ID
         if (selectedVariantId) {
             try {
-                const formBody = new FormData();
-                formBody.append('items[0][id]', selectedVariantId.toString());
-                formBody.append('items[0][quantity]', '1');
+                // MOCK SUBMISSION FOR NOW - Prevent checkout redirect
+                // When "Real Order" logic is fully implemented (COD integration), we will enable this.
+                // For now, regardless of previewMode, we show success.
+                console.log("Form submitted (Mock Mode)");
 
-                // Add properties
-                Object.entries(payload).forEach(([key, value]) => {
-                    if (key !== 'variantId' && key !== 'quantity' && typeof value === 'string') {
-                        formBody.append(`items[0][properties][${key}]`, value);
-                    }
-                });
+                // Simulate network request
+                await new Promise(resolve => setTimeout(resolve, 800));
 
-                await fetch(window.location.origin + '/cart/add.js', {
-                    method: 'POST',
-                    body: formBody
-                });
-
-                window.location.href = '/checkout';
+                setShowThankYou(true);
 
             } catch (err) {
-                console.error("Cart add failed", err);
+                console.error("Submission failed", err);
                 setShowThankYou(true); // Fallback
             }
         } else {
@@ -328,7 +326,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper }
     // --- RENDER ---
     return (
         <div
-            className="ff-root w-full font-sans relative flex flex-col shadow-2xl select-none"
+            className="ff-root w-full font-sans relative flex flex-col shadow-2xl select-none rounded-2xl overflow-hidden border border-slate-200/50"
             dir={lang === 'ar' ? 'rtl' : 'ltr'}
             style={buildRootStyles(config as any, lang)}
         >
@@ -340,7 +338,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper }
             `}</style>
 
             {showThankYou && (
-                <ThankYouPopup config={config} lang={lang} onClose={() => setShowThankYou(false)} />
+                <ThankYouPopup config={config} lang={lang} onClose={() => setShowThankYou(false)} fixed={!previewMode} />
             )}
 
             <div className="flex-1 overflow-y-auto custom-scroll relative" ref={formContainerRef}>
@@ -372,6 +370,17 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper }
                     {config.sectionOrder.map((sectionId: string, index: number) => {
                         // Variants
                         if (sectionId === 'variants') {
+                            // Logic to determine if we should hide variants (Single variant product)
+                            const hasEffectiveVariants = product?.variants && (
+                                product.variants.length > 1 ||
+                                (product.variants.length === 1 && product.variants[0].title !== 'Default Title')
+                            );
+
+                            // In live mode (not preview), hide if no real variants to select
+                            if (!previewMode && product && !hasEffectiveVariants) {
+                                return null;
+                            }
+
                             return renderSectionBlock(
                                 sectionId,
                                 <VariantsSection
@@ -650,6 +659,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper }
                 productTitle={productTitle}
                 productImage={productImage}
                 totalPrice={formatCurrency(calculations.displayedTotal)}
+                fixed={!previewMode}
             />
         </div>
     );
