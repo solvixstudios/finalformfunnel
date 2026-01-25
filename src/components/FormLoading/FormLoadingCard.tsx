@@ -138,7 +138,11 @@ export const FormLoadingCard: React.FC<FormLoadingCardProps> = ({
 
   return (
     <div
-      onClick={!isRenaming ? onClick : undefined}
+      onClick={(e) => {
+        if (!isRenaming && onClick) {
+          onClick();
+        }
+      }}
       className={cn(
         "group relative flex flex-col h-[220px] w-full bg-white rounded-xl border border-slate-200 p-5 transition-all duration-200 shadow-sm hover:shadow-md hover:border-indigo-300 cursor-pointer overflow-hidden",
         isPublished && "border-green-200 hover:border-green-300 ring-1 ring-green-500/10",

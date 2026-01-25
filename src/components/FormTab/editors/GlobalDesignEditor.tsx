@@ -470,7 +470,7 @@ export const GlobalDesignEditor = () => {
           <select
             value={formConfig.inputVariant}
             onChange={(e) =>
-              setFormConfig({ ...formConfig, inputVariant: e.target.value })
+              setFormConfig({ ...formConfig, inputVariant: e.target.value as any })
             }
             className="w-full text-xs border border-slate-200 rounded-lg p-2.5 font-bold"
           >

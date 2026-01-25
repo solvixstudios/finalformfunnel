@@ -62,6 +62,10 @@ export const DEFAULT_FORM_CONFIG = {
   inputTextColor: "#1e293b",
   inputPlaceholderColor: "#94a3b8",
 
+  // Card Styling
+  cardBackground: "#ffffff",
+  cardBorderColor: "#e2e8f0",
+
   inputVariant: "filled" as "filled" | "outlined",
   locationMode: "grouped" as "single" | "grouped",
   locationLayout: "sideBySide" as "sideBySide" | "stacked",
@@ -258,13 +262,13 @@ export const DEFAULT_FORM_CONFIG = {
   ctaVariant: "solid" as "solid" | "outline" | "gradient" | "ghost",
   ctaAnimation: "shake" as "shake" | "pulse" | "bounce" | "glow" | "none",
   ctaSticky: false,
-  ctaStickyVariant: "simple" as "simple" | "product",
+  ctaStickyVariant: "simple" as "simple" | "product" | "compact" | "card" | "badge",
 
   // Section Settings
   sectionSettings: {
     variants: { showTitle: true },
     shipping: { showTitle: true },
-    delivery: { showTitle: true },
+    delivery: { showTitle: true, layout: "sideBySide", showPrices: true }, // Added defaults for TS
     offers: { showTitle: true },
     promoCode: { showTitle: true },
     summary: { showTitle: true },
@@ -330,6 +334,7 @@ export const DEFAULT_FORM_CONFIG = {
     free: { fr: "GRATUIT", ar: "مجاني" },
     total: { fr: "Total", ar: "الإجمالي" },
     cta: { fr: "Commander Maintenant", ar: "اطلب الآن" },
+    stickyLabel: { fr: "", ar: "" },
     trustTitle: { fr: "Garanties", ar: "الضمانات" },
   },
 
@@ -343,6 +348,12 @@ export const DEFAULT_FORM_CONFIG = {
     button: { fr: "Fermer", ar: "غلق" },
     summaryButton: { fr: "Voir le résumé", ar: "عرض ملخص الطلب" },
     whatsappButton: { fr: "Confirmer via WhatsApp", ar: "تأكيد عبر واتساب" },
+
+    enableWhatsApp: false,
+    selectedWhatsappProfileId: "", // ID of the selected global profile
+    // Note: Profiles are managed globally in Integrations, but we can store local overrides if needed.
+    // For now, we rely on the global 'integrations' object or local embedded config if we decide to ship profiles with the form.
+    // We will stick to the plan: Form selects a profile ID. Loader resolves it from global context or form's embedded copy.
   },
 
   // Embedding Settings

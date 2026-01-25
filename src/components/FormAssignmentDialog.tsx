@@ -101,11 +101,21 @@ export function FormAssignmentDialog({
         setIsSubmitting(true);
         try {
             if (assignmentType === 'store') {
-                await assignForm(selectedFormId, selectedStoreId);
+                await assignForm({
+                    formId: selectedFormId,
+                    storeId: selectedStoreId,
+                    type: 'store'
+                });
             } else {
                 // Assign to multiple products
                 const promises = selectedProductIds.map(productId =>
-                    assignForm(selectedFormId, selectedStoreId, productId)
+                    assignForm({
+                        formId: selectedFormId,
+                        storeId: selectedStoreId,
+                        type: 'product',
+                        productId,
+                        productHandle: mockProducts.find(p => p.id === productId)?.handle
+                    })
                 );
                 await Promise.all(promises);
             }
@@ -126,7 +136,15 @@ export function FormAssignmentDialog({
         }
     };
 
-    // ... (keep handleRemoveAssignment)
+    const handleRemoveAssignment = async (id: string) => {
+        try {
+            await deleteAssignment(id);
+            toast.success("Assignment removed");
+        } catch (error) {
+            console.error(error);
+            toast.error("Failed to remove assignment");
+        }
+    };
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>

@@ -1,4 +1,4 @@
-import { CheckCircle, FileText, MessageCircle, X } from 'lucide-react';
+import { CheckCircle, MessageCircle, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { DEFAULT_FORM_CONFIG } from '../../../../lib/constants';
@@ -9,9 +9,10 @@ interface ThankYouPopupProps {
     lang: Language;
     onClose: () => void;
     fixed?: boolean;
+    orderData?: any;
 }
 
-export const ThankYouPopup = ({ config, lang, onClose, fixed = false }: ThankYouPopupProps) => {
+export const ThankYouPopup = ({ config, lang, onClose, fixed = false, orderData }: ThankYouPopupProps) => {
     // Portal Logic
     const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
 
@@ -67,6 +68,50 @@ export const ThankYouPopup = ({ config, lang, onClose, fixed = false }: ThankYou
         };
     }, [fixed]);
 
+    // WhatsApp Logic
+    const handleWhatsAppClick = () => {
+        // Resolve number: Try profile ID first, then fallback to legacy number, then store/global default
+        // For now, we use the legacy field or text config if profiles aren't fully wired in runtime
+        let phone = config.thankYou?.whatsappNumber || "";
+
+        // TODO: In production, lookup `config.thankYou.selectedWhatsappProfileId` in the `integrations` context
+        // const profile = integrations.whatsappProfiles.find(p => p.id === config.thankYou.selectedWhatsappProfileId);
+        // if (profile) phone = profile.number;
+
+        if (!phone) {
+            // Fallback if no number is configured but button is shown (prevent broken link)
+            console.warn("No WhatsApp number configured");
+            return;
+        }
+
+        // Clean number
+        phone = phone.replace(/[^\d+]/g, '');
+
+        // Prepare Message
+        let message = lang === 'ar' ? 'أريد تأكيد طلبي:\n' : 'Je veux confirmer ma commande:\n';
+
+        if (orderData) {
+            const productLine = orderData.items?.map((i: any) => `- ${i.title} (${i.variant}) x${i.quantity}`).join('\n');
+            message += `\n${productLine}`;
+            message += `\nTotal: ${orderData.totalPrice} DZD`;
+            message += `\n\nNom: ${orderData.name}`;
+            message += `\nWilaya: ${orderData.wilaya}`;
+            if (orderData.commune) message += `\nCommune: ${orderData.commune}`;
+        }
+
+        message += `\n\nURL: ${window.location.href}`;
+
+        // Deep Link Strategy: Try native app scheme first, fallback to web
+        // On mobile, whatsapp:// works better. On desktop, web.whatsapp.com or wa.me is preferred.
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+        if (isMobile) {
+            window.location.href = `whatsapp://send?phone=${phone}&text=${encodeURIComponent(message)}`;
+        } else {
+            window.open(`https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`, '_blank');
+        }
+    };
+
     const content = (() => {
         const positionClass = fixed && portalContainer ? 'absolute' : (fixed ? 'fixed' : 'absolute');
         return (
@@ -106,24 +151,40 @@ export const ThankYouPopup = ({ config, lang, onClose, fixed = false }: ThankYou
 
                 {/* Message with improved readability */}
                 <div
-                    className="rounded-xl p-5 mb-6 max-w-[300px] border"
+                    className="rounded-xl p-5 mb-6 max-w-[300px] border w-full"
                     style={{
                         backgroundColor: `${config.accentColor}08`,
                         borderColor: config.inputBorderColor || '#f1f5f9'
                     }}
                 >
                     <p
-                        className="text-sm font-medium text-center leading-relaxed whitespace-pre-line"
+                        className="text-sm font-medium text-center leading-relaxed whitespace-pre-line mb-3"
                         style={{ color: config.textColor || '#334155' }}
                     >
                         {config.thankYou?.message?.[lang] || "Votre commande a été reçue avec succès."}
                     </p>
+
+                    {/* Order Summary in Box */}
+                    {orderData && (
+                        <div className="mt-4 pt-4 border-t border-slate-200/60 text-xs space-y-2">
+                            {orderData.items?.map((item: any, idx: number) => (
+                                <div key={idx} className="flex justify-between font-bold opacity-80">
+                                    <span>{item.quantity}x {item.title}</span>
+                                    <span>{item.variant}</span>
+                                </div>
+                            ))}
+                            <div className="flex justify-between font-black text-base mt-2 pt-2 border-t border-slate-200/60" style={{ color: config.accentColor }}>
+                                <span>Total</span>
+                                <span>{orderData.totalPrice} DZD</span>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Action Buttons */}
                 <div className="w-full max-w-[300px] space-y-3">
-                    {/* View Order Summary Button */}
-                    <button
+                    {/* View Order Summary Button (Optional now if summary is shown above, but kep for config compat) */}
+                    {/* <button
                         className="w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-sm font-bold transition-all active:scale-[0.98]"
                         style={{
                             backgroundColor: `${config.accentColor}15`,
@@ -132,19 +193,22 @@ export const ThankYouPopup = ({ config, lang, onClose, fixed = false }: ThankYou
                     >
                         <FileText size={18} />
                         {config.thankYou?.summaryButton?.[lang] || (lang === 'ar' ? 'عرض ملخص الطلب' : 'Voir le résumé')}
-                    </button>
+                    </button> */}
 
                     {/* WhatsApp Confirmation Button */}
-                    <button
-                        className="w-full flex items-center justify-center gap-2 px-6 py-3.5 text-white rounded-xl text-sm font-bold transition-all hover:opacity-90 active:scale-[0.98] shadow-lg"
-                        style={{
-                            backgroundColor: '#25D366',
-                            boxShadow: '0 8px 20px -5px rgba(37, 211, 102, 0.4)'
-                        }}
-                    >
-                        <MessageCircle size={18} />
-                        {config.thankYou?.whatsappButton?.[lang] || (lang === 'ar' ? 'تأكيد عبر واتساب' : 'Confirmer via WhatsApp')}
-                    </button>
+                    {config.thankYou?.enableWhatsApp && (
+                        <button
+                            onClick={handleWhatsAppClick}
+                            className="w-full flex items-center justify-center gap-2 px-6 py-3.5 text-white rounded-xl text-sm font-bold transition-all hover:opacity-90 active:scale-[0.98] shadow-lg animate-in slide-in-from-bottom-2 duration-500 delay-100"
+                            style={{
+                                backgroundColor: '#25D366',
+                                boxShadow: '0 8px 20px -5px rgba(37, 211, 102, 0.4)'
+                            }}
+                        >
+                            <MessageCircle size={18} />
+                            {config.thankYou?.whatsappButton?.[lang] || (lang === 'ar' ? 'تأكيد عبر واتساب' : 'Confirmer via WhatsApp')}
+                        </button>
+                    )}
                 </div>
             </div>
         );

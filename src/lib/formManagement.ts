@@ -3,6 +3,7 @@ import { useFormStore } from "../stores";
 import type { FormConfig } from "../stores/formStore";
 import { DEFAULT_FORM_CONFIG, FORM_CONFIG_SCHEMA_VERSION } from "./constants";
 import { validateFormConfig } from "./formSchemaValidator";
+export { validateFormConfig };
 
 export interface FormLoadResult {
   success: boolean;
@@ -45,7 +46,7 @@ export const getExportData = (formConfig: FormConfig): Record<string, any> => {
       ...o,
       type: _type,
       discount: _type === "perc" ? o.discount / 100 : o.discount,
-    })
+    }),
   );
 
   const shippingConfig = formConfig.shipping;
@@ -141,14 +142,14 @@ export const getExportData = (formConfig: FormConfig): Record<string, any> => {
 export const deepMergeFormConfig = (
   defaults: any,
   imported: any,
-  depth = 0
+  depth = 0,
 ): any => {
   if (depth > 10) return imported; // Prevent infinite recursion
 
   const merged = { ...defaults };
 
   for (const key in imported) {
-    if (imported.hasOwnProperty(key)) {
+    if (Object.prototype.hasOwnProperty.call(imported, key)) {
       const defaultValue = defaults[key];
       const importedValue = imported[key];
 
@@ -228,7 +229,7 @@ export const normalizeImportedConfig = (config: any): any => {
           id: ex.id || "",
           home: ex.home ?? 0,
           desk: ex.desk ?? 0,
-        })
+        }),
       );
     }
   }
@@ -321,7 +322,7 @@ export const loadFormWithValidation = (
     showWarnings?: boolean;
     showSuccessToast?: boolean;
     onSuccess?: () => void;
-  } = {}
+  } = {},
 ): FormLoadResult => {
   const { showWarnings = true, showSuccessToast = true, onSuccess } = options;
 

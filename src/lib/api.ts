@@ -239,3 +239,18 @@ export async function removeFormFromShopify(
 
   return response.json();
 }
+
+export async function submitOrder(orderData: any) {
+  const response = await fetch(`${N8N_BACKEND_URL}/${WEBHOOK_ENV}/submit-order`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(orderData),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error || "Order submission failed");
+  }
+
+  return response.json();
+}

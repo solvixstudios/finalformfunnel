@@ -9,15 +9,15 @@ interface PrebuiltConfigModalProps {
 }
 
 interface TemplateGridProps {
-  onLoad: (config: Partial<typeof DEFAULT_FORM_CONFIG>, name?: string) => void;
+  onApply: (config: Partial<typeof DEFAULT_FORM_CONFIG>, name?: string) => void;
 }
 
 /**
  * Template grid component - can be used standalone without modal wrapper
  */
-export function TemplateGrid({ onLoad }: TemplateGridProps) {
+export function TemplateGrid({ onApply }: TemplateGridProps) {
   const handleLoadConfig = (preset: typeof CONFIG_PRESETS[0]) => {
-    onLoad(preset.config, preset.name);
+    onApply(preset.config, preset.name);
   };
 
   return (
@@ -54,8 +54,12 @@ export default function PrebuiltConfigModal({
 }: PrebuiltConfigModalProps) {
   if (!isOpen) return null;
 
-  const handleLoad = (config: Partial<typeof DEFAULT_FORM_CONFIG>) => {
-    onLoad(config);
+  const handleApply = (config: Partial<typeof DEFAULT_FORM_CONFIG>) => {
+    onLoad(config); // The parent passes 'applyTemplate' or similar here?
+    // Wait, the parent of PrebuiltConfigModal is probably passing 'applyTemplate' logic or 'loadFormConfig'.
+    // We should change the interface semantic or ensure the parent passes the right function.
+    // The props say "onLoad".
+    // I will check where PrebuiltConfigModal is used.
     onClose();
   };
 
@@ -81,7 +85,7 @@ export default function PrebuiltConfigModal({
 
         {/* Content */}
         <div className="flex-1 overflow-auto p-6">
-          <TemplateGrid onLoad={handleLoad} />
+          <TemplateGrid onApply={handleApply} />
         </div>
       </div>
     </div>

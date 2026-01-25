@@ -63,6 +63,7 @@ interface FormStore {
   setFormConfig: (config: FormConfig) => void;
   updateFormConfig: (partial: Partial<FormConfig>) => void;
   loadFormConfig: (config: Partial<FormConfig>) => void;
+  applyTemplate: (config: Partial<FormConfig>) => void;
   resetFormConfig: () => void;
   resetToNewForm: () => void;
   setEditingSection: (section: EditingSection) => void;
@@ -84,7 +85,7 @@ interface FormStore {
   addToSavedFormsList: (form: SavedFormSummary) => void;
   updateSavedFormInList: (
     formId: string,
-    updates: Partial<SavedFormSummary>
+    updates: Partial<SavedFormSummary>,
   ) => void;
   removeFromSavedFormsList: (formId: string) => void;
 
@@ -250,6 +251,45 @@ export const useFormStore = create<FormStore>()(
         }));
       },
 
+      applyTemplate: (config) => {
+        // Deep merge helper (duplicated for now to avoid scope issues or need to refactor)
+        const deepMerge = (defaults: any, imported: any, depth = 0): any => {
+          if (depth > 10) return imported;
+          const merged = { ...defaults };
+          for (const key in imported) {
+            if (Object.prototype.hasOwnProperty.call(imported, key)) {
+              const defaultValue = defaults[key];
+              const importedValue = imported[key];
+              if (
+                defaultValue &&
+                typeof defaultValue === "object" &&
+                !Array.isArray(defaultValue) &&
+                importedValue &&
+                typeof importedValue === "object" &&
+                !Array.isArray(importedValue)
+              ) {
+                merged[key] = deepMerge(defaultValue, importedValue, depth + 1);
+              } else {
+                merged[key] = importedValue;
+              }
+            }
+          }
+          return merged;
+        };
+
+        const fullConfig = deepMerge(DEFAULT_FORM_CONFIG, config) as FormConfig;
+        // Apply template: Update config, SET DIRTY, keep name/id, PUSH to history
+        set((state) => ({
+          formConfig: fullConfig,
+          isDirty: true,
+          // Do NOT reset savedState, so we know we Drifted from it
+        }));
+
+        // Push to history
+        const { pushToHistory } = get();
+        pushToHistory(fullConfig);
+      },
+
       resetFormConfig: () =>
         set({
           formConfig: DEFAULT_FORM_CONFIG,
@@ -275,7 +315,7 @@ export const useFormStore = create<FormStore>()(
         // Helper to check if name exists in saved list
         const nameExists = (n: string) =>
           state.savedFormsList.some(
-            (f) => f.name.trim().toLowerCase() === n.toLowerCase()
+            (f) => f.name.trim().toLowerCase() === n.toLowerCase(),
           );
 
         // While name exists, increment counter
@@ -328,7 +368,7 @@ export const useFormStore = create<FormStore>()(
           // Check if name change affects dirty state relative to saved state
           const isConfigChanged = !isEqual(
             state.formConfig,
-            state.savedState.config
+            state.savedState.config,
           );
           const isNameChanged = name !== state.savedState.name;
           const isDirty = isConfigChanged || isNameChanged;
@@ -351,7 +391,7 @@ export const useFormStore = create<FormStore>()(
         return state.savedFormsList.some(
           (form) =>
             form.name.trim().toLowerCase() === normalizedName &&
-            form.id !== excludeId
+            form.id !== excludeId,
         );
       },
 
@@ -366,7 +406,7 @@ export const useFormStore = create<FormStore>()(
       updateSavedFormInList: (formId, updates) =>
         set((state) => ({
           savedFormsList: state.savedFormsList.map((f) =>
-            f.id === formId ? { ...f, ...updates } : f
+            f.id === formId ? { ...f, ...updates } : f,
           ),
         })),
 
@@ -441,7 +481,7 @@ export const useFormStore = create<FormStore>()(
           // Truncate future history if we're not at the end
           const newHistory = currentState.history.slice(
             0,
-            currentState.historyIndex + 1
+            currentState.historyIndex + 1,
           );
 
           // Add new config
@@ -513,8 +553,8 @@ export const useFormStore = create<FormStore>()(
         isDirty: state.isDirty,
         isNewForm: state.isNewForm,
       }),
-    }
-  )
+    },
+  ),
 );
 
 // --- Optimized Selectors ---
@@ -531,6 +571,7 @@ export const useFormActions = () =>
       setFormConfig: state.setFormConfig,
       updateFormConfig: state.updateFormConfig,
       loadFormConfig: state.loadFormConfig,
+      applyTemplate: state.applyTemplate,
       resetFormConfig: state.resetFormConfig,
       resetToNewForm: state.resetToNewForm,
       setEditingSection: state.setEditingSection,
@@ -548,7 +589,7 @@ export const useFormActions = () =>
       saveSuccess: state.saveSuccess,
       saveFailure: state.saveFailure,
       setIsSaving: state.setIsSaving,
-    }))
+    })),
   );
 
 // Computed selectors
@@ -559,7 +600,7 @@ export const useHistoryStatus = () =>
     useShallow((state) => ({
       canUndo: state.canUndo(),
       canRedo: state.canRedo(),
-    }))
+    })),
   );
 
 export const useSaveState = () =>
@@ -568,5 +609,5 @@ export const useSaveState = () =>
       isSaving: state.isSaving,
       saveError: state.saveError,
       lastSavedAt: state.lastSavedAt,
-    }))
+    })),
   );

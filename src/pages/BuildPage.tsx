@@ -21,7 +21,7 @@ import FormTab from '../components/FormTab';
 import { useHeaderActions } from '../contexts/HeaderActionsContext';
 import { assignFormToShopify } from '../lib/api';
 import { useConnectedStores, useFormAssignments, useSavedForms } from '../lib/firebase/hooks';
-import { getExportData, loadFormWithValidation } from '../lib/formManagement';
+import { getExportData, loadFormWithValidation, normalizeImportedConfig, validateFormConfig } from '../lib/formManagement';
 import { useI18n } from '../lib/i18n/i18nContext';
 import { useFormStore } from '../stores';
 
@@ -130,7 +130,7 @@ const BuildPage = ({ userId }: BuildPageProps) => {
       setSavedFormsList(formsSummary);
 
       // Skip auto-rename if we just saved (prevents name from changing after save)
-      if (justSavedFormIdRef.current) {
+      if (justSavedFormIdRef.current || isSaving) {
         return;
       }
 
@@ -206,56 +206,65 @@ const BuildPage = ({ userId }: BuildPageProps) => {
   };
 
   const handleLoadTemplate = (config: any, templateName?: string) => {
-    // Check for unsaved changes
-    const loadTemplate = () => {
-      // Use loadFormWithValidation to ensure consistent normalization and validation
-      // Templates get a unique ID that will be set to null to mark as new form
-      const nameToUse = formId ? formName : (templateName || 'New Template');
+    // Check for unsaved changes ONLY if we are starting fresh or replacing entirely.
+    // If we are applying to existing form, we usually just want to apply it.
+    // BUT applying a template is a destructive action for the CONFIG.
+    // If user has unsaved changes to their CURRENT config, they might want to know.
+    // However, since we push to history, they can UNDO.
+    // So showing "Unsaved Changes" dialog blocking the template application is maybe annoying if we have Undo.
+    // But let's stick to safety: if they have unsaved chagnes, warn them.
 
-      const result = loadFormWithValidation(
-        {
-          config,
-          name: nameToUse,
-          id: 'temp-' + Date.now(),
-        },
-        {
-          showWarnings: true,
-          showSuccessToast: false,
-          onSuccess: () => {
-            // Set to null to mark as new form if we want it to be a new form?
-            // If we are applying a template to an EXISTING form, we probably shouldn't set formId to null, we should keep the ID.
-            // BUT the original code set `setFormId(null)`. This suggests "Load Template" implies "Start Fresh with this Template".
-            // If the user wants to apply a template to an EXISTING form, they might expect to keep the ID but change the config.
+    const applyTemplateLogic = () => {
+      // 1. Normalize and Validate
+      const normalized = normalizeImportedConfig(config);
+      const validation = validateFormConfig(normalized);
 
-            // Discussion: "also when they are loaded it should't change the name"
-            // If I am editing "My Funnel 1" and I click "Load Template", I expect "My Funnel 1" to now have that template's config. I do NOT expect it to become a new unsaved form called "New Template".
+      if (validation.warnings.length > 0) {
+        validation.warnings.forEach(w => toast.warning(w));
+      }
 
-            // So:
-            // 1. If formId exists: Keep formId, Keep formName. Only update config.
-            // 2. If formId is null (New): Use template name, setFormId(null).
+      if (!validation.valid) {
+        toast.error(`Cannot apply template: ${validation.errors.join(", ")}`);
+        return;
+      }
 
-            if (!formId) {
-              setFormId(null);
-            }
-            setShowLoadModal(false);
-            toast.success('Template loaded successfully');
-
-            // If we kept the ID, we should probably trigger an auto-save or at least mark dirty.
-            // loadFormWithValidation updates the store.
+      // 2. Determine Mode
+      if (formId) {
+        // Mode: Apply to Existing Form (Keep ID, Name, History)
+        useFormStore.getState().applyTemplate(normalized);
+        toast.success("Template applied! You can Undo if needed.");
+        setShowLoadModal(false);
+      } else {
+        // Mode: Start New Form with Template
+        // Use existing loader to reset state
+        const nameToUse = templateName || 'New Template';
+        const result = loadFormWithValidation(
+          {
+            config: normalized,
+            name: nameToUse,
+            id: 'temp-' + Date.now(),
           },
+          {
+            showWarnings: false, // Already showed above
+            showSuccessToast: false,
+            onSuccess: () => {
+              setFormId(null);
+              setShowLoadModal(false);
+              toast.success('Template loaded successfully');
+            },
+          }
+        );
+        if (!result.success) {
+          toast.error(result.error || "Failed to load");
         }
-      );
-
-      if (!result.success) {
-        toast.error('Failed to load template');
       }
     };
 
     if (hasUnsavedChanges()) {
-      setPendingAction(() => loadTemplate);
+      setPendingAction(() => applyTemplateLogic);
       setShowUnsavedChangesDialog(true);
     } else {
-      loadTemplate();
+      applyTemplateLogic();
     }
   };
 

@@ -71,7 +71,7 @@ export const CtaEditor = () => {
             <select
               value={formConfig.ctaVariant || "solid"}
               onChange={(e) =>
-                setFormConfig({ ...formConfig, ctaVariant: e.target.value })
+                setFormConfig({ ...formConfig, ctaVariant: e.target.value as any })
               }
               className="w-full text-xs border border-slate-200 rounded-lg p-2.5 font-bold focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 outline-none"
             >
@@ -145,68 +145,109 @@ export const CtaEditor = () => {
           </div>
 
           {formConfig.ctaSticky && (
-            <div className="mt-4 pt-4 border-t border-slate-200 space-y-3">
-              <label className="text-[10px] font-bold text-slate-500 uppercase">Style du Sticky</label>
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  onClick={() => setFormConfig({ ...formConfig, ctaStickyVariant: 'simple' })}
-                  className={`p-2.5 rounded-lg border text-[10px] font-bold transition-all ${(!formConfig.ctaStickyVariant || formConfig.ctaStickyVariant === 'simple')
-                    ? "bg-gradient-to-br from-indigo-500 to-purple-600 border-transparent text-white shadow-md"
-                    : "bg-white border-slate-200 text-slate-600 hover:border-indigo-300 hover:shadow-sm"
-                    }`}
-                >
-                  Simple
-                </button>
-                <button
-                  onClick={() => setFormConfig({ ...formConfig, ctaStickyVariant: 'product' })}
-                  className={`p-2.5 rounded-lg border text-[10px] font-bold transition-all ${formConfig.ctaStickyVariant === 'product'
-                    ? "bg-gradient-to-br from-indigo-500 to-purple-600 border-transparent text-white shadow-md"
-                    : "bg-white border-slate-200 text-slate-600 hover:border-indigo-300 hover:shadow-sm"
-                    }`}
-                >
-                  Produit
-                </button>
-                <button
-                  onClick={() => setFormConfig({ ...formConfig, ctaStickyVariant: 'compact' })}
-                  className={`p-2.5 rounded-lg border text-[10px] font-bold transition-all ${formConfig.ctaStickyVariant === 'compact'
-                    ? "bg-gradient-to-br from-indigo-500 to-purple-600 border-transparent text-white shadow-md"
-                    : "bg-white border-slate-200 text-slate-600 hover:border-indigo-300 hover:shadow-sm"
-                    }`}
-                >
-                  Compact
-                </button>
+            <>
+              <div className="mt-4 pt-4 border-t border-slate-200 space-y-3">
+                <label className="text-[10px] font-bold text-slate-500 uppercase">Style du Sticky</label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    onClick={() => setFormConfig({ ...formConfig, ctaStickyVariant: 'simple' as any })}
+                    className={`p-2.5 rounded-lg border text-[10px] font-bold transition-all ${(!formConfig.ctaStickyVariant || formConfig.ctaStickyVariant === 'simple')
+                      ? "bg-gradient-to-br from-indigo-500 to-purple-600 border-transparent text-white shadow-md"
+                      : "bg-white border-slate-200 text-slate-600 hover:border-indigo-300 hover:shadow-sm"
+                      }`}
+                  >
+                    Simple
+                  </button>
+                  <button
+                    onClick={() => setFormConfig({ ...formConfig, ctaStickyVariant: 'product' as any })}
+                    className={`p-2.5 rounded-lg border text-[10px] font-bold transition-all ${formConfig.ctaStickyVariant === 'product'
+                      ? "bg-gradient-to-br from-indigo-500 to-purple-600 border-transparent text-white shadow-md"
+                      : "bg-white border-slate-200 text-slate-600 hover:border-indigo-300 hover:shadow-sm"
+                      }`}
+                  >
+                    Produit
+                  </button>
+                  <button
+                    onClick={() => setFormConfig({ ...formConfig, ctaStickyVariant: 'compact' as any })}
+                    className={`p-2.5 rounded-lg border text-[10px] font-bold transition-all ${formConfig.ctaStickyVariant === 'compact'
+                      ? "bg-gradient-to-br from-indigo-500 to-purple-600 border-transparent text-white shadow-md"
+                      : "bg-white border-slate-200 text-slate-600 hover:border-indigo-300 hover:shadow-sm"
+                      }`}
+                  >
+                    Compact
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setFormConfig({ ...formConfig, ctaStickyVariant: 'card' as any })}
+                    className={`p-2.5 rounded-lg border text-[10px] font-bold transition-all ${formConfig.ctaStickyVariant === 'card'
+                      ? "bg-gradient-to-br from-indigo-500 to-purple-600 border-transparent text-white shadow-md"
+                      : "bg-white border-slate-200 text-slate-600 hover:border-indigo-300 hover:shadow-sm"
+                      }`}
+                  >
+                    Carte
+                  </button>
+                  <button
+                    onClick={() => setFormConfig({ ...formConfig, ctaStickyVariant: 'badge' as any })}
+                    className={`p-2.5 rounded-lg border text-[10px] font-bold transition-all ${formConfig.ctaStickyVariant === 'badge'
+                      ? "bg-gradient-to-br from-indigo-500 to-purple-600 border-transparent text-white shadow-md"
+                      : "bg-white border-slate-200 text-slate-600 hover:border-indigo-300 hover:shadow-sm"
+                      }`}
+                  >
+                    Badge
+                  </button>
+                </div>
+
+                <div className="mt-3 p-2.5 bg-indigo-50 rounded-lg border border-indigo-100">
+                  <p className="text-[9px] text-indigo-700 leading-relaxed">
+                    <strong>💡 Astuce:</strong> Le style <strong>Produit</strong> affiche l'image et le prix. <strong>Compact</strong> est minimal. <strong>Carte</strong> a plus d'espace. <strong>Badge</strong> est un petit bouton flottant.
+                  </p>
+                </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => setFormConfig({ ...formConfig, ctaStickyVariant: 'card' })}
-                  className={`p-2.5 rounded-lg border text-[10px] font-bold transition-all ${formConfig.ctaStickyVariant === 'card'
-                    ? "bg-gradient-to-br from-indigo-500 to-purple-600 border-transparent text-white shadow-md"
-                    : "bg-white border-slate-200 text-slate-600 hover:border-indigo-300 hover:shadow-sm"
-                    }`}
-                >
-                  Carte
-                </button>
-                <button
-                  onClick={() => setFormConfig({ ...formConfig, ctaStickyVariant: 'badge' })}
-                  className={`p-2.5 rounded-lg border text-[10px] font-bold transition-all ${formConfig.ctaStickyVariant === 'badge'
-                    ? "bg-gradient-to-br from-indigo-500 to-purple-600 border-transparent text-white shadow-md"
-                    : "bg-white border-slate-200 text-slate-600 hover:border-indigo-300 hover:shadow-sm"
-                    }`}
-                >
-                  Badge
-                </button>
+              <div className="mt-3 space-y-2">
+                <label className="text-[10px] font-bold text-slate-500 uppercase">Texte du Sticky (Optionnel)</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    placeholder="Commander"
+                    value={formConfig.translations?.stickyLabel?.fr || ""}
+                    onChange={(e) =>
+                      setFormConfig({
+                        ...formConfig,
+                        translations: {
+                          ...formConfig.translations,
+                          stickyLabel: { ...formConfig.translations.stickyLabel, fr: e.target.value },
+                        },
+                      })
+                    }
+                    className="w-full text-[10px] border border-slate-200 rounded-lg p-2 focus:ring-1 focus:ring-indigo-100 outline-none"
+                  />
+                  <input
+                    type="text"
+                    dir="rtl"
+                    placeholder="اطلب"
+                    value={formConfig.translations?.stickyLabel?.ar || ""}
+                    onChange={(e) =>
+                      setFormConfig({
+                        ...formConfig,
+                        translations: {
+                          ...formConfig.translations,
+                          stickyLabel: { ...formConfig.translations.stickyLabel, ar: e.target.value },
+                        },
+                      })
+                    }
+                    className="w-full text-[10px] border border-slate-200 rounded-lg p-2 focus:ring-1 focus:ring-indigo-100 outline-none"
+                  />
+                </div>
+                <p className="text-[9px] text-slate-400">Laisser vide pour utiliser le texte du bouton principal.</p>
               </div>
 
-              <div className="mt-3 p-2.5 bg-indigo-50 rounded-lg border border-indigo-100">
-                <p className="text-[9px] text-indigo-700 leading-relaxed">
-                  <strong>💡 Astuce:</strong> Le style <strong>Produit</strong> affiche l'image et le prix. <strong>Compact</strong> est minimal. <strong>Carte</strong> a plus d'espace. <strong>Badge</strong> est un petit bouton flottant.
-                </p>
-              </div>
-            </div>
+            </>
           )}
         </div>
       </div>
-    </div>
+    </div >
   );
 };

@@ -88,3 +88,14 @@ export interface StoreProduct {
   createdAt: string;
   updatedAt: string;
 }
+
+// WhatsApp Integration
+export interface WhatsAppProfile {
+  id: string;
+  userId: string;
+  name: string;
+  phoneNumber: string;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}

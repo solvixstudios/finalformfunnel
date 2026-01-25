@@ -276,7 +276,7 @@ export const FormLoadDialog: React.FC<FormLoadDialogProps> = ({
             <TabsContent value="templates" className="flex-1 flex flex-col min-h-0 m-0 outline-none overflow-y-auto bg-slate-50 data-[state=inactive]:hidden">
               <div className="p-6">
                 <TemplateGrid
-                  onLoad={(config, name) => {
+                  onApply={(config, name) => {
                     onLoadTemplate(config, name);
                     onClose();
                   }}

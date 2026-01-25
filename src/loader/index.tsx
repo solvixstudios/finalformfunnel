@@ -290,6 +290,25 @@ share-button {
         shadowRoot.appendChild(link);
     }
 
+    // 7.5. Inject Skeleton immediately (Fix FOUC)
+    // We check if React root already exists or is being created
+    if (!shadowRoot.getElementById('finalform-shadow-wrapper')) {
+        const skeletonDiv = document.createElement('div');
+        skeletonDiv.id = 'finalform-skeleton';
+        skeletonDiv.innerHTML = `
+            <div class="animate-pulse space-y-4 p-4 opacity-60">
+                <div class="h-8 bg-slate-200 rounded w-3/4 mx-auto"></div>
+                <div class="h-64 bg-slate-100 rounded-xl"></div>
+                <div class="space-y-3">
+                    <div class="h-12 bg-slate-200 rounded"></div>
+                    <div class="h-12 bg-slate-200 rounded"></div>
+                </div>
+                <div class="h-14 bg-slate-300 rounded-xl mt-4"></div>
+            </div>
+        `;
+        shadowRoot.appendChild(skeletonDiv);
+    }
+
     // 7.5 Overlay Container (Top Level, Fixed)
     const overlayContainerId = 'finalform-overlay-container';
     let overlayContainer = document.getElementById(overlayContainerId);
@@ -329,6 +348,10 @@ share-button {
 
     // 8. Render Form
     if (productData) {
+        // Remove Skeleton if exists
+        const skel = shadowRoot.getElementById('finalform-skeleton');
+        if (skel) skel.remove();
+
         const offers = config.offers || [];
         const shipping = config.shipping || { standard: { home: 0, desk: 0 } };
 

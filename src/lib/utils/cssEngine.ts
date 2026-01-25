@@ -22,6 +22,8 @@ type ConfigInfo = {
   inputBackground?: string;
   inputPlaceholderColor?: string;
   ctaColor?: string;
+  cardBackground?: string;
+  cardBorderColor?: string;
 
   // Dimensions
   borderRadius: string;
@@ -173,8 +175,8 @@ export const buildOptionCardStyles = (
   // Default state
   return {
     borderRadius: config.borderRadius,
-    backgroundColor: config.formBackground || "#ffffff",
-    borderColor: config.inputBorderColor || "#e2e8f0",
+    backgroundColor: config.cardBackground || config.formBackground || "#ffffff",
+    borderColor: config.cardBorderColor || config.inputBorderColor || "#e2e8f0",
     color: config.textColor || "#1e293b",
   };
 };

@@ -14,16 +14,19 @@ import {
     UrgencyTimerSection,
     VariantsSection
 } from '@/components/FormTab/preview/sections';
-import { WILAYAS } from '@/lib/constants';
+// import { WILAYAS } from '@/lib/constants'; // Removed: Static Data
 import { buildCtaStyles, buildInputStyles, buildRootStyles, buildSectionMargin, getFontFamilyCSS } from '@/lib/utils/cssEngine';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/formatting';
 import { ChevronDown } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
+import { z } from 'zod'; // Import Zod
 
 import { useCountdownTimer } from '@/components/FormTab/preview/hooks/useCountdownTimer';
 import { usePreviewCalculations } from '@/components/FormTab/preview/hooks/usePreviewCalculations';
 import { usePromoCode } from '@/components/FormTab/preview/hooks/usePromoCode';
 import { useStickyObserver } from '@/components/FormTab/preview/hooks/useStickyObserver';
+import { submitOrder } from '@/lib/api'; // New API Function
+import { Commune, fetchCommunes, fetchWilayas, Wilaya } from '@/lib/location'; // New Location Utility
 
 // Types
 interface Variant {
@@ -49,7 +52,12 @@ interface Product {
 export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, previewMode = false }: { config: any, product: Product, offers: any[], shipping: any, sectionWrapper?: any, previewMode?: boolean }) => {
     // --- STATE ---
     const [lang, setLang] = useState<'fr' | 'ar'>(config.header?.defaultLanguage || 'fr');
-    // ... (lines 31-177 unchanged)
+
+    // Location Data
+    const [wilayasList, setWilayasList] = useState<Wilaya[]>([]);
+    const [communesList, setCommunesList] = useState<Commune[]>([]);
+    const [loadingCommunes, setLoadingCommunes] = useState(false);
+
     const [formData, setFormData] = useState({
         name: '',
         phone: '',
@@ -62,6 +70,8 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
         quantity: 1,
         shippingType: 'home' as 'home' | 'desk',
     });
+
+    const [formErrors, setFormErrors] = useState<Record<string, string>>({}); // Error state
 
     const [selectedVariantId, setSelectedVariantId] = useState<number | null>(
         product?.variants?.[0]?.id || null
@@ -99,7 +109,9 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
             setFormData(prev => ({ ...prev, variant: match.title }));
         }
     }, [selectedOptions, product]);
+
     const [showThankYou, setShowThankYou] = useState(false);
+    const [finalOrderData, setFinalOrderData] = useState<any>(null); // To pass to popup
 
     // Refs
     const ctaRef = useRef<HTMLDivElement>(null);
@@ -193,6 +205,24 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
         }
     }, [offers, formData.offerId]);
 
+    // Fetch Wilayas on mount
+    useEffect(() => {
+        fetchWilayas().then(data => setWilayasList(data));
+    }, []);
+
+    // Fetch Communes when Wilaya changes
+    useEffect(() => {
+        if (formData.wilaya) {
+            setLoadingCommunes(true);
+            fetchCommunes(formData.wilaya).then(data => {
+                setCommunesList(data);
+                setLoadingCommunes(false);
+            });
+        } else {
+            setCommunesList([]);
+        }
+    }, [formData.wilaya]);
+
     // --- HELPERS ---
     const txt = (key: string) => config.translations[key]?.[lang] || config.translations[key]?.fr || '';
     const getFieldTxt = (fieldKey: string) => config.fields[fieldKey]?.placeholder?.[lang] || config.fields[fieldKey]?.placeholder?.fr || '';
@@ -203,11 +233,17 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
     const getSectionMarginStyle = (isFirst: boolean = false) => buildSectionMargin(config as any, isFirst);
 
     // Input styling
-    // Input styling
     const inputSpacing = config.inputSpacing || 12;
-    // const isFilled = config.inputVariant === 'filled'; // handled by engine
     const svxInputClass = `custom-input w-full px-4 py-3.5 text-[13px] font-semibold outline-none transition-all duration-200 border-2 focus:ring-4`;
     const inputStyle = buildInputStyles(config as any, config.inputVariant || 'filled');
+
+    // Validation Schema
+    const schema = z.object({
+        name: z.string().min(2, lang === 'fr' ? 'Nom obligatoire' : 'الاسم مطلوب'),
+        phone: z.string().regex(/^(05|06|07)[0-9]{8}$/, lang === 'fr' ? 'Numéro invalide (05/06/07...)' : 'رقم غير صحيح'),
+        wilaya: z.string().min(1, lang === 'fr' ? 'Sélectionnez une wilaya' : 'اختر ولاية'),
+        commune: config.fields?.commune?.visible ? z.string().min(1, lang === 'fr' ? 'Sélectionnez une commune' : 'اختر بلدية') : z.string().optional(),
+    });
 
     // Field visibility logic
     const getVisibleFields = () => {
@@ -247,7 +283,6 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
         (config.enableHomeDelivery !== false || config.enableDeskDelivery !== false);
 
     // CTA styles (for sticky)
-    // CTA styles (for sticky)
     const getCtaStyles = (): React.CSSProperties => {
         return buildCtaStyles({
             ctaColor: config.ctaColor,
@@ -259,47 +294,53 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
     };
 
     const handleFormSubmit = async () => {
-        // In preview mode, just show thank you popup without submitting
-        if (previewMode) {
-            setShowThankYou(true);
+        // Validate with Zod
+        const result = schema.safeParse(formData);
+
+        if (!result.success) {
+            const errors: Record<string, string> = {};
+            result.error.issues.forEach(issue => {
+                errors[issue.path[0] as string] = issue.message;
+            });
+            setFormErrors(errors);
+
+            // Scroll to first error
+            const firstErrorField = Object.keys(errors)[0];
+            const el = document.querySelector(`[name="${firstErrorField}"]`);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
             return;
         }
+        setFormErrors({});
 
-        // Final validation
-        if (!selectedVariantId && product?.variants?.length > 0) {
-            console.warn("No variant ID selected (should match options)");
-        }
-
+        // Optimistic UI Data
         const payload = {
             ...formData,
-            variantId: selectedVariantId, // Use the resolved ID
+            variantId: selectedVariantId,
             totalPrice: calculations.displayedTotal,
             currency: 'DZD',
             productId: product.id,
-            shopName: window.location.hostname
+            shopName: window.location.hostname,
+            items: [{
+                title: product.title,
+                variant: formData.variant,
+                quantity: formData.quantity,
+                price: basePrice,
+            }]
         };
 
-        console.log('Submitting Order:', payload);
+        setFinalOrderData(payload); // Pass to popup
+        setShowThankYou(true); // Optimistic success
 
-        // Only if we have a valid variant ID
-        if (selectedVariantId) {
+        if (!previewMode) {
             try {
-                // MOCK SUBMISSION FOR NOW - Prevent checkout redirect
-                // When "Real Order" logic is fully implemented (COD integration), we will enable this.
-                // For now, regardless of previewMode, we show success.
-                console.log("Form submitted (Mock Mode)");
-
-                // Simulate network request
-                await new Promise(resolve => setTimeout(resolve, 800));
-
-                setShowThankYou(true);
-
+                // Background submission
+                await submitOrder(payload);
+                console.log("Order submitted successfully to n8n");
             } catch (err) {
-                console.error("Submission failed", err);
-                setShowThankYou(true); // Fallback
+                console.error("Submission failed silently:", err);
+                // We typically don't show error here if optimistic, unless we want to try again
             }
-        } else {
-            setShowThankYou(true);
         }
     };
 
@@ -335,10 +376,20 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                     color: ${config.inputPlaceholderColor || '#94a3b8'} !important;
                     opacity: 1;
                 }
+                .error-ring {
+                    border-color: #ef4444 !important;
+                    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1) !important;
+                }
             `}</style>
 
             {showThankYou && (
-                <ThankYouPopup config={config} lang={lang} onClose={() => setShowThankYou(false)} fixed={!previewMode} />
+                <ThankYouPopup
+                    config={config}
+                    lang={lang}
+                    onClose={() => setShowThankYou(false)}
+                    fixed={!previewMode}
+                    orderData={finalOrderData}
+                />
             )}
 
             <div className="flex-1 overflow-y-auto custom-scroll relative" ref={formContainerRef}>
@@ -370,13 +421,11 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                     {config.sectionOrder.map((sectionId: string, index: number) => {
                         // Variants
                         if (sectionId === 'variants') {
-                            // Logic to determine if we should hide variants (Single variant product)
                             const hasEffectiveVariants = product?.variants && (
                                 product.variants.length > 1 ||
                                 (product.variants.length === 1 && product.variants[0].title !== 'Default Title')
                             );
 
-                            // In live mode (not preview), hide if no real variants to select
                             if (!previewMode && product && !hasEffectiveVariants) {
                                 return null;
                             }
@@ -395,7 +444,6 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                                             [optName]: val
                                         }));
                                     }}
-                                    // Legacy fallback
                                     selectedVariant={formData.variant}
                                     onSelect={(v) => {
                                         const varObj = product.variants?.find((pv: any) => pv.title === v);
@@ -428,25 +476,35 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                                                             <div className={showLocationSideBySide ? 'grid grid-cols-2 gap-3' : 'space-y-0'} style={{ marginBottom: `${inputSpacing}px` }}>
                                                                 <div className="relative">
                                                                     <select
+                                                                        name="wilaya"
                                                                         value={formData.wilaya}
                                                                         onChange={(e) => setFormData({ ...formData, wilaya: e.target.value, commune: '' })}
-                                                                        className={`${svxInputClass} appearance-none cursor-pointer`}
+                                                                        className={`${svxInputClass} appearance-none cursor-pointer ${formErrors.wilaya ? 'error-ring' : ''}`}
                                                                         style={{ ...inputStyle, marginBottom: showLocationSideBySide ? 0 : inputSpacing }}
                                                                     >
                                                                         <option value="">{getFieldTxt('wilaya') + (config.fields.wilaya?.required ? ' *' : '')}</option>
-                                                                        {WILAYAS.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                                                                        {wilayasList.map(w => (
+                                                                            <option key={w.id} value={w.id}>
+                                                                                {lang === 'ar' ? `${w.id} - ${w.ar_name}` : `${w.id} - ${w.name}`}
+                                                                            </option>
+                                                                        ))}
                                                                     </select>
                                                                     <ChevronDown className={`absolute ${lang === 'ar' ? 'left-4' : 'right-4'} top-4 pointer-events-none`} color={config.inputPlaceholderColor || '#94a3b8'} size={16} />
                                                                 </div>
                                                                 {isDoubleDropdown && config.fields.commune?.visible && (
                                                                     <div className="relative">
                                                                         <select
-                                                                            className={`${svxInputClass} appearance-none cursor-pointer`}
+                                                                            name="commune"
+                                                                            value={formData.commune}
+                                                                            onChange={(e) => setFormData({ ...formData, commune: e.target.value })}
+                                                                            className={`${svxInputClass} appearance-none cursor-pointer ${formErrors.commune ? 'error-ring' : ''}`}
                                                                             style={{ ...inputStyle, marginBottom: 0 }}
-                                                                            disabled={!formData.wilaya}
+                                                                            disabled={!formData.wilaya || loadingCommunes}
                                                                         >
-                                                                            <option>{getFieldTxt('commune') + (config.fields.commune?.required ? ' *' : '')}</option>
-                                                                            {formData.wilaya && <option>Centre Ville</option>}
+                                                                            <option value="">{loadingCommunes ? 'Loading...' : getFieldTxt('commune') + (config.fields.commune?.required ? ' *' : '')}</option>
+                                                                            {communesList.map(c => (
+                                                                                <option key={c.pk} value={c.fields.name}>{c.fields.name}</option>
+                                                                            ))}
                                                                         </select>
                                                                         <ChevronDown className={`absolute ${lang === 'ar' ? 'left-4' : 'right-4'} top-4 pointer-events-none`} color={config.inputPlaceholderColor || '#94a3b8'} size={16} />
                                                                     </div>
@@ -456,6 +514,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                                                         {isFreeText && config.fields.address?.visible !== false && (
                                                             <input
                                                                 type="text"
+                                                                name="address"
                                                                 value={formData.address}
                                                                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                                                                 placeholder={getFieldTxt('address') + (config.fields.address?.required ? ' *' : '')}
@@ -469,15 +528,23 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
 
                                             if (key === 'name' || key === 'phone') {
                                                 return (
-                                                    <input
-                                                        key={key}
-                                                        type={key === 'phone' ? 'tel' : 'text'}
-                                                        value={formData[key as keyof typeof formData] as string}
-                                                        onChange={(e) => setFormData({ ...formData, [key]: e.target.value })}
-                                                        placeholder={getFieldTxt(key) + (field.required ? ' *' : '')}
-                                                        className={svxInputClass}
-                                                        style={inputStyle}
-                                                    />
+                                                    <div key={key} className="relative">
+                                                        <input
+                                                            name={key}
+                                                            type={key === 'phone' ? 'tel' : 'text'}
+                                                            value={formData[key as keyof typeof formData] as string}
+                                                            onChange={(e) => {
+                                                                setFormData({ ...formData, [key]: e.target.value });
+                                                                if (formErrors[key]) setFormErrors(prev => ({ ...prev, [key]: '' }));
+                                                            }}
+                                                            placeholder={getFieldTxt(key) + (field.required ? ' *' : '')}
+                                                            className={`${svxInputClass} ${formErrors[key] ? 'error-ring' : ''}`}
+                                                            style={inputStyle}
+                                                        />
+                                                        {formErrors[key] && (
+                                                            <p className="text-[10px] text-red-500 font-bold mt-1 px-1">{formErrors[key]}</p>
+                                                        )}
+                                                    </div>
                                                 );
                                             }
 
@@ -485,6 +552,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                                                 return (
                                                     <textarea
                                                         key={key}
+                                                        name="note"
                                                         value={formData.note}
                                                         onChange={(e) => setFormData({ ...formData, note: e.target.value })}
                                                         placeholder={getFieldTxt(key) + (field.required ? ' *' : '')}
@@ -649,7 +717,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
             <StickyCTA
                 variant={config.ctaStickyVariant}
                 visible={showStickyCTA}
-                text={txt('cta')}
+                text={txt('stickyLabel') || txt('cta')}
                 onClick={() => ctaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
                 ctaStyles={getCtaStyles()}
                 formBackground={config.formBackground || '#ffffff'}

@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import {
@@ -22,12 +23,15 @@ import {
   ExternalLink,
   Loader2,
   Plug,
-  Store
+  Store,
+  X
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { connectToShopify } from '../lib/api';
 import { useConnectedStores } from '../lib/firebase/hooks';
+import { WhatsAppProfile } from '../lib/firebase/types';
+import { useWhatsAppProfiles } from '../lib/firebase/whatsappHooks';
 import { useI18n } from '../lib/i18n/i18nContext';
 
 interface IntegrationsPageProps {
@@ -213,6 +217,59 @@ export default function IntegrationsPage({ userId }: IntegrationsPageProps) {
   const [openSheet, setOpenSheet] = useState(false);
   const [activeTab, setActiveTab] = useState('connect');
   const [selectedIntegration, setSelectedIntegration] = useState('all');
+
+  // WhatsApp State
+  const { profiles: waProfiles, addProfile: addWaProfile, updateProfile: updateWaProfile, deleteProfile: deleteWaProfile, isProfileAssigned } = useWhatsAppProfiles(userId);
+  const [editingWaProfile, setEditingWaProfile] = useState<WhatsAppProfile | 'new' | null>(null);
+  const [waForm, setWaForm] = useState({ name: '', phoneNumber: '', isDefault: false });
+
+  const handleEditWaProfile = (profile: WhatsAppProfile | 'new') => {
+    setEditingWaProfile(profile);
+    if (profile === 'new') {
+      setWaForm({ name: '', phoneNumber: '+213', isDefault: waProfiles.length === 0 });
+    } else {
+      setWaForm({ name: profile.name, phoneNumber: profile.phoneNumber, isDefault: profile.isDefault });
+    }
+  };
+
+  const handleSaveWaProfile = async () => {
+    if (!waForm.name || !waForm.phoneNumber) {
+      toast.error("Name and Phone Number are required.");
+      return;
+    }
+
+    try {
+      if (editingWaProfile === 'new') {
+        await addWaProfile(waForm);
+        toast.success("Profile created!");
+      } else if (editingWaProfile) {
+        await updateWaProfile(editingWaProfile.id, waForm);
+        toast.success("Profile updated!");
+      }
+      setEditingWaProfile(null);
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+  };
+
+  const handleDeleteWaProfile = async (id: string) => {
+    try {
+      const isAssigned = await isProfileAssigned(id);
+      if (isAssigned) {
+        toast.error("Cannot delete this profile because it is assigned to one or more forms. Please unassign it first or select a different profile in those forms.");
+        return;
+      }
+      if (confirm("Are you sure you want to delete this profile?")) {
+        await deleteWaProfile(id);
+        toast.success("Profile deleted");
+        if (editingWaProfile && typeof editingWaProfile !== 'string' && editingWaProfile.id === id) {
+          setEditingWaProfile(null);
+        }
+      }
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+  };
 
 
   // Form State
@@ -480,19 +537,131 @@ export default function IntegrationsPage({ userId }: IntegrationsPageProps) {
               </CardContent>
             </Card>
 
-            {/* WhatsApp (Coming Soon) */}
-            <Card className="opacity-60 grayscale cursor-not-allowed border-dashed h-full flex flex-col group hover:opacity-75 transition-all">
-              <CardHeader className="p-5 pb-3">
-                <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center text-2xl mb-3">
-                  💬
-                </div>
-                <CardTitle className="text-base font-bold text-slate-700">WhatsApp</CardTitle>
-              </CardHeader>
-              <CardContent className="px-5 pb-5 flex-1">
-                <p className="text-sm text-slate-400 mb-3">Order notifications & support.</p>
-                <Badge variant="outline" className="text-slate-400 pointer-events-none">Coming Soon</Badge>
-              </CardContent>
-            </Card>
+            {/* WhatsApp */}
+            <Sheet>
+              <SheetTrigger asChild>
+                <Card className="cursor-pointer hover:border-green-400 hover:shadow-md transition-all group relative overflow-hidden h-full flex flex-col border-slate-200">
+                  <div className="absolute inset-0 bg-gradient-to-br from-green-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <CardHeader className="p-5 pb-3">
+                    <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center text-2xl mb-3 shadow-sm group-hover:scale-105 transition-transform duration-300">
+                      💬
+                    </div>
+                    <CardTitle className="text-base font-bold text-slate-900">WhatsApp</CardTitle>
+                  </CardHeader>
+                  <CardContent className="px-5 pb-5 flex-1 flex flex-col justify-between gap-4">
+                    <p className="text-sm text-slate-500 leading-relaxed">
+                      Enable "Confirm via WhatsApp" on Thank You pages.
+                    </p>
+                    <div className="text-xs font-bold text-green-600 flex items-center group-hover:translate-x-1 transition-transform uppercase tracking-wider">
+                      Configure <ChevronRight size={14} className="ml-1" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </SheetTrigger>
+
+              <SheetContent className="sm:max-w-lg w-[90vw] flex flex-col h-full p-0 gap-0">
+                <SheetHeader className="px-6 py-5 border-b border-slate-100 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+                  <SheetTitle className="flex items-center gap-2.5 text-xl">
+                    <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center text-lg">💬</div>
+                    Configure WhatsApp
+                  </SheetTitle>
+                  <SheetDescription>
+                    Manage WhatsApp profiles for order confirmation.
+                  </SheetDescription>
+                </SheetHeader>
+
+                <ScrollArea className="flex-1 px-6">
+                  <div className="py-6 space-y-6">
+                    {/* Active Profiles List */}
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-semibold text-slate-900">Profiles</h3>
+                        <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => handleEditWaProfile('new')}>
+                          + Add Profile
+                        </Button>
+                      </div>
+
+                      {waProfiles.length === 0 && (
+                        <div className="text-center py-6 text-slate-400 text-xs">
+                          No WhatsApp profiles yet. Add one to get started.
+                        </div>
+                      )}
+
+                      {waProfiles.map(profile => (
+                        <div
+                          key={profile.id}
+                          className={`border rounded-lg p-3 flex items-center justify-between bg-white group transition-all cursor-pointer ${editingWaProfile !== 'new' && editingWaProfile?.id === profile.id ? 'border-green-500 ring-1 ring-green-100' : 'border-slate-200 hover:border-green-300'}`}
+                          onClick={() => handleEditWaProfile(profile)}
+                        >
+                          <div className="space-y-1">
+                            <div className="text-sm font-medium text-slate-900 flex items-center gap-2">
+                              {profile.name}
+                              {profile.isDefault && <Badge variant="secondary" className="text-[10px] bg-green-50 text-green-700 h-5 px-1.5">Default</Badge>}
+                            </div>
+                            <div className="text-xs text-slate-500 font-mono" dir="ltr">{profile.phoneNumber}</div>
+                          </div>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-green-600">
+                            <ChevronRight size={16} />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Edit Form */}
+                    {editingWaProfile && (
+                      <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-3 animate-in fade-in slide-in-from-top-2">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-xs font-bold text-slate-500 uppercase">{editingWaProfile === 'new' ? 'New Profile' : 'Edit Profile'}</h4>
+                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditingWaProfile(null)}><X size={14} /></Button>
+                        </div>
+                        <div className="space-y-3">
+                          <div className="space-y-1">
+                            <Label className="text-xs">Profile Name</Label>
+                            <Input
+                              placeholder="e.g. Sales Team"
+                              className="bg-white"
+                              value={waForm.name}
+                              onChange={e => setWaForm({ ...waForm, name: e.target.value })}
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">WhatsApp Number (International format)</Label>
+                            <Input
+                              placeholder="e.g. +213555123456"
+                              className="bg-white font-mono"
+                              dir="ltr"
+                              value={waForm.phoneNumber}
+                              onChange={e => setWaForm({ ...waForm, phoneNumber: e.target.value })}
+                            />
+                            <p className="text-[10px] text-slate-400">Include country code without spaces.</p>
+                          </div>
+
+                          <div className="flex items-center gap-2 py-1">
+                            <Switch
+                              id="wa-default"
+                              checked={waForm.isDefault}
+                              onCheckedChange={(checked) => setWaForm({ ...waForm, isDefault: checked })}
+                            />
+                            <Label htmlFor="wa-default" className="text-xs text-slate-600">Set as default profile</Label>
+                          </div>
+
+                          <div className="flex gap-2 pt-2">
+                            <Button size="sm" className="flex-1 bg-[#25D366] hover:bg-[#20bd5a] text-white" onClick={handleSaveWaProfile}>
+                              {editingWaProfile === 'new' ? 'Create Profile' : 'Save Changes'}
+                            </Button>
+                            {editingWaProfile !== 'new' && (
+                              <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50 hover:text-red-700 border-red-100" onClick={() => handleDeleteWaProfile(editingWaProfile.id)}>
+                                Delete
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </ScrollArea>
+              </SheetContent>
+            </Sheet>
 
             {/* Google Sheets (Coming Soon) */}
             <Card className="opacity-60 grayscale cursor-not-allowed border-dashed h-full flex flex-col group hover:opacity-75 transition-all">

@@ -1,9 +1,15 @@
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { CheckCircle } from "lucide-react";
 import { useFormStore } from "../../../stores";
+
+import { auth } from "../../../lib/firebase";
+import { useWhatsAppProfiles } from "../../../lib/firebase/whatsappHooks";
 
 export const ThankYouEditor = () => {
   const formConfig = useFormStore((state) => state.formConfig);
   const setFormConfig = useFormStore((state) => state.setFormConfig);
+  const { profiles } = useWhatsAppProfiles(auth.currentUser?.uid || "");
   return (
     <div className="space-y-4">
       {" "}
@@ -198,6 +204,57 @@ export const ThankYouEditor = () => {
               />{" "}
             </div>{" "}
           </div>{" "}
+
+          <div className="pt-2 border-t border-slate-100">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="text-[10px] font-bold text-slate-500 uppercase">Intégration WhatsApp</Label>
+                <p className="text-[9px] text-slate-400">Afficher le bouton de confirmation</p>
+              </div>
+              <Switch
+                checked={formConfig.thankYou?.enableWhatsApp || false}
+                onCheckedChange={(checked) =>
+                  setFormConfig({
+                    ...formConfig,
+                    thankYou: {
+                      ...formConfig.thankYou,
+                      enableWhatsApp: checked,
+                    },
+                  })
+                }
+              />
+            </div>
+            {formConfig.thankYou?.enableWhatsApp && (
+              <div className="mt-3 space-y-2">
+                <div className="flex flex-col gap-1.5">
+                  <Label className="text-[9px] font-bold text-slate-400 uppercase">Profil WhatsApp à utiliser</Label>
+                  <select
+                    className="w-full text-[10px] border border-slate-200 rounded-lg p-2 outline-none focus:ring-1 focus:ring-green-400"
+                    value={formConfig.thankYou.selectedWhatsappProfileId || ""}
+                    onChange={(e) =>
+                      setFormConfig({
+                        ...formConfig,
+                        thankYou: {
+                          ...formConfig.thankYou,
+                          selectedWhatsappProfileId: e.target.value
+                        }
+                      })
+                    }
+                  >
+                    <option value="">Utiliser le profil par défaut</option>
+                    {profiles.map(p => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} {p.isDefault ? '(Défaut)' : ''} ({p.phoneNumber})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {profiles.length === 0 && (
+                  <p className="text-[9px] text-red-500">Aucun profil configuré. Allez dans Intégrations.</p>
+                )}
+              </div>
+            )}
+          </div>
         </div>{" "}
       </div>{" "}
     </div>
