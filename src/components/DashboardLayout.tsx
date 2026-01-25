@@ -21,6 +21,7 @@ import {
   Zap
 } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
+import packageJson from '../../package.json';
 import { HeaderActionsProvider, useHeaderActions } from '../contexts/HeaderActionsContext';
 import { GoogleUser } from '../lib/authGoogle';
 import { useI18n } from '../lib/i18n/i18nContext';
@@ -199,6 +200,12 @@ const DashboardLayoutContent = ({
 
           {/* Sidebar Footer */}
           <div className="p-2 border-t border-slate-100 flex flex-col gap-1">
+            {/* Version Badge */}
+            {!sidebarCollapsed && (
+              <div className="px-3 py-1 text-[10px] text-slate-400 font-mono">
+                v{packageJson.version}
+              </div>
+            )}
             <button
               onClick={() => setLanguageMenuOpen(!languageMenuOpen)}
               className={cn(

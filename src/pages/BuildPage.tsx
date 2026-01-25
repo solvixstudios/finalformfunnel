@@ -138,7 +138,7 @@ const BuildPage = ({ userId }: BuildPageProps) => {
       // If we are on a NEW form and it's clean (untouched), ensure the name is unique
       const state = useFormStore.getState();
 
-      if (routeFormId === 'new' && state.isNewForm && !state.isDirty) {
+      if (routeFormId === 'new' && state.isNewForm && !state.isDirty && !formId) {
         const nameExists = (n: string) => formsSummary.some(
           f => f.name.trim().toLowerCase() === n.trim().toLowerCase()
         );

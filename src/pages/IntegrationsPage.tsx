@@ -626,14 +626,22 @@ export default function IntegrationsPage({ userId }: IntegrationsPageProps) {
                           </div>
                           <div className="space-y-1">
                             <Label className="text-xs">WhatsApp Number (International format)</Label>
-                            <Input
-                              placeholder="e.g. +213555123456"
-                              className="bg-white font-mono"
-                              dir="ltr"
-                              value={waForm.phoneNumber}
-                              onChange={e => setWaForm({ ...waForm, phoneNumber: e.target.value })}
-                            />
-                            <p className="text-[10px] text-slate-400">Include country code without spaces.</p>
+                            <div className="flex shadow-sm rounded-md">
+                              <div className="bg-slate-100 border border-r-0 border-slate-200 px-3 py-2 text-sm text-slate-600 font-mono rounded-l-md flex items-center">
+                                +213
+                              </div>
+                              <Input
+                                placeholder="555123456"
+                                className="bg-white font-mono rounded-l-none"
+                                dir="ltr"
+                                value={waForm.phoneNumber.replace(/^\+213/, '')}
+                                onChange={e => {
+                                  const digits = e.target.value.replace(/\D/g, '');
+                                  setWaForm({ ...waForm, phoneNumber: '+213' + digits });
+                                }}
+                              />
+                            </div>
+                            <p className="text-[10px] text-slate-400">Enter digits only (without country code).</p>
                           </div>
 
                           <div className="flex items-center gap-2 py-1">

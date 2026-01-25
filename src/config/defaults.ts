@@ -75,7 +75,7 @@ export const DEFAULT_FORM_CONFIG = {
     | "free_text",
 
   // Variant style
-  variantStyle: "buttons" as "buttons" | "cards" | "pills" | "dropdown",
+  variantStyle: "cards" as "buttons" | "cards" | "pills" | "dropdown",
 
   // Header
   header: {

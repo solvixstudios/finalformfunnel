@@ -3,7 +3,7 @@
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "order/submit",
+        "path": "submit-order",
         "responseMode": "responseNode",
         "options": {
           "allowedOrigins": "*"
@@ -11,8 +11,8 @@
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [-1136, -16],
-      "id": "f5ce28a2-a7f6-44c9-92f6-2ad00428dd7d",
+      "position": [-1040, 576],
+      "id": "184c273f-654f-4b17-bc40-6a2bcf75dd4a",
       "name": "Receive Order",
       "webhookId": "order-submit-webhook"
     },
@@ -22,8 +22,8 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-896, -16],
-      "id": "4b3c9148-3f4b-4c74-8306-9f0733e1e4d0",
+      "position": [-800, 576],
+      "id": "b4acff53-b86e-4aa0-9606-78edeb8f8dea",
       "name": "Parse Order Data"
     },
     {
@@ -32,8 +32,8 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-656, -16],
-      "id": "4ceca64e-f52f-42f0-a803-17a141ccc404",
+      "position": [-560, 576],
+      "id": "51b49f6f-338e-4547-9ef6-41d851ef22fd",
       "name": "Validate Order"
     },
     {
@@ -63,8 +63,8 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [-416, -16],
-      "id": "14232c3f-07e3-4298-9147-c252629af85f",
+      "position": [-320, 576],
+      "id": "30572bb5-6264-46db-b264-5c21fde33fa8",
       "name": "Is Valid?"
     },
     {
@@ -73,8 +73,8 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-176, -112],
-      "id": "cc4f957b-c08d-4945-bcb5-15fccf1648ab",
+      "position": [-80, 480],
+      "id": "7d556ee5-257b-480e-8bd2-cd391f3c76b1",
       "name": "Create Order"
     },
     {
@@ -83,13 +83,12 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [64, -112],
-      "id": "80df8c3f-3552-4c85-8c5b-e84c81ffd912",
+      "position": [160, 480],
+      "id": "e57cdb58-56ef-4fc2-8f3a-cd3446a13b7d",
       "name": "Success Response"
     },
     {
       "parameters": {
-        "respondWith": "firstIncomingItem",
         "options": {
           "responseHeaders": {
             "entries": [
@@ -103,8 +102,8 @@
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [304, -16],
-      "id": "10855a05-2993-453a-9b95-909469cead88",
+      "position": [400, 576],
+      "id": "769166dd-373e-49b5-bce3-f882e479ade2",
       "name": "Respond"
     },
     {
@@ -113,8 +112,8 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [64, 96],
-      "id": "aa4e0088-b334-4fc2-b5a7-aa62f1fc0c5b",
+      "position": [160, 688],
+      "id": "0c638c3e-0473-46f3-a70f-27569c55855d",
       "name": "Error Response"
     }
   ],
