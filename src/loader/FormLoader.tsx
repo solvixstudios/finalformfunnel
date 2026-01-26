@@ -25,7 +25,7 @@ import { useCountdownTimer } from '@/components/FormTab/preview/hooks/useCountdo
 import { usePreviewCalculations } from '@/components/FormTab/preview/hooks/usePreviewCalculations';
 import { usePromoCode } from '@/components/FormTab/preview/hooks/usePromoCode';
 import { useStickyObserver } from '@/components/FormTab/preview/hooks/useStickyObserver';
-import { submitOrder } from '@/lib/api'; // New API Function
+import { submitOrder } from '@/lib/api';
 import { Commune, fetchCommunes, fetchWilayas, Wilaya } from '@/lib/location'; // New Location Utility
 
 // Types
@@ -239,10 +239,12 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
 
     // Validation Schema
     const schema = z.object({
-        name: z.string().min(2, lang === 'fr' ? 'Nom obligatoire' : 'الاسم مطلوب'),
-        phone: z.string().regex(/^(05|06|07)[0-9]{8}$/, lang === 'fr' ? 'Numéro invalide (05/06/07...)' : 'رقم غير صحيح'),
-        wilaya: z.string().min(1, lang === 'fr' ? 'Sélectionnez une wilaya' : 'اختر ولاية'),
-        commune: config.fields?.commune?.visible ? z.string().min(1, lang === 'fr' ? 'Sélectionnez une commune' : 'اختر بلدية') : z.string().optional(),
+        name: config.fields.name?.required ? z.string().min(2, lang === 'fr' ? 'Nom obligatoire' : 'الاسم مطلوب') : z.string().optional(),
+        phone: config.fields.phone?.required ? z.string().regex(/^(05|06|07)[0-9]{8}$/, lang === 'fr' ? 'Numéro invalide (05/06/07...)' : 'رقم غير صحيح') : z.string().optional(),
+        wilaya: config.fields.wilaya?.required ? z.string().min(1, lang === 'fr' ? 'Sélectionnez une wilaya' : 'اختر ولاية') : z.string().optional(),
+        commune: (config.fields?.commune?.visible && config.fields?.commune?.required && config.locationInputMode !== 'single_dropdown')
+            ? z.string().min(1, lang === 'fr' ? 'Sélectionnez une commune' : 'اختر بلدية')
+            : z.string().optional(),
     });
 
     // Field visibility logic
@@ -358,12 +360,16 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
         const style = getSectionMarginStyle(index === 0);
 
         if (sectionWrapper) {
-            return sectionWrapper({
-                sectionId,
-                children: content,
-                style,
-                elementRef: ref
-            });
+            return (
+                <React.Fragment key={sectionId}>
+                    {sectionWrapper({
+                        sectionId,
+                        children: content,
+                        style,
+                        elementRef: ref
+                    })}
+                </React.Fragment>
+            );
         }
 
         return (
@@ -401,9 +407,37 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                 />
             )}
 
+            {/* Header Section - Rendered OUTSIDE scroll container ONLY for 'hidden' style (floating language switcher) */}
+            {config.header?.style === 'hidden' && (() => {
+                const headerContent = (
+                    <HeaderSection
+                        config={config}
+                        lang={lang}
+                        onLanguageToggle={() => setLang(l => l === 'fr' ? 'ar' : 'fr')}
+                        formatCurrency={formatCurrency}
+                        basePrice={basePrice}
+                        productTitle={productTitle}
+                        productImage={productImage}
+                    />
+                );
+
+                if (sectionWrapper) {
+                    return (
+                        <React.Fragment key="header-fixed">
+                            {sectionWrapper({
+                                sectionId: 'header',
+                                children: headerContent,
+                                style: { zIndex: 60, position: 'relative' },
+                            })}
+                        </React.Fragment>
+                    );
+                }
+                return headerContent;
+            })()}
+
             <div className="flex-1 overflow-y-auto custom-scroll relative" ref={formContainerRef}>
-                {/* Header Section */}
-                {(() => {
+                {/* Header Section - Rendered INSIDE scroll container for all other styles (Classic, Centered, etc.) */}
+                {config.header?.style !== 'hidden' && (() => {
                     const headerContent = (
                         <HeaderSection
                             config={config}
@@ -417,11 +451,15 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                     );
 
                     if (sectionWrapper) {
-                        return sectionWrapper({
-                            sectionId: 'header',
-                            children: headerContent,
-                            style: {}, // Header usually has no margin
-                        });
+                        return (
+                            <React.Fragment key="header-scroll">
+                                {sectionWrapper({
+                                    sectionId: 'header',
+                                    children: headerContent,
+                                    style: { zIndex: 40, position: 'relative' },
+                                })}
+                            </React.Fragment>
+                        );
                     }
                     return headerContent;
                 })()}
@@ -544,17 +582,27 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                                                             value={formData[key as keyof typeof formData] as string}
                                                             onChange={(e) => {
                                                                 setFormData({ ...formData, [key]: e.target.value });
-                                                                if (formErrors[key]) setFormErrors(prev => ({ ...prev, [key]: '' }));
+                                                                if (formErrors[key]) setFormErrors(prev => {
+                                                                    const newErrors = { ...prev };
+                                                                    delete newErrors[key];
+                                                                    return newErrors;
+                                                                });
                                                             }}
                                                             placeholder={getFieldTxt(key) + (field.required ? ' *' : '')}
                                                             className={`${svxInputClass} ${formErrors[key] ? 'error-ring' : ''}`}
                                                             style={inputStyle}
+                                                            onFocus={() => {
+                                                                // Optional: clear error on focus
+                                                            }}
                                                         />
-                                                        {formErrors[key] && (
-                                                            <div className="absolute left-0 top-full mt-1 z-10 animate-in fade-in slide-in-from-top-1 duration-300 pointer-events-none">
-                                                                <div className="bg-red-500 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-xl relative">
-                                                                    {formErrors[key]}
-                                                                    <div className="absolute bottom-full left-4 -mb-[1px] border-4 border-transparent border-b-red-500"></div>
+                                                        {formErrors[key] && Object.keys(formErrors)[0] === key && (
+                                                            <div className="absolute right-2 top-1/2 -translate-y-1/2 z-20 animate-in fade-in zoom-in-95 duration-200 pointer-events-none">
+                                                                <div
+                                                                    className="text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg flex items-center gap-1"
+                                                                    style={{ backgroundColor: config.accentColor || '#ef4444' }}
+                                                                >
+                                                                    <span>!</span>
+                                                                    <span>{formErrors[key]}</span>
                                                                 </div>
                                                             </div>
                                                         )}
@@ -595,8 +643,8 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                                     shippingType={formData.shippingType}
                                     onSelect={(type) => setFormData({ ...formData, shippingType: type })}
                                     formatCurrency={formatCurrency}
-                                    homePrice={shipping?.standard.home || 0}
-                                    deskPrice={shipping?.standard.desk || 0}
+                                    homePrice={calculations.currentRates.home}
+                                    deskPrice={calculations.currentRates.desk}
                                     showSection={showDeliverySection}
                                     hasWilaya={!!formData.wilaya}
                                 />,
@@ -743,6 +791,6 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                 totalPrice={formatCurrency(calculations.displayedTotal)}
                 fixed={!previewMode}
             />
-        </div>
+        </div >
     );
 };

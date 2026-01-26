@@ -359,6 +359,8 @@ export const DEFAULT_FORM_CONFIG = {
     button: { fr: "Fermer", ar: "غلق" },
     summaryButton: { fr: "Voir le résumé", ar: "عرض ملخص الطلب" },
     whatsappButton: { fr: "Confirmer via WhatsApp", ar: "تأكيد عبر واتساب" },
+    modifyButton: { fr: "Modifier la commande", ar: "تعديل الطلب" },
+    backButton: { fr: "Retour", ar: "رجوع" },
 
     enableWhatsApp: false,
     selectedWhatsappProfileId: "", // ID of the selected global profile
@@ -366,10 +368,16 @@ export const DEFAULT_FORM_CONFIG = {
     // Note: Profiles are managed globally in Integrations, but we can store local overrides if needed.
     // For now, we rely on the global 'integrations' object or local embedded config if we decide to ship profiles with the form.
     // We will stick to the plan: Form selects a profile ID. Loader resolves it from global context or form's embedded copy.
+    confirmationNote: {
+      fr: "Veuillez garder votre téléphone ouvert, nous vous appelerons pour confirmer la commande. La livraison prend généralement 24 à 48 heures.",
+      ar: "يرجى إبقاء هاتفك مفتوحًا، سنتصل بك لتأكيد الطلب. يستغرق التوصيل عادةً من 24 إلى 48 ساعة.",
+    },
     priceInLetters: {
       enabled: false,
       mode: "dinars" as "dinars" | "centimes",
     },
+    enableConfetti: true,
+    enableSound: true,
   },
 
   // Embedding Settings

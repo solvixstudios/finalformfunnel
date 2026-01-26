@@ -75,7 +75,9 @@ const DashboardLayoutContent = ({
     if (hasUnsavedChanges()) {
       pendingActionRef.current = () => {
         const markClean = useFormStore.getState().markClean;
+        const setFormId = useFormStore.getState().setFormId;
         markClean();
+        setFormId(null); // Force reload from server next time we visit a form
         if (action) action();
         onNavigate(path);
       };

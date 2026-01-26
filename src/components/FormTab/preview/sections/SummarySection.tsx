@@ -146,7 +146,7 @@ export const SummarySection: React.FC<SummarySectionProps> = ({
                             {formatCurrency(displayedTotal)}
                         </span>
                         {(config as any).sectionSettings?.summary?.priceInLetters?.enabled && (
-                            <span className="text-xs text-gray-500 font-medium capitalize mt-1">
+                            <span className="text-[10px] font-medium italic opacity-70 capitalize mt-0.5" style={{ color: config.textColor || '#64748b' }}>
                                 {priceToLetters(displayedTotal, lang, (config as any).sectionSettings.summary.priceInLetters.mode)}
                             </span>
                         )}

@@ -8,8 +8,6 @@ export const HEADER_STYLE_PRESETS = [
   { id: "classic", name: "Classique", desc: "Produit à gauche, langue à droite" },
   { id: "centered", name: "Centré", desc: "Produit au centre" },
   { id: "minimal", name: "Minimal", desc: "Texte uniquement, sans image" },
-  { id: "banner", name: "Bannière", desc: "Fond coloré accentué" },
-  { id: "compact", name: "Compact", desc: "Version réduite" },
   { id: "hidden", name: "Masqué", desc: "Masque l'en-tête (sauf langue)" },
 ] as const;
 

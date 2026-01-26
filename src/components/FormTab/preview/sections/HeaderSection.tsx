@@ -151,7 +151,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
                         {formatCurrency(basePrice)}
                     </span>
                     {(config as any).header?.priceInLetters?.enabled && (
-                        <span className="text-[10px] text-gray-500 font-medium -mt-0.5 capitalize">
+                        <span className="text-[10px] font-medium italic opacity-70 -mt-0.5 capitalize" style={{ color: config.textColor || '#64748b' }}>
                             {priceToLetters(basePrice, lang, (config as any).header.priceInLetters.mode)}
                         </span>
                     )}
@@ -223,7 +223,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
                                     {formatCurrency(basePrice)}
                                 </span>
                                 {(config as any).header?.priceInLetters?.enabled && (
-                                    <span className="text-[10px] text-gray-500 font-medium -mt-0.5 capitalize">
+                                    <span className="text-[10px] font-medium italic opacity-70 -mt-0.5 capitalize" style={{ color: config.textColor || '#64748b' }}>
                                         {priceToLetters(basePrice, lang, (config as any).header.priceInLetters.mode)}
                                     </span>
                                 )}
@@ -263,7 +263,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
                         <LangSwitcher />
                     </div>
                     {config.header?.showProductPrice !== false && (config as any).header?.priceInLetters?.enabled && (
-                        <span className="text-[10px] text-gray-500 font-medium mr-12 capitalize">
+                        <span className="text-[10px] font-medium italic opacity-70 mr-12 capitalize" style={{ color: config.textColor || '#64748b' }}>
                             {priceToLetters(basePrice, lang, (config as any).header.priceInLetters.mode)}
                         </span>
                     )}
@@ -358,8 +358,8 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
     // Hidden style - only language switcher
     if (headerStyle === 'hidden') {
         return (
-            <div className="relative z-50">
-                <div className="absolute top-4 right-4 z-30">
+            <div className="relative w-full h-0 z-[60] pointer-events-none">
+                <div className="absolute top-4 right-4 z-[60] pointer-events-auto">
                     <LangSwitcher />
                 </div>
             </div>

@@ -30,6 +30,7 @@ interface CalculationResult {
   };
   totalPromoDiscount: number;
   displayedTotal: number;
+  currentRates: { home: number; desk: number };
   selectedOffer: Offer | undefined;
 }
 
@@ -68,18 +69,21 @@ export function usePreviewCalculations({
         : basePricePerUnit * selectedOffer.qty - selectedOffer.discount
       : basePricePerUnit;
 
-    // Calculate shipping cost
-    let shippingCost = 0;
-    if (shipping) {
-      shippingCost =
-        shippingType === "home" ? shipping.standard.home : shipping.standard.desk;
+    // Calculate base shipping rates (SSOT)
+    const currentRates = (() => {
+      if (!shipping) return { home: 0, desk: 0 };
       if (selectedWilaya) {
-        const exception = shipping.exceptions.find((e) => e.id === selectedWilaya);
-        if (exception) {
-          shippingCost = shippingType === "home" ? exception.home : exception.desk;
-        }
+        const exception = shipping.exceptions.find(
+          (e) => String(e.id) === String(selectedWilaya),
+        );
+        if (exception) return { home: exception.home, desk: exception.desk };
       }
-    }
+      return shipping.standard;
+    })();
+
+    // Calculate shipping cost based on selection
+    const shippingCost =
+      shippingType === "home" ? currentRates.home : currentRates.desk;
 
     // Calculate promo discount
     let subtotalDiscount = 0;
@@ -129,6 +133,7 @@ export function usePreviewCalculations({
       basePrice: basePricePerUnit,
       offerPrice,
       shippingCost,
+      currentRates, // Exposed for UI
       promoDiscount,
       totalPromoDiscount,
       displayedTotal,

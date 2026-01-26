@@ -84,6 +84,8 @@ export const ShippingEditor = ({
           <div className="space-y-2">
             {getFieldsForCurrentMode(formConfig).map(
               ([key, f]: any, idx: number) => {
+                if (key === 'commune' && formConfig.locationInputMode === 'single_dropdown') return null;
+
                 if (key === "location_block") {
                   const wilayaField = formConfig.fields.wilaya;
                   const communeField = formConfig.fields.commune;
@@ -240,50 +242,53 @@ export const ShippingEditor = ({
           <label className="text-[10px] font-bold text-slate-500 uppercase">
             Placeholders
           </label>
-          {getLocationFieldsForPlaceholders(formConfig).map(([key, f]: any) => (
-            <div key={key} className="space-y-2">
-              <span className="text-[10px] font-bold text-slate-400">
-                {FIELD_LABELS[key]?.fr || key}
-              </span>
-              <div className="grid grid-cols-2 gap-2">
-                <input
-                  type="text"
-                  value={f.placeholder?.fr || ""}
-                  onChange={(e) =>
-                    setFormConfig({
-                      ...formConfig,
-                      fields: {
-                        ...formConfig.fields,
-                        [key]: {
-                          ...f,
-                          placeholder: { ...f.placeholder, fr: e.target.value },
+          {getLocationFieldsForPlaceholders(formConfig).map(([key, f]: any) => {
+            if (key === 'commune' && formConfig.locationInputMode === 'single_dropdown') return null;
+            return (
+              <div key={key} className="space-y-2">
+                <span className="text-[10px] font-bold text-slate-400">
+                  {FIELD_LABELS[key]?.fr || key}
+                </span>
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    value={f.placeholder?.fr || ""}
+                    onChange={(e) =>
+                      setFormConfig({
+                        ...formConfig,
+                        fields: {
+                          ...formConfig.fields,
+                          [key]: {
+                            ...f,
+                            placeholder: { ...f.placeholder, fr: e.target.value },
+                          },
                         },
-                      },
-                    })
-                  }
-                  className="text-[11px] border border-slate-200 rounded p-1.5"
-                />
-                <input
-                  type="text"
-                  value={f.placeholder?.ar || ""}
-                  dir="rtl"
-                  onChange={(e) =>
-                    setFormConfig({
-                      ...formConfig,
-                      fields: {
-                        ...formConfig.fields,
-                        [key]: {
-                          ...f,
-                          placeholder: { ...f.placeholder, ar: e.target.value },
+                      })
+                    }
+                    className="text-[11px] border border-slate-200 rounded p-1.5"
+                  />
+                  <input
+                    type="text"
+                    value={f.placeholder?.ar || ""}
+                    dir="rtl"
+                    onChange={(e) =>
+                      setFormConfig({
+                        ...formConfig,
+                        fields: {
+                          ...formConfig.fields,
+                          [key]: {
+                            ...f,
+                            placeholder: { ...f.placeholder, ar: e.target.value },
+                          },
                         },
-                      },
-                    })
-                  }
-                  className="text-[11px] border border-slate-200 rounded p-1.5"
-                />
+                      })
+                    }
+                    className="text-[11px] border border-slate-200 rounded p-1.5"
+                  />
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

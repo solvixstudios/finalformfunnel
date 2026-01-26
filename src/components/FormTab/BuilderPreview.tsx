@@ -36,8 +36,12 @@ export const BuilderPreview = ({
 
                 {/* Phone Frame */}
                 <div
-                    className="w-full bg-white rounded-[2.5rem] shadow-2xl border-[10px] border-slate-900 overflow-hidden relative flex flex-col ring-1 ring-black/10"
-                    style={{ maxWidth: 'min(100%, 420px)', maxHeight: 'calc(100vh - 240px)' }}
+                    className="w-full bg-white rounded-[2.5rem] shadow-2xl border-[8px] border-slate-900 overflow-hidden relative flex flex-col ring-1 ring-black/10 transition-all duration-300 mx-auto"
+                    style={{
+                        width: 'min(100%, 400px)',
+                        aspectRatio: '9/19.5',
+                        maxHeight: 'calc(100vh - 180px)'
+                    }}
                 >
                     {/* Notch */}
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-slate-900 rounded-b-2xl z-50"></div>

@@ -108,7 +108,7 @@ export const DeliverySection: React.FC<DeliverySectionProps> = ({
                             className={`relative border-2 transition-all duration-200 ${isList
                                 ? 'flex items-center p-3 gap-4 text-left'
                                 : isCompact
-                                    ? 'p-1.5 text-center block'
+                                    ? 'p-3 text-center block'
                                     : 'p-4 text-center block'
                                 } ${isDisabled ? 'opacity-60 cursor-not-allowed' : ''} ${isSelected && !isDisabled ? 'shadow-lg' : ''}`}
 
@@ -155,7 +155,7 @@ export const DeliverySection: React.FC<DeliverySectionProps> = ({
                                 {/* Label */}
                                 <div
                                     className={`font-bold ${isList ? '' : 'mb-0.5'
-                                        } ${isDisabled ? 'line-through' : ''} ${isCompact ? 'text-[13px]' : 'text-sm'
+                                        } ${isDisabled ? 'line-through' : ''} ${isCompact ? 'text-sm' : 'text-sm'
                                         }`}
                                     style={{
                                         color: isSelected && !isDisabled ? '#ffffff' : (config.textColor || '#334155'),
@@ -167,7 +167,7 @@ export const DeliverySection: React.FC<DeliverySectionProps> = ({
                                 {/* Price */}
                                 {shouldShowPrice && (
                                     <div
-                                        className={`font-semibold ${isCompact ? 'text-[11px]' : 'text-xs'
+                                        className={`font-semibold ${isCompact ? 'text-xs' : 'text-xs'
                                             }`}
                                         style={{
                                             color: isSelected && !isDisabled
