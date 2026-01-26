@@ -420,21 +420,30 @@ const BuildPage = ({ userId }: BuildPageProps) => {
         navigate(`/dashboard/build/${savedForm.id}`, { replace: true });
       }
 
-      // AUTO-PUBLISH: Sync changes to active assignments
+      // AUTO-SYNC: Always sync changes to active Shopify assignments
       if (savedFormId) {
-        // We filter for active assignments for this specific form
+        // Filter for active assignments for this specific form
         const formAssignments = assignments.filter(a => a.formId === savedFormId && a.isActive);
 
         if (formAssignments.length > 0) {
-          const toastId = toast.loading("Syncing changes to Shopify...");
+          const toastId = toast.loading(`Syncing to ${formAssignments.length} destination(s)...`);
+
+          let successCount = 0;
+          let failCount = 0;
 
           const publishPromises = formAssignments.map(async (assignment) => {
-            const store = stores.find(s => s.id === assignment.storeId);
-            if (store && store.clientId && store.clientSecret) {
+            try {
+              const store = stores.find(s => s.id === assignment.storeId);
+              if (!store || !store.clientId || !store.clientSecret) {
+                console.warn(`Store not found or missing credentials for assignment:`, assignment);
+                failCount++;
+                return;
+              }
+
               const subdomain = store.url.replace('.myshopify.com', '').replace(/https?:\/\//, '');
               const ownerId = assignment.assignmentType === 'product' ? assignment.productId : undefined;
 
-              return assignFormToShopify(
+              await assignFormToShopify(
                 subdomain,
                 store.clientId,
                 store.clientSecret,
@@ -451,13 +460,23 @@ const BuildPage = ({ userId }: BuildPageProps) => {
                   productHandle: assignment.productHandle
                 }
               );
+              successCount++;
+            } catch (syncError) {
+              console.error(`Failed to sync to ${assignment.storeId}:`, syncError);
+              failCount++;
             }
-            return Promise.resolve(); // Ensure all map iterations return a promise
           });
 
           await Promise.allSettled(publishPromises);
           toast.dismiss(toastId);
-          toast.success(`Synced to ${formAssignments.length} active destinations`);
+
+          if (failCount === 0) {
+            toast.success(`✓ Synced to ${successCount} destination(s)`);
+          } else if (successCount > 0) {
+            toast.warning(`Synced ${successCount}/${formAssignments.length} (${failCount} failed)`);
+          } else {
+            toast.error(`Failed to sync to Shopify`);
+          }
         }
       }
 
@@ -540,7 +559,7 @@ const BuildPage = ({ userId }: BuildPageProps) => {
             <Button
               onClick={handleSaveForm}
               size="sm"
-              className="gap-2 bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition-all hover:shadow-md active:scale-95"
+              className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-all hover:shadow-md active:scale-95"
             >
               {isSaving ? (
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -574,7 +593,7 @@ const BuildPage = ({ userId }: BuildPageProps) => {
               onClick={() => setShowPublishDialog(true)}
               disabled={!formId}
               size="sm"
-              className="gap-2 bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition-all hover:shadow-md active:scale-95"
+              className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-all hover:shadow-md active:scale-95"
             >
               <UploadCloud size={14} />
               <span className="font-semibold text-xs tracking-wide">Publish</span>
@@ -592,7 +611,7 @@ const BuildPage = ({ userId }: BuildPageProps) => {
       setActions(null);
       setTitleActions(null);
     };
-  }, [setActions, setTitleActions, setCenterContent, handleSaveForm, canSave, showSaveSuccess, formId, formName, setFormName, canUndo, canRedo, undo, redo, isSaving]);
+  }, [setActions, setTitleActions, setCenterContent, handleSaveForm, canSave, showSaveSuccess, formId, formName, setFormName, canUndo, canRedo, undo, redo, isSaving, storeCount, productCount]);
 
   // ... (navigation guards) ...
 

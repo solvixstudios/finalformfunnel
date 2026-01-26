@@ -29,6 +29,7 @@ export interface Product {
   image: { id: number; product_id: number; src: string; alt: string | null } | null;
   created_at: string;
   updated_at: string;
+  price?: string; // Add price property
 }
 
 export interface StoreCache {
@@ -61,7 +62,7 @@ const initDB = (): Promise<IDBDatabase> => {
 
 export const saveProductsToCache = async (
   storeId: string,
-  products: Product[]
+  products: Product[],
 ): Promise<void> => {
   const db = await initDB();
   return new Promise((resolve, reject) => {
@@ -79,7 +80,7 @@ export const saveProductsToCache = async (
 };
 
 export const getProductsFromCache = async (
-  storeId: string
+  storeId: string,
 ): Promise<StoreCache | undefined> => {
   const db = await initDB();
   return new Promise((resolve, reject) => {
@@ -101,7 +102,7 @@ interface SyncOptions {
 
 export const syncProductsFromShopify = async (
   store: { id: string; url: string; clientId?: string; clientSecret?: string },
-  options?: SyncOptions
+  options?: SyncOptions,
 ): Promise<Product[]> => {
   const allProducts: Product[] = [];
   let nextPageInfo: string | undefined = undefined;
@@ -124,7 +125,7 @@ export const syncProductsFromShopify = async (
           limit: 250,
           page_info: nextPageInfo,
         }),
-      }
+      },
     );
 
     if (!response.ok) throw new Error("Fetch failed");
@@ -179,6 +180,6 @@ export const notifyProductSyncComplete = (storeId: string, products: Product[]) 
   window.dispatchEvent(
     new CustomEvent("productSyncComplete", {
       detail: { storeId, products },
-    })
+    }),
   );
 };

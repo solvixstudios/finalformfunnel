@@ -414,7 +414,7 @@ export default function IntegrationsPage({ userId }: IntegrationsPageProps) {
                 <Card className="cursor-pointer hover:border-indigo-400 hover:shadow-md transition-all group relative overflow-hidden h-full flex flex-col border-slate-200">
                   <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                   <CardHeader className="p-5 pb-3">
-                    <div className="w-12 h-12 rounded-xl bg-[#95BF47]/10 flex items-center justify-center text-2xl mb-3 shadow-sm group-hover:scale-105 transition-transform duration-300">
+                    <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-2xl mb-3 shadow-sm group-hover:scale-105 transition-transform duration-300">
                       🛍️
                     </div>
                     <CardTitle className="text-base font-bold text-slate-900">Shopify</CardTitle>
@@ -433,7 +433,7 @@ export default function IntegrationsPage({ userId }: IntegrationsPageProps) {
               <SheetContent className="sm:max-w-lg w-[90vw] flex flex-col h-full p-0 gap-0">
                 <SheetHeader className="px-6 py-5 border-b border-slate-100 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
                   <SheetTitle className="flex items-center gap-2.5 text-xl">
-                    <div className="w-8 h-8 rounded-lg bg-[#95BF47]/20 flex items-center justify-center text-lg">🛍️</div>
+                    <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-lg">🛍️</div>
                     Connect Shopify
                   </SheetTitle>
                   <SheetDescription>
@@ -510,7 +510,7 @@ export default function IntegrationsPage({ userId }: IntegrationsPageProps) {
                       </Button>
                     ) : (
                       <Button
-                        className="w-full bg-[#95BF47] hover:bg-[#85AB3E] text-white"
+                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
                         onClick={handleShopifyConnect}
                         disabled={isConnecting}
                       >

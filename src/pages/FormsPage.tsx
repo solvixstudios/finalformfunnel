@@ -3,20 +3,20 @@ import {
     Plus,
     Search,
     Sparkles,
-    Upload
+    Upload,
 } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FormLoadingCard } from '../components/FormLoading/FormLoadingCard';
-import { TemplateGrid } from '../components/PrebuiltConfigModal';
+import PrebuiltConfigModal from '../components/PrebuiltConfigModal';
+import { PublishSheet } from '../components/PublishSheet';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { toast } from '../components/ui/sonner';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { useFormImportExport } from '../hooks/useFormImportExport';
 import { getStoredUser } from '../lib/authGoogle';
-import { useFormAssignments, useSavedForms } from '../lib/firebase/hooks';
+import { useConnectedStores, useFormAssignments, useSavedForms } from '../lib/firebase/hooks';
 import { useFormStore } from '../stores';
 
 export const FormsPage = () => {
@@ -24,9 +24,19 @@ export const FormsPage = () => {
     const user = getStoredUser();
     const { forms, loading, deleteForm, updateForm, saveForm } = useSavedForms(user?.id || '');
     const { assignments: allAssignments } = useFormAssignments(user?.id || '');
+    const { stores } = useConnectedStores(user?.id || '');
+
+    // UI State
     const [searchQuery, setSearchQuery] = useState('');
-    const [activeTab, setActiveTab] = useState<'forms' | 'templates'>('forms');
+    const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft'>('all');
+    const [storeFilter, setStoreFilter] = useState<string>('all');
     const [isImporting, setIsImporting] = useState(false);
+
+    // State for Modals
+    const [showPublishSheet, setShowPublishSheet] = useState(false);
+    const [selectedFormForPublish, setSelectedFormForPublish] = useState<any>(null);
+    const [showTemplateModal, setShowTemplateModal] = useState(false);
+
     const { importFromFile } = useFormImportExport();
     const loadFormConfig = useFormStore((state) => state.loadFormConfig);
     const resetToNewForm = useFormStore((state) => state.resetToNewForm);
@@ -35,11 +45,45 @@ export const FormsPage = () => {
     const sortedForms = useMemo(() => {
         let filtered = [...forms];
 
+        // 1. Search Query (Form Name, Description, OR Product Name from assignment)
         if (searchQuery.trim()) {
-            filtered = filtered.filter(form =>
-                form.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                (form.description && form.description.toLowerCase().includes(searchQuery.toLowerCase()))
-            );
+            const query = searchQuery.toLowerCase();
+            filtered = filtered.filter(form => {
+                // Check basic form info
+                if (form.name.toLowerCase().includes(query) ||
+                    (form.description && form.description.toLowerCase().includes(query))) {
+                    return true;
+                }
+
+                // Check assigned products for this form
+                const formAssignments = allAssignments.filter(a => a.formId === form.id);
+                // We don't have product titles in assignments directly, only handles/ids
+                // But for "Product Name" search requested by user, we might need that.
+                // Assignments have 'productHandle', maybe match that?
+                const hasMatchingProduct = formAssignments.some(a =>
+                    a.productHandle && a.productHandle.toLowerCase().includes(query)
+                );
+
+                return hasMatchingProduct;
+            });
+        }
+
+        // 2. Status Filter
+        if (statusFilter !== 'all') {
+            filtered = filtered.filter(form => {
+                const isActive = allAssignments.some(a => a.formId === form.id && a.isActive);
+                if (statusFilter === 'published') return isActive;
+                if (statusFilter === 'draft') return !isActive;
+                return true;
+            });
+        }
+
+        // 3. Store Filter
+        if (storeFilter !== 'all') {
+            filtered = filtered.filter(form => {
+                // Must have at least one active assignment to this store
+                return allAssignments.some(a => a.formId === form.id && a.storeId === storeFilter && a.isActive);
+            });
         }
 
         return filtered.sort((a, b) => {
@@ -47,11 +91,15 @@ export const FormsPage = () => {
             const dateB = new Date(b.updatedAt || b.createdAt).getTime();
             return dateB - dateA;
         });
-    }, [forms, searchQuery]);
+    }, [forms, searchQuery, statusFilter, storeFilter, allAssignments]);
 
     const handleCreateNew = () => {
         resetToNewForm();
         navigate('/dashboard/build/new');
+    };
+
+    const handleOpenTemplates = () => {
+        setShowTemplateModal(true);
     };
 
     const handleLoadForm = (formId: string) => {
@@ -63,6 +111,12 @@ export const FormsPage = () => {
         loadFormConfig(config);
         navigate('/dashboard/build/new');
         toast.success('Template loaded! Customize it to make it yours.');
+        setShowTemplateModal(false);
+    };
+
+    const handlePublishClick = (form: any) => {
+        setSelectedFormForPublish(form);
+        setShowPublishSheet(true);
     };
 
     // Hidden file input for import
@@ -123,11 +177,6 @@ export const FormsPage = () => {
         }
     };
 
-
-
-
-
-
     return (
         <div className="max-w-[1600px] mx-auto p-6 space-y-6 h-full flex flex-col">
 
@@ -174,37 +223,58 @@ export const FormsPage = () => {
             </div>
 
             {/* Main Content Area */}
-            <Tabs value={activeTab} onValueChange={(v: any) => setActiveTab(v)} className="flex-1 flex flex-col min-h-0 space-y-6">
+            <div className="flex-1 flex flex-col min-h-0 space-y-6">
 
                 {/* Toolbox */}
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 shrink-0">
-                    <div className="flex items-center gap-4 w-full sm:w-auto flex-1">
-                        <TabsList className="bg-slate-100 p-1 rounded-lg">
-                            <TabsTrigger value="forms" className="rounded-md px-3 text-xs sm:text-sm">My Forms</TabsTrigger>
-                            <TabsTrigger value="templates" className="rounded-md px-3 text-xs sm:text-sm">Templates</TabsTrigger>
-                        </TabsList>
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 shrink-0 bg-slate-50/50 p-4 rounded-xl border border-slate-100">
+                    <div className="flex items-center gap-4 w-full flex-wrap">
+                        {/* Search */}
+                        <div className="relative flex-1 min-w-[200px]">
+                            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                            <Input
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder="Search forms, products..."
+                                className="pl-9 bg-white border-slate-200"
+                            />
+                        </div>
 
-                        {activeTab === 'forms' && (
-                            <div className="relative flex-1 max-w-sm">
-                                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                <Input
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    placeholder="Search forms..."
-                                    className="pl-9 bg-white"
-                                />
-                            </div>
-                        )}
+                        <div className="h-6 w-px bg-slate-200 shrink-0 hidden sm:block" />
+
+                        {/* Filters */}
+                        <div className="flex gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
+                            <select
+                                className="h-9 rounded-md border border-slate-200 bg-white px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value as any)}
+                            >
+                                <option value="all">All Status</option>
+                                <option value="published">Published</option>
+                                <option value="draft">Drafts</option>
+                            </select>
+
+                            <select
+                                className="h-9 rounded-md border border-slate-200 bg-white px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-50 max-w-[150px]"
+                                value={storeFilter}
+                                onChange={(e) => setStoreFilter(e.target.value)}
+                                disabled={stores.length === 0}
+                            >
+                                <option value="all">All Stores</option>
+                                {stores.map(store => (
+                                    <option key={store.id} value={store.id}>{store.name}</option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
                 </div>
 
                 {/* Forms Grid */}
-                <TabsContent value="forms" className="flex-1 mt-0 overflow-y-auto min-h-0 -mr-2 pr-2 outline-none">
+                <div className="flex-1 mt-0 overflow-y-auto min-h-0 -mr-2 pr-2 outline-none">
                     {loading ? (
                         <div className="h-64 flex items-center justify-center text-slate-400">
                             Loading forms...
                         </div>
-                    ) : sortedForms.length === 0 && !searchQuery ? (
+                    ) : sortedForms.length === 0 && !searchQuery && statusFilter === 'all' && storeFilter === 'all' ? (
                         <div className="h-64 flex flex-col items-center justify-center text-slate-400 gap-3 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50">
                             <FolderOpen size={48} className="text-slate-300" />
                             <p>You haven't created any forms yet.</p>
@@ -212,21 +282,37 @@ export const FormsPage = () => {
                                 <Plus size={16} className="mr-2" /> Create your first form
                             </Button>
                         </div>
-                    ) : sortedForms.length === 0 && searchQuery ? (
+                    ) : sortedForms.length === 0 ? (
                         <div className="h-64 flex flex-col items-center justify-center text-slate-400 gap-3">
-                            <p>No forms match "{searchQuery}".</p>
-                            <Button variant="outline" onClick={() => setSearchQuery('')}>Clear search</Button>
+                            <p>No forms match your filters.</p>
+                            <Button variant="outline" onClick={() => {
+                                setSearchQuery('');
+                                setStatusFilter('all');
+                                setStoreFilter('all');
+                            }}>Clear all filters</Button>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                            {/* Create New Card */}
-                            <div
-                                onClick={handleCreateNew}
-                                className="group flex flex-col items-center justify-center gap-3 bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl p-6 hover:border-indigo-400 hover:bg-indigo-50/50 cursor-pointer transition-all min-h-[180px]"
-                            >
-                                <div className="w-14 h-14 rounded-full bg-white border border-slate-200 flex items-center justify-center group-hover:scale-110 group-hover:border-indigo-300 group-hover:shadow-lg transition-all duration-300 text-indigo-600">
-                                    <Plus size={28} strokeWidth={1.5} />
-                                </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 pb-10">
+                            {/* Create New Card - Split Actions */}
+                            <div className="group flex flex-col bg-white border-2 border-dashed border-slate-200 rounded-xl overflow-hidden hover:border-indigo-400 hover:shadow-md transition-all min-h-[240px]">
+                                <button
+                                    onClick={handleCreateNew}
+                                    className="flex-1 flex flex-col items-center justify-center gap-3 p-4 hover:bg-slate-50 transition-colors border-b border-dashed border-slate-200 w-full"
+                                >
+                                    <div className="w-10 h-10 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
+                                        <Plus size={20} strokeWidth={2} />
+                                    </div>
+                                    <span className="font-bold text-slate-900 text-sm">Create Blank Form</span>
+                                </button>
+                                <button
+                                    onClick={handleOpenTemplates}
+                                    className="flex-1 flex flex-col items-center justify-center gap-3 p-4 hover:bg-amber-50/50 transition-colors w-full"
+                                >
+                                    <div className="w-10 h-10 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-500 group-hover:scale-110 transition-transform">
+                                        <Sparkles size={20} strokeWidth={2} />
+                                    </div>
+                                    <span className="font-bold text-slate-900 text-sm">Use Template</span>
+                                </button>
                             </div>
 
                             {sortedForms.map(form => (
@@ -234,7 +320,10 @@ export const FormsPage = () => {
                                     key={form.id}
                                     form={form}
                                     assignments={allAssignments.filter(a => a.formId === form.id)}
+                                    // Click loads builder
                                     onClick={() => handleLoadForm(form.id)}
+                                    // Publish opens sheet
+                                    onPublish={() => handlePublishClick(form)}
                                     onRename={(name) => handleRenameForm(form.id, name)}
                                     onDelete={() => handleDeleteForm(form.id)}
                                     onDuplicate={() => handleDuplicateForm(form)}
@@ -242,22 +331,29 @@ export const FormsPage = () => {
                             ))}
                         </div>
                     )}
-                </TabsContent>
+                </div>
+            </div>
 
-                {/* Templates Grid */}
-                <TabsContent value="templates" className="flex-1 mt-0 overflow-y-auto min-h-0 -mr-2 pr-2 outline-none">
-                    <div className="mb-6">
-                        <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
-                            <Sparkles className="text-amber-500" size={20} />
-                            Start with a Template
-                        </h2>
-                        <p className="text-slate-500 text-sm">
-                            Pre-built, high-converting checkout forms ready to customize.
-                        </p>
-                    </div>
-                    <TemplateGrid onApply={handleLoadTemplate} />
-                </TabsContent>
-            </Tabs>
+            {/* Modals */}
+            <PrebuiltConfigModal
+                isOpen={showTemplateModal}
+                onClose={() => setShowTemplateModal(false)}
+                onLoad={handleLoadTemplate}
+            />
+
+            {selectedFormForPublish && (
+                <PublishSheet
+                    open={showPublishSheet}
+                    onOpenChange={setShowPublishSheet}
+                    userId={user?.id || ''}
+                    formId={selectedFormForPublish.id}
+                    formName={selectedFormForPublish.name}
+                    formConfig={selectedFormForPublish.config}
+                    onPublishSuccess={() => {
+                        // Optional: refresh assignments or show toast
+                    }}
+                />
+            )}
         </div>
     );
 };

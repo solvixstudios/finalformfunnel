@@ -433,7 +433,7 @@ export function PublishSheet({
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
-            <SheetContent className="sm:max-w-md w-full flex flex-col p-0 bg-slate-50">
+            <SheetContent className="sm:max-w-2xl w-full flex flex-col p-0 bg-slate-50">
                 <SheetHeader className="px-6 py-4 bg-white border-b sticky top-0 z-10">
                     <SheetTitle className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
@@ -706,16 +706,26 @@ export function PublishSheet({
                                         Active Assignments ({currentFormAssignments.length})
                                     </h3>
                                     {selectedAssignmentIds.length > 0 && (
-                                        <Button
-                                            size="sm"
-                                            variant="destructive"
-                                            className="h-7 text-xs px-3"
-                                            onClick={handleBulkUnpublish}
-                                            disabled={isUnpublishing}
-                                        >
-                                            {isUnpublishing ? <Loader2 className="animate-spin mr-1" size={12} /> : <Trash2 className="mr-1" size={12} />}
-                                            Unpublish ({selectedAssignmentIds.length})
-                                        </Button>
+                                        <div className="flex gap-2">
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                className="h-7 text-xs px-2"
+                                                onClick={() => setSelectedAssignmentIds([])}
+                                            >
+                                                Cancel
+                                            </Button>
+                                            <Button
+                                                size="sm"
+                                                variant="destructive"
+                                                className="h-7 text-xs px-3"
+                                                onClick={handleBulkUnpublish}
+                                                disabled={isUnpublishing}
+                                            >
+                                                {isUnpublishing ? <Loader2 className="animate-spin mr-1" size={12} /> : <Trash2 className="mr-1" size={12} />}
+                                                Unpublish ({selectedAssignmentIds.length})
+                                            </Button>
+                                        </div>
                                     )}
                                 </div>
 
@@ -729,76 +739,94 @@ export function PublishSheet({
                                     return (
                                         <div
                                             key={assignment.id}
+                                            onClick={() => toggleAssignmentSelection(assignment.id!)}
                                             className={cn(
-                                                "border rounded-xl p-4 bg-white transition-all shadow-sm group",
-                                                isSelected ? "border-indigo-500 ring-1 ring-indigo-500/20" : "border-slate-200 hover:border-indigo-300"
+                                                "cursor-pointer border rounded-xl p-4 bg-white transition-all shadow-sm group hover:shadow-md",
+                                                isSelected ? "border-indigo-500 ring-1 ring-indigo-500/20 bg-indigo-50/10" : "border-slate-200 hover:border-indigo-300"
                                             )}
                                         >
-                                            <div className="flex items-start gap-3">
+                                            <div className="flex items-start gap-4">
                                                 {/* Checkbox */}
                                                 <div
                                                     className={cn(
                                                         "w-5 h-5 rounded border mt-0.5 flex items-center justify-center cursor-pointer transition-colors shrink-0",
                                                         isSelected ? "bg-indigo-600 border-indigo-600 text-white" : "border-slate-300 bg-white group-hover:border-slate-400"
                                                     )}
-                                                    onClick={() => toggleAssignmentSelection(assignment.id!)}
                                                 >
                                                     {isSelected && <Check size={12} strokeWidth={3} />}
                                                 </div>
 
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-start justify-between mb-2 gap-2">
-                                                        <div className="min-w-0">
+                                                        <div className="min-w-0 flex-1">
                                                             {assignment.assignmentType === 'store' ? (
                                                                 <div className='flex items-center gap-2 mb-1'>
-                                                                    <div className="w-5 h-5 rounded bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-                                                                        <Store size={12} />
+                                                                    <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-100">
+                                                                        <Store size={16} />
                                                                     </div>
-                                                                    <h4 className="font-bold text-sm text-slate-800">Entire Store</h4>
+                                                                    <div>
+                                                                        <h4 className="font-bold text-sm text-slate-900">Entire Store</h4>
+                                                                        <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                                                                            <Store size={10} />
+                                                                            <span className="truncate">{store?.name || 'Unknown Store'}</span>
+                                                                        </div>
+                                                                    </div>
                                                                 </div>
                                                             ) : (
-                                                                <div className='flex items-center gap-3'>
-                                                                    <div className="w-8 h-8 rounded-md bg-slate-100 border border-slate-200 overflow-hidden shrink-0">
+                                                                <div className='flex items-start gap-3'>
+                                                                    <div className="w-12 h-12 rounded-lg bg-slate-100 border border-slate-200 overflow-hidden shrink-0">
                                                                         {product?.image?.src ? (
                                                                             <img src={product.image.src} className="w-full h-full object-cover" />
                                                                         ) : (
-                                                                            <div className="w-full h-full flex items-center justify-center text-slate-400"><Package size={14} /></div>
+                                                                            <div className="w-full h-full flex items-center justify-center text-slate-400"><Package size={18} /></div>
                                                                         )}
                                                                     </div>
                                                                     <div className="min-w-0">
-                                                                        <h4 className="font-bold text-sm text-slate-800 truncate leading-tight">
+                                                                        <h4 className="font-bold text-sm text-slate-900 truncate leading-tight mb-1">
                                                                             {product?.title || `Product #${assignment.productId}`}
                                                                         </h4>
+                                                                        {product && (
+                                                                            <div className="flex items-center gap-3 text-xs text-slate-500 mb-1">
+                                                                                <span className="font-medium text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">
+                                                                                    {product.price}
+                                                                                </span>
+                                                                                {/* variants count? product doesn't expose variants in simplified view unless we look at types */}
+                                                                                {/* Assuming product type has id, title, image, handle. Price is often missing in simplified view. */}
+                                                                                {/* Let's verify Product type in lib/products if possible, but for now this is mockup data or best effort */}
+                                                                            </div>
+                                                                        )}
+                                                                        <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                                                                            <Store size={10} />
+                                                                            <span className="truncate max-w-[150px]">{store?.name || 'Unknown Store'}</span>
+                                                                        </div>
                                                                     </div>
                                                                 </div>
                                                             )}
-                                                            <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-1">
-                                                                <Store size={10} />
-                                                                <span className="truncate max-w-[150px]">{store?.name || 'Unknown Store'}</span>
-                                                            </div>
                                                         </div>
 
-                                                        <span className="shrink-0 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-100 flex items-center gap-1.5">
-                                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                                            Active
-                                                        </span>
+                                                        <div className="flex flex-col items-end gap-2">
+                                                            <span className="shrink-0 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-100 flex items-center gap-1.5">
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                                                Active
+                                                            </span>
+                                                        </div>
                                                     </div>
 
                                                     <div className="flex justify-end mt-2 pt-2 border-t border-slate-100">
                                                         <button
                                                             onClick={(e) => {
-                                                                e.stopPropagation();
+                                                                e.stopPropagation(); // Don't trigger select
                                                                 handleSingleUnpublish(assignment);
                                                             }}
-                                                            className="text-xs text-slate-400 hover:text-red-600 font-medium transition-colors flex items-center gap-1"
+                                                            className="text-xs text-slate-400 hover:text-red-600 font-medium transition-colors flex items-center gap-1 px-2 py-1 hover:bg-red-50 rounded"
                                                         >
-                                                            <Trash2 size={12} /> Unpublish
+                                                            <Trash2 size={12} /> Remove Assignment
                                                         </button>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    );
+                                    )
                                 })}
                             </div>
                         )}
@@ -807,5 +835,5 @@ export function PublishSheet({
             </SheetContent>
         </Sheet>
     );
-}
+};
 
