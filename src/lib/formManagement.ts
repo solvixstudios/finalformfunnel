@@ -19,7 +19,12 @@ export interface FormLoadResult {
  * - Filters fields based on location input mode
  * - Includes all necessary metadata
  */
-export const getExportData = (formConfig: FormConfig): Record<string, any> => {
+import { WhatsAppProfile } from "./firebase/types";
+
+export const getExportData = (
+  formConfig: FormConfig,
+  profiles: WhatsAppProfile[] = [],
+): Record<string, any> => {
   const exportFields: Record<string, any> = {};
 
   Object.entries(formConfig.fields).forEach(([key, field]: any) => {
@@ -131,7 +136,23 @@ export const getExportData = (formConfig: FormConfig): Record<string, any> => {
     // Stickers
     stickers: formConfig.stickers,
     // Thank You
-    thankYou: formConfig.thankYou,
+    thankYou: {
+      ...formConfig.thankYou,
+      // Resolve and embed WhatsApp number if profile is selected
+      whatsappNumber: (function () {
+        if (
+          formConfig.thankYou?.enableWhatsApp &&
+          formConfig.thankYou?.selectedWhatsappProfileId &&
+          profiles.length > 0
+        ) {
+          const profile = profiles.find(
+            (p) => p.id === formConfig.thankYou.selectedWhatsappProfileId,
+          );
+          if (profile) return profile.phoneNumber;
+        }
+        return formConfig.thankYou?.whatsappNumber;
+      })(),
+    },
   };
 };
 

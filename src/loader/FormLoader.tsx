@@ -306,21 +306,30 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
 
             // Scroll to first error
             const firstErrorField = Object.keys(errors)[0];
-            const el = document.querySelector(`[name="${firstErrorField}"]`);
+            // Use formContainerRef to find element inside Shadow DOM or current container
+            const container = formContainerRef.current || document;
+            const el = container.querySelector(`[name="${firstErrorField}"]`);
             if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
             return;
         }
         setFormErrors({});
 
+        // Resolve Wilaya Name
+        const selectedWilayaObj = wilayasList.find(w => w.id === formData.wilaya);
+        const wilayaName = selectedWilayaObj ? selectedWilayaObj.name : formData.wilaya;
+
         // Optimistic UI Data
         const payload = {
             ...formData,
+            wilaya: wilayaName, // Pass name instead of ID
+            wilayaId: formData.wilaya, // Keep ID just in case
             variantId: selectedVariantId,
             totalPrice: calculations.displayedTotal,
             currency: 'DZD',
             productId: product.id,
             shopName: window.location.hostname,
+            shopDomain: window.location.hostname, // Add shopDomain
             items: [{
                 title: product.title,
                 variant: formData.variant,
@@ -485,7 +494,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                                                                         <option value="">{getFieldTxt('wilaya') + (config.fields.wilaya?.required ? ' *' : '')}</option>
                                                                         {wilayasList.map(w => (
                                                                             <option key={w.id} value={w.id}>
-                                                                                {lang === 'ar' ? `${w.id} - ${w.ar_name}` : `${w.id} - ${w.name}`}
+                                                                                {lang === 'ar' ? w.ar_name : w.name}
                                                                             </option>
                                                                         ))}
                                                                     </select>
@@ -542,7 +551,12 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                                                             style={inputStyle}
                                                         />
                                                         {formErrors[key] && (
-                                                            <p className="text-[10px] text-red-500 font-bold mt-1 px-1">{formErrors[key]}</p>
+                                                            <div className="absolute left-0 top-full mt-1 z-10 animate-in fade-in slide-in-from-top-1 duration-300 pointer-events-none">
+                                                                <div className="bg-red-500 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-xl relative">
+                                                                    {formErrors[key]}
+                                                                    <div className="absolute bottom-full left-4 -mb-[1px] border-4 border-transparent border-b-red-500"></div>
+                                                                </div>
+                                                            </div>
                                                         )}
                                                     </div>
                                                 );

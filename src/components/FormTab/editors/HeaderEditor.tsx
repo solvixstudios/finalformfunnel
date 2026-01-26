@@ -187,6 +187,88 @@ export const HeaderEditor = () => {
             </button>
           </div>
         </div>
+
+        {formConfig.header?.showProductPrice !== false && (
+          <div className="space-y-3 pt-2 border-t border-slate-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-[11px] font-bold text-slate-600 block">
+                  Prix en toutes lettres
+                </span>
+                <span className="text-[9px] text-slate-400">
+                  Afficher sous le prix
+                </span>
+              </div>
+              <button
+                onClick={() =>
+                  setFormConfig({
+                    ...formConfig,
+                    header: {
+                      ...formConfig.header,
+                      priceInLetters: {
+                        ...formConfig.header?.priceInLetters,
+                        enabled: !formConfig.header?.priceInLetters?.enabled,
+                        mode: formConfig.header?.priceInLetters?.mode || 'dinars'
+                      }
+                    }
+                  })
+                }
+                className={`w-10 h-5 rounded-full relative transition-colors ${formConfig.header?.priceInLetters?.enabled ? "bg-indigo-600" : "bg-slate-200"}`}
+              >
+                <div
+                  className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform shadow ${formConfig.header?.priceInLetters?.enabled ? "translate-x-5" : ""}`}
+                />
+              </button>
+            </div>
+
+            {formConfig.header?.priceInLetters?.enabled && (
+              <div className="grid grid-cols-2 gap-2 animate-in slide-in-from-top-1 duration-200">
+                <button
+                  onClick={() =>
+                    setFormConfig({
+                      ...formConfig,
+                      header: {
+                        ...formConfig.header,
+                        priceInLetters: {
+                          ...formConfig.header?.priceInLetters,
+                          enabled: true,
+                          mode: 'dinars'
+                        }
+                      }
+                    })
+                  }
+                  className={`p-2 rounded-lg border text-[10px] font-bold transition-all ${formConfig.header?.priceInLetters?.mode === 'dinars'
+                    ? "border-indigo-500 bg-indigo-50 text-indigo-600"
+                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                    }`}
+                >
+                  Dinars (DA)
+                </button>
+                <button
+                  onClick={() =>
+                    setFormConfig({
+                      ...formConfig,
+                      header: {
+                        ...formConfig.header,
+                        priceInLetters: {
+                          ...formConfig.header?.priceInLetters,
+                          enabled: true,
+                          mode: 'centimes'
+                        }
+                      }
+                    })
+                  }
+                  className={`p-2 rounded-lg border text-[10px] font-bold transition-all ${formConfig.header?.priceInLetters?.mode === 'centimes'
+                    ? "border-indigo-500 bg-indigo-50 text-indigo-600"
+                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                    }`}
+                >
+                  Centimes
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Product Sticker Configuration */}
@@ -353,6 +435,58 @@ export const HeaderEditor = () => {
                 </div>
               </div>
             </div>
+
+            {/* Badge Text Color */}
+            <div className="space-y-3">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
+                Couleur du texte
+              </label>
+
+              <div className="flex items-center gap-3">
+                <input
+                  type="color"
+                  value={formConfig.stickers?.product?.textColor || "#ffffff"}
+                  onChange={(e) =>
+                    setFormConfig({
+                      ...formConfig,
+                      stickers: {
+                        ...formConfig.stickers,
+                        product: {
+                          ...formConfig.stickers?.product,
+                          textColor: e.target.value,
+                        },
+                      },
+                    })
+                  }
+                  className="w-10 h-10 rounded-lg cursor-pointer border-2 border-slate-200"
+                />
+                <div className="flex flex-wrap gap-1.5">
+                  {" "}
+                  {[
+                    "#ffffff",
+                    "#000000",
+                    "#1e293b",
+                    "#f1f5f9",
+                  ].map((color) => (
+                    <button
+                      key={color}
+                      onClick={() =>
+                        setFormConfig({
+                          ...formConfig,
+                          stickers: {
+                            ...formConfig.stickers,
+                            product: { ...formConfig.stickers?.product, textColor: color },
+                          },
+                        })
+                      }
+                      className={`w-6 h-6 rounded-md transition-all ${formConfig.stickers?.product?.textColor === color ? "ring-2 ring-offset-2 ring-indigo-500 scale-110" : "hover:scale-110"}`}
+                      style={{ backgroundColor: color, border: color === '#ffffff' ? '1px solid #e2e8f0' : 'none' }}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
           </div>
         )}
       </div>

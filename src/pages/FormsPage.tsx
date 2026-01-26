@@ -22,7 +22,7 @@ import { useFormStore } from '../stores';
 export const FormsPage = () => {
     const navigate = useNavigate();
     const user = getStoredUser();
-    const { forms, loading, deleteForm, updateForm } = useSavedForms(user?.id || '');
+    const { forms, loading, deleteForm, updateForm, saveForm } = useSavedForms(user?.id || '');
     const { assignments: allAssignments } = useFormAssignments(user?.id || '');
     const [searchQuery, setSearchQuery] = useState('');
     const [activeTab, setActiveTab] = useState<'forms' | 'templates'>('forms');
@@ -108,6 +108,23 @@ export const FormsPage = () => {
             toast.error("Failed to delete");
         }
     };
+
+    const handleDuplicateForm = async (form: any) => {
+        try {
+            // Deep copy config to ensure no reference issues
+            const configCopy = JSON.parse(JSON.stringify(form.config || {}));
+            const newName = `${form.name} (Copy)`;
+
+            await saveForm(newName, form.description || '', configCopy);
+            toast.success("Form duplicated");
+        } catch (e) {
+            toast.error("Failed to duplicate");
+            console.error(e);
+        }
+    };
+
+
+
 
 
 
@@ -220,6 +237,7 @@ export const FormsPage = () => {
                                     onClick={() => handleLoadForm(form.id)}
                                     onRename={(name) => handleRenameForm(form.id, name)}
                                     onDelete={() => handleDeleteForm(form.id)}
+                                    onDuplicate={() => handleDuplicateForm(form)}
                                 />
                             ))}
                         </div>
@@ -237,7 +255,7 @@ export const FormsPage = () => {
                             Pre-built, high-converting checkout forms ready to customize.
                         </p>
                     </div>
-                    <TemplateGrid onLoad={handleLoadTemplate} />
+                    <TemplateGrid onApply={handleLoadTemplate} />
                 </TabsContent>
             </Tabs>
         </div>

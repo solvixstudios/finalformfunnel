@@ -57,6 +57,7 @@ export interface StickerConfig {
   enabled: boolean;
   text: TranslationMap;
   color: string;
+  textColor?: string;
 }
 
 export interface StickersConfig {

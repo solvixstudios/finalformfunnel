@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/sonner';
+import { useWhatsAppProfiles } from '@/lib/firebase/whatsappHooks';
 import { UploadCloud } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -36,6 +37,7 @@ const BuildPage = ({ userId }: BuildPageProps) => {
   const { saveForm, updateForm, deleteForm, forms, loading: formsLoading } = useSavedForms(userId);
   const { assignments } = useFormAssignments(userId);
   const { stores } = useConnectedStores(userId);
+  const { profiles: waProfiles } = useWhatsAppProfiles(userId);
   const formConfig = useFormStore((state) => state.formConfig);
   const formName = useFormStore((state) => state.formName);
   const formId = useFormStore((state) => state.formId);
@@ -160,10 +162,11 @@ const BuildPage = ({ userId }: BuildPageProps) => {
         }
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [forms, setSavedFormsList, routeFormId]);
 
   // Use memoized wrapper to pass formConfig to getExportData
-  const exportDataMemoized = useCallback(() => getExportData(formConfig), [formConfig]);
+  const exportDataMemoized = useCallback(() => getExportData(formConfig, waProfiles), [formConfig, waProfiles]);
 
   // Format timestamp to relative time
   const getRelativeTime = (timestamp: string | null) => {

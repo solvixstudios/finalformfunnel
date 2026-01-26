@@ -7,6 +7,7 @@ import { buildTextStyles } from '@/lib/utils/cssEngine';
 import type { Language } from '@/types';
 import { TrendingDown } from 'lucide-react';
 import React from 'react';
+import { priceToLetters } from '../../../../lib/utils/priceToLetters';
 import { SectionLabel } from '../components/SectionLabel';
 
 interface SummarySectionProps {
@@ -16,7 +17,13 @@ interface SummarySectionProps {
         hideShippingInSummary?: boolean;
         borderRadius: string;
         sectionSettings?: {
-            summary?: { showTitle?: boolean };
+            summary?: {
+                showTitle?: boolean;
+                priceInLetters?: {
+                    enabled: boolean;
+                    mode: 'dinars' | 'centimes';
+                };
+            };
         };
         translations: {
             subtotal?: { fr: string; ar: string };
@@ -131,12 +138,19 @@ export const SummarySection: React.FC<SummarySectionProps> = ({
                     <span className="text-lg font-black" style={buildTextStyles(config as any, 'heading')}>
                         {txt('total')}
                     </span>
-                    <span
-                        className="text-2xl font-black"
-                        style={{ color: config.accentColor }}
-                    >
-                        {formatCurrency(displayedTotal)}
-                    </span>
+                    <div className="flex flex-col items-end">
+                        <span
+                            className="text-2xl font-black"
+                            style={{ color: config.accentColor }}
+                        >
+                            {formatCurrency(displayedTotal)}
+                        </span>
+                        {(config as any).sectionSettings?.summary?.priceInLetters?.enabled && (
+                            <span className="text-xs text-gray-500 font-medium capitalize mt-1">
+                                {priceToLetters(displayedTotal, lang, (config as any).sectionSettings.summary.priceInLetters.mode)}
+                            </span>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

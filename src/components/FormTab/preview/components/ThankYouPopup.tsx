@@ -1,3 +1,4 @@
+import { priceToLetters } from '@/lib/utils/priceToLetters';
 import { CheckCircle, MessageCircle, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -5,7 +6,14 @@ import type { DEFAULT_FORM_CONFIG } from '../../../../lib/constants';
 import type { Language } from '../../types';
 
 interface ThankYouPopupProps {
-    config: typeof DEFAULT_FORM_CONFIG;
+    config: typeof DEFAULT_FORM_CONFIG & {
+        thankYou?: {
+            priceInLetters?: {
+                enabled: boolean;
+                mode: 'dinars' | 'centimes';
+            };
+        };
+    };
     lang: Language;
     onClose: () => void;
     fixed?: boolean;
@@ -97,6 +105,7 @@ export const ThankYouPopup = ({ config, lang, onClose, fixed = false, orderData 
             message += `\n\nNom: ${orderData.name}`;
             message += `\nWilaya: ${orderData.wilaya}`;
             if (orderData.commune) message += `\nCommune: ${orderData.commune}`;
+            message += `\nTéléphone: ${orderData.phone}`;
         }
 
         message += `\n\nURL: ${window.location.href}`;
@@ -149,36 +158,78 @@ export const ThankYouPopup = ({ config, lang, onClose, fixed = false, orderData 
                     {config.thankYou?.title?.[lang] || "Merci !"}
                 </h2>
 
-                {/* Message with improved readability */}
                 <div
-                    className="rounded-xl p-5 mb-6 max-w-[300px] border w-full"
+                    className="rounded-xl p-5 mb-4 max-w-[400px] border w-full text-left"
                     style={{
-                        backgroundColor: `${config.accentColor}08`,
+                        backgroundColor: `${config.accentColor}05`,
                         borderColor: config.inputBorderColor || '#f1f5f9'
                     }}
                 >
                     <p
-                        className="text-sm font-medium text-center leading-relaxed whitespace-pre-line mb-3"
+                        className="text-sm font-medium text-center leading-relaxed whitespace-pre-line mb-4"
                         style={{ color: config.textColor || '#334155' }}
                     >
                         {config.thankYou?.message?.[lang] || "Votre commande a été reçue avec succès."}
                     </p>
 
-                    {/* Order Summary in Box */}
+                    {/* Customer & Delivery Info */}
                     {orderData && (
-                        <div className="mt-4 pt-4 border-t border-slate-200/60 text-xs space-y-2">
+                        <div className="text-xs space-y-3 pt-3 border-t border-slate-200/60" style={{ color: config.textColor || '#334155' }}>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <span className="block font-bold opacity-60 uppercase text-[10px]">Client</span>
+                                    <p className="font-semibold">{orderData.name}</p>
+                                    <p dir="ltr" className="text-right-auto">{orderData.phone}</p>
+                                </div>
+                                <div>
+                                    <span className="block font-bold opacity-60 uppercase text-[10px]">{config.translations['shippingLabel']?.[lang] || 'Livraison'}</span>
+                                    <p className="font-semibold">
+                                        {orderData.wilaya && `${orderData.wilaya}`}
+                                        {orderData.commune && ` - ${orderData.commune}`}
+                                    </p>
+                                    <p className="opacity-80">
+                                        {orderData.shippingType === 'home'
+                                            ? (config.translations['home']?.[lang] || 'À Domicile')
+                                            : (config.translations['desk']?.[lang] || 'À Bureau')}
+                                    </p>
+                                </div>
+                            </div>
+                            {orderData.address && (
+                                <div>
+                                    <span className="block font-bold opacity-60 uppercase text-[10px]">Adresse</span>
+                                    <p>{orderData.address}</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Order Summary */}
+                    {orderData && (
+                        <div className="mt-3 pt-3 border-t border-slate-200/60 text-xs space-y-2">
                             {orderData.items?.map((item: any, idx: number) => (
                                 <div key={idx} className="flex justify-between font-bold opacity-80">
                                     <span>{item.quantity}x {item.title}</span>
                                     <span>{item.variant}</span>
                                 </div>
                             ))}
-                            <div className="flex justify-between font-black text-base mt-2 pt-2 border-t border-slate-200/60" style={{ color: config.accentColor }}>
+                            <div className="flex justify-between font-black text-sm mt-2 pt-2 border-t border-slate-200/60" style={{ color: config.accentColor }}>
                                 <span>Total</span>
-                                <span>{orderData.totalPrice} DZD</span>
+                                <div className="flex flex-col items-end">
+                                    <span>{orderData.totalPrice} DZD</span>
+                                    {(config as any).thankYou?.priceInLetters?.enabled && (
+                                        <span className="text-[10px] text-gray-500 font-medium capitalize">
+                                            {priceToLetters(orderData.totalPrice, lang, (config as any).thankYou.priceInLetters.mode)}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     )}
+                </div>
+
+                {/* Next Steps */}
+                <div className="text-xs text-center text-slate-400 mb-6 max-w-[300px]">
+                    <p>{lang === 'ar' ? 'سيتصل بك فريقنا قريباً لتأكيد الطلب.' : 'Notre équipe vous contactera bientôt pour confirmer la commande.'}</p>
                 </div>
 
                 {/* Action Buttons */}

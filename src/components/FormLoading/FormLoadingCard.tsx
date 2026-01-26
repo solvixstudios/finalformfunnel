@@ -6,7 +6,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import { Clock, FileText, MoreVertical, Trash2 } from 'lucide-react';
+import { Clock, Copy, FileText, MoreVertical, Pencil, Trash2 } from 'lucide-react';
 import React from 'react';
 
 export interface FormLoadingCardProps {
@@ -23,6 +23,7 @@ export interface FormLoadingCardProps {
   onClick?: () => void;
   onRename?: (newName: string) => Promise<void>;
   onDelete?: () => Promise<void>;
+  onDuplicate?: () => Promise<void>;
   assignments?: any[]; // Using any[] for now to avoid circular deps or complex imports, ideally FormAssignment[]
   actionLabel?: string;
   className?: string;
@@ -34,6 +35,7 @@ export const FormLoadingCard: React.FC<FormLoadingCardProps> = ({
   onClick,
   onRename,
   onDelete,
+  onDuplicate,
   assignments = [],
   className,
 }) => {
@@ -167,6 +169,21 @@ export const FormLoadingCard: React.FC<FormLoadingCardProps> = ({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setIsRenaming(true)}>
+              <Pencil size={14} className="mr-2" /> Rename
+            </DropdownMenuItem>
+
+            {onDuplicate && (
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDuplicate();
+                }}
+              >
+                <Copy size={14} className="mr-2" /> Duplicate
+              </DropdownMenuItem>
+            )}
+
             {isPublished ? (
               <DropdownMenuItem disabled className="text-slate-400 cursor-not-allowed">
                 <Trash2 size={14} className="mr-2" />

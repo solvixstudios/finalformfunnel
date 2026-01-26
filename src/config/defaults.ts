@@ -91,6 +91,10 @@ export const DEFAULT_FORM_CONFIG = {
     defaultLanguage: "fr" as "fr" | "ar",
     showProductImage: true,
     showProductPrice: true,
+    priceInLetters: {
+      enabled: false,
+      mode: "dinars" as "dinars" | "centimes",
+    },
   },
 
   // Section Visibility
@@ -145,6 +149,7 @@ export const DEFAULT_FORM_CONFIG = {
       enabled: false,
       text: { fr: "Meilleure Vente", ar: "الأكثر مبيعاً" },
       color: "#ef4444",
+      textColor: "#ffffff",
     },
     shipping: {
       enabled: false,
@@ -271,7 +276,13 @@ export const DEFAULT_FORM_CONFIG = {
     delivery: { showTitle: true, layout: "sideBySide", showPrices: true }, // Added defaults for TS
     offers: { showTitle: true },
     promoCode: { showTitle: true },
-    summary: { showTitle: true },
+    summary: {
+      showTitle: true,
+      priceInLetters: {
+        enabled: false,
+        mode: "dinars" as "dinars" | "centimes",
+      },
+    },
     cta: { showTitle: false },
     urgencyText: { showTitle: false },
     urgencyQuantity: { showTitle: false },
@@ -351,9 +362,14 @@ export const DEFAULT_FORM_CONFIG = {
 
     enableWhatsApp: false,
     selectedWhatsappProfileId: "", // ID of the selected global profile
+    whatsappNumber: "", // Resolved at runtime/export for the loader
     // Note: Profiles are managed globally in Integrations, but we can store local overrides if needed.
     // For now, we rely on the global 'integrations' object or local embedded config if we decide to ship profiles with the form.
     // We will stick to the plan: Form selects a profile ID. Loader resolves it from global context or form's embedded copy.
+    priceInLetters: {
+      enabled: false,
+      mode: "dinars" as "dinars" | "centimes",
+    },
   },
 
   // Embedding Settings

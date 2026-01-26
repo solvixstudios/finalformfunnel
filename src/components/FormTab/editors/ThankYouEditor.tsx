@@ -255,6 +255,78 @@ export const ThankYouEditor = () => {
               </div>
             )}
           </div>
+
+          {/* Price Formatting Section */}
+          <div className="pt-2 border-t border-slate-100">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="text-[10px] font-bold text-slate-500 uppercase">Prix en toutes lettres</Label>
+                <p className="text-[9px] text-slate-400">Afficher dans le résumé de commande</p>
+              </div>
+              <Switch
+                checked={formConfig.thankYou?.priceInLetters?.enabled || false}
+                onCheckedChange={(checked) =>
+                  setFormConfig({
+                    ...formConfig,
+                    thankYou: {
+                      ...formConfig.thankYou,
+                      priceInLetters: {
+                        ...formConfig.thankYou?.priceInLetters,
+                        enabled: checked,
+                        mode: formConfig.thankYou?.priceInLetters?.mode || 'dinars'
+                      },
+                    },
+                  })
+                }
+              />
+            </div>
+            {formConfig.thankYou?.priceInLetters?.enabled && (
+              <div className="mt-2 grid grid-cols-2 gap-2 animate-in slide-in-from-top-1 duration-200">
+                <button
+                  onClick={() =>
+                    setFormConfig({
+                      ...formConfig,
+                      thankYou: {
+                        ...formConfig.thankYou,
+                        priceInLetters: {
+                          ...formConfig.thankYou?.priceInLetters,
+                          enabled: true,
+                          mode: 'dinars'
+                        },
+                      },
+                    })
+                  }
+                  className={`p-2 rounded-lg border text-[10px] font-bold transition-all ${formConfig.thankYou?.priceInLetters?.mode === 'dinars'
+                    ? "border-indigo-500 bg-indigo-50 text-indigo-600"
+                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                    }`}
+                >
+                  Dinars (DA)
+                </button>
+                <button
+                  onClick={() =>
+                    setFormConfig({
+                      ...formConfig,
+                      thankYou: {
+                        ...formConfig.thankYou,
+                        priceInLetters: {
+                          ...formConfig.thankYou?.priceInLetters,
+                          enabled: true,
+                          mode: 'centimes'
+                        },
+                      },
+                    })
+                  }
+                  className={`p-2 rounded-lg border text-[10px] font-bold transition-all ${formConfig.thankYou?.priceInLetters?.mode === 'centimes'
+                    ? "border-indigo-500 bg-indigo-50 text-indigo-600"
+                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                    }`}
+                >
+                  Centimes
+                </button>
+              </div>
+            )}
+          </div>
         </div>{" "}
       </div>{" "}
     </div>

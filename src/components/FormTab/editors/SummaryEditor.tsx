@@ -93,6 +93,98 @@ export const SummaryEditor = () => {
                 </>
             )}
 
+            {/* Price in Letters Control */}
+            <div className="bg-white border border-slate-200 rounded-xl p-4">
+                <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <span className="text-[11px] font-bold text-slate-600 block">
+                                Prix en toutes lettres
+                            </span>
+                            <span className="text-[9px] text-slate-400">
+                                Afficher sous le total
+                            </span>
+                        </div>
+                        <button
+                            onClick={() =>
+                                setFormConfig({
+                                    ...formConfig,
+                                    sectionSettings: {
+                                        ...formConfig.sectionSettings,
+                                        summary: {
+                                            ...formConfig.sectionSettings?.summary,
+                                            priceInLetters: {
+                                                ...formConfig.sectionSettings?.summary?.priceInLetters,
+                                                enabled: !formConfig.sectionSettings?.summary?.priceInLetters?.enabled,
+                                                mode: formConfig.sectionSettings?.summary?.priceInLetters?.mode || 'dinars'
+                                            }
+                                        }
+                                    }
+                                })
+                            }
+                            className={`w-10 h-5 rounded-full relative transition-colors ${formConfig.sectionSettings?.summary?.priceInLetters?.enabled ? "bg-indigo-600" : "bg-slate-200"}`}
+                        >
+                            <div
+                                className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform shadow ${formConfig.sectionSettings?.summary?.priceInLetters?.enabled ? "translate-x-5" : ""}`}
+                            />
+                        </button>
+                    </div>
+
+                    {formConfig.sectionSettings?.summary?.priceInLetters?.enabled && (
+                        <div className="grid grid-cols-2 gap-2 animate-in slide-in-from-top-1 duration-200">
+                            <button
+                                onClick={() =>
+                                    setFormConfig({
+                                        ...formConfig,
+                                        sectionSettings: {
+                                            ...formConfig.sectionSettings,
+                                            summary: {
+                                                ...formConfig.sectionSettings?.summary,
+                                                priceInLetters: {
+                                                    ...formConfig.sectionSettings?.summary?.priceInLetters,
+                                                    enabled: true,
+                                                    mode: 'dinars'
+                                                }
+                                            }
+                                        }
+                                    })
+                                }
+                                className={`p-2 rounded-lg border text-[10px] font-bold transition-all ${formConfig.sectionSettings?.summary?.priceInLetters?.mode === 'dinars'
+                                    ? "border-indigo-500 bg-indigo-50 text-indigo-600"
+                                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                                    }`}
+                            >
+                                Dinars (DA)
+                            </button>
+                            <button
+                                onClick={() =>
+                                    setFormConfig({
+                                        ...formConfig,
+                                        sectionSettings: {
+                                            ...formConfig.sectionSettings,
+                                            summary: {
+                                                ...formConfig.sectionSettings?.summary,
+                                                priceInLetters: {
+                                                    ...formConfig.sectionSettings?.summary?.priceInLetters,
+                                                    enabled: true,
+                                                    mode: 'centimes'
+                                                }
+                                            }
+                                        }
+                                    })
+                                }
+                                className={`p-2 rounded-lg border text-[10px] font-bold transition-all ${formConfig.sectionSettings?.summary?.priceInLetters?.mode === 'centimes'
+                                    ? "border-indigo-500 bg-indigo-50 text-indigo-600"
+                                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                                    }`}
+                            >
+                                Centimes
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div>
+
             {/* Info Box */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex gap-2">
                 <div className="text-blue-600 flex-shrink-0">
