@@ -77,7 +77,7 @@ interface FormStore {
   // Undo/Redo
   undo: () => void;
   redo: () => void;
-  pushToHistory: (config: FormConfig) => void;
+  pushToHistory: (config: FormConfig, immediate?: boolean) => void;
   clearHistory: () => void;
 
   // Saved forms list management
@@ -176,37 +176,29 @@ export const useFormStore = create<FormStore>()(
 
       // Actions
       setFormConfig: (config) => {
-        set((state) => {
-          // Use fast-deep-compare to check if content actually changed
-          const isConfigChanged = !isEqual(config, state.savedState.config);
-          const isNameChanged = state.formName !== state.savedState.name;
-          const isDirty = isConfigChanged || isNameChanged;
+        const state = get();
+        // Use fast-deep-compare to check if content actually changed
+        const isConfigChanged = !isEqual(config, state.savedState.config);
+        const isNameChanged = state.formName !== state.savedState.name;
+        const isDirty = isConfigChanged || isNameChanged;
 
-          return { formConfig: config, isDirty };
-        });
-        // Push to history (debounced)
-        const { pushToHistory } = get();
-        pushToHistory(config);
+        set({ formConfig: config, isDirty });
+        // Push to history with immediate=true for instant undo availability
+        state.pushToHistory(config, true);
       },
 
       updateFormConfig: (partial) => {
-        set((state) => {
-          const newConfig = { ...state.formConfig, ...partial };
-
-          // Fast comparison
-          const isConfigChanged = !isEqual(newConfig, state.savedState.config);
-          const isNameChanged = state.formName !== state.savedState.name;
-          const isDirty = isConfigChanged || isNameChanged;
-
-          return {
-            formConfig: newConfig,
-            isDirty,
-          };
-        });
-        // Push to history (debounced)
         const state = get();
-        const { pushToHistory } = state;
-        pushToHistory(state.formConfig);
+        const newConfig = { ...state.formConfig, ...partial };
+
+        // Fast comparison
+        const isConfigChanged = !isEqual(newConfig, state.savedState.config);
+        const isNameChanged = state.formName !== state.savedState.name;
+        const isDirty = isConfigChanged || isNameChanged;
+
+        set({ formConfig: newConfig, isDirty });
+        // Push to history with immediate=true for instant undo availability
+        state.pushToHistory(newConfig, true);
       },
 
       loadFormConfig: (config) => {
@@ -252,7 +244,8 @@ export const useFormStore = create<FormStore>()(
       },
 
       applyTemplate: (config) => {
-        // Deep merge helper (duplicated for now to avoid scope issues or need to refactor)
+        const state = get();
+        // Deep merge helper
         const deepMerge = (defaults: any, imported: any, depth = 0): any => {
           if (depth > 10) return imported;
           const merged = { ...defaults };
@@ -278,16 +271,19 @@ export const useFormStore = create<FormStore>()(
         };
 
         const fullConfig = deepMerge(DEFAULT_FORM_CONFIG, config) as FormConfig;
-        // Apply template: Update config, SET DIRTY, keep name/id, PUSH to history
-        set((state) => ({
+
+        // Smart dirty check: compare with savedState, not just force true
+        const isConfigChanged = !isEqual(fullConfig, state.savedState.config);
+        const isNameChanged = state.formName !== state.savedState.name;
+        const isDirty = isConfigChanged || isNameChanged;
+
+        set(() => ({
           formConfig: fullConfig,
-          isDirty: true,
-          // Do NOT reset savedState, so we know we Drifted from it
+          isDirty,
         }));
 
-        // Push to history
-        const { pushToHistory } = get();
-        pushToHistory(fullConfig);
+        // Push to history IMMEDIATELY (templates need instant undo)
+        get().pushToHistory(fullConfig, true);
       },
 
       resetFormConfig: () =>
@@ -466,17 +462,23 @@ export const useFormStore = create<FormStore>()(
         }
       },
 
-      pushToHistory: (config) => {
+      pushToHistory: (config, immediate = false) => {
         const state = get();
 
         // Clear existing debounce timer
         if (state.historyDebounceTimer) {
           clearTimeout(state.historyDebounceTimer);
+          set({ historyDebounceTimer: null });
         }
 
-        // Debounce history pushes (500ms for better UX)
-        const timer = setTimeout(() => {
+        const doPush = () => {
           const currentState = get();
+
+          // Prevent duplicate: don't push if identical to current head
+          const currentHead = currentState.history[currentState.historyIndex];
+          if (isEqual(currentHead, config)) {
+            return;
+          }
 
           // Truncate future history if we're not at the end
           const newHistory = currentState.history.slice(
@@ -497,9 +499,15 @@ export const useFormStore = create<FormStore>()(
             historyIndex: newHistory.length - 1,
             historyDebounceTimer: null,
           });
-        }, 500);
+        };
 
-        set({ historyDebounceTimer: timer });
+        if (immediate) {
+          doPush();
+        } else {
+          // Debounce history pushes (500ms for better UX)
+          const timer = setTimeout(doPush, 500);
+          set({ historyDebounceTimer: timer });
+        }
       },
 
       clearHistory: () => {

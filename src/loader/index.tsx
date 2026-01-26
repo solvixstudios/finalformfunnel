@@ -223,6 +223,9 @@ variant-selects,
 share-button {
   display: none !important;
 }
+  .product__info-container>*+* {
+    margin: 0 !important;
+}
 
 .product__info-wrapper {
   padding: 0 !important;

@@ -1,6 +1,5 @@
 import { BuilderSkeleton } from '@/components/FormLoading/BuilderSkeleton';
 import { FormLoadDialog } from '@/components/FormLoading/FormLoadDialog';
-import { PreviewInternalHeader } from '@/components/FormTab/components/PreviewInternalHeader';
 import { PublishSheet } from '@/components/PublishSheet';
 import {
   AlertDialog,
@@ -15,7 +14,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/sonner';
 import { useWhatsAppProfiles } from '@/lib/firebase/whatsappHooks';
-import { UploadCloud } from 'lucide-react';
+import { RotateCcw, RotateCw, Save, UploadCloud } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import FormTab from '../components/FormTab';
@@ -74,10 +73,12 @@ const BuildPage = ({ userId }: BuildPageProps) => {
   // Handle route based loading
   useEffect(() => {
     // Skip if we just saved this form (prevents flash after save)
-    if (justSavedFormIdRef.current && justSavedFormIdRef.current === routeFormId) {
-      // Clear the ref now that we've skipped the load
-      justSavedFormIdRef.current = null;
-      return;
+    if (justSavedFormIdRef.current) {
+      // If we just saved, skip all loading/resetting logic
+      // The ref will be cleared by the forms list sync effect
+      if (justSavedFormIdRef.current === routeFormId || justSavedFormIdRef.current === formId) {
+        return;
+      }
     }
 
     // Determine if we need to load a form
@@ -132,7 +133,18 @@ const BuildPage = ({ userId }: BuildPageProps) => {
       setSavedFormsList(formsSummary);
 
       // Skip auto-rename if we just saved (prevents name from changing after save)
-      if (justSavedFormIdRef.current || isSaving) {
+      // Also clear the ref here once forms list has synced
+      if (justSavedFormIdRef.current) {
+        // Check if the just-saved form is now in the list
+        const justSavedExists = formsSummary.some(f => f.id === justSavedFormIdRef.current);
+        if (justSavedExists) {
+          // Clear ref now that forms list has synced
+          justSavedFormIdRef.current = null;
+        }
+        return;
+      }
+
+      if (isSaving) {
         return;
       }
 
@@ -471,47 +483,104 @@ const BuildPage = ({ userId }: BuildPageProps) => {
   const storeCount = activeAssignments.filter(a => a.assignmentType === 'store').length;
   const productCount = activeAssignments.filter(a => a.assignmentType === 'product').length;
 
-  // Set Header Actions (Center: Form Controls, Right: Publish)
+  // Set Header Actions
   useEffect(() => {
+    // Left: Form Name (Editable)
     setCenterContent(
-      <PreviewInternalHeader
-        onLoadClick={() => setShowLoadModal(true)}
-        onSaveClick={handleSaveForm}
-        canSave={canSave}
-        showSaveSuccess={showSaveSuccess}
-      />
+      <div className="flex items-center gap-2 group">
+        <span className="text-slate-400 font-medium text-sm hidden lg:inline">/</span>
+        <input
+          type="text"
+          value={formName}
+          onChange={(e) => setFormName(e.target.value)}
+          onBlur={() => {
+            // If name is empty, revert to saved name
+            if (!formName.trim()) {
+              const savedName = useFormStore.getState().savedState.name;
+              setFormName(savedName);
+            }
+          }}
+          className="bg-transparent border-none text-sm font-semibold text-slate-900 hover:text-slate-700 focus:ring-0 p-0 w-[200px] lg:w-[300px] truncate transition-colors"
+          placeholder="Form Name"
+        />
+      </div>
     );
 
+    // Right: Actions (Undo/Redo + Save)
+    // Right: Actions (Undo/Redo + Save OR Publish)
+    // Right: Actions
     setActions(
-      <div className="flex items-center gap-3">
-        {(storeCount > 0 || productCount > 0) && (
-          <div className="flex flex-col items-end mr-2 text-xs">
-            <span className="font-semibold text-slate-700">Published to:</span>
-            <div className="flex gap-2 text-slate-500">
-              {storeCount > 0 && <span>{storeCount} Store{storeCount !== 1 ? 's' : ''}</span>}
-              {storeCount > 0 && productCount > 0 && <span>•</span>}
-              {productCount > 0 && <span>{productCount} Product{productCount !== 1 ? 's' : ''}</span>}
-            </div>
+      <div className="flex items-center gap-4">
+        {/* History Controls - Only visible when there's history to navigate */}
+        {(canUndo() || canRedo()) && (
+          <div className="flex items-center p-1 bg-slate-100 rounded-lg mr-2">
+            <button
+              onClick={undo}
+              disabled={!canUndo()}
+              className="p-1.5 text-slate-500 hover:text-slate-900 disabled:opacity-30 disabled:hover:text-slate-500 transition-colors"
+              title="Undo (Ctrl+Z)"
+            >
+              <RotateCcw size={14} />
+            </button>
+            <div className="w-px h-3 bg-slate-200 mx-0.5"></div>
+            <button
+              onClick={redo}
+              disabled={!canRedo()}
+              className="p-1.5 text-slate-500 hover:text-slate-900 disabled:opacity-30 disabled:hover:text-slate-500 transition-colors"
+              title="Redo (Ctrl+Y)"
+            >
+              <RotateCw size={14} />
+            </button>
           </div>
         )}
 
-        {formStatus === 'published' && (storeCount === 0 && productCount === 0) && (
-          <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
-            Published
-          </span>
-        )}
-
-        <Button
-          onClick={() => setShowPublishDialog(true)}
-          disabled={!formId}
-          size="sm"
-          className="gap-2 bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition-all hover:shadow-md active:scale-95"
-        >
-          <div className="flex items-center gap-2">
-            <UploadCloud size={14} className="text-slate-300" />
-            <span className="font-semibold text-xs tracking-wide">Publish</span>
+        {canSave ? (
+          /* Editing State */
+          <div className="flex items-center gap-3 animate-in fade-in duration-200">
+            <Button
+              onClick={handleSaveForm}
+              size="sm"
+              className="gap-2 bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition-all hover:shadow-md active:scale-95"
+            >
+              {isSaving ? (
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <Save size={14} />
+              )}
+              <span className="font-semibold text-xs tracking-wide">Save</span>
+            </Button>
           </div>
-        </Button>
+        ) : (
+          /* Saved/Live State */
+          <div className="flex items-center gap-4 animate-in fade-in duration-300">
+            {(storeCount > 0 || productCount > 0) && (
+              <div className="flex flex-col items-end text-xs">
+                <span className="font-bold text-slate-800">Live on</span>
+                <div className="flex gap-1 text-slate-500 font-medium">
+                  {storeCount > 0 && <span>{storeCount} Store{storeCount !== 1 ? 's' : ''}</span>}
+                  {storeCount > 0 && productCount > 0 && <span>•</span>}
+                  {productCount > 0 && <span>{productCount} Product{productCount !== 1 ? 's' : ''}</span>}
+                </div>
+              </div>
+            )}
+
+            {showSaveSuccess && (
+              <span className="text-xs font-bold text-green-600 bg-green-50 border border-green-100 px-3 py-1 rounded-full animate-in fade-in">
+                Saved
+              </span>
+            )}
+
+            <Button
+              onClick={() => setShowPublishDialog(true)}
+              disabled={!formId}
+              size="sm"
+              className="gap-2 bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition-all hover:shadow-md active:scale-95"
+            >
+              <UploadCloud size={14} />
+              <span className="font-semibold text-xs tracking-wide">Publish</span>
+            </Button>
+          </div>
+        )}
       </div>
     );
 
@@ -523,59 +592,21 @@ const BuildPage = ({ userId }: BuildPageProps) => {
       setActions(null);
       setTitleActions(null);
     };
-  }, [setActions, setTitleActions, setCenterContent, handleSaveForm, canSave, showSaveSuccess, formId, formStatus, storeCount, productCount]);
+  }, [setActions, setTitleActions, setCenterContent, handleSaveForm, canSave, showSaveSuccess, formId, formName, setFormName, canUndo, canRedo, undo, redo, isSaving]);
 
-
-  // Browser navigation guard - warn on page close/refresh with unsaved changes
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (hasUnsavedChanges()) {
-        e.preventDefault();
-        e.returnValue = ''; // Required for Chrome
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [hasUnsavedChanges]);
-
-  // Register keyboard shortcuts for Undo/Redo
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Check if user is typing in an input or contenteditable element
-      const target = e.target as HTMLElement;
-      const isInputField = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true';
-
-      if (isInputField) {
-        return; // Don't trigger shortcuts while typing
-      }
-
-      // Ctrl+Z or Cmd+Z for Undo
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
-        e.preventDefault();
-        if (canUndo()) {
-          undo();
-        }
-      }
-
-      // Ctrl+Y or Cmd+Shift+Z for Redo
-      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
-        e.preventDefault();
-        if (canRedo()) {
-          redo();
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [canUndo, canRedo, undo, redo]);
+  // ... (navigation guards) ...
 
   // Determine if we are initializing (mismatch between route and store)
   const shouldLoadSpecificForm = routeFormId && routeFormId !== 'new';
   const isMismatch = shouldLoadSpecificForm && formId !== routeFormId;
   const shouldResetToNew = routeFormId === 'new' && formId !== null;
-  const isInitializing = isMismatch || shouldResetToNew;
+  // Don't show skeleton if we just saved (smooth transition)
+  // Check if we have a just-saved ref OR if formId matches what we just saved
+  const isJustSaved = justSavedFormIdRef.current !== null && (
+    justSavedFormIdRef.current === routeFormId ||
+    justSavedFormIdRef.current === formId
+  );
+  const isInitializing = (isMismatch || shouldResetToNew) && !isJustSaved;
 
   return (
     <div className="h-full flex flex-col" dir={dir}>
@@ -592,20 +623,11 @@ const BuildPage = ({ userId }: BuildPageProps) => {
         </div>
       )}
 
-
-
-
-      {/* Unified Load Dialog */}
+      {/* Unified Load Dialog (Template Picker) */}
       <FormLoadDialog
         isOpen={showLoadModal}
         onClose={() => setShowLoadModal(false)}
-        forms={forms}
-        isLoading={formsLoading}
-        onLoadForm={handleLoadForm}
         onLoadTemplate={handleLoadTemplate}
-        onImportJson={handleImportJson}
-        onRenameForm={handleRenameForm}
-        onDeleteForm={handleDeleteForm}
       />
 
       <AlertDialog open={showUnsavedChangesDialog} onOpenChange={setShowUnsavedChangesDialog}>

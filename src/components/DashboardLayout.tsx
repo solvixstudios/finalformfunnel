@@ -127,36 +127,36 @@ const DashboardLayoutContent = ({
     <div className="h-screen w-screen overflow-hidden bg-slate-50 flex flex-col font-sans" dir={dir}>
 
       {/* Top Fixed Header */}
-      <header className="relative flex-none h-14 w-full bg-white border-b border-slate-200 z-50 flex items-center justify-between px-4 lg:px-5">
-        <div className="flex items-center gap-3">
-          {/* Mobile Menu Toggle */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors"
-          >
-            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
+      <header className="relative flex-none h-16 w-full bg-white border-b border-slate-200/60 z-50 flex items-center justify-between px-6 gap-6">
+        <div className="flex items-center gap-6 flex-1 min-w-0">
+          <div className="flex items-center gap-4 shrink-0">
+            {/* Mobile Menu Toggle */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="lg:hidden p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors"
+            >
+              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
 
-          {/* Logo */}
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-              <Zap size={18} className="text-white fill-white" />
+            {/* Logo */}
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 bg-slate-900 rounded-xl flex items-center justify-center shadow-sm">
+                <Zap size={18} className="text-white fill-white" />
+              </div>
+              <span className="hidden md:block font-bold text-lg text-slate-900 tracking-tight">
+                {language === 'ar' ? 'فاينل' : 'Final'}
+              </span>
             </div>
-            <span className="hidden md:block font-bold text-slate-900 tracking-tight">
-              {language === 'ar' ? 'فاينل' : 'Final'}
-            </span>
           </div>
-        </div>
 
-        {/* Center Content Actions */}
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl px-4 pointer-events-none">
-          <div className="pointer-events-auto flex justify-center">
+          {/* Title / Form Name area (Previous Center Content) */}
+          <div className="flex-1 min-w-0">
             {centerContent}
           </div>
         </div>
 
         {/* Right Actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 shrink-0">
           {actions}
         </div>
       </header>
@@ -166,52 +166,56 @@ const DashboardLayoutContent = ({
 
         {/* Sidebar */}
         <aside className={cn(
-          "fixed lg:static inset-y-0 left-0 z-40 bg-white border-r border-slate-200 flex flex-col lg:translate-x-0 pt-14 lg:pt-0",
-          sidebarCollapsed ? "lg:w-[60px]" : "lg:w-56",
-          mobileMenuOpen ? "translate-x-0 w-56 shadow-xl" : "-translate-x-full"
+          "fixed lg:static inset-y-0 left-0 z-40 bg-white border-r border-slate-200/60 flex flex-col lg:translate-x-0 pt-16 lg:pt-0 transition-all duration-300 ease-in-out",
+          sidebarCollapsed ? "lg:w-[70px]" : "lg:w-64",
+          mobileMenuOpen ? "translate-x-0 w-64 shadow-2xl" : "-translate-x-full"
         )}
         >
           {/* Sidebar Toggle (Desktop Only) */}
-          <div className="hidden lg:flex items-center justify-end p-2 border-b border-slate-100 h-10">
-            <button onClick={() => setSidebarCollapsed(!sidebarCollapsed)} className="p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 rounded-md transition-colors">
-              <Menu size={16} />
+          <div className="hidden lg:flex items-center justify-end p-4 h-16">
+            <button onClick={() => setSidebarCollapsed(!sidebarCollapsed)} className="p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600 rounded-lg transition-colors">
+              <Menu size={18} />
             </button>
           </div>
 
-          <div className="flex-1 flex flex-col overflow-y-auto py-3 gap-0.5 px-2">
+          <div className="flex-1 flex flex-col overflow-y-auto py-6 gap-1 px-4">
             {navItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => protectedNavigate(item.path, () => setMobileMenuOpen(false))}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium",
+                  "flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group",
                   isActive(item.path)
-                    ? "bg-indigo-50 text-indigo-700"
-                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
-                  sidebarCollapsed && "justify-center px-0 py-2.5"
+                    ? "bg-slate-900 text-white shadow-md shadow-slate-900/10"
+                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-900",
+                  sidebarCollapsed && "justify-center px-0 py-3"
                 )}
                 title={sidebarCollapsed ? item.label : undefined}
               >
-                <span className={isActive(item.path) ? "text-indigo-600" : "text-slate-400"}>
+                <span className={cn(
+                  "transition-colors",
+                  isActive(item.path) ? "text-white" : "text-slate-400 group-hover:text-slate-600"
+                )}>
                   {item.icon}
                 </span>
-                {!sidebarCollapsed && <span>{item.label}</span>}
+                {!sidebarCollapsed && <span className="tracking-wide">{item.label}</span>}
               </button>
             ))}
           </div>
 
           {/* Sidebar Footer */}
-          <div className="p-2 border-t border-slate-100 flex flex-col gap-1">
+          <div className="p-4 border-t border-slate-100 flex flex-col gap-2">
             {/* Version Badge */}
             {!sidebarCollapsed && (
-              <div className="px-3 py-1 text-[10px] text-slate-400 font-mono">
+              <div className="px-2 py-1 text-[10px] text-slate-400 font-mono opacity-50">
                 v{packageJson.version}
               </div>
             )}
+
             <button
               onClick={() => setLanguageMenuOpen(!languageMenuOpen)}
               className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 relative",
+                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 relative transition-colors",
                 sidebarCollapsed && "justify-center"
               )}
             >
@@ -219,7 +223,7 @@ const DashboardLayoutContent = ({
               {!sidebarCollapsed && <span className="flex-1 text-left">{languages.find(l => l.code === language)?.name}</span>}
 
               {languageMenuOpen && (
-                <div className="absolute bottom-full left-0 w-full mb-2 bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden py-1 min-w-[140px] z-50">
+                <div className="absolute bottom-full left-0 w-full mb-2 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden py-1 min-w-[140px] z-50 animate-in fade-in zoom-in-95 duration-200">
                   {languages.map(l => (
                     <div
                       key={l.code}
@@ -228,9 +232,9 @@ const DashboardLayoutContent = ({
                         setLanguage(l.code);
                         setLanguageMenuOpen(false);
                       }}
-                      className="px-3 py-2 hover:bg-indigo-50 cursor-pointer flex items-center gap-2 transition-colors text-sm"
+                      className="px-4 py-2 hover:bg-slate-50 cursor-pointer flex items-center gap-3 transition-colors text-sm text-slate-700"
                     >
-                      <span>{l.flag}</span>
+                      <span className="text-lg leading-none">{l.flag}</span>
                       <span>{l.name}</span>
                     </div>
                   ))}
@@ -238,41 +242,41 @@ const DashboardLayoutContent = ({
               )}
             </button>
 
-            <div className="h-px bg-slate-100 mx-2" />
-
             <button
               onClick={() => setUserMenuOpen(!userMenuOpen)}
               className={cn(
-                "flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-slate-100 relative",
+                "flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-slate-50 relative transition-colors border border-transparent hover:border-slate-100",
                 sidebarCollapsed && "justify-center"
               )}
             >
-              <div className="w-7 h-7 rounded-full bg-slate-200 border border-white shadow-sm overflow-hidden shrink-0">
+              <div className="w-8 h-8 rounded-full bg-slate-200 border-2 border-white shadow-sm overflow-hidden shrink-0">
                 {user.photoURL ? (
                   <img src={user.photoURL} alt="User" className="w-full h-full object-cover" />
                 ) : (
-                  <User size={14} className="m-1.5 text-slate-500" />
+                  <User size={16} className="m-2 text-slate-500" />
                 )}
               </div>
               {!sidebarCollapsed && (
                 <div className="flex-1 text-left min-w-0">
-                  <div className="font-medium text-xs text-slate-900 truncate">{user.displayName}</div>
+                  <div className="font-semibold text-xs text-slate-900 truncate">{user.displayName}</div>
                   <div className="text-[10px] text-slate-500 truncate">{user.email}</div>
                 </div>
               )}
 
               {userMenuOpen && (
-                <div className="absolute bottom-full left-0 w-[200px] mb-2 bg-white border border-slate-200 rounded-lg shadow-xl overflow-hidden py-1 z-50 animate-in fade-in slide-in-from-bottom-2 duration-150">
-                  <div className="px-4 py-3 bg-slate-50 border-b border-slate-100">
-                    <div className="font-medium text-sm text-slate-900">{user.displayName}</div>
+                <div className="absolute bottom-full left-0 w-[240px] mb-2 bg-white border border-slate-200/60 rounded-xl shadow-2xl overflow-hidden py-1 z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                  <div className="px-5 py-4 bg-slate-50/50 border-b border-slate-100">
+                    <div className="font-semibold text-sm text-slate-900">{user.displayName}</div>
                     <div className="text-xs text-slate-500 mt-0.5">{user.email}</div>
                   </div>
-                  <div
-                    onClick={(e) => { e.stopPropagation(); onLogout(); }}
-                    className="px-4 py-2.5 hover:bg-red-50 text-red-600 cursor-pointer flex items-center gap-2 text-sm font-medium"
-                  >
-                    <LogOut size={14} />
-                    {t('nav.signOut')}
+                  <div className="p-1">
+                    <div
+                      onClick={(e) => { e.stopPropagation(); onLogout(); }}
+                      className="px-4 py-2.5 hover:bg-red-50 text-red-600 cursor-pointer flex items-center gap-2 text-sm font-medium rounded-lg transition-colors"
+                    >
+                      <LogOut size={16} />
+                      {t('nav.signOut')}
+                    </div>
                   </div>
                 </div>
               )}
@@ -282,17 +286,17 @@ const DashboardLayoutContent = ({
 
         {/* Mobile Overlay */}
         {mobileMenuOpen && (
-          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-30 lg:hidden" onClick={() => setMobileMenuOpen(false)} />
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-30 lg:hidden" onClick={() => setMobileMenuOpen(false)} />
         )}
 
         {/* Main Content Viewer - SCROLLABLE */}
         <main className={cn(
-          "flex-1 bg-slate-100 relative",
+          "flex-1 bg-slate-50 relative",
           isBuilderPage ? "overflow-hidden" : "overflow-y-auto"
         )}>
           <div className={cn(
             "min-h-full mx-auto",
-            isBuilderPage ? "p-0 h-full max-w-none" : "p-4 lg:p-6 max-w-[1600px]"
+            isBuilderPage ? "p-0 h-full max-w-none" : "p-6 lg:p-10 max-w-[1600px]"
           )}>
             {children}
           </div>
