@@ -196,7 +196,7 @@ export function ShopifyManager({ userId, onAddStore, showHeader = true }: Shopif
                             <p className="text-sm text-slate-500">Manage your Shopify stores and settings.</p>
                         </div>
                         {onAddStore && (
-                            <Button onClick={onAddStore} className="bg-[#95BF47] hover:bg-[#85AB3E] text-white">
+                            <Button onClick={onAddStore} variant="shopify">
                                 <Plus size={16} className="mr-2" />
                                 Connect Store
                             </Button>
@@ -343,7 +343,7 @@ export function ShopifyManager({ userId, onAddStore, showHeader = true }: Shopif
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                             <AlertDialogAction
                                 onClick={handleDeleteStore}
-                                className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+                                variant="danger"
                             >
                                 Disconnect
                             </AlertDialogAction>

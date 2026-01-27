@@ -80,6 +80,26 @@ All colors MUST be HSL.
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
+    /* Semantic colors - Dark mode */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 0%;
+
+    --info: 217 91% 65%;
+    --info-foreground: 0 0% 100%;
+
+    --danger: 0 62.8% 50%;
+    --danger-foreground: 210 40% 98%;
+
+    /* Brand colors - Dark mode */
+    --brand: 239 84% 67%;
+    --brand-foreground: 0 0% 100%;
+
+    --shopify: 85 51% 51%;
+    --shopify-foreground: 0 0% 100%;
+
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;

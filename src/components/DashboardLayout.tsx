@@ -321,7 +321,7 @@ const DashboardLayoutContent = ({
                 setShowUnsavedDialog(false);
                 pendingActionRef.current = null;
               }}
-              className="bg-red-600 hover:bg-red-700"
+              variant="danger"
             >
               Leave & Discard
             </AlertDialogAction>

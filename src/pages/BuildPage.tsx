@@ -559,7 +559,8 @@ const BuildPage = ({ userId }: BuildPageProps) => {
             <Button
               onClick={handleSaveForm}
               size="sm"
-              className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-all hover:shadow-md active:scale-95"
+              variant="brand"
+              className="gap-2 transition-all hover:shadow-md active:scale-95"
             >
               {isSaving ? (
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -593,7 +594,8 @@ const BuildPage = ({ userId }: BuildPageProps) => {
               onClick={() => setShowPublishDialog(true)}
               disabled={!formId}
               size="sm"
-              className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-all hover:shadow-md active:scale-95"
+              variant="brand"
+              className="gap-2 transition-all hover:shadow-md active:scale-95"
             >
               <UploadCloud size={14} />
               <span className="font-semibold text-xs tracking-wide">Publish</span>
@@ -660,6 +662,7 @@ const BuildPage = ({ userId }: BuildPageProps) => {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
+              variant="danger"
               onClick={() => {
                 setShowUnsavedChangesDialog(false);
                 if (pendingAction) {
@@ -667,7 +670,6 @@ const BuildPage = ({ userId }: BuildPageProps) => {
                   setPendingAction(null);
                 }
               }}
-              className="bg-red-600 hover:bg-red-700"
             >
               Continue
             </AlertDialogAction>
