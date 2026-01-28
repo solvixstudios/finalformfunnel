@@ -1,6 +1,5 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -118,7 +117,7 @@ export default function ProductsPage({ userId }: { userId: string }) {
     // Local Pagination & Search
     const [currentPage, setCurrentPage] = useState(1);
     const [searchTerm, setSearchTerm] = useState('');
-    const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
     // Auto-select first store & Load from Cache
     useEffect(() => {
@@ -335,17 +334,17 @@ export default function ProductsPage({ userId }: { userId: string }) {
             </div>
 
             {/* Toolbox & Pagination Top */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 shrink-0 bg-slate-50/50 p-3 rounded-xl border border-slate-100">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 shrink-0 px-1 py-2">
                 <div className="relative w-full sm:w-[300px]">
-                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                     <Input
                         value={searchTerm}
                         onChange={e => {
                             setSearchTerm(e.target.value);
                             setCurrentPage(1);
                         }}
-                        placeholder="Search all local products..."
-                        className="pl-9 bg-white"
+                        placeholder="Search products..."
+                        className="pl-10 bg-white border-0 shadow-sm rounded-full h-10 ring-1 ring-slate-200 focus-visible:ring-indigo-500 transition-all hover:ring-slate-300"
                         disabled={products.length === 0}
                     />
                 </div>
@@ -353,11 +352,11 @@ export default function ProductsPage({ userId }: { userId: string }) {
                 <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
 
                     {/* View Toggle */}
-                    <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200">
+                    <div className="flex items-center gap-1 bg-white p-1 rounded-full border border-slate-200 shadow-sm">
                         <Button
                             variant="ghost"
                             size="sm"
-                            className={cn("h-7 px-2", viewMode === 'list' && "bg-white shadow-sm text-indigo-600")}
+                            className={cn("h-7 px-3 rounded-full transition-all", viewMode === 'list' && "bg-slate-100 text-slate-900 font-medium")}
                             onClick={() => setViewMode('list')}
                             title="List View"
                         >
@@ -366,7 +365,7 @@ export default function ProductsPage({ userId }: { userId: string }) {
                         <Button
                             variant="ghost"
                             size="sm"
-                            className={cn("h-7 px-2", viewMode === 'grid' && "bg-white shadow-sm text-indigo-600")}
+                            className={cn("h-7 px-3 rounded-full transition-all", viewMode === 'grid' && "bg-slate-100 text-slate-900 font-medium")}
                             onClick={() => setViewMode('grid')}
                             title="Grid View"
                         >
@@ -513,38 +512,48 @@ export default function ProductsPage({ userId }: { userId: string }) {
                                 </Table>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
                                 {paginatedProducts.map(product => (
-                                    <Card key={product.id} className="group hover:border-indigo-200 hover:shadow-md transition-all overflow-hidden flex flex-col h-full bg-white">
-                                        <div className="aspect-square bg-slate-50 relative overflow-hidden flex items-center justify-center border-b border-slate-100">
+                                    <div key={product.id} className="group flex flex-col gap-3 cursor-pointer">
+                                        {/* Image Container */}
+                                        <div className="aspect-[4/5] bg-slate-50 rounded-2xl overflow-hidden relative border border-slate-100 shadow-sm group-hover:shadow-md transition-all duration-300">
                                             {product.images?.[0]?.src || product.image?.src ? (
                                                 <img
                                                     src={product.images?.[0]?.src || product.image?.src}
                                                     alt={product.title}
-                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                    className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out"
                                                     loading="lazy"
                                                 />
                                             ) : (
-                                                <ImageIcon className="text-slate-300 w-12 h-12" />
+                                                <div className="w-full h-full flex items-center justify-center text-slate-300">
+                                                    <ImageIcon size={32} strokeWidth={1.5} />
+                                                </div>
                                             )}
-                                        </div>
-                                        <CardContent className="p-3 flex flex-col flex-1 gap-1.5">
-                                            <div className="flex items-start justify-between gap-2">
-                                                <h3 className="font-semibold text-slate-900 line-clamp-2 text-sm leading-snug" title={product.title}>
-                                                    {product.title}
-                                                </h3>
-                                            </div>
-                                            <div className="mt-auto pt-2 flex items-center justify-between text-xs text-slate-500">
-                                                <span className="truncate max-w-[50%]">{product.vendor}</span>
+
+                                            {/* Floating Badge */}
+                                            <div className="absolute top-3 left-3">
                                                 <span className={cn(
-                                                    "px-1.5 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wider",
-                                                    product.status === 'active' ? "bg-green-50 text-green-700" : "bg-slate-100 text-slate-600"
+                                                    "px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider backdrop-blur-md shadow-sm border",
+                                                    product.status === 'active'
+                                                        ? "bg-white/90 text-green-700 border-green-100"
+                                                        : "bg-slate-100/90 text-slate-600 border-slate-200"
                                                 )}>
                                                     {product.status}
                                                 </span>
                                             </div>
-                                        </CardContent>
-                                    </Card>
+                                        </div>
+
+                                        {/* Content info */}
+                                        <div className="space-y-1">
+                                            <h3 className="font-medium text-slate-900 leading-snug line-clamp-2 text-sm group-hover:text-indigo-600 transition-colors">
+                                                {product.title}
+                                            </h3>
+                                            <div className="flex items-center justify-between text-xs text-slate-500">
+                                                <span className="truncate">{product.vendor}</span>
+                                                <span className="font-mono">{product.variants?.length || 0} vars</span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 ))}
                             </div>
                         )}
@@ -577,6 +586,6 @@ export default function ProductsPage({ userId }: { userId: string }) {
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 }

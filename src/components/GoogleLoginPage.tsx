@@ -1,7 +1,7 @@
-import { AlertCircle, Loader2, Mail, Globe } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import { signInWithGoogle } from '../lib/authGoogle';
-import { GoogleUser } from '../lib/authGoogle';
+import { motion } from 'framer-motion';
+import { AlertCircle, CheckCircle2, Loader2, Quote, Star } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { GoogleUser, signInWithGoogle } from '../lib/authGoogle';
 import { useI18n } from '../lib/i18n/i18nContext';
 import { Language } from '../lib/i18n/translations';
 
@@ -33,136 +33,164 @@ const GoogleLoginPage = ({ onLoginSuccess }: GoogleLoginPageProps) => {
     }
   };
 
-  if (!isMounting) return null;
-
   const languages: { code: Language; name: string; flag: string }[] = [
     { code: 'ar', name: 'العربية', flag: '🇸🇦' },
     { code: 'en', name: 'English', flag: '🇺🇸' },
     { code: 'fr', name: 'Français', flag: '🇫🇷' },
   ];
 
+  if (!isMounting) return null;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 flex items-center justify-center p-6" dir={dir}>
-      {/* Animated Background Pattern */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 right-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
-      </div>
+    <div className="min-h-screen w-full flex bg-[#FAFAFA] font-sans" dir={dir}>
 
-      {/* Content */}
-      <div className="relative w-full max-w-md">
-        {/* Language Selector */}
-        <div className="absolute top-0 right-0 flex gap-2">
-          {languages.map((lang) => (
-            <button
-              key={lang.code}
-              onClick={() => setLanguage(lang.code)}
-              title={lang.name}
-              className={`px-3 py-2 rounded-lg font-semibold text-sm transition-all ${
-                language === lang.code
-                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30'
-                  : 'bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10'
-              }`}
-            >
-              {lang.flag} {lang.name}
-            </button>
-          ))}
-        </div>
+      {/* --- Left Panel: Auth Form (50%) --- */}
+      <div className="w-full lg:w-1/2 flex flex-col p-6 sm:p-12 lg:p-20 justify-between bg-white relative z-10">
 
-        {/* Logo & Header */}
-        <div className="text-center mb-10 mt-20">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl shadow-2xl shadow-indigo-500/40 mb-6 animate-in fade-in duration-500">
-            <svg className="w-10 h-10 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z" />
-            </svg>
+        {/* Header / Language */}
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center">
+              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <span className="font-bold text-slate-900 tracking-tight">Final Form</span>
           </div>
-          <h1 className="text-4xl font-black text-white tracking-tight mb-2">
-            {language === 'ar' ? 'فاينل فورم' : 'Final Form'}
-          </h1>
-          <p className="text-slate-400 text-base">
-            {t('landing.tagline')}
-          </p>
+
+          <div className="flex gap-2">
+            {languages.map((lang) => (
+              <button
+                key={lang.code}
+                onClick={() => setLanguage(lang.code)}
+                title={lang.name}
+                className={`w-8 h-8 flex items-center justify-center rounded-full text-sm transition-all ${language === lang.code
+                    ? 'bg-slate-100 text-slate-900 ring-1 ring-slate-200'
+                    : 'text-slate-400 hover:bg-slate-50'
+                  }`}
+              >
+                {lang.flag}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Login Card */}
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="space-y-6">
-            {/* Description */}
-            <div>
-              <h2 className="text-xl font-bold text-white mb-2">
-                {t('auth.welcomeBack')}
-              </h2>
-              <p className="text-sm text-slate-400">
-                {t('auth.signInDescription')}
-              </p>
-            </div>
-
-            {/* Error Message */}
-            {error && (
-              <div className="flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-xl animate-in fade-in">
-                <AlertCircle size={18} className="text-red-400 shrink-0 mt-0.5" />
-                <p className="text-sm text-red-300">{error}</p>
-              </div>
-            )}
-
-            {/* Google Sign-In Button */}
-            <button
-              onClick={handleGoogleSignIn}
-              disabled={isLoading}
-              className="w-full bg-white text-slate-900 px-6 py-4 rounded-xl font-bold text-sm uppercase tracking-wider flex items-center justify-center gap-3 transition-all duration-200 hover:bg-slate-100 active:scale-[0.98] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 size={18} className="animate-spin" />
-                  {t('auth.signingIn')}
-                </>
-              ) : (
-                <>
-                  <Mail size={18} />
-                  {t('auth.signInWithGoogle')}
-                </>
-              )}
-            </button>
-
-            {/* Divider */}
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-white/10" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="px-2 bg-slate-900 text-slate-500">{t('auth.orContinue')}</span>
-              </div>
-            </div>
-
-            {/* Info Text */}
-            <p className="text-xs text-slate-500 text-center">
-              {t('auth.termsAgreement')}
+        {/* Main Content */}
+        <div className="max-w-sm w-full mx-auto space-y-8">
+          <div className="text-center sm:text-left">
+            <h1 className="text-3xl font-extrabold text-slate-900 mb-3 tracking-tight">
+              {t('auth.welcomeBack')}
+            </h1>
+            <p className="text-slate-500 text-lg">
+              {t('auth.signInDescription')}
             </p>
           </div>
-        </div>
 
-        {/* Features Section */}
-        <div className="grid grid-cols-3 gap-4 mt-10">
-          {[
-            { icon: '⚡', label: t('auth.lightningFast') },
-            { icon: '✨', label: t('auth.easyToUse') },
-            { icon: '🔒', label: t('auth.fullySecure') },
-          ].map((feature, i) => (
-            <div key={i} className="text-center">
-              <div className="w-10 h-10 bg-indigo-500/20 rounded-lg flex items-center justify-center mx-auto mb-2">
-                <span className="text-lg">{feature.icon}</span>
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-start gap-3 p-4 bg-red-50 text-red-600 rounded-xl border border-red-100 text-sm"
+            >
+              <AlertCircle size={18} className="shrink-0 mt-0.5" />
+              <p>{error}</p>
+            </motion.div>
+          )}
+
+          <button
+            onClick={handleGoogleSignIn}
+            disabled={isLoading}
+            className="w-full h-14 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300 rounded-full font-semibold text-base flex items-center justify-center gap-3 transition-all duration-200 active:scale-[0.98 shadow-sm hover:shadow-md disabled:opacity-70 disabled:cursor-not-allowed group"
+          >
+            {isLoading ? (
+              <Loader2 size={20} className="animate-spin text-slate-400" />
+            ) : (
+              <div className="flex items-center gap-3">
+                {/* Google Logo */}
+                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                </svg>
+                <span>{t('auth.signInWithGoogle')}</span>
               </div>
-              <p className="text-xs text-slate-400 font-medium">{feature.label}</p>
+            )}
+          </button>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-100" />
             </div>
-          ))}
+            <div className="relative flex justify-center text-xs uppercase tracking-wide">
+              <span className="px-4 bg-white text-slate-400 font-medium">Trusted by teams at</span>
+            </div>
+          </div>
+
+          <div className="flex justify-center gap-6 opacity-40 grayscale">
+            {/* Dummy logos for social proof */}
+            <div className="h-6 w-20 bg-slate-900 rounded" />
+            <div className="h-6 w-20 bg-slate-900 rounded" />
+            <div className="h-6 w-20 bg-slate-900 rounded" />
+          </div>
         </div>
 
         {/* Footer */}
-        <p className="text-center text-slate-600 text-xs mt-10">
-          Version 4.0.0 · Final Form Pro
-        </p>
+        <div className="text-center sm:text-left text-sm text-slate-400">
+          © 2024 Final Form. All rights reserved.
+        </div>
       </div>
+
+      {/* --- Right Panel: Art Direction (50%) --- */}
+      <div className="hidden lg:flex w-1/2 bg-[#FFF4ED] relative items-center justify-center p-20 overflow-hidden">
+
+        {/* Abstract Shapes */}
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-br from-orange-300/20 to-amber-300/20 rounded-full blur-[100px] pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-white/60 rounded-full blur-[80px] pointer-events-none" />
+
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="relative z-10 max-w-md"
+        >
+          {/* Testimonial Card */}
+          <div className="bg-white p-10 rounded-[2.5rem] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.05)] border border-slate-100/50 relative">
+            <Quote className="absolute top-10 left-8 text-orange-100 fill-orange-50 w-16 h-16 -z-10 transform -translate-x-2 -translate-y-2" />
+
+            <div className="mb-6 flex gap-1">
+              {[1, 2, 3, 4, 5].map(i => (
+                <Star key={i} size={16} className="text-amber-400 fill-amber-400" />
+              ))}
+            </div>
+
+            <p className="text-xl font-medium text-slate-900 leading-relaxed mb-8">
+              "Final Form transformed how we collect leads. The designs are stunning and conversion rates doubled overnight."
+            </p>
+
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-slate-100 overflow-hidden">
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="User" />
+              </div>
+              <div>
+                <div className="font-bold text-slate-900">Sarah Jenkins</div>
+                <div className="text-sm text-slate-500">Product Designer @ Solvix</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Floating decoration */}
+          <motion.div
+            animate={{ y: [0, -10, 0] }}
+            transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+            className="absolute -right-12 -top-12 bg-orange-500 text-white p-4 rounded-2xl shadow-lg shadow-orange-500/20 rotate-12"
+          >
+            <CheckCircle2 size={32} />
+          </motion.div>
+
+        </motion.div>
+      </div>
+
     </div>
   );
 };

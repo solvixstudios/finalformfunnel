@@ -19,6 +19,9 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ['"Plus Jakarta Sans"', "Inter", "sans-serif"],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -70,8 +73,10 @@ export default {
           foreground: "hsl(var(--danger-foreground))",
         },
         brand: {
-          DEFAULT: "hsl(var(--brand))",
-          foreground: "hsl(var(--brand-foreground))",
+          50: "#fff7ed",
+          100: "#ffedd5",
+          500: "#f97316", // Orange-500
+          600: "#ea580c", // Orange-600
         },
         shopify: {
           DEFAULT: "hsl(var(--shopify))",
