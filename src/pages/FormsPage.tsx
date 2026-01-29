@@ -1,4 +1,9 @@
+
+import { PageHeader } from '@/components/GlobalHeader/PageHeader';
 import {
+    ChevronRight,
+    FolderOpen,
+    LayoutTemplate,
     Loader2,
     Plus,
     Search,
@@ -10,7 +15,6 @@ import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 import { useFormImportExport } from '@/lib/formImportExport';
 import { cn } from '@/lib/utils';
@@ -188,137 +192,158 @@ export const FormsPage = () => {
         }
     }
 
-    return (
-        <div className="flex flex-col h-full overflow-hidden bg-[#FAFAFA]">
-            {/* 1. Header (Sticky Top) */}
-            <div className="flex-none px-8 py-6 border-b border-slate-200/60 bg-white/50 backdrop-blur-md z-10">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div>
-                        <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Forms</h2>
-                        <p className="text-sm text-slate-500 font-medium mt-1">Manage your high-converting product pages.</p>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                        <div className="relative group">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-hover:text-amber-600 transition-colors" size={16} />
-                            <Input
-                                className="pl-10 w-[240px] bg-white border-slate-200/60 rounded-full focus:ring-amber-500/20 shadow-sm"
-                                placeholder="Search forms..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
-                        </div>
-
-                        {/* Filter Pills */}
-                        <div className="flex items-center bg-slate-100/50 p-1 rounded-full border border-slate-200/60">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setFilter('all')}
-                                className={cn("rounded-full h-8 px-4 text-xs font-bold", filter === 'all' ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700")}
-                            >
-                                All
-                            </Button>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setFilter('published')}
-                                className={cn("rounded-full h-8 px-4 text-xs font-bold", filter === 'published' ? "bg-white shadow-sm text-green-700" : "text-slate-500 hover:text-slate-700")}
-                            >
-                                Live
-                            </Button>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setFilter('draft')}
-                                className={cn("rounded-full h-8 px-4 text-xs font-bold", filter === 'draft' ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700")}
-                            >
-                                Drafts
-                            </Button>
-                        </div>
-
-                        <input
-                            type="file"
-                            ref={fileInputRef}
-                            accept=".json,application/json"
-                            onChange={handleFileSelect}
-                            className="hidden"
-                        />
-                        <Button
-                            onClick={() => fileInputRef.current?.click()}
-                            variant="outline"
-                            size="icon"
-                            disabled={isImporting}
-                            className="rounded-full w-10 h-10 border-slate-200 bg-white text-slate-500 hover:text-indigo-600"
-                            title="Import Form"
-                        >
-                            {isImporting ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
-                        </Button>
-                    </div>
-                </div>
+    const headerActions = (
+        <div className="flex items-center gap-3">
+            <div className="relative group hidden md:block">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-hover:text-amber-600 transition-colors" size={14} />
+                <Input
+                    className="pl-9 w-[200px] h-9 bg-white border-slate-200 rounded-full focus:ring-amber-500/20 shadow-sm text-sm"
+                    placeholder="Search forms..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
             </div>
 
-            {/* 2. Scrollable Content Area */}
-            <ScrollArea className="flex-1">
-                <div className="p-8 pb-32 max-w-7xl mx-auto space-y-8">
+            {/* Filter Pills */}
+            <div className="flex items-center bg-slate-100/50 p-1 rounded-full border border-slate-200/60 h-9">
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setFilter('all')}
+                    className={cn("rounded-full h-7 px-3 text-[10px] font-bold", filter === 'all' ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700")}
+                >
+                    All
+                </Button>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setFilter('published')}
+                    className={cn("rounded-full h-7 px-3 text-[10px] font-bold", filter === 'published' ? "bg-white shadow-sm text-green-700" : "text-slate-500 hover:text-slate-700")}
+                >
+                    Live
+                </Button>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setFilter('draft')}
+                    className={cn("rounded-full h-7 px-3 text-[10px] font-bold", filter === 'draft' ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700")}
+                >
+                    Drafts
+                </Button>
+            </div>
 
-                    {/* Create New Area - Horizontal Banner Style */}
-                    <div className="group relative overflow-hidden bg-gradient-to-br from-indigo-600 to-violet-600 rounded-[2rem] p-8 shadow-xl shadow-indigo-200/50 text-white flex items-center justify-between">
-                        <div className="relative z-10 max-w-md">
-                            <h3 className="text-2xl font-bold mb-2">Create a new funnel</h3>
-                            <p className="text-indigo-100 text-sm mb-6">Choose a template or start from scratch to boost conversion rates.</p>
+            <input
+                type="file"
+                ref={fileInputRef}
+                accept=".json,application/json"
+                onChange={handleFileSelect}
+                className="hidden"
+            />
+            <Button
+                onClick={() => fileInputRef.current?.click()}
+                variant="outline"
+                size="icon"
+                disabled={isImporting}
+                className="rounded-full w-9 h-9 border-slate-200 bg-white text-slate-500 hover:text-indigo-600"
+                title="Import Form"
+            >
+                {isImporting ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+            </Button>
+        </div>
+    );
+
+    return (
+        <div className="flex flex-col h-full overflow-hidden">
+            <PageHeader
+                title="Forms"
+                breadcrumbs={[
+                    { label: 'Home', href: '/dashboard/forms' },
+                    { label: 'Forms' }
+                ]}
+                count={forms.length}
+                icon={FolderOpen}
+                actions={headerActions}
+            />
+            {/* 2. Scrollable Content Area */}
+
+            {/* 2. Scrollable Content Area */}
+            <div className="flex-1 pb-20 max-w-7xl mx-auto w-full space-y-8">
+
+                {/* Create New Area - Separate Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Card 1: Create Blank */}
+                    <div
+                        onClick={handleCreateNew}
+                        className={`group cursor-pointer relative overflow-hidden bg-gradient-to-br from-indigo-600 to-violet-600 rounded-2xl p-4 shadow-lg shadow-indigo-200/50 text-white transition-all hover:scale-[1.01] hover:shadow-xl ${isCreating ? 'opacity-80 pointer-events-none' : ''}`}
+                    >
+                        <div className="relative z-10 flex items-center justify-between gap-3">
                             <div className="flex items-center gap-3">
-                                <Button
-                                    onClick={handleCreateNew}
-                                    disabled={isCreating}
-                                    className="bg-white text-indigo-600 hover:bg-indigo-50 border-none shadow-lg hover:shadow-xl transition-all rounded-full h-10 px-6 font-bold"
-                                >
-                                    {isCreating ? <Loader2 size={16} className="animate-spin mr-2" /> : <Plus size={16} className="mr-2" />}
-                                    Start Blank
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setTemplateModalOpen(true)}
-                                    className="bg-indigo-500/20 border-indigo-400/30 text-white hover:bg-indigo-500/30 rounded-full h-10 px-6 font-semibold backdrop-blur-sm"
-                                >
-                                    Browse Templates
-                                </Button>
+                                <div className="w-10 h-10 rounded-lg bg-white/20 backdrop-blur-md flex items-center justify-center text-white shrink-0">
+                                    {isCreating ? <Loader2 size={18} className="animate-spin" /> : <Plus size={18} />}
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold">Create from Scratch</h3>
+                                    <p className="text-indigo-100 text-xs font-medium opacity-90">Start fresh.</p>
+                                </div>
+                            </div>
+                            <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-white/10 backdrop-blur-sm group-hover:bg-white/20 transition-colors">
+                                <ChevronRight size={16} />
                             </div>
                         </div>
-                        {/* Decoration */}
-                        <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-white/10 to-transparent pointer-events-none" />
-                        <div className="absolute -right-10 -bottom-20 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
+                        <div className="absolute right-0 top-0 bottom-0 w-1/2 bg-gradient-to-l from-white/10 to-transparent pointer-events-none" />
                     </div>
 
-                    {/* Forms Grid - Reformatted for Wide Cards */}
-                    {isLoading ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                            <FormLoadingCardSkeleton count={4} />
+                    {/* Card 2: Browse Templates */}
+                    <div
+                        onClick={() => setTemplateModalOpen(true)}
+                        className="group cursor-pointer relative overflow-hidden bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:shadow-lg hover:border-indigo-200 transition-all hover:scale-[1.01]"
+                    >
+                        <div className="relative z-10 flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
+                                    <LayoutTemplate size={18} />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-900">Browse Templates</h3>
+                                    <p className="text-slate-500 text-xs font-medium">Pre-built layouts.</p>
+                                </div>
+                            </div>
+                            <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-slate-50 group-hover:bg-indigo-50 text-slate-400 group-hover:text-indigo-600 transition-colors">
+                                <ChevronRight size={16} />
+                            </div>
                         </div>
-                    ) : filteredForms.length === 0 ? (
-                        <FormLoadingEmptyState hasSearchQuery={!!searchQuery} />
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                            {filteredForms.map(form => (
-                                <FormLoadingCard
-                                    key={form.id}
-                                    form={form}
-                                    productAssignments={assignments[form.id] || []}
-                                    storeAssignment={storeAssignments[form.id]}
-                                    onClick={() => handleCardClick(form.id)}
-                                    onDuplicate={() => handleDuplicate(form)}
-                                    onPublish={(e) => handlePublishClick(e, form)} // Pass handlePublishClick
-                                    onRename={(name) => handleRenameForm(form.id, name)}
-                                    // onDelete logic is inside the card's menu, but we pass handler if needed, 
-                                    // actually the card implements its own delete confirm? 
-                                    // In previous FormLoadingCard, it emits onDelete.
-                                    onDelete={() => handleDeleteForm(form.id)}
-                                />
-                            ))}
-                        </div>
-                    )}
+                    </div>
                 </div>
-            </ScrollArea>
+
+                {/* Forms Grid - Reformatted for Wide Cards */}
+                {isLoading ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <FormLoadingCardSkeleton count={4} />
+                    </div>
+                ) : filteredForms.length === 0 ? (
+                    <FormLoadingEmptyState hasSearchQuery={!!searchQuery} />
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        {filteredForms.map(form => (
+                            <FormLoadingCard
+                                key={form.id}
+                                form={form}
+                                productAssignments={assignments[form.id] || []}
+                                storeAssignment={storeAssignments[form.id]}
+                                onClick={() => handleCardClick(form.id)}
+                                onDuplicate={() => handleDuplicate(form)}
+                                onPublish={(e) => handlePublishClick(e, form)} // Pass handlePublishClick
+                                onRename={(name) => handleRenameForm(form.id, name)}
+                                // onDelete logic is inside the card's menu, but we pass handler if needed, 
+                                // actually the card implements its own delete confirm? 
+                                // In previous FormLoadingCard, it emits onDelete.
+                                onDelete={() => handleDeleteForm(form.id)}
+                            />
+                        ))}
+                    </div>
+                )}
+            </div>
+
 
             <PrebuiltConfigModal
                 isOpen={templateModalOpen}
@@ -326,20 +351,22 @@ export const FormsPage = () => {
                 onLoad={handleTemplateSelect}
             />
 
-            {selectedFormForPublish && (
-                <PublishSheet
-                    open={showPublishSheet}
-                    onOpenChange={setShowPublishSheet}
-                    userId={user?.id || ''}
-                    formId={selectedFormForPublish.id}
-                    formName={selectedFormForPublish.name}
-                    formConfig={selectedFormForPublish.config}
-                    onPublishSuccess={() => {
-                        // Optional: refresh assignments or show toast
-                    }}
-                />
-            )}
-        </div>
+            {
+                selectedFormForPublish && (
+                    <PublishSheet
+                        open={showPublishSheet}
+                        onOpenChange={setShowPublishSheet}
+                        userId={user?.id || ''}
+                        formId={selectedFormForPublish.id}
+                        formName={selectedFormForPublish.name}
+                        formConfig={selectedFormForPublish.config}
+                        onPublishSuccess={() => {
+                            // Optional: refresh assignments or show toast
+                        }}
+                    />
+                )
+            }
+        </div >
     );
 };
 

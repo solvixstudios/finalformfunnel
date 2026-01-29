@@ -244,8 +244,8 @@ export const FormLoadingCard: React.FC<FormLoadingCardProps> = ({
         </div>
       </div>
 
-      {/* 3. Hover Actions (Right) */}
-      <div className="relative z-20 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity translate-x-4 group-hover:translate-x-0 duration-200">
+      {/* 3. Actions (Right) */}
+      <div className="relative z-20 flex items-center gap-1">
         <Button
           variant="ghost"
           size="icon"

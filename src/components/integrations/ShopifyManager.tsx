@@ -29,6 +29,7 @@ import {
     Check,
     ExternalLink,
     Loader2,
+    MoreVertical,
     Plus,
     RefreshCw,
     Settings2,
@@ -43,9 +44,10 @@ interface ShopifyManagerProps {
     userId: string;
     onAddStore?: () => void;
     showHeader?: boolean;
+    viewMode?: 'list' | 'grid';
 }
 
-export function ShopifyManager({ userId, onAddStore, showHeader = true }: ShopifyManagerProps) {
+export function ShopifyManager({ userId, onAddStore, showHeader = true, viewMode = 'list' }: ShopifyManagerProps) {
     const { stores, updateStore, deleteStore, loading } = useConnectedStores(userId);
 
     const [processingStoreId, setProcessingStoreId] = useState<string | null>(null);
@@ -152,11 +154,96 @@ export function ShopifyManager({ userId, onAddStore, showHeader = true }: Shopif
                     )}
                 </div>
             ) : (
-                <div className="flex flex-col gap-3">
+                <div className={cn(
+                    viewMode === 'grid'
+                        ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+                        : "flex flex-col gap-3"
+                )}>
                     {shopifyStores.map(store => {
                         const isLoaderActive = store.loaderInstalled;
                         const isProcessing = processingStoreId === store.id;
 
+                        if (viewMode === 'grid') {
+                            return (
+                                <div key={store.id} className="group relative bg-white border border-slate-200 rounded-3xl p-5 hover:shadow-lg transition-all duration-300 hover:border-indigo-100 flex flex-col justify-between min-h-[180px]">
+                                    <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none rounded-3xl" />
+                                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl pointer-events-none" />
+
+                                    {/* Top Row: Icon + Settings */}
+                                    <div className="flex items-start justify-between relative z-10 w-full">
+                                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#95BF47]/10 to-[#5E8E3E]/10 flex items-center justify-center text-2xl shadow-sm border border-[#95BF47]/20">
+                                            <span>🛍️</span>
+                                        </div>
+
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-700 -mr-2 -mt-1">
+                                                    <MoreVertical size={16} />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end" className="rounded-xl border-slate-200 shadow-xl">
+                                                <DropdownMenuItem onClick={() => handleReinstall(store)}>
+                                                    <RefreshCw size={14} className="mr-2" /> Re-install Script
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => window.open(`https://${store.url}`, '_blank')}>
+                                                    <ExternalLink size={14} className="mr-2" /> Visit Store
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem className="text-red-600 focus:text-red-700 focus:bg-red-50" onClick={() => handleDisconnect(store.id)}>
+                                                    <Trash2 size={14} className="mr-2" /> Disconnect
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </div>
+
+                                    {/* Info Section */}
+                                    <div className="mt-4 relative z-10 space-y-2">
+                                        <h3 className="text-base font-bold text-slate-900 truncate tracking-tight">{store.name}</h3>
+                                        <div className="flex items-center justify-between">
+                                            <div className={cn(
+                                                "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border w-fit",
+                                                isLoaderActive
+                                                    ? "bg-green-50 text-green-700 border-green-200"
+                                                    : "bg-slate-100 text-slate-500 border-slate-200"
+                                            )}>
+                                                {isLoaderActive ? 'Active' : 'Inactive'}
+                                            </div>
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            disabled={isProcessing || isLoaderActive}
+                                                            onClick={() => handleEnableLoader(store)}
+                                                            className={cn(
+                                                                "h-7 px-2 text-[10px] font-medium transition-colors ml-auto",
+                                                                isLoaderActive
+                                                                    ? "text-green-600 hover:text-green-700 hover:bg-green-50"
+                                                                    : "text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+                                                            )}
+                                                        >
+                                                            {isProcessing ? (
+                                                                <Loader2 size={12} className="animate-spin mr-1.5" />
+                                                            ) : isLoaderActive ? (
+                                                                <Check size={12} className="mr-1.5" />
+                                                            ) : (
+                                                                <Activity size={12} className="mr-1.5" />
+                                                            )}
+                                                            {isLoaderActive ? 'Installed' : 'Enable'}
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        {isLoaderActive ? "Loader Script v" + store.loaderVersion : "Install Tracking Script"}
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        }
+
+                        // Default LIST View
                         return (
                             <div
                                 key={store.id}

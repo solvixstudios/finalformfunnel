@@ -2,6 +2,7 @@ import isEqual from "react-fast-compare";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { DEFAULT_FORM_CONFIG } from "../lib/constants";
+import { deepMerge } from "../lib/utils/deepMerge";
 
 export type FormConfig = typeof DEFAULT_FORM_CONFIG;
 export type EditingSection = string | null;
@@ -202,32 +203,6 @@ export const useFormStore = create<FormStore>()(
       },
 
       loadFormConfig: (config) => {
-        // Use deep merge helper to preserve nested structure while merging imported config
-        const deepMerge = (defaults: any, imported: any, depth = 0): any => {
-          if (depth > 10) return imported; // Prevent infinite recursion
-          const merged = { ...defaults };
-          for (const key in imported) {
-            if (Object.prototype.hasOwnProperty.call(imported, key)) {
-              const defaultValue = defaults[key];
-              const importedValue = imported[key];
-              // If both are objects (not arrays or null), recurse
-              if (
-                defaultValue &&
-                typeof defaultValue === "object" &&
-                !Array.isArray(defaultValue) &&
-                importedValue &&
-                typeof importedValue === "object" &&
-                !Array.isArray(importedValue)
-              ) {
-                merged[key] = deepMerge(defaultValue, importedValue, depth + 1);
-              } else {
-                merged[key] = importedValue;
-              }
-            }
-          }
-          return merged;
-        };
-
         const fullConfig = deepMerge(DEFAULT_FORM_CONFIG, config) as FormConfig;
         set((state) => ({
           formConfig: fullConfig,
@@ -245,31 +220,6 @@ export const useFormStore = create<FormStore>()(
 
       applyTemplate: (config) => {
         const state = get();
-        // Deep merge helper
-        const deepMerge = (defaults: any, imported: any, depth = 0): any => {
-          if (depth > 10) return imported;
-          const merged = { ...defaults };
-          for (const key in imported) {
-            if (Object.prototype.hasOwnProperty.call(imported, key)) {
-              const defaultValue = defaults[key];
-              const importedValue = imported[key];
-              if (
-                defaultValue &&
-                typeof defaultValue === "object" &&
-                !Array.isArray(defaultValue) &&
-                importedValue &&
-                typeof importedValue === "object" &&
-                !Array.isArray(importedValue)
-              ) {
-                merged[key] = deepMerge(defaultValue, importedValue, depth + 1);
-              } else {
-                merged[key] = importedValue;
-              }
-            }
-          }
-          return merged;
-        };
-
         const fullConfig = deepMerge(DEFAULT_FORM_CONFIG, config) as FormConfig;
 
         // Smart dirty check: compare with savedState, not just force true

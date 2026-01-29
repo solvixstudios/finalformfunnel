@@ -1,6 +1,18 @@
 import { useEffect, useState } from "react";
 
 /**
+ * Configurable breakpoints matching Tailwind CSS defaults
+ * Modify these values to change responsive behavior globally
+ */
+export const BREAKPOINTS = {
+  sm: 640,
+  md: 768,
+  lg: 1024,
+  xl: 1280,
+  "2xl": 1536,
+} as const;
+
+/**
  * Custom hook to detect media query matches
  * Useful for responsive design that depends on screen size
  * @param query - CSS media query string (e.g., '(max-width: 768px)')
@@ -30,20 +42,12 @@ export const useMediaQuery = (query: string): boolean => {
       setMatches(e.matches);
     };
 
-    // Add listener (support both old and new API)
-    if (mediaQuery.addListener) {
-      mediaQuery.addListener(handleChange);
-    } else {
-      mediaQuery.addEventListener("change", handleChange);
-    }
+    // Add listener
+    mediaQuery.addEventListener("change", handleChange);
 
     // Cleanup
     return () => {
-      if (mediaQuery.removeListener) {
-        mediaQuery.removeListener(handleChange);
-      } else {
-        mediaQuery.removeEventListener("change", handleChange);
-      }
+      mediaQuery.removeEventListener("change", handleChange);
     };
   }, [query]);
 
@@ -51,13 +55,19 @@ export const useMediaQuery = (query: string): boolean => {
 };
 
 /**
- * Common breakpoint queries based on Tailwind CSS
+ * Convenience hook for mobile detection
+ * Used by sidebar and other components that need mobile breakpoint
+ */
+export const useIsMobile = () => useMediaQuery(`(max-width: ${BREAKPOINTS.md - 1}px)`);
+
+/**
+ * Common breakpoint queries based on configurable BREAKPOINTS
  */
 export const useBreakpoints = () => {
-  const isMobile = useMediaQuery("(max-width: 640px)");
-  const isTablet = useMediaQuery("(max-width: 1024px)");
-  const isDesktop = useMediaQuery("(min-width: 1025px)");
-  const isLargeDesktop = useMediaQuery("(min-width: 1280px)");
+  const isMobile = useMediaQuery(`(max-width: ${BREAKPOINTS.sm}px)`);
+  const isTablet = useMediaQuery(`(max-width: ${BREAKPOINTS.lg}px)`);
+  const isDesktop = useMediaQuery(`(min-width: ${BREAKPOINTS.lg + 1}px)`);
+  const isLargeDesktop = useMediaQuery(`(min-width: ${BREAKPOINTS.xl}px)`);
 
   return {
     isMobile,

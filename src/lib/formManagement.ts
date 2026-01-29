@@ -157,42 +157,11 @@ export const getExportData = (
 };
 
 /**
- * Deep merge two objects recursively, preserving nested structure
- * Used to merge imported config with defaults while maintaining nested properties
+ * Deep merge for form config - re-exported from shared utility
+ * @deprecated Use deepMerge from @/lib/utils/deepMerge directly
  */
-export const deepMergeFormConfig = (
-  defaults: any,
-  imported: any,
-  depth = 0,
-): any => {
-  if (depth > 10) return imported; // Prevent infinite recursion
+export { deepMerge as deepMergeFormConfig } from "./utils/deepMerge";
 
-  const merged = { ...defaults };
-
-  for (const key in imported) {
-    if (Object.prototype.hasOwnProperty.call(imported, key)) {
-      const defaultValue = defaults[key];
-      const importedValue = imported[key];
-
-      // If both are objects (not arrays or null), recurse
-      if (
-        defaultValue &&
-        typeof defaultValue === "object" &&
-        !Array.isArray(defaultValue) &&
-        importedValue &&
-        typeof importedValue === "object" &&
-        !Array.isArray(importedValue)
-      ) {
-        merged[key] = deepMergeFormConfig(defaultValue, importedValue, depth + 1);
-      } else {
-        // Otherwise, use imported value
-        merged[key] = importedValue;
-      }
-    }
-  }
-
-  return merged;
-};
 
 /**
  * Normalize an imported/exported form config to internal runtime shape

@@ -18,7 +18,7 @@ const BuildPage = lazy(() => import("./pages/BuildPage"));
 const FormsPage = lazy(() => import("./pages/FormsPage"));
 const IntegrationsPage = lazy(() => import("./pages/IntegrationsPage"));
 const ProductsPage = lazy(() => import("./pages/ProductsPage"));
-
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const DashboardLayout = lazy(() => import("./components/DashboardLayout"));
@@ -152,6 +152,7 @@ const AppContent = () => {
                       element={<ProductsPage userId={user.id} />}
                     />
                     <Route path="profile" element={<ProfilePage user={user} />} />
+                    <Route path="settings" element={<SettingsPage user={user} />} />
                     <Route path="*" element={<Navigate to="/dashboard/forms" replace />} />
                   </Routes>
                 </Suspense>

@@ -322,7 +322,6 @@ export function FormAssignmentDialog({
                     </TabsContent>
 
                     <TabsContent value="active" className="mt-4">
-                        {/* ... (Active tab content same as before but referring to updated maps) */}
                         {assignmentsLoading ? (
                             <div className="flex justify-center py-8">
                                 <Loader2 className="animate-spin text-slate-400" />

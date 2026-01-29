@@ -88,7 +88,18 @@ export const FormPreview = ({ config, offers, shipping }: FormPreviewProps) => {
             shipping={shipping}
             // Mock product based on first offer or whatever FormLoader needs
             product={{
-                variants: offers.length > 0 ? offers.map((o: any) => ({ title: o.title?.fr || o.title })) : undefined
+                id: 1, // Mock ID
+                title: 'Produit de démonstration', // Mock Title
+                images: [], // Mock Images
+                options: [{ name: 'Option', values: offers.map((o: any) => o.title?.fr || o.title || 'Option') }],
+                variants: offers.length > 0 ? offers.map((o: any, index: number) => ({
+                    id: index + 1,
+                    title: o.title?.fr || o.title || `Option ${index + 1}`,
+                    option1: o.title?.fr || o.title || null,
+                    option2: null,
+                    option3: null,
+                    price: o.price || 0
+                })) : []
             }}
             sectionWrapper={sectionWrapper}
             previewMode={true}

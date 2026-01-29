@@ -1,3 +1,4 @@
+import { PageHeader } from '@/components/GlobalHeader/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -270,68 +271,84 @@ export default function ProductsPage({ userId }: { userId: string }) {
         return date.toLocaleString();
     };
 
-    return (
-        <div className="max-w-[1600px] mx-auto p-6 space-y-6 h-full flex flex-col">
+    // Create Header Actions
+    const headerActions = (
+        <div className="flex items-center gap-3">
+            <Select value={selectedStoreId} onValueChange={setSelectedStoreId}>
+                <SelectTrigger className="w-[200px] bg-white h-9 border-slate-200">
+                    <SelectValue placeholder="Select Store" />
+                </SelectTrigger>
+                <SelectContent>
+                    {stores.map(store => (
+                        <SelectItem key={store.id} value={store.id}>
+                            {store.platform === 'shopify' ? '🛍️' : '📦'} {store.name}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
 
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-6 shrink-0">
-                <div className="space-y-1">
-                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                        <Package className="text-indigo-600" /> Products
-                        <div className="ml-3 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
-                            {products.length}
-                        </div>
-                    </h1>
-                    <p className="text-sm text-slate-500 flex items-center gap-2">
-                        {lastSynced ? (
-                            <span className="text-green-600 flex items-center gap-1">
-                                <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
-                                Synced: {formatLastSynced(lastSynced)}
-                            </span>
-                        ) : (
-                            <span className="text-amber-600">Sync required</span>
-                        )}
-                        {filteredProducts.length !== products.length && (
-                            <span className="text-slate-400">• Found {filteredProducts.length} matches</span>
-                        )}
-                    </p>
+            <Button
+                variant={lastSynced ? "outline" : "default"}
+                size="sm"
+                className={cn(!lastSynced && "bg-indigo-600 hover:bg-indigo-700", "h-9")}
+                onClick={syncAllProducts}
+                disabled={syncing || !selectedStoreId}
+                title="Sync All Products"
+            >
+                {syncing ? (
+                    <>
+                        <Loader2 size={14} className="mr-2 animate-spin" />
+                        {syncProgress > 0 ? `${syncProgress}..` : 'Syncing'}
+                    </>
+                ) : (
+                    <>
+                        <CloudDownload size={14} className="mr-2" />
+                        {lastSynced ? 'Sync' : 'Start Sync'}
+                    </>
+                )}
+            </Button>
+        </div>
+    );
+
+    // Create Title Component with Sync Status
+    const titleComponent = (
+        <div className="flex items-center gap-4">
+            <h1 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                Products
+                <div className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-700 border border-slate-200">
+                    {products.length}
                 </div>
-
-                <div className="flex items-center gap-3">
-                    <Select value={selectedStoreId} onValueChange={setSelectedStoreId}>
-                        <SelectTrigger className="w-[200px] bg-white">
-                            <SelectValue placeholder="Select Store" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {stores.map(store => (
-                                <SelectItem key={store.id} value={store.id}>
-                                    {store.platform === 'shopify' ? '🛍️' : '📦'} {store.name}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-
-                    <Button
-                        variant={lastSynced ? "outline" : "default"}
-                        className={cn(!lastSynced && "bg-indigo-600 hover:bg-indigo-700")}
-                        onClick={syncAllProducts}
-                        disabled={syncing || !selectedStoreId}
-                        title="Sync All Products"
-                    >
-                        {syncing ? (
-                            <>
-                                <Loader2 size={16} className="mr-2 animate-spin" />
-                                {syncProgress > 0 ? `${syncProgress}..` : 'Syncing'}
-                            </>
-                        ) : (
-                            <>
-                                <CloudDownload size={16} className="mr-2" />
-                                {lastSynced ? 'Sync' : 'Start Sync'}
-                            </>
-                        )}
-                    </Button>
-                </div>
+            </h1>
+            {(lastSynced || filteredProducts.length !== products.length) && (
+                <div className="h-4 w-px bg-slate-200" />
+            )}
+            <div className="flex items-center gap-3 text-xs">
+                {lastSynced ? (
+                    <span className="text-green-600 flex items-center gap-1 font-medium bg-green-50 px-2 py-0.5 rounded-full border border-green-100">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
+                        Synced: {formatLastSynced(lastSynced)}
+                    </span>
+                ) : (
+                    <span className="text-amber-600 font-medium bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100">Sync required</span>
+                )}
+                {filteredProducts.length !== products.length && (
+                    <span className="text-slate-400 font-medium">Found {filteredProducts.length} matches</span>
+                )}
             </div>
+        </div>
+    );
+
+    return (
+        <div className="max-w-[1600px] mx-auto space-y-6 h-full flex flex-col">
+            <PageHeader
+                title="Products"
+                breadcrumbs={[
+                    { label: 'Home', href: '/dashboard/forms' },
+                    { label: 'Products' }
+                ]}
+                icon={Package}
+                actions={headerActions}
+            />
 
             {/* Toolbox & Pagination Top */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 shrink-0 px-1 py-2">

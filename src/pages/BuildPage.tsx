@@ -1,5 +1,6 @@
 import { BuilderSkeleton } from '@/components/FormLoading/BuilderSkeleton';
 import { FormLoadDialog } from '@/components/FormLoading/FormLoadDialog';
+import { PageHeader } from '@/components/GlobalHeader/PageHeader';
 import { PublishSheet } from '@/components/PublishSheet';
 import {
   AlertDialog,
@@ -18,8 +19,8 @@ import { RotateCcw, RotateCw, Save, UploadCloud } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import FormTab from '../components/FormTab';
-import { useHeaderActions } from '../contexts/HeaderActionsContext';
 import { assignFormToShopify } from '../lib/api';
+
 import { useConnectedStores, useFormAssignments, useSavedForms } from '../lib/firebase/hooks';
 import { getExportData, loadFormWithValidation, normalizeImportedConfig, validateFormConfig } from '../lib/formManagement';
 import { useI18n } from '../lib/i18n/i18nContext';
@@ -57,8 +58,8 @@ const BuildPage = ({ userId }: BuildPageProps) => {
   const saveSuccessAction = useFormStore((state) => state.saveSuccess);
   const saveFailure = useFormStore((state) => state.saveFailure);
   const canSave = useFormStore((state) => state.canSave());
-  const { setActions, setTitleActions, setCenterContent } = useHeaderActions();
   const [showLoadModal, setShowLoadModal] = useState(false);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [showUnsavedChangesDialog, setShowUnsavedChangesDialog] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
@@ -502,118 +503,105 @@ const BuildPage = ({ userId }: BuildPageProps) => {
   const storeCount = activeAssignments.filter(a => a.assignmentType === 'store').length;
   const productCount = activeAssignments.filter(a => a.assignmentType === 'product').length;
 
-  // Set Header Actions
-  useEffect(() => {
-    // Left: Form Name (Editable)
-    setCenterContent(
-      <div className="flex items-center gap-2 group">
-        <span className="text-slate-400 font-medium text-sm hidden lg:inline">/</span>
-        <input
-          type="text"
-          value={formName}
-          onChange={(e) => setFormName(e.target.value)}
-          onBlur={() => {
-            // If name is empty, revert to saved name
-            if (!formName.trim()) {
-              const savedName = useFormStore.getState().savedState.name;
-              setFormName(savedName);
-            }
-          }}
-          className="bg-transparent border-none text-sm font-semibold text-slate-900 hover:text-slate-700 focus:ring-0 p-0 w-[200px] lg:w-[300px] truncate transition-colors"
-          placeholder="Form Name"
-        />
-      </div>
-    );
+  // Header Components
+  const titleComponent = (
+    <div className="flex items-center gap-2 group">
+      <span className="text-slate-400 font-medium text-sm hidden lg:inline">/</span>
+      <input
+        type="text"
+        value={formName}
+        onChange={(e) => setFormName(e.target.value)}
+        onBlur={() => {
+          // If name is empty, revert to saved name
+          if (!formName.trim()) {
+            const savedName = useFormStore.getState().savedState.name;
+            setFormName(savedName);
+          }
+        }}
+        className="bg-transparent border-none text-sm font-semibold text-slate-900 hover:text-slate-700 focus:ring-0 p-0 w-[200px] lg:w-[300px] truncate transition-colors"
+        placeholder="Form Name"
+      />
+    </div>
+  );
 
-    // Right: Actions (Undo/Redo + Save)
-    // Right: Actions (Undo/Redo + Save OR Publish)
-    // Right: Actions
-    setActions(
-      <div className="flex items-center gap-4">
-        {/* History Controls - Only visible when there's history to navigate */}
-        {(canUndo() || canRedo()) && (
-          <div className="flex items-center p-1 bg-slate-100 rounded-lg mr-2">
-            <button
-              onClick={undo}
-              disabled={!canUndo()}
-              className="p-1.5 text-slate-500 hover:text-slate-900 disabled:opacity-30 disabled:hover:text-slate-500 transition-colors"
-              title="Undo (Ctrl+Z)"
-            >
-              <RotateCcw size={14} />
-            </button>
-            <div className="w-px h-3 bg-slate-200 mx-0.5"></div>
-            <button
-              onClick={redo}
-              disabled={!canRedo()}
-              className="p-1.5 text-slate-500 hover:text-slate-900 disabled:opacity-30 disabled:hover:text-slate-500 transition-colors"
-              title="Redo (Ctrl+Y)"
-            >
-              <RotateCw size={14} />
-            </button>
-          </div>
-        )}
+  const headerActions = (
+    <div className="flex items-center gap-4">
+      {/* History Controls - Only visible when there's history to navigate */}
+      {(canUndo() || canRedo()) && (
+        <div className="flex items-center p-1 bg-slate-100 rounded-lg mr-2">
+          <button
+            onClick={undo}
+            disabled={!canUndo()}
+            className="p-1.5 text-slate-500 hover:text-slate-900 disabled:opacity-30 disabled:hover:text-slate-500 transition-colors"
+            title="Undo (Ctrl+Z)"
+          >
+            <RotateCcw size={14} />
+          </button>
+          <div className="w-px h-3 bg-slate-200 mx-0.5"></div>
+          <button
+            onClick={redo}
+            disabled={!canRedo()}
+            className="p-1.5 text-slate-500 hover:text-slate-900 disabled:opacity-30 disabled:hover:text-slate-500 transition-colors"
+            title="Redo (Ctrl+Y)"
+          >
+            <RotateCw size={14} />
+          </button>
+        </div>
+      )}
 
-        {canSave ? (
-          /* Editing State */
-          <div className="flex items-center gap-3 animate-in fade-in duration-200">
-            <Button
-              onClick={handleSaveForm}
-              size="sm"
-              variant="brand"
-              className="gap-2 transition-all hover:shadow-md active:scale-95"
-            >
-              {isSaving ? (
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <Save size={14} />
-              )}
-              <span className="font-semibold text-xs tracking-wide">Save</span>
-            </Button>
-          </div>
-        ) : (
-          /* Saved/Live State */
-          <div className="flex items-center gap-4 animate-in fade-in duration-300">
-            {(storeCount > 0 || productCount > 0) && (
-              <div className="flex flex-col items-end text-xs">
-                <span className="font-bold text-slate-800">Live on</span>
-                <div className="flex gap-1 text-slate-500 font-medium">
-                  {storeCount > 0 && <span>{storeCount} Store{storeCount !== 1 ? 's' : ''}</span>}
-                  {storeCount > 0 && productCount > 0 && <span>•</span>}
-                  {productCount > 0 && <span>{productCount} Product{productCount !== 1 ? 's' : ''}</span>}
-                </div>
+      {canSave ? (
+        /* Editing State */
+        <div className="flex items-center gap-3 animate-in fade-in duration-200">
+          <Button
+            onClick={handleSaveForm}
+            size="sm"
+            variant="brand"
+            className="gap-2 transition-all hover:shadow-md active:scale-95"
+          >
+            {isSaving ? (
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              <Save size={14} />
+            )}
+            <span className="font-semibold text-xs tracking-wide">Save</span>
+          </Button>
+        </div>
+      ) : (
+        /* Saved/Live State */
+        <div className="flex items-center gap-4 animate-in fade-in duration-300">
+          {(storeCount > 0 || productCount > 0) && (
+            <div className="flex flex-col items-end text-xs">
+              <span className="font-bold text-slate-800">Live on</span>
+              <div className="flex gap-1 text-slate-500 font-medium">
+                {storeCount > 0 && <span>{storeCount} Store{storeCount !== 1 ? 's' : ''}</span>}
+                {storeCount > 0 && productCount > 0 && <span>•</span>}
+                {productCount > 0 && <span>{productCount} Product{productCount !== 1 ? 's' : ''}</span>}
               </div>
-            )}
+            </div>
+          )}
 
-            {showSaveSuccess && (
-              <span className="text-xs font-bold text-green-600 bg-green-50 border border-green-100 px-3 py-1 rounded-full animate-in fade-in">
-                Saved
-              </span>
-            )}
+          {showSaveSuccess && (
+            <span className="text-xs font-bold text-green-600 bg-green-50 border border-green-100 px-3 py-1 rounded-full animate-in fade-in">
+              Saved
+            </span>
+          )}
 
-            <Button
-              onClick={() => setShowPublishDialog(true)}
-              disabled={!formId}
-              size="sm"
-              variant="brand"
-              className="gap-2 transition-all hover:shadow-md active:scale-95"
-            >
-              <UploadCloud size={14} />
-              <span className="font-semibold text-xs tracking-wide">Publish</span>
-            </Button>
-          </div>
-        )}
-      </div>
-    );
+          <Button
+            onClick={() => setShowPublishDialog(true)}
+            disabled={!formId}
+            size="sm"
+            variant="brand"
+            className="gap-2 transition-all hover:shadow-md active:scale-95"
+          >
+            <UploadCloud size={14} />
+            <span className="font-semibold text-xs tracking-wide">Publish</span>
+          </Button>
+        </div>
+      )}
+    </div>
+  );
 
-    // Clear title actions to keep breadcrumb clean
-    setTitleActions(null);
 
-    return () => {
-      setCenterContent(null);
-      setActions(null);
-      setTitleActions(null);
-    };
-  }, [setActions, setTitleActions, setCenterContent, handleSaveForm, canSave, showSaveSuccess, formId, formName, setFormName, canUndo, canRedo, undo, redo, isSaving, storeCount, productCount]);
 
   // ... (navigation guards) ...
 
@@ -631,6 +619,15 @@ const BuildPage = ({ userId }: BuildPageProps) => {
 
   return (
     <div className="h-full flex flex-col" dir={dir}>
+      <PageHeader
+        title={titleComponent}
+        breadcrumbs={[
+          { label: 'Home', href: '/dashboard/forms' },
+          { label: 'Builder' }
+        ]}
+        actions={headerActions}
+        backHref="/dashboard/forms"
+      />
       {isInitializing ? (
         <BuilderSkeleton />
       ) : (
