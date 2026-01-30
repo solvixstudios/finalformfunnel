@@ -1,4 +1,4 @@
-import { Sparkles, X } from 'lucide-react';
+import { Plus, Sparkles, X } from 'lucide-react';
 import { CONFIG_PRESETS } from '../lib/configPresets';
 import { DEFAULT_FORM_CONFIG } from '../lib/constants';
 
@@ -22,6 +22,28 @@ export function TemplateGrid({ onApply }: TemplateGridProps) {
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {/* Start from Scratch Option */}
+      <button
+        onClick={() => onApply({}, 'New Form')}
+        className="p-5 bg-white border-2 border-dashed border-slate-200 rounded-xl text-left hover:border-indigo-400 hover:bg-slate-50 transition-all group relative overflow-hidden min-h-[140px] flex flex-col"
+      >
+        <div className="relative flex-1 flex flex-col justify-between h-full">
+          <div>
+            <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center mb-3 group-hover:bg-indigo-100 group-hover:text-indigo-600 transition-colors">
+              <Plus size={16} />
+            </div>
+            <h4 className="text-sm font-bold text-slate-900 mb-1 group-hover:text-indigo-700 transition-colors">
+              Start from Scratch
+            </h4>
+            <p className="text-xs text-slate-500 leading-relaxed">Build your form component by component.</p>
+          </div>
+          <div className="mt-3 text-[10px] font-bold text-indigo-600 uppercase tracking-wide opacity-0 group-hover:opacity-100 transition-opacity">
+            Create Empty →
+          </div>
+        </div>
+      </button>
+
+      {/* Templates */}
       {CONFIG_PRESETS.map((preset) => (
         <button
           key={preset.id}
@@ -74,8 +96,8 @@ export default function PrebuiltConfigModal({
               <Sparkles size={20} />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-slate-900">Prebuilt Config Presets</h3>
-              <p className="text-xs text-slate-500">Choose a preconfigured form for your use case</p>
+              <h3 className="text-lg font-bold text-slate-900">Create New Form</h3>
+              <p className="text-xs text-slate-500">Choose a starting point</p>
             </div>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600">

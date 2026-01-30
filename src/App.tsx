@@ -14,7 +14,7 @@ import { useFormStore } from "./stores";
 
 // Lazy load pages for better performance
 const Landing = lazy(() => import("./pages/Landing"));
-const BuildPage = lazy(() => import("./pages/BuildPage"));
+const EditFormPage = lazy(() => import("./pages/EditFormPage"));
 const FormsPage = lazy(() => import("./pages/FormsPage"));
 const IntegrationsPage = lazy(() => import("./pages/IntegrationsPage"));
 const ProductsPage = lazy(() => import("./pages/ProductsPage"));
@@ -135,12 +135,12 @@ const AppContent = () => {
                       element={<FormsPage />}
                     />
                     <Route
-                      path="build"
+                      path="forms/edit"
                       element={<Navigate to="/dashboard/forms" replace />}
                     />
                     <Route
-                      path="build/:formId"
-                      element={<BuildPage userId={user.id} />}
+                      path="forms/edit/:formId"
+                      element={<EditFormPage userId={user.id} />}
                     />
                     <Route
                       path="integrations"

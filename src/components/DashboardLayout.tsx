@@ -53,7 +53,7 @@ const DashboardLayoutContent = ({
   const pendingActionRef = React.useRef<(() => void) | null>(null);
 
   // Determine if we are in the Builder view
-  const isBuilderPage = currentPage === '/dashboard/build/new' || (currentPage.startsWith('/dashboard/build/') && currentPage.length > 17);
+  const isBuilderPage = currentPage === '/dashboard/forms/edit/new' || (currentPage.startsWith('/dashboard/forms/edit/') && currentPage.length > 22);
 
   const protectedNavigate = (path: string, action?: () => void) => {
     if (path === currentPage && !action) return;

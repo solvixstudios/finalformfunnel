@@ -74,6 +74,7 @@ const FormTab = ({ onSaveClick, onLoadClick, canSave, showSaveSuccess }: FormTab
           setFormConfig={setFormConfig}
           handleLocationModeChangeWrapper={handleLocationModeChangeWrapper}
           handleUpdateField={handleUpdateField}
+          onLoadClick={onLoadClick}
         />
 
         {/* Side Navigation */}
@@ -84,10 +85,6 @@ const FormTab = ({ onSaveClick, onLoadClick, canSave, showSaveSuccess }: FormTab
           <BuilderPreview
             formConfig={formConfig}
             previewWidth="100%"
-            onLoadClick={onLoadClick}
-            onSaveClick={onSaveClick}
-            canSave={canSave}
-            showSaveSuccess={showSaveSuccess}
           />
         </div>
       </div>
@@ -109,6 +106,7 @@ const FormTab = ({ onSaveClick, onLoadClick, canSave, showSaveSuccess }: FormTab
               setFormConfig={setFormConfig}
               handleLocationModeChangeWrapper={handleLocationModeChangeWrapper}
               handleUpdateField={handleUpdateField}
+              onLoadClick={onLoadClick}
             />
           </div>
         </div>
@@ -116,10 +114,6 @@ const FormTab = ({ onSaveClick, onLoadClick, canSave, showSaveSuccess }: FormTab
           <BuilderPreview
             formConfig={formConfig}
             previewWidth="100%"
-            onLoadClick={onLoadClick}
-            onSaveClick={onSaveClick}
-            canSave={canSave}
-            showSaveSuccess={showSaveSuccess}
           />
         </div>
       </div>

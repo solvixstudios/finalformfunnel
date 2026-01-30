@@ -15,33 +15,33 @@ export const SideBuilderNavigation = () => {
     const menuItems = [
         {
             id: "global_design",
-            label: "Global Design",
+            label: "Design",
             icon: Palette,
         },
         {
             id: "sections_list",
-            label: "Sections Editor",
+            label: "Sections",
             icon: LayoutGrid,
         },
         {
             id: "packs_manager",
-            label: "Packs & Offers",
+            label: "Packs",
             icon: Tag,
         },
         {
             id: "shipping_manager",
-            label: "Shipping Rates",
+            label: "Shipping",
             icon: Truck,
         },
         {
             id: "promo_code_manager",
-            label: "Promo Code",
+            label: "Promo",
             icon: Ticket,
         },
 
         {
             id: "thank_you",
-            label: "Thank you Page",
+            label: "Thank You",
             icon: CheckCircle,
         },
     ];

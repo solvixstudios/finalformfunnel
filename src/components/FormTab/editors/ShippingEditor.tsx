@@ -1,4 +1,4 @@
-import { Asterisk, Eye, EyeOff, Lock } from "lucide-react";
+import { Asterisk, Eye, EyeOff, Lock, Smartphone } from "lucide-react";
 import { FIELD_LABELS } from "../../../lib/constants";
 import { useFormStore } from "../../../stores";
 import {
@@ -19,6 +19,23 @@ export const ShippingEditor = ({
   const setFormConfig = useFormStore((state) => state.setFormConfig);
   return (
     <div className="space-y-6">
+      {/* Section Header */}
+      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white shadow-lg">
+            <Smartphone size={20} />
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-slate-800">
+              Formulaire Livraison
+            </h4>
+            <p className="text-[10px] text-slate-400">
+              Configuration des champs du formulaire de livraison
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Location Mode */}
       <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-6 shadow-sm">
         <div className="space-y-3">

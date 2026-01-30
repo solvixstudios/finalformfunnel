@@ -3,17 +3,10 @@ import { PageHeader } from '@/components/GlobalHeader/PageHeader';
 import { ShopifyManager } from '@/components/integrations/ShopifyManager';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -339,81 +332,77 @@ export default function IntegrationsPage({ userId }: IntegrationsPageProps) {
   };
 
 
-  // Header Actions
-  const headerActions = (
-    <div className="flex items-center gap-3">
-      <Label className="text-slate-500 text-sm font-medium mr-2 hidden xl:block">Platform:</Label>
-      <Select value={selectedIntegration} onValueChange={setSelectedIntegration}>
-        <SelectTrigger className="w-[180px] bg-white border-slate-200 shadow-sm h-9">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Integrations</SelectItem>
-          <SelectItem value="shopify">Shopify</SelectItem>
-          <SelectItem value="woocommerce" disabled>WooCommerce</SelectItem>
-          <SelectItem value="sheets" disabled>Google Sheets</SelectItem>
-        </SelectContent>
-      </Select>
-    </div>
-  );
+  // Header Actions - Removed from PageHeader, moved to Browse section
 
   return (
     <div className="max-w-[1600px] mx-auto w-full space-y-6 h-full flex flex-col" dir={dir}>
       <PageHeader
         title="Integrations"
         breadcrumbs={[
-          { label: 'Home', href: '/dashboard/forms' },
           { label: 'Integrations' }
         ]}
         count={stores.length}
         icon={Plug}
-        actions={headerActions}
+        actions={
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" className="rounded-full bg-white border-slate-200 text-slate-700 hover:text-indigo-600 hover:border-indigo-200">
+                My Integrations <ChevronLeft className="ml-2 rotate-180" size={14} />
+              </Button>
+            </SheetTrigger>
+            <SheetContent className="w-[400px] sm:w-[540px]">
+              <SheetHeader className="pb-6 border-b border-slate-100">
+                <SheetTitle>My Integrations</SheetTitle>
+                <SheetDescription>
+                  Manage your active connections and settings.
+                </SheetDescription>
+              </SheetHeader>
+              <div className="py-6">
+                <ShopifyManager userId={userId} showHeader={false} viewMode="list" />
+              </div>
+            </SheetContent>
+          </Sheet>
+        }
       />
 
 
       {/* Main Content Area */}
       {selectedIntegration === 'all' && (
-        <div className="space-y-8 pb-20 overflow-y-auto flex-1 pr-2">
+        <div className="space-y-12 pb-20 overflow-y-auto flex-1 pr-2">
 
-          {/* 1. THE HUB (Active Connections) */}
-          {stores.length > 0 && (
-            <div className="space-y-4">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Active Hub</span>
-              {/* Reuse ShopifyManager for the Hub view */}
-              <ShopifyManager userId={userId} showHeader={false} viewMode="grid" />
-            </div>
-          )}
-
-          {/* 2. AVAILABLE INTEGRATIONS (Bento Grid) */}
+          {/* 1. PLATFORMS */}
           <div className="space-y-6">
-            <h3 className="text-xl font-bold text-slate-900 tracking-tight">Available Integrations</h3>
+            <div>
+              <h3 className="text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                <Store size={18} className="text-indigo-500" /> E-commerce Platforms
+              </h3>
+              <p className="text-sm text-slate-500 mt-1">Connect your online store ecosystem</p>
+            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-
-              {/* Shopify - Featured Card (Span 2) */}
-              <div className="md:col-span-2 md:row-span-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {/* Shopify */}
+              <div className="md:col-span-1 md:row-span-1">
                 <Sheet open={openSheet} onOpenChange={setOpenSheet}>
                   <SheetTrigger asChild>
-                    <Card className="cursor-pointer bg-white border border-slate-200 rounded-3xl overflow-hidden hover:ring-2 hover:ring-indigo-100 hover:shadow-xl transition-all duration-300 group relative h-full flex flex-col shadow-sm min-h-[300px]">
-                      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none" />
+                    <Card className="cursor-pointer bg-white border border-slate-200 rounded-3xl overflow-hidden hover:ring-2 hover:ring-indigo-100 hover:shadow-lg transition-all duration-300 group relative h-full flex flex-col shadow-sm min-h-[200px] p-6">
+                      <ChevronRight className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1 text-slate-400" />
                       <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                      <CardHeader className="p-8 pb-4 relative z-10">
-                        <div className="w-16 h-16 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-3xl mb-4 shadow-sm group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300">
+
+                      <div className="flex flex-col h-full justify-between relative z-10">
+                        <div className="w-14 h-14 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-3xl mb-4 shadow-sm group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300">
                           🛍️
                         </div>
-                        <CardTitle className="text-2xl font-bold text-slate-900 tracking-tight">Shopify</CardTitle>
-                      </CardHeader>
-                      <CardContent className="px-8 pb-8 flex-1 flex flex-col justify-between gap-6 relative z-10">
-                        <p className="text-base text-slate-500 leading-relaxed font-medium">
-                          Connect your store to sync products, manage orders, and track revenue seamlessly. The most complete integration for your business.
-                        </p>
-                        <div className="flex items-center text-sm font-bold text-indigo-600 group-hover:translate-x-1 transition-transform bg-indigo-50 w-fit px-4 py-2 rounded-full">
-                          Connect Store <ChevronRight size={16} className="ml-1" />
+                        <div>
+                          <CardTitle className="text-xl font-bold text-slate-900 tracking-tight">Shopify</CardTitle>
+                          <p className="text-sm text-slate-500 mt-2 font-medium leading-normal">
+                            Sync products & orders
+                          </p>
                         </div>
-                      </CardContent>
+                      </div>
                     </Card>
                   </SheetTrigger>
 
+                  {/* Sheet Content Implementation (Reused) */}
                   <SheetContent className="sm:max-w-lg w-[90vw] flex flex-col h-full p-0 gap-0">
                     <SheetHeader className="px-6 py-5 border-b border-slate-100 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
                       <SheetTitle className="flex items-center gap-2.5 text-xl">
@@ -508,24 +497,51 @@ export default function IntegrationsPage({ userId }: IntegrationsPageProps) {
                 </Sheet>
               </div>
 
-              {/* WhatsApp - Square (Span 1) */}
+              {/* WooCommerce */}
+              <Card className="group h-full flex flex-col p-6 bg-slate-50/50 border border-slate-200/50 border-dashed rounded-[2rem] opacity-70 hover:opacity-100 transition-opacity min-h-[200px] relative">
+                <ChevronRight className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1 text-slate-400" />
+                <div className="flex flex-col h-full justify-between bg-transparent">
+                  <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-3xl mb-4 grayscale opacity-50 shadow-sm">
+                    📦
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-bold text-slate-400 group-hover:text-slate-600 transition-colors">WooCommerce</h4>
+                    <Badge variant="outline" className="mt-2 text-[10px] bg-transparent border-slate-300 text-slate-400">Coming Soon</Badge>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          </div>
+
+
+          {/* 2. COMMUNICATION */}
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-green-500" /> Communication
+              </h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {/* WhatsApp */}
               <div className="md:col-span-1 md:row-span-1">
                 <Sheet>
                   <SheetTrigger asChild>
-                    <Card className="cursor-pointer bg-white border border-slate-200 shadow-sm rounded-3xl overflow-hidden hover:bg-white hover:ring-2 hover:ring-green-100 transition-all duration-300 group relative h-full flex flex-col p-6">
+                    <Card className="cursor-pointer bg-white border border-slate-200 shadow-sm rounded-3xl overflow-hidden hover:bg-white hover:ring-2 hover:ring-green-100 transition-all duration-300 group relative h-full flex flex-col p-6 min-h-[200px]">
+                      <ChevronRight className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1 text-slate-400" />
                       <div className="absolute inset-0 bg-gradient-to-br from-green-50/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                       <div className="flex flex-col h-full justify-between relative z-10">
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-2xl text-white shadow-lg shadow-green-200 group-hover:scale-110 group-hover:rotate-3 transition-transform mb-4">
+                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-3xl text-white shadow-lg shadow-green-200 group-hover:scale-110 group-hover:rotate-3 transition-transform mb-4">
                           💬
                         </div>
                         <div>
-                          <h4 className="text-lg font-bold text-slate-900">WhatsApp</h4>
-                          <p className="text-sm text-slate-500 mt-1 font-medium leading-normal">Order recovery & confirms</p>
+                          <h4 className="text-xl font-bold text-slate-900">WhatsApp</h4>
+                          <p className="text-sm text-slate-500 mt-2 font-medium leading-normal">Order recovery & confirms</p>
                         </div>
                       </div>
                     </Card>
                   </SheetTrigger>
 
+                  {/* WhatsApp Sheet Content (Reused) */}
                   <SheetContent className="sm:max-w-lg w-[90vw] flex flex-col h-full p-0 gap-0">
                     <SheetHeader className="px-6 py-5 border-b border-slate-100 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
                       <SheetTitle className="flex items-center gap-2.5 text-xl">
@@ -555,7 +571,7 @@ export default function IntegrationsPage({ userId }: IntegrationsPageProps) {
                           {waProfiles.map(profile => (
                             <div
                               key={profile.id}
-                              className={`border rounded - lg p - 3 flex items - center justify - between bg - white group transition - all cursor - pointer ${editingWaProfile !== 'new' && editingWaProfile?.id === profile.id ? 'border-green-500 ring-1 ring-green-100' : 'border-slate-200 hover:border-green-300'} `}
+                              className={`border rounded-lg p-3 flex items-center justify-between bg-white group transition-all cursor-pointer ${editingWaProfile !== 'new' && editingWaProfile?.id === profile.id ? 'border-green-500 ring-1 ring-green-100' : 'border-slate-200 hover:border-green-300'} `}
                               onClick={() => handleEditWaProfile(profile)}
                             >
                               <div className="space-y-1">
@@ -635,40 +651,157 @@ export default function IntegrationsPage({ userId }: IntegrationsPageProps) {
                   </SheetContent>
                 </Sheet>
               </div>
-
-              {/* WooCommerce (Coming Soon) */}
-              <div className="md:col-span-1 md:row-span-1">
-                <Card className="group h-full flex flex-col bg-slate-50/50 border border-slate-200/60 border-dashed rounded-[2rem] overflow-hidden opacity-75 hover:opacity-100 transition-opacity relative shadow-none p-6">
-                  <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.05]" />
-                  <div className="flex flex-col h-full justify-between relative z-10">
-                    <div className="w-12 h-12 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-2xl mb-4 grayscale opacity-50">
-                      📦
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-bold text-slate-400 tracking-tight">WooCommerce</h4>
-                      <Badge variant="outline" className="mt-2 text-[10px] bg-transparent border-slate-300 text-slate-400">Coming Soon</Badge>
-                    </div>
-                  </div>
-                </Card>
-              </div>
-
-              {/* Google Sheets - Square (Span 1) */}
-              <div className="md:col-span-1 md:row-span-1">
-                <Card className="h-full flex flex-col p-6 bg-slate-50/50 border border-slate-200/50 border-dashed rounded-[2rem] opacity-70 hover:opacity-100 transition-opacity">
-                  <div className="flex flex-col h-full justify-between">
-                    <div className="w-12 h-12 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-2xl mb-4 grayscale opacity-50">
-                      📊
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-bold text-slate-400">Sheets</h4>
-                      <Badge variant="outline" className="mt-2 text-[10px] bg-transparent border-slate-300 text-slate-400">Coming Soon</Badge>
-                    </div>
-                  </div>
-                </Card>
-              </div>
-
             </div>
           </div>
+
+
+          {/* 3. MARKETING & DATA */}
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-blue-500" /> Marketing & Data
+              </h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {/* Facebook/Meta */}
+              <Card className="group h-full flex flex-col p-6 bg-slate-50/50 border border-slate-200/50 border-dashed rounded-[2rem] opacity-70 hover:opacity-100 transition-opacity min-h-[200px] relative">
+                <ChevronRight className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1 text-slate-400" />
+                <div className="flex flex-col h-full justify-between">
+                  <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-3xl mb-4 grayscale opacity-50 shadow-sm">
+                    ♾️
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-bold text-slate-400 group-hover:text-slate-600 transition-colors">Meta Pixel</h4>
+                    <Badge variant="outline" className="mt-2 text-[10px] bg-transparent border-slate-300 text-slate-400">Coming Soon</Badge>
+                  </div>
+                </div>
+              </Card>
+
+              {/* TikTok */}
+              <Card className="group h-full flex flex-col p-6 bg-slate-50/50 border border-slate-200/50 border-dashed rounded-[2rem] opacity-70 hover:opacity-100 transition-opacity min-h-[200px] relative">
+                <ChevronRight className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1 text-slate-400" />
+                <div className="flex flex-col h-full justify-between">
+                  <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-3xl mb-4 grayscale opacity-50 shadow-sm">
+                    🎵
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-bold text-slate-400 group-hover:text-slate-600 transition-colors">TikTok Pixel</h4>
+                    <Badge variant="outline" className="mt-2 text-[10px] bg-transparent border-slate-300 text-slate-400">Coming Soon</Badge>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Google Sheets */}
+              <Card className="group h-full flex flex-col p-6 bg-slate-50/50 border border-slate-200/50 border-dashed rounded-[2rem] opacity-70 hover:opacity-100 transition-opacity min-h-[200px] relative">
+                <ChevronRight className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1 text-slate-400" />
+                <div className="flex flex-col h-full justify-between">
+                  <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-3xl mb-4 grayscale opacity-50 shadow-sm">
+                    📊
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-bold text-slate-400 group-hover:text-slate-600 transition-colors">Sheets</h4>
+                    <Badge variant="outline" className="mt-2 text-[10px] bg-transparent border-slate-300 text-slate-400">Coming Soon</Badge>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Webhook */}
+              <Card className="group h-full flex flex-col p-6 bg-slate-50/50 border border-slate-200/50 border-dashed rounded-[2rem] opacity-70 hover:opacity-100 transition-opacity min-h-[200px] relative">
+                <ChevronRight className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1 text-slate-400" />
+                <div className="flex flex-col h-full justify-between">
+                  <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-3xl mb-4 grayscale opacity-50 shadow-sm">
+                    ⚡
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-bold text-slate-400 group-hover:text-slate-600 transition-colors">Webhook</h4>
+                    <Badge variant="outline" className="mt-2 text-[10px] bg-transparent border-slate-300 text-slate-400">Coming Soon</Badge>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          </div>
+
+
+          {/* 4. DELIVERY SERVICES */}
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-amber-500" /> App Delivery Integration
+              </h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {/* Maystro Delivery */}
+              <Card className="group h-full flex flex-col p-6 bg-slate-50/50 border border-slate-200/50 border-dashed rounded-[2rem] opacity-70 hover:opacity-100 transition-opacity min-h-[200px] relative">
+                <ChevronRight className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1 text-slate-400" />
+                <div className="flex flex-col h-full justify-between">
+                  <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-3xl mb-4 grayscale opacity-50 shadow-sm">
+                    🚚
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-bold text-slate-400 group-hover:text-slate-600 transition-colors">Maystro Delivery</h4>
+                    <Badge variant="outline" className="mt-2 text-[10px] bg-transparent border-slate-300 text-slate-400">Coming Soon</Badge>
+                  </div>
+                </div>
+              </Card>
+
+              {/* ZR Delivery */}
+              <Card className="group h-full flex flex-col p-6 bg-slate-50/50 border border-slate-200/50 border-dashed rounded-[2rem] opacity-70 hover:opacity-100 transition-opacity min-h-[200px] relative">
+                <ChevronRight className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1 text-slate-400" />
+                <div className="flex flex-col h-full justify-between">
+                  <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-3xl mb-4 grayscale opacity-50 shadow-sm">
+                    🚛
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-bold text-slate-400 group-hover:text-slate-600 transition-colors">ZR Delivery</h4>
+                    <Badge variant="outline" className="mt-2 text-[10px] bg-transparent border-slate-300 text-slate-400">Coming Soon</Badge>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Yalidine */}
+              <Card className="group h-full flex flex-col p-6 bg-slate-50/50 border border-slate-200/50 border-dashed rounded-[2rem] opacity-70 hover:opacity-100 transition-opacity min-h-[200px] relative">
+                <ChevronRight className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1 text-slate-400" />
+                <div className="flex flex-col h-full justify-between">
+                  <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-3xl mb-4 grayscale opacity-50 shadow-sm">
+                    📮
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-bold text-slate-400 group-hover:text-slate-600 transition-colors">Yalidine</h4>
+                    <Badge variant="outline" className="mt-2 text-[10px] bg-transparent border-slate-300 text-slate-400">Coming Soon</Badge>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Anderson */}
+              <Card className="group h-full flex flex-col p-6 bg-slate-50/50 border border-slate-200/50 border-dashed rounded-[2rem] opacity-70 hover:opacity-100 transition-opacity min-h-[200px] relative">
+                <ChevronRight className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1 text-slate-400" />
+                <div className="flex flex-col h-full justify-between">
+                  <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-3xl mb-4 grayscale opacity-50 shadow-sm">
+                    📦
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-bold text-slate-400 group-hover:text-slate-600 transition-colors">Anderson</h4>
+                    <Badge variant="outline" className="mt-2 text-[10px] bg-transparent border-slate-300 text-slate-400">Coming Soon</Badge>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Ecommanager */}
+              <Card className="group h-full flex flex-col p-6 bg-slate-50/50 border border-slate-200/50 border-dashed rounded-[2rem] opacity-70 hover:opacity-100 transition-opacity min-h-[200px] relative">
+                <ChevronRight className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1 text-slate-400" />
+                <div className="flex flex-col h-full justify-between">
+                  <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-3xl mb-4 grayscale opacity-50 shadow-sm">
+                    💼
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-bold text-slate-400 group-hover:text-slate-600 transition-colors">Ecommanager</h4>
+                    <Badge variant="outline" className="mt-2 text-[10px] bg-transparent border-slate-300 text-slate-400">Coming Soon</Badge>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          </div>
+
         </div>
       )}
 

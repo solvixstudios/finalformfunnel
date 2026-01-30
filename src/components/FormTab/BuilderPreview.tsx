@@ -1,24 +1,15 @@
-import { Sparkles } from 'lucide-react';
 import { FormPreview } from './preview/FormPreview';
 
 interface BuilderPreviewProps {
     formConfig: any;
     previewWidth: number | string;
     containerRef?: any;
-    onLoadClick?: () => void;
-    onSaveClick?: () => void;
-    canSave?: boolean;
-    showSaveSuccess?: boolean;
 }
 
 export const BuilderPreview = ({
     formConfig,
     previewWidth,
     containerRef,
-    onLoadClick,
-    onSaveClick,
-    canSave,
-    showSaveSuccess
 }: BuilderPreviewProps) => {
     return (
         <div className="flex h-full">
@@ -60,14 +51,6 @@ export const BuilderPreview = ({
                         <div className="w-20 h-1 bg-slate-200 rounded-full"></div>
                     </div>
                 </div>
-                {/* Floating "Change Template" Pill */}
-                <button
-                    onClick={onLoadClick}
-                    className="absolute bottom-8 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 px-6 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-full shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/40 hover:-translate-y-0.5 active:scale-95 transition-all group"
-                >
-                    <Sparkles size={18} className="text-white/90 group-hover:rotate-12 transition-transform" />
-                    <span className="text-xs font-bold tracking-wider uppercase text-white">Templates</span>
-                </button>
             </div>
         </div>
     );

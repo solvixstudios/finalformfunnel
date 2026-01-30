@@ -343,9 +343,9 @@ export default function ProductsPage({ userId }: { userId: string }) {
             <PageHeader
                 title="Products"
                 breadcrumbs={[
-                    { label: 'Home', href: '/dashboard/forms' },
                     { label: 'Products' }
                 ]}
+                count={products.length}
                 icon={Package}
                 actions={headerActions}
             />

@@ -59,6 +59,7 @@ const frenchTens = [
 ];
 
 function numberToFrench(n: number): string {
+  n = Math.floor(n);
   if (n === 0) return "zéro";
 
   if (n < 10) return frenchUnits[n];
@@ -163,6 +164,7 @@ const arHundreds = [
 ];
 
 function numberToArabic(n: number): string {
+  n = Math.floor(n);
   if (n === 0) return "صفر";
 
   if (n < 10) return arUnits[n];

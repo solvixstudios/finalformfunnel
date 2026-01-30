@@ -1,9 +1,15 @@
 
 import { PageHeader } from '@/components/GlobalHeader/PageHeader';
 import {
-    ChevronRight,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import {
+    ArrowUpDown,
     FolderOpen,
-    LayoutTemplate,
     Loader2,
     Plus,
     Search,
@@ -37,6 +43,7 @@ export const FormsPage = () => {
     // Local State
     const [searchQuery, setSearchQuery] = useState('');
     const [filter, setFilter] = useState<'all' | 'published' | 'draft'>('all');
+    const [sortBy, setSortBy] = useState<string>('updated_desc');
     // const [storeFilter, setStoreFilter] = useState<string>('all'); // Not currently used in new UI
 
     // Action States
@@ -98,32 +105,44 @@ export const FormsPage = () => {
             });
         }
 
-        // Sort by updated/created
+        // 3. Sort
         return filtered.sort((a, b) => {
+            if (sortBy === 'name_asc') {
+                return (a.name || '').localeCompare(b.name || '');
+            }
+            if (sortBy === 'name_desc') {
+                return (b.name || '').localeCompare(a.name || '');
+            }
+            if (sortBy === 'updated_asc') {
+                const dateA = new Date(a.updatedAt || a.createdAt).getTime();
+                const dateB = new Date(b.updatedAt || b.createdAt).getTime();
+                return dateA - dateB;
+            }
+            // default updated_desc
             const dateA = new Date(a.updatedAt || a.createdAt).getTime();
             const dateB = new Date(b.updatedAt || b.createdAt).getTime();
             return dateB - dateA;
         });
-    }, [forms, searchQuery, filter, allAssignments, assignments]);
+    }, [forms, searchQuery, filter, sortBy, allAssignments, assignments]);
 
     // Handlers
     const handleCreateNew = async () => {
         setIsCreating(true);
         try {
             resetToNewForm();
-            navigate('/dashboard/build/new');
+            navigate('/dashboard/forms/edit/new');
         } finally {
             setIsCreating(false);
         }
     };
 
     const handleCardClick = (formId: string) => {
-        navigate(`/dashboard/build/${formId}`);
+        navigate(`/dashboard/forms/edit/${formId}`);
     };
 
     const handleTemplateSelect = (config: any) => {
         loadFormConfig(config);
-        navigate('/dashboard/build/new');
+        navigate('/dashboard/forms/edit/new');
         toast.success('Template loaded! Customize it to make it yours.');
         setTemplateModalOpen(false);
     };
@@ -204,6 +223,20 @@ export const FormsPage = () => {
                 />
             </div>
 
+            {/* Sort Dropdown */}
+            <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-[140px] h-9 bg-white border-slate-200 rounded-full text-xs font-medium text-slate-600 shadow-sm">
+                    <ArrowUpDown size={12} className="mr-2 text-slate-400" />
+                    <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent align="end">
+                    <SelectItem value="updated_desc">Newest First</SelectItem>
+                    <SelectItem value="updated_asc">Oldest First</SelectItem>
+                    <SelectItem value="name_asc">Name (A-Z)</SelectItem>
+                    <SelectItem value="name_desc">Name (Z-A)</SelectItem>
+                </SelectContent>
+            </Select>
+
             {/* Filter Pills */}
             <div className="flex items-center bg-slate-100/50 p-1 rounded-full border border-slate-200/60 h-9">
                 <Button
@@ -257,7 +290,6 @@ export const FormsPage = () => {
             <PageHeader
                 title="Forms"
                 breadcrumbs={[
-                    { label: 'Home', href: '/dashboard/forms' },
                     { label: 'Forms' }
                 ]}
                 count={forms.length}
@@ -269,62 +301,32 @@ export const FormsPage = () => {
             {/* 2. Scrollable Content Area */}
             <div className="flex-1 pb-20 max-w-7xl mx-auto w-full space-y-8">
 
-                {/* Create New Area - Separate Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Card 1: Create Blank */}
-                    <div
-                        onClick={handleCreateNew}
-                        className={`group cursor-pointer relative overflow-hidden bg-gradient-to-br from-indigo-600 to-violet-600 rounded-2xl p-4 shadow-lg shadow-indigo-200/50 text-white transition-all hover:scale-[1.01] hover:shadow-xl ${isCreating ? 'opacity-80 pointer-events-none' : ''}`}
-                    >
-                        <div className="relative z-10 flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-lg bg-white/20 backdrop-blur-md flex items-center justify-center text-white shrink-0">
-                                    {isCreating ? <Loader2 size={18} className="animate-spin" /> : <Plus size={18} />}
-                                </div>
-                                <div>
-                                    <h3 className="text-lg font-bold">Create from Scratch</h3>
-                                    <p className="text-indigo-100 text-xs font-medium opacity-90">Start fresh.</p>
-                                </div>
-                            </div>
-                            <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-white/10 backdrop-blur-sm group-hover:bg-white/20 transition-colors">
-                                <ChevronRight size={16} />
-                            </div>
-                        </div>
-                        <div className="absolute right-0 top-0 bottom-0 w-1/2 bg-gradient-to-l from-white/10 to-transparent pointer-events-none" />
-                    </div>
+                {/* Unified Forms Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {/* Create New Form Card */}
+                    {(!searchQuery && filter === 'all') && (
+                        <div
+                            onClick={() => setTemplateModalOpen(true)}
+                            className="group relative bg-gradient-to-br from-indigo-50 via-white to-white border-2 border-indigo-100/80 rounded-3xl p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:border-indigo-400 hover:shadow-lg hover:shadow-indigo-100 transition-all duration-300 min-h-[200px] overflow-hidden"
+                        >
+                            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-indigo-400 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
-                    {/* Card 2: Browse Templates */}
-                    <div
-                        onClick={() => setTemplateModalOpen(true)}
-                        className="group cursor-pointer relative overflow-hidden bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:shadow-lg hover:border-indigo-200 transition-all hover:scale-[1.01]"
-                    >
-                        <div className="relative z-10 flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
-                                    <LayoutTemplate size={18} />
-                                </div>
-                                <div>
-                                    <h3 className="text-lg font-bold text-slate-900">Browse Templates</h3>
-                                    <p className="text-slate-500 text-xs font-medium">Pre-built layouts.</p>
-                                </div>
+                            <div className="w-16 h-16 rounded-2xl bg-indigo-100 text-indigo-600 border border-indigo-200 group-hover:bg-indigo-600 group-hover:text-white group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 flex items-center justify-center mb-5 shadow-sm">
+                                <Plus size={32} strokeWidth={2.5} />
                             </div>
-                            <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-slate-50 group-hover:bg-indigo-50 text-slate-400 group-hover:text-indigo-600 transition-colors">
-                                <ChevronRight size={16} />
-                            </div>
+                            <h3 className="text-lg font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">Create New Form</h3>
+                            <p className="text-sm text-slate-500 mt-2 max-w-[200px] leading-relaxed">Start with a blank canvas or choose a pre-made template</p>
                         </div>
-                    </div>
-                </div>
+                    )}
 
-                {/* Forms Grid - Reformatted for Wide Cards */}
-                {isLoading ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <FormLoadingCardSkeleton count={4} />
-                    </div>
-                ) : filteredForms.length === 0 ? (
-                    <FormLoadingEmptyState hasSearchQuery={!!searchQuery} />
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        {filteredForms.map(form => (
+                    {isLoading ? (
+                        <FormLoadingCardSkeleton count={3} />
+                    ) : filteredForms.length === 0 && (searchQuery || filter !== 'all') ? (
+                        <div className="col-span-full">
+                            <FormLoadingEmptyState hasSearchQuery={!!searchQuery} />
+                        </div>
+                    ) : (
+                        filteredForms.map(form => (
                             <FormLoadingCard
                                 key={form.id}
                                 form={form}
@@ -332,16 +334,13 @@ export const FormsPage = () => {
                                 storeAssignment={storeAssignments[form.id]}
                                 onClick={() => handleCardClick(form.id)}
                                 onDuplicate={() => handleDuplicate(form)}
-                                onPublish={(e) => handlePublishClick(e, form)} // Pass handlePublishClick
+                                onPublish={(e) => handlePublishClick(e, form)}
                                 onRename={(name) => handleRenameForm(form.id, name)}
-                                // onDelete logic is inside the card's menu, but we pass handler if needed, 
-                                // actually the card implements its own delete confirm? 
-                                // In previous FormLoadingCard, it emits onDelete.
                                 onDelete={() => handleDeleteForm(form.id)}
                             />
-                        ))}
-                    </div>
-                )}
+                        ))
+                    )}
+                </div>
             </div>
 
 

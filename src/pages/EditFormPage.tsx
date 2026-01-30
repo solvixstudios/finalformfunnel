@@ -15,7 +15,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/sonner';
 import { useWhatsAppProfiles } from '@/lib/firebase/whatsappHooks';
-import { RotateCcw, RotateCw, Save, UploadCloud } from 'lucide-react';
+import { FolderOpen, RotateCcw, RotateCw, Save, UploadCloud } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import FormTab from '../components/FormTab';
@@ -26,11 +26,11 @@ import { getExportData, loadFormWithValidation, normalizeImportedConfig, validat
 import { useI18n } from '../lib/i18n/i18nContext';
 import { useFormStore } from '../stores';
 
-interface BuildPageProps {
+interface EditFormPageProps {
   userId: string;
 }
 
-const BuildPage = ({ userId }: BuildPageProps) => {
+const EditFormPage = ({ userId }: EditFormPageProps) => {
   const { formId: routeFormId } = useParams<{ formId: string }>();
   const navigate = useNavigate();
   const { t, dir } = useI18n();
@@ -71,12 +71,26 @@ const BuildPage = ({ userId }: BuildPageProps) => {
   // Ref to track form ID we just saved - prevents reload after save
   const justSavedFormIdRef = useRef<string | null>(null);
 
-  // Handle route based loading
+  // State to prevent flashing of previous context
+  const [isContextReady, setIsContextReady] = useState(false);
+
+  // Handle route based loading and context reset
   useEffect(() => {
+    // Reset context immediately on mount/route change to prevent flash
+    // We do this before any other logic
+    if (routeFormId && routeFormId !== 'new') {
+      useFormStore.getState().setEditingSection(null);
+      setIsContextReady(true);
+    } else if (routeFormId === 'new') {
+      useFormStore.getState().setEditingSection(null);
+      setIsContextReady(true);
+    } else {
+      useFormStore.getState().setEditingSection(null);
+      setIsContextReady(true);
+    }
+
     // Skip if we just saved this form (prevents flash after save)
     if (justSavedFormIdRef.current) {
-      // If we just saved, skip all loading/resetting logic
-      // The ref will be cleared by the forms list sync effect
       if (justSavedFormIdRef.current === routeFormId || justSavedFormIdRef.current === formId) {
         return;
       }
@@ -86,29 +100,31 @@ const BuildPage = ({ userId }: BuildPageProps) => {
     if (routeFormId && routeFormId !== 'new') {
       const targetForm = forms.find(f => f.id === routeFormId);
 
-      // If form exists and isn't already loaded (or loaded incorrectly)
+      // If form exists
       if (targetForm) {
         // Only load if store doesn't already have this form loaded
         if (formId !== routeFormId) {
-          // Load it
           loadFormWithValidation(targetForm, {
             onSuccess: () => {
-              // Silent success for route navigation
+              // Silent success
             }
           });
         }
       } else if (!formsLoading) {
-        // Form ID in URL but not found in list (and list is loaded)
         toast.error("Form not found or has been deleted");
-        navigate('/dashboard/build/new');
+        navigate('/dashboard/forms/edit/new');
       }
     } else if (routeFormId === 'new') {
-      // Ensure we are in NEW state
       if (formId) {
         useFormStore.getState().resetToNewForm();
       }
     }
   }, [routeFormId, forms, formsLoading, formId, navigate]);
+
+  // Block rendering until context is ready
+  if (!isContextReady && !formsLoading) {
+    return <BuilderSkeleton />;
+  }
 
   // Sync form status from loaded form
   useEffect(() => {
@@ -418,7 +434,7 @@ const BuildPage = ({ userId }: BuildPageProps) => {
         justSavedFormIdRef.current = savedForm.id;
 
         // Update URL to the new ID
-        navigate(`/dashboard/build/${savedForm.id}`, { replace: true });
+        navigate(`/dashboard/forms/edit/${savedForm.id}`, { replace: true });
       }
 
       // AUTO-SYNC: Always sync changes to active Shopify assignments
@@ -503,26 +519,7 @@ const BuildPage = ({ userId }: BuildPageProps) => {
   const storeCount = activeAssignments.filter(a => a.assignmentType === 'store').length;
   const productCount = activeAssignments.filter(a => a.assignmentType === 'product').length;
 
-  // Header Components
-  const titleComponent = (
-    <div className="flex items-center gap-2 group">
-      <span className="text-slate-400 font-medium text-sm hidden lg:inline">/</span>
-      <input
-        type="text"
-        value={formName}
-        onChange={(e) => setFormName(e.target.value)}
-        onBlur={() => {
-          // If name is empty, revert to saved name
-          if (!formName.trim()) {
-            const savedName = useFormStore.getState().savedState.name;
-            setFormName(savedName);
-          }
-        }}
-        className="bg-transparent border-none text-sm font-semibold text-slate-900 hover:text-slate-700 focus:ring-0 p-0 w-[200px] lg:w-[300px] truncate transition-colors"
-        placeholder="Form Name"
-      />
-    </div>
-  );
+  // titleComponent is now handled by editable breadcrumb
 
   const headerActions = (
     <div className="flex items-center gap-4">
@@ -617,16 +614,106 @@ const BuildPage = ({ userId }: BuildPageProps) => {
   );
   const isInitializing = (isMismatch || shouldResetToNew) && !isJustSaved;
 
+  // Section mapping - using labels that match SECTION_LABELS from data/labels.ts
+  const sectionLabels: Record<string, string> = {
+    global_design: "Global Design",
+    sections_list: "Sections Editor",
+    packs_manager: "Packs & Offers",
+    shipping_manager: "Shipping Rates",
+    promo_code_manager: "Promo Code",
+    thank_you: "Thank You Page",
+
+    // Editor Sections - matching SECTION_LABELS from data/labels.ts
+    header: "Header",
+    variants: "Variantes / Modèles",
+    shipping: "Formulaire Livraison",
+    delivery: "Type de Livraison",
+    offers: "Liste des Offres",
+    promoCode: "Code Promo",
+    summary: "Résumé de commande",
+    cta: "Bouton d'action",
+    urgencyText: "Urgence - Texte",
+    urgencyQuantity: "Urgence - Stock",
+    urgencyTimer: "Urgence - Timer",
+    trustBadges: "Badges de Confiance",
+  };
+
+  const editingSection = useFormStore((state) => state.editingSection);
+  const setEditingSection = useFormStore((state) => state.setEditingSection);
+
+  // Sections that belong to "Sections Editor"
+  const SECTION_EDITOR_SUBSECTIONS = [
+    'header', 'variants', 'offers', 'shipping', 'delivery',
+    'promoCode', 'summary', 'cta', 'urgencyText', 'urgencyQuantity',
+    'urgencyTimer', 'trustBadges'
+  ];
+
+  const breadcrumbs: import('@/components/GlobalHeader/PageHeader').BreadcrumbItemType[] = [];
+
+  // Smart back button handler - navigates up one level at a time
+  const handleBackClick = () => {
+    if (editingSection) {
+      // If we are in a subsection of Sections Editor, go back to Sections Editor
+      if (SECTION_EDITOR_SUBSECTIONS.includes(editingSection)) {
+        setEditingSection('sections_list');
+      } else {
+        // Direct child of root (e.g. Global Design, Sections Editor itself)
+        setEditingSection(null);
+      }
+    } else {
+      // At root - go back to forms list
+      navigate('/dashboard/forms');
+    }
+  };
+
+  // 1. Form Name (Root Builder Home) - now the first item since back button handles navigation
+  breadcrumbs.push({
+    label: formName,
+    editable: true, // Always allow edit mode access 
+    doubleClickToEdit: true, // REQUIRE double click to edit
+    // Single click behavior:
+    onClick: (e) => {
+      // If we are deep, single click goes back to root.
+      if (editingSection) {
+        setEditingSection(null);
+      }
+      // If at root, single click does nothing (waiting for double click to edit)
+    },
+    onEdit: (value: string) => {
+      setFormName(value);
+    },
+    onBlur: () => {
+      if (!formName.trim()) {
+        const savedName = useFormStore.getState().savedState.name;
+        setFormName(savedName || 'Untitled Form');
+      }
+    }
+  });
+
+  // 3. Intermediate: Sections Editor (if applicable)
+  if (editingSection && SECTION_EDITOR_SUBSECTIONS.includes(editingSection)) {
+    breadcrumbs.push({
+      label: sectionLabels['sections_list'],
+      onClick: () => setEditingSection('sections_list')
+    });
+  }
+
+  // 4. Current Section
+  if (editingSection) {
+    breadcrumbs.push({
+      label: sectionLabels[editingSection] || 'Editor',
+      editable: false
+    });
+  }
+
   return (
     <div className="h-full flex flex-col" dir={dir}>
       <PageHeader
-        title={titleComponent}
-        breadcrumbs={[
-          { label: 'Home', href: '/dashboard/forms' },
-          { label: 'Builder' }
-        ]}
+        title={formName}
+        breadcrumbs={breadcrumbs}
+        icon={FolderOpen}
+        onBack={handleBackClick}
         actions={headerActions}
-        backHref="/dashboard/forms"
       />
       {isInitializing ? (
         <BuilderSkeleton />
@@ -695,4 +782,4 @@ const BuildPage = ({ userId }: BuildPageProps) => {
 };
 
 
-export default BuildPage;
+export default EditFormPage;

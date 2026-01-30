@@ -30,7 +30,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
 
     const isActive = (path: string) => {
         if (path === '/dashboard/forms') {
-            return currentPage.startsWith('/dashboard/forms') || currentPage.startsWith('/dashboard/build');
+            return currentPage.startsWith('/dashboard/forms');
         }
         return currentPage === path;
     };

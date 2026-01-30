@@ -44,10 +44,11 @@ interface ShopifyManagerProps {
     userId: string;
     onAddStore?: () => void;
     showHeader?: boolean;
-    viewMode?: 'list' | 'grid';
+    viewMode?: 'list' | 'grid' | 'horizontal';
+    className?: string;
 }
 
-export function ShopifyManager({ userId, onAddStore, showHeader = true, viewMode = 'list' }: ShopifyManagerProps) {
+export function ShopifyManager({ userId, onAddStore, showHeader = true, viewMode = 'list', className }: ShopifyManagerProps) {
     const { stores, updateStore, deleteStore, loading } = useConnectedStores(userId);
 
     const [processingStoreId, setProcessingStoreId] = useState<string | null>(null);
@@ -129,10 +130,10 @@ export function ShopifyManager({ userId, onAddStore, showHeader = true, viewMode
     }
 
     return (
-        <div className="space-y-6">
+        <div className={cn("space-y-6", className)}>
             {!showHeader && (
                 <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-bold text-slate-900 tracking-tight">Connected Stores</h3>
+
                     {/* Header Action for 'Hub' Style */}
                     {onAddStore && (
                         <Button onClick={onAddStore} className="rounded-full bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white shadow-lg hover:shadow-orange-500/25 px-5 h-10 transition-all hover:scale-105">
@@ -157,15 +158,23 @@ export function ShopifyManager({ userId, onAddStore, showHeader = true, viewMode
                 <div className={cn(
                     viewMode === 'grid'
                         ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
-                        : "flex flex-col gap-3"
+                        : viewMode === 'horizontal'
+                            ? "flex overflow-x-auto pb-4 gap-4 snap-x pr-4"
+                            : "flex flex-col gap-3"
                 )}>
                     {shopifyStores.map(store => {
                         const isLoaderActive = store.loaderInstalled;
                         const isProcessing = processingStoreId === store.id;
 
-                        if (viewMode === 'grid') {
+                        if (viewMode === 'grid' || viewMode === 'horizontal') {
                             return (
-                                <div key={store.id} className="group relative bg-white border border-slate-200 rounded-3xl p-5 hover:shadow-lg transition-all duration-300 hover:border-indigo-100 flex flex-col justify-between min-h-[180px]">
+                                <div
+                                    key={store.id}
+                                    className={cn(
+                                        "group relative bg-white border border-slate-200 rounded-3xl p-5 hover:shadow-lg transition-all duration-300 hover:border-indigo-100 flex flex-col justify-between min-h-[180px]",
+                                        viewMode === 'horizontal' && "min-w-[300px] w-[300px] shrink-0 snap-center"
+                                    )}
+                                >
                                     <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none rounded-3xl" />
                                     <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl pointer-events-none" />
 

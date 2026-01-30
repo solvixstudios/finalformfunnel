@@ -51,7 +51,6 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
             <PageHeader
                 title="Settings"
                 breadcrumbs={[
-                    { label: 'Home', href: '/dashboard/forms' },
                     { label: 'Settings' }
                 ]}
                 icon={Settings}
