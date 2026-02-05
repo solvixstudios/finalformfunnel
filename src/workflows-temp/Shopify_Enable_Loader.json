@@ -1,4 +1,5 @@
 {
+  "name": "Shopify Enable Loader",
   "nodes": [
     {
       "parameters": {
@@ -11,8 +12,11 @@
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [-768, -352],
-      "id": "1509cf63-d790-4ad6-b433-55bfe96433d3",
+      "position": [
+        -864,
+        64
+      ],
+      "id": "72e709d3-dd44-465b-9fa8-645c6aeafaa7",
       "name": "Receive Enable Request",
       "webhookId": "enable-loader-webhook"
     },
@@ -51,8 +55,11 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
-      "position": [-544, -352],
-      "id": "e9d250cd-23e0-4ff7-a74a-839020eea032",
+      "position": [
+        -640,
+        64
+      ],
+      "id": "70fa6dff-0d4e-430d-97d9-c2d21404cbff",
       "name": "Get Access Token",
       "onError": "continueErrorOutput"
     },
@@ -72,8 +79,11 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
-      "position": [-304, -352],
-      "id": "check-existing-scripts",
+      "position": [
+        -400,
+        64
+      ],
+      "id": "fa441730-c704-4ce2-8d72-bf5c03f7523e",
       "name": "Check Existing Scripts",
       "onError": "continueRegularOutput"
     },
@@ -83,8 +93,11 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-64, -352],
-      "id": "check-loader-status",
+      "position": [
+        -160,
+        64
+      ],
+      "id": "fc51a21a-c98e-445d-8026-22abbe8267e8",
       "name": "Check Loader Status"
     },
     {
@@ -112,8 +125,11 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [176, -352],
-      "id": "is-already-installed",
+      "position": [
+        80,
+        64
+      ],
+      "id": "7e3449e0-5b8d-4454-b467-915e52cfb93a",
       "name": "Already Installed?"
     },
     {
@@ -124,8 +140,11 @@
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [416, -500],
-      "id": "respond-already-installed",
+      "position": [
+        320,
+        -96
+      ],
+      "id": "75d4452e-a441-4d42-9869-9f8f45dde900",
       "name": "Already Installed Response"
     },
     {
@@ -153,8 +172,11 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [416, -352],
-      "id": "needs-upgrade",
+      "position": [
+        320,
+        64
+      ],
+      "id": "700b9249-477c-439e-b718-ceda0474f684",
       "name": "Needs Upgrade?"
     },
     {
@@ -174,8 +196,11 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
-      "position": [656, -500],
-      "id": "delete-old-script",
+      "position": [
+        560,
+        -96
+      ],
+      "id": "d64e1a29-1240-4157-92c3-a6a3b1ed75f2",
       "name": "Delete Old Script Tag",
       "onError": "continueRegularOutput"
     },
@@ -203,8 +228,11 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
-      "position": [656, -200],
-      "id": "create-product-metafield-def",
+      "position": [
+        560,
+        208
+      ],
+      "id": "3a541e64-086f-451f-9dbb-6f59982007c3",
       "name": "Create Product Metafield Definition",
       "onError": "continueRegularOutput"
     },
@@ -232,8 +260,11 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
-      "position": [896, -200],
-      "id": "create-shop-metafield-def",
+      "position": [
+        800,
+        208
+      ],
+      "id": "4e1c7084-ead1-4ce1-b3c3-ce0da0364473",
       "name": "Create Shop Metafield Definition",
       "onError": "continueRegularOutput"
     },
@@ -257,8 +288,11 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
-      "position": [1136, -200],
-      "id": "create-sf-token",
+      "position": [
+        1040,
+        208
+      ],
+      "id": "e801b575-6226-40c6-a3df-4688cb42bd7a",
       "name": "Create SF Token",
       "onError": "continueErrorOutput"
     },
@@ -282,8 +316,11 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
-      "position": [1376, -200],
-      "id": "inject-script-tag",
+      "position": [
+        1280,
+        208
+      ],
+      "id": "13aab5f2-9f11-4c8e-b8b0-8800b0e1452f",
       "name": "Inject Script Tag",
       "onError": "continueErrorOutput"
     },
@@ -295,8 +332,11 @@
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [1616, -200],
-      "id": "success-response",
+      "position": [
+        1520,
+        208
+      ],
+      "id": "c10b2cf6-1665-4f2a-b7f4-7a658c46fdfb",
       "name": "Success Response"
     },
     {
@@ -319,8 +359,11 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
-      "position": [896, -500],
-      "id": "create-sf-token-upgrade",
+      "position": [
+        800,
+        -96
+      ],
+      "id": "ff6bb3bc-10ae-4d88-a1b1-17ff87e8f0a8",
       "name": "Create SF Token (Upgrade)",
       "onError": "continueErrorOutput"
     },
@@ -344,8 +387,11 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
-      "position": [1136, -500],
-      "id": "inject-script-tag-upgrade",
+      "position": [
+        1040,
+        -96
+      ],
+      "id": "cc346984-83a0-4d88-9725-c1bf937b40fe",
       "name": "Inject Script Tag (Upgrade)",
       "onError": "continueErrorOutput"
     },
@@ -357,8 +403,11 @@
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [1376, -500],
-      "id": "upgrade-success-response",
+      "position": [
+        1280,
+        -96
+      ],
+      "id": "5c22f3fb-705e-463d-a85a-5ef05032c8e7",
       "name": "Upgrade Success Response"
     },
     {
@@ -371,8 +420,11 @@
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [656, 0],
-      "id": "error-response",
+      "position": [
+        560,
+        416
+      ],
+      "id": "dc589f3a-4b02-4847-a257-f4946846a6f4",
       "name": "Error Response"
     }
   ],
@@ -570,8 +622,12 @@
       ]
     }
   },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "staticData": null,
   "pinData": {},
-  "meta": {
-    "instanceId": "587aef964d83a99e849af5b6a53cd904631a6643f9c8db8007015f2aa820bf9d"
-  }
+  "triggerCount": 1,
+  "meta": null
 }

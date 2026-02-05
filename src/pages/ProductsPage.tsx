@@ -183,12 +183,12 @@ export default function ProductsPage({ userId }: { userId: string }) {
         let nextPageInfo: string | undefined = undefined;
         let hasMore = true;
         const cleanSubdomain = store.url.replace('.myshopify.com', '').replace('https://', '').replace(/\/$/, '');
-
+        const n8nHost = import.meta.env.VITE_N8N_BACKEND_URL;
         try {
             toast.info("Starting product sync...");
 
             while (hasMore) {
-                const response = await fetch('https://finalform.app.n8n.cloud/webhook/shopify/products', {
+                const response = await fetch(`${n8nHost}/webhook/shopify/products`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({

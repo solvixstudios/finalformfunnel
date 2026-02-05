@@ -1,4 +1,5 @@
 {
+  "name": "Shopify Connect",
   "nodes": [
     {
       "parameters": {
@@ -11,8 +12,11 @@
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [-600, 100],
-      "id": "webhook-connect",
+      "position": [
+        2448,
+        -336
+      ],
+      "id": "e088bc20-7676-4a24-af57-7007b9511ded",
       "name": "Receive Connect Request",
       "webhookId": "shopify-connect-webhook"
     },
@@ -33,17 +37,29 @@
         "contentType": "form-urlencoded",
         "bodyParameters": {
           "parameters": [
-            { "name": "grant_type", "value": "client_credentials" },
-            { "name": "client_id", "value": "={{ $json.body.clientId }}" },
-            { "name": "client_secret", "value": "={{ $json.body.clientSecret }}" }
+            {
+              "name": "grant_type",
+              "value": "client_credentials"
+            },
+            {
+              "name": "client_id",
+              "value": "={{ $json.body.clientId }}"
+            },
+            {
+              "name": "client_secret",
+              "value": "={{ $json.body.clientSecret }}"
+            }
           ]
         },
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
-      "position": [-360, 100],
-      "id": "get-token",
+      "position": [
+        2688,
+        -336
+      ],
+      "id": "2729a2a2-bde1-4c0b-b541-027e76cba4be",
       "name": "Get Access Token",
       "onError": "continueErrorOutput"
     },
@@ -53,7 +69,10 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Content-Type", "value": "application/json" },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
             {
               "name": "X-Shopify-Access-Token",
               "value": "={{ $json.access_token }}"
@@ -64,8 +83,11 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
-      "position": [-120, 100],
-      "id": "get-shop",
+      "position": [
+        2928,
+        -336
+      ],
+      "id": "3ee2f0a4-b942-4562-a951-6b6b103ea8de",
       "name": "Get Shop Details",
       "onError": "continueErrorOutput"
     },
@@ -75,7 +97,10 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Content-Type", "value": "application/json" },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
             {
               "name": "X-Shopify-Access-Token",
               "value": "={{ $('Get Access Token').item.json.access_token }}"
@@ -86,8 +111,11 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
-      "position": [120, 100],
-      "id": "check-scripts",
+      "position": [
+        3168,
+        -336
+      ],
+      "id": "35ca6fc2-1eb4-4a32-b834-c2356e2e0068",
       "name": "Check Existing ScriptTags",
       "onError": "continueErrorOutput"
     },
@@ -97,23 +125,33 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [360, 100],
-      "id": "set-response",
+      "position": [
+        3408,
+        -336
+      ],
+      "id": "8bb401cf-f953-462c-a503-a209e869bddf",
       "name": "Format Success Response"
     },
     {
       "parameters": {
-        "respondWith": "firstIncomingItem",
         "options": {
           "responseHeaders": {
-            "entries": [{ "name": "Access-Control-Allow-Origin", "value": "*" }]
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
           }
         }
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [600, 100],
-      "id": "respond-success",
+      "position": [
+        3648,
+        -336
+      ],
+      "id": "d81d28ac-0b19-4d0e-a1a8-7efb9c6a8e39",
       "name": "Return Success"
     },
     {
@@ -123,14 +161,22 @@
         "options": {
           "responseCode": 401,
           "responseHeaders": {
-            "entries": [{ "name": "Access-Control-Allow-Origin", "value": "*" }]
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
           }
         }
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [-360, 300],
-      "id": "respond-error",
+      "position": [
+        2688,
+        -144
+      ],
+      "id": "3fad363b-818f-4a87-aeb1-cf8df1c993a2",
       "name": "Return Error"
     },
     {
@@ -140,42 +186,102 @@
         "options": {
           "responseCode": 500,
           "responseHeaders": {
-            "entries": [{ "name": "Access-Control-Allow-Origin", "value": "*" }]
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
           }
         }
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [-120, 300],
-      "id": "respond-shop-error",
+      "position": [
+        2928,
+        -144
+      ],
+      "id": "61fcfa55-b745-43b6-a7e9-bd651621a037",
       "name": "Shop Error"
     }
   ],
   "connections": {
     "Receive Connect Request": {
-      "main": [[{ "node": "Get Access Token", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Get Access Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Get Access Token": {
       "main": [
-        [{ "node": "Get Shop Details", "type": "main", "index": 0 }],
-        [{ "node": "Return Error", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Get Shop Details",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Get Shop Details": {
       "main": [
-        [{ "node": "Check Existing ScriptTags", "type": "main", "index": 0 }],
-        [{ "node": "Shop Error", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Check Existing ScriptTags",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Shop Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Check Existing ScriptTags": {
-      "main": [[{ "node": "Format Success Response", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Format Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Format Success Response": {
-      "main": [[{ "node": "Return Success", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Return Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "staticData": null,
   "pinData": {},
-  "meta": {
-    "instanceId": "587aef964d83a99e849af5b6a53cd904631a6643f9c8db8007015f2aa820bf9d"
-  }
+  "triggerCount": 1,
+  "meta": null
 }

@@ -1,4 +1,5 @@
 {
+  "name": "Shopify Disable Loader",
   "nodes": [
     {
       "parameters": {
@@ -11,8 +12,11 @@
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [-1200, -16],
-      "id": "59a66b04-21ff-4002-abdc-493d8db8c955",
+      "position": [
+        -1968,
+        -224
+      ],
+      "id": "cfaa6f8b-312e-41b3-87a1-c87e983a7397",
       "name": "Receive Disable Request",
       "webhookId": "disable-loader-webhook"
     },
@@ -51,8 +55,11 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
-      "position": [-960, -16],
-      "id": "89fcea72-d006-4d85-8899-8bcab2f5af81",
+      "position": [
+        -1728,
+        -224
+      ],
+      "id": "c29467d8-da14-4868-9c1a-b36a0c09c861",
       "name": "GetToken",
       "onError": "continueErrorOutput"
     },
@@ -76,8 +83,11 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
-      "position": [-720, -16],
-      "id": "94579f36-d3fa-4363-b8a7-2ec61b96192b",
+      "position": [
+        -1488,
+        -224
+      ],
+      "id": "9878a326-9614-4ff2-a239-191009e436da",
       "name": "Get Existing ScriptTags",
       "onError": "continueErrorOutput"
     },
@@ -87,8 +97,11 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-480, -16],
-      "id": "770e52f7-ef63-4b94-90b6-478f75644ca5",
+      "position": [
+        -1248,
+        -224
+      ],
+      "id": "7ab12cfb-da31-41ba-a880-77d5d17b95de",
       "name": "Find Loader Script"
     },
     {
@@ -116,8 +129,11 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [-240, -16],
-      "id": "c5617233-6712-47e8-944d-d2ad93039356",
+      "position": [
+        -1008,
+        -224
+      ],
+      "id": "fe23605d-0c3d-499f-b385-6bb87c3c7891",
       "name": "Is Loader Found?"
     },
     {
@@ -137,8 +153,11 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
-      "position": [0, -112],
-      "id": "25ee387a-78a9-452f-9235-6329f8724bb7",
+      "position": [
+        -768,
+        -320
+      ],
+      "id": "7d0d1b6f-ca66-4179-85b7-e98ece527b6c",
       "name": "Delete Loader Script",
       "onError": "continueErrorOutput"
     },
@@ -150,8 +169,11 @@
       },
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [240, -112],
-      "id": "bf0402d7-b45e-4115-b786-06c96a9ef15f",
+      "position": [
+        -528,
+        -320
+      ],
+      "id": "4586e6f2-a37e-465b-9fe6-02849bf14eea",
       "name": "Success (Removed)"
     },
     {
@@ -162,8 +184,11 @@
       },
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [240, 96],
-      "id": "51c3abad-ef12-4d2c-a146-5bcb6ccc711a",
+      "position": [
+        -528,
+        -112
+      ],
+      "id": "2af5db6a-12d2-4798-bfc2-dd7ff030ae2e",
       "name": "Not Found"
     },
     {
@@ -181,8 +206,11 @@
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [480, -16],
-      "id": "1a533bbe-ccbb-4953-88af-9be48f263d21",
+      "position": [
+        -288,
+        -224
+      ],
+      "id": "b664f43b-87cf-4501-98e9-093ce92d5dd5",
       "name": "Respond"
     },
     {
@@ -195,8 +223,11 @@
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [-960, 192],
-      "id": "f2a4a788-9d64-42ae-b1e8-fc27074b456c",
+      "position": [
+        -1728,
+        -16
+      ],
+      "id": "02cd876c-a1aa-42bd-8912-1a6e17ce15d1",
       "name": "Token Error Response"
     }
   ],
@@ -304,8 +335,12 @@
       ]
     }
   },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "staticData": null,
   "pinData": {},
-  "meta": {
-    "instanceId": "587aef964d83a99e849af5b6a53cd904631a6643f9c8db8007015f2aa820bf9d"
-  }
+  "triggerCount": 1,
+  "meta": null
 }

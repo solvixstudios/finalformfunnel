@@ -111,10 +111,10 @@ export const syncProductsFromShopify = async (
     .replace(".myshopify.com", "")
     .replace("https://", "")
     .replace(/\/$/, "");
-
+  const n8nHost = import.meta.env.VITE_N8N_BACKEND_URL;
   while (hasMore) {
     const response = await fetch(
-      "https://finalform.app.n8n.cloud/webhook/shopify/products",
+      `${n8nHost}/webhook/shopify/products`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

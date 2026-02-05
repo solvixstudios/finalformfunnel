@@ -1,0 +1,567 @@
+{
+  "name": "Shopify Master Form Sync REST",
+  "nodes": [
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": \"Authentication failed\"\n}",
+        "options": {
+          "responseCode": 401
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -592,
+        1488
+      ],
+      "id": "54834657-aca9-4006-9917-7c65c7f862b1",
+      "name": "Auth Error"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"success\": true,\n  \"message\": \"Nothing to delete\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        288,
+        1184
+      ],
+      "id": "9c8c472e-d47a-4ab3-b10b-e981b1f37018",
+      "name": "No-Op Response"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": \"{{ $json.error || $json.message || 'Operation failed' }}\"\n}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        576,
+        1584
+      ],
+      "id": "958b6bbc-1f45-4e23-8bdf-7b1c39014a81",
+      "name": "Error Response"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"data\": {{ JSON.stringify($json) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        576,
+        1344
+      ],
+      "id": "d46bd472-5e43-4bdc-98cb-ba8c69ed752e",
+      "name": "Success Response"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Prepare Context').first().json.metafieldsEndpoint }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Shopify-Access-Token",
+              "value": "={{ $('Get Access Token').first().json.access_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"metafield\": {\n    \"namespace\": \"finalform\",\n    \"key\": \"config\",\n    \"value\": \"{{ $('Prepare Context').first().json.configString.replace(/\"/g, '\\\\\"') }}\",\n    \"type\": \"json\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        288,
+        1536
+      ],
+      "id": "d4b68955-9a60-4ed1-82d9-1716bb2e986b",
+      "name": "Create Request",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $('Prepare Context').first().json.baseUrl }}/metafields/{{ $json.metafields[0].id }}.json",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Shopify-Access-Token",
+              "value": "={{ $('Get Access Token').first().json.access_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"metafield\": {\n    \"id\": {{ $json.metafields[0].id }},\n    \"value\": \"{{ $('Prepare Context').first().json.configString.replace(/\"/g, '\\\\\"') }}\",\n    \"type\": \"json\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        288,
+        1344
+      ],
+      "id": "968ee57a-4fb8-4aea-ab8b-2375647f6132",
+      "name": "Update Request",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "8a06bc5f-1630-48fd-ba78-50e2ed02dd75",
+              "leftValue": "={{ $json.metafields }}",
+              "rightValue": "",
+              "operator": {
+                "type": "array",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "2f2f6679-6234-435b-8b0e-fad0ae6d5cab",
+              "leftValue": "={{ $json.metafields.first() }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        64,
+        1488
+      ],
+      "id": "7a993374-680e-4ef8-88b7-5ff1d1ebe27f",
+      "name": "Exists (Save)?"
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "={{ $('Prepare Context').first().json.baseUrl }}/metafields/{{ $json.metafields[0].id }}.json",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Shopify-Access-Token",
+              "value": "={{ $('Get Access Token').first().json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        288,
+        1072
+      ],
+      "id": "5cd098c2-2008-4f87-99dc-715e5fcace58",
+      "name": "Delete Request",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "f092e2f6-bf02-419c-ae35-4ff9fb43f01b",
+              "leftValue": "={{ $json.metafields }}",
+              "rightValue": "",
+              "operator": {
+                "type": "array",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "2dfc15aa-b677-4689-b38f-70ede933c318",
+              "leftValue": "={{ $json.metafields.first() }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        80,
+        1136
+      ],
+      "id": "d8e5ed38-0218-44bd-adb4-c0e38a452e1f",
+      "name": "Exists (Delete)?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "8c225c25-eb42-48ca-93a0-d369bdf9f419",
+              "leftValue": "={{ $('Webhook Start').item.json.body.action }}",
+              "rightValue": "delete",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -144,
+        1232
+      ],
+      "id": "38a70fc2-42c6-4cc7-9045-8f33a2f82a8d",
+      "name": "Is Delete?"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.metafieldsEndpoint }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "namespace",
+              "value": "finalform"
+            },
+            {
+              "name": "key",
+              "value": "config"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Shopify-Access-Token",
+              "value": "={{ $('Get Access Token').first().json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -368,
+        1232
+      ],
+      "id": "5e923f5b-014d-481d-bd37-484a088ccab9",
+      "name": "Find Metafield",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $('Webhook Start').first().json.body;\nconst rawOwnerId = body.ownerId;\nconst subdomain = body.subdomain;\nconst action = body.action || 'save';\nconst configData = body.data;\nconst metafieldId = body.metafieldId;\n\n// Validate config data for save action\nif (action === 'save' && !configData) {\n  throw new Error('Missing config data in request body');\n}\n\n// 1. Determine Scope and Path\nlet resourcePath = '';\nlet scope = 'SHOP';\n\nif (rawOwnerId) {\n  let numericId = String(rawOwnerId);\n  if (numericId.includes('/')) {\n    const parts = numericId.split('/');\n    numericId = parts[parts.length - 1];\n  }\n  \n  if (/^\\d+$/.test(numericId)) {\n    scope = 'PRODUCT';\n    resourcePath = `/products/${numericId}`;\n  }\n}\n\n// 2. Base API URL (2026-01)\nconst baseUrl = `https://${subdomain}.myshopify.com/admin/api/2026-01`;\n\n// 3. Endpoint Logic\nlet metafieldsEndpoint = `${baseUrl}${resourcePath}/metafields.json`;\nif (metafieldId && (action === 'update' || action === 'delete')) {\n    metafieldsEndpoint = `${baseUrl}${resourcePath}/metafields/${metafieldId}.json`;\n}\n\n// 4. Stringify config properly - ensure it's a valid JSON string\nconst configString = configData ? JSON.stringify(configData) : '';\n\nreturn [{\n  json: {\n    scope,\n    baseUrl,\n    metafieldsEndpoint,\n    action,\n    metafieldId,\n    configString\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -592,
+        1232
+      ],
+      "id": "71c9bf5d-bee7-48f5-b5a5-64b548a57d3e",
+      "name": "Prepare Context"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://{{ $json.body.subdomain }}.myshopify.com/admin/oauth/access_token",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/x-www-form-urlencoded"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "client_credentials"
+            },
+            {
+              "name": "client_id",
+              "value": "={{ $json.body.clientId }}"
+            },
+            {
+              "name": "client_secret",
+              "value": "={{ $json.body.clientSecret }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -800,
+        1232
+      ],
+      "id": "2cc8bd33-5993-4850-a072-0b0b4a98d135",
+      "name": "Get Access Token",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "shopify/master-sync",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1024,
+        1232
+      ],
+      "id": "fd160165-a938-401c-9762-786a4af66330",
+      "name": "Webhook Start",
+      "webhookId": "0df1b08b-355e-4707-978f-63a8cc64372c"
+    }
+  ],
+  "connections": {
+    "Create Request": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Request": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Exists (Save)?": {
+      "main": [
+        [
+          {
+            "node": "Update Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Request": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Exists (Delete)?": {
+      "main": [
+        [
+          {
+            "node": "Delete Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No-Op Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Delete?": {
+      "main": [
+        [
+          {
+            "node": "Exists (Delete)?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Exists (Save)?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Metafield": {
+      "main": [
+        [
+          {
+            "node": "Is Delete?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Context": {
+      "main": [
+        [
+          {
+            "node": "Find Metafield",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Access Token": {
+      "main": [
+        [
+          {
+            "node": "Prepare Context",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Auth Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Start": {
+      "main": [
+        [
+          {
+            "node": "Get Access Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "pinData": {},
+  "triggerCount": 1,
+  "meta": null
+}
