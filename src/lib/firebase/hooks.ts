@@ -1,21 +1,22 @@
 import {
-    addDoc,
-    collection,
-    deleteDoc,
-    doc,
-    getDocs,
-    onSnapshot,
-    query,
-    updateDoc,
-    where
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  onSnapshot,
+  query,
+  updateDoc,
+  where
 } from "firebase/firestore";
 import { useCallback, useEffect, useState } from "react";
 import { db } from "../firebase";
 import {
-    checkStoreOwnership,
-    claimStoreOwnership,
-    normalizeShopifyDomain,
-    releaseStoreOwnership,
+  checkStoreOwnership,
+  claimStoreOwnership,
+  normalizeShopifyDomain,
+  releaseStoreOwnership,
 } from "./storeOwnership";
 import { ConnectedStore, FormAssignment, SavedForm } from "./types";
 
