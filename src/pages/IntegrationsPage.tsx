@@ -13,7 +13,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import {
   Check,
-  ChevronLeft,
   ChevronRight,
   Copy,
   ExternalLink,
@@ -24,7 +23,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { connectToShopify } from '../lib/api';
+import { connectToShopify, enableLoader, LOADER_VERSION } from '../lib/api';
 import { useConnectedStores } from '../lib/firebase/hooks';
 import { WhatsAppProfile } from '../lib/firebase/types';
 import { useWhatsAppProfiles } from '../lib/firebase/whatsappHooks';
@@ -204,14 +203,17 @@ const ShopifyGuide = () => {
 
 // --- MAIN PAGE ---
 
+type FilterCategory = 'all' | 'ecommerce' | 'communication' | 'marketing' | 'delivery';
+
 export default function IntegrationsPage({ userId }: IntegrationsPageProps) {
   const { t, dir } = useI18n();
-  const { stores, addStore } = useConnectedStores(userId);
+  const { stores, addStore, updateStore } = useConnectedStores(userId);
 
   // UI State
   const [openSheet, setOpenSheet] = useState(false);
+  const [sheetView, setSheetView] = useState<'connect' | 'manage'>('connect'); // State for Sheet Mode
   const [activeTab, setActiveTab] = useState('connect');
-  const [selectedIntegration, setSelectedIntegration] = useState('all');
+  const [filter, setFilter] = useState<FilterCategory>('all');
 
   // WhatsApp State
   const { profiles: waProfiles, addProfile: addWaProfile, updateProfile: updateWaProfile, deleteProfile: deleteWaProfile, isProfileAssigned } = useWhatsAppProfiles(userId);
@@ -295,7 +297,7 @@ export default function IntegrationsPage({ userId }: IntegrationsPageProps) {
         const shopifyDomain = result.shop.myshopify_domain || `${cleanDomain}.myshopify.com`;
 
         try {
-          await addStore({
+          const newStore = await addStore({
             name: result.shop.name,
             platform: 'shopify',
             url: shopifyDomain,
@@ -308,7 +310,30 @@ export default function IntegrationsPage({ userId }: IntegrationsPageProps) {
             loaderInstalledAt: result.loaderInstalled ? new Date().toISOString() : undefined
           });
 
-          toast.success(`Successfully connected ${result.shop.name} !`);
+          // Automatically enable loader if it wasn't already enabled
+          if (!result.loaderInstalled) {
+            try {
+              const loaderResult = await enableLoader(cleanDomain, shopifyForm.clientId.trim(), shopifyForm.clientSecret.trim());
+
+              if (loaderResult.success) {
+                await updateStore(newStore.id, {
+                  loaderInstalled: true,
+                  loaderVersion: loaderResult.version || LOADER_VERSION,
+                  loaderScriptTagId: loaderResult.scriptTagId,
+                  loaderInstalledAt: new Date().toISOString()
+                });
+                toast.success(`Successfully connected and loader installed on ${result.shop.name}!`);
+              } else {
+                toast.success(`Store connected, but failed to auto-install loader: ${loaderResult.error}`);
+              }
+            } catch (loaderErr) {
+              console.error("Auto-install loader failed", loaderErr);
+              toast.success(`Store connected, but manual loader installation may be required.`);
+            }
+          } else {
+            toast.success(`Successfully connected ${result.shop.name} !`);
+          }
+
           setOpenSheet(false);
           setShopifyForm({ subdomain: '', clientId: '', clientSecret: '' });
         } catch (addError: any) {
@@ -331,491 +356,567 @@ export default function IntegrationsPage({ userId }: IntegrationsPageProps) {
     }
   };
 
-
-  // Header Actions - Removed from PageHeader, moved to Browse section
+  // Filter Categories
+  const categories = [
+    { id: 'all', label: 'All Apps' },
+    { id: 'ecommerce', label: 'E-commerce' },
+    { id: 'communication', label: 'Communication' },
+    { id: 'marketing', label: 'Marketing & Data' },
+    { id: 'delivery', label: 'Delivery' },
+  ];
 
   return (
-    <div className="max-w-[1600px] mx-auto w-full space-y-6 h-full flex flex-col" dir={dir}>
+    <div className="max-w-[1600px] mx-auto w-full space-y-8 h-full flex flex-col pt-2" dir={dir}>
       <PageHeader
         title="Integrations"
         breadcrumbs={[
           { label: 'Integrations' }
         ]}
-        count={stores.length}
         icon={Plug}
         actions={
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="outline" className="rounded-full bg-white border-slate-200 text-slate-700 hover:text-indigo-600 hover:border-indigo-200">
-                My Integrations <ChevronLeft className="ml-2 rotate-180" size={14} />
-              </Button>
-            </SheetTrigger>
-            <SheetContent className="w-[400px] sm:w-[540px]">
-              <SheetHeader className="pb-6 border-b border-slate-100">
-                <SheetTitle>My Integrations</SheetTitle>
-                <SheetDescription>
-                  Manage your active connections and settings.
-                </SheetDescription>
-              </SheetHeader>
-              <div className="py-6">
-                <ShopifyManager userId={userId} showHeader={false} viewMode="list" />
-              </div>
-            </SheetContent>
-          </Sheet>
+          <div className="flex bg-slate-100 p-1 rounded-full border border-slate-200">
+            {categories.map(cat => (
+              <button
+                key={cat.id}
+                onClick={() => setFilter(cat.id as FilterCategory)}
+                className={cn(
+                  "px-4 py-1.5 rounded-full text-xs font-semibold transition-all",
+                  filter === cat.id
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
+                )}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
         }
       />
 
 
       {/* Main Content Area */}
-      {selectedIntegration === 'all' && (
-        <div className="space-y-12 pb-20 overflow-y-auto flex-1 pr-2">
+      <div className="space-y-12 pb-20 overflow-y-auto flex-1 pr-2">
 
-          {/* 1. PLATFORMS */}
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                <Store size={18} className="text-indigo-500" /> E-commerce Platforms
-              </h3>
-              <p className="text-sm text-slate-500 mt-1">Connect your online store ecosystem</p>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {/* Shopify */}
-              <div className="md:col-span-1 md:row-span-1">
-                <Sheet open={openSheet} onOpenChange={setOpenSheet}>
-                  <SheetTrigger asChild>
-                    <Card className="cursor-pointer bg-white border border-slate-200 rounded-3xl overflow-hidden hover:ring-2 hover:ring-indigo-100 hover:shadow-lg transition-all duration-300 group relative h-full flex flex-col shadow-sm min-h-[200px] p-6">
-                      <ChevronRight className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1 text-slate-400" />
+        {/* 1. BROWSE / EXPLORE INTEGRATIONS */}
+        <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
+
+          {/* E-COMMERCE */}
+          {(filter === 'all' || filter === 'ecommerce') && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 mb-2">
+                <h3 className="text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                  <Store size={18} className="text-indigo-500" /> E-commerce Platforms
+                </h3>
+                <div className="h-px bg-slate-100 flex-1 ml-4" />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {/* Shopify */}
+                <div className="md:col-span-1 md:row-span-1">
+                  <Sheet open={openSheet} onOpenChange={setOpenSheet}>
+                    <Card
+                      className="bg-white border border-slate-200 rounded-3xl overflow-hidden hover:ring-2 hover:ring-indigo-100 hover:shadow-lg transition-all duration-300 group relative h-full flex flex-col shadow-sm min-h-[180px] p-6"
+                    >
                       <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
                       <div className="flex flex-col h-full justify-between relative z-10">
-                        <div className="w-14 h-14 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-3xl mb-4 shadow-sm group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300">
-                          🛍️
+                        <div className="flex justify-between items-start">
+                          <div className="w-14 h-14 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-3xl mb-4 shadow-sm group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300">
+                            🛍️
+                          </div>
+                          {stores.some(s => s.platform === 'shopify') && (
+                            <Badge variant="secondary" className="bg-indigo-50 text-indigo-700 hover:bg-indigo-100">
+                              Connected
+                            </Badge>
+                          )}
                         </div>
+
                         <div>
                           <CardTitle className="text-xl font-bold text-slate-900 tracking-tight">Shopify</CardTitle>
                           <p className="text-sm text-slate-500 mt-2 font-medium leading-normal">
                             Sync products & orders
                           </p>
                         </div>
+
+                        {/* Actions */}
+                        <div className="mt-4 pt-4 border-t border-slate-100/50 flex flex-col gap-2">
+                          <Button
+                            size="sm"
+                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm shadow-indigo-200"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSheetView('connect');
+                              setOpenSheet(true);
+                            }}
+                          >
+                            <Plug size={14} className="mr-2" /> Connect New Store
+                          </Button>
+
+                          {stores.some(s => s.platform === 'shopify') && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="w-full border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setSheetView('manage');
+                                setOpenSheet(true);
+                              }}
+                            >
+                              Manage Connections
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </Card>
-                  </SheetTrigger>
 
-                  {/* Sheet Content Implementation (Reused) */}
-                  <SheetContent className="sm:max-w-lg w-[90vw] flex flex-col h-full p-0 gap-0">
-                    <SheetHeader className="px-6 py-5 border-b border-slate-100 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
-                      <SheetTitle className="flex items-center gap-2.5 text-xl">
-                        <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-lg">🛍️</div>
-                        Connect Shopify
-                      </SheetTitle>
-                      <SheetDescription>
-                        Connect your Shopify store to sync products and orders.
-                      </SheetDescription>
-                    </SheetHeader>
+                    {/* Sheet Content Implementation */}
+                    <SheetContent className="sm:max-w-lg w-[90vw] flex flex-col h-full p-0 gap-0">
+                      <SheetHeader className="px-6 py-5 border-b border-slate-100 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+                        <SheetTitle className="flex items-center gap-2.5 text-xl">
+                          <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-lg">🛍️</div>
+                          {sheetView === 'manage' ? 'Manage Connections' : 'Connect Shopify'}
+                        </SheetTitle>
+                        <SheetDescription>
+                          {sheetView === 'manage'
+                            ? "View and manage your active Shopify store connections."
+                            : "Connect your Shopify store to sync products and orders."}
+                        </SheetDescription>
+                      </SheetHeader>
 
-                    <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-                      <div className="px-6 pt-4 pb-2">
-                        <TabsList className="grid w-full grid-cols-2">
-                          <TabsTrigger value="connect">Credentials</TabsTrigger>
-                          <TabsTrigger value="guide">Step-by-Step Guide</TabsTrigger>
-                        </TabsList>
-                      </div>
+                      {sheetView === 'manage' ? (
+                        <div className="flex-1 overflow-y-auto bg-slate-50/50 p-6">
+                          <ShopifyManager
+                            userId={userId}
+                            showHeader={false}
+                            viewMode="list"
+                          />
+                        </div>
+                      ) : (
+                        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+                          <div className="px-6 pt-4 pb-2">
+                            <TabsList className="grid w-full grid-cols-2">
+                              <TabsTrigger value="connect">Credentials</TabsTrigger>
+                              <TabsTrigger value="guide">Step-by-Step Guide</TabsTrigger>
+                            </TabsList>
+                          </div>
+
+                          <ScrollArea className="flex-1 px-6">
+                            <TabsContent value="connect" className="mt-4 space-y-6 pb-8">
+                              <div className="space-y-4">
+                                <div className="space-y-2">
+                                  <Label htmlFor="subdomain">Store Domain</Label>
+                                  <div className="flex shadow-sm rounded-md">
+                                    <Input
+                                      id="subdomain"
+                                      placeholder="my-store-name"
+                                      value={shopifyForm.subdomain}
+                                      onChange={e => setShopifyForm(prev => ({ ...prev, subdomain: e.target.value }))}
+                                      className="rounded-r-none focus-visible:ring-0 focus-visible:ring-offset-0 relative z-10"
+                                    />
+                                    <div className="bg-slate-50 border border-l-0 border-slate-200 px-3 py-2 text-sm text-slate-500 font-medium rounded-r-md flex items-center whitespace-nowrap">
+                                      .myshopify.com
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="grid gap-4">
+                                  <div className="space-y-2">
+                                    <Label htmlFor="clientId">Client ID</Label>
+                                    <Input
+                                      id="clientId"
+                                      value={shopifyForm.clientId}
+                                      onChange={e => setShopifyForm(prev => ({ ...prev, clientId: e.target.value }))}
+                                      className="font-mono text-sm"
+                                      placeholder="From App settings"
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor="clientSecret">Client Secret</Label>
+                                    <Input
+                                      id="clientSecret"
+                                      type="password"
+                                      value={shopifyForm.clientSecret}
+                                      onChange={e => setShopifyForm(prev => ({ ...prev, clientSecret: e.target.value }))}
+                                      className="font-mono text-sm"
+                                      placeholder="From App settings"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="bg-slate-50 border border-slate-100 rounded-lg p-3 text-xs text-slate-500">
+                                Credentials are used securely to establish the API connection.
+                              </div>
+                            </TabsContent>
+
+                            <TabsContent value="guide" className="mt-0 pb-8">
+                              <ShopifyGuide />
+                            </TabsContent>
+                          </ScrollArea>
+
+                          <div className="p-6 border-t border-slate-100 bg-slate-50/50 mt-auto sticky bottom-0 z-10">
+                            {activeTab === 'guide' ? (
+                              <Button className="w-full" onClick={() => setActiveTab('connect')}>
+                                Enter Credentials <ChevronRight size={16} className="ml-2" />
+                              </Button>
+                            ) : (
+                              <Button
+                                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
+                                onClick={handleShopifyConnect}
+                                disabled={isConnecting}
+                              >
+                                {isConnecting ? <Loader2 size={16} className="animate-spin mr-2" /> : <Store size={16} className="mr-2" />}
+                                {isConnecting ? 'Verifying...' : 'Connect Store'}
+                              </Button>
+                            )}
+                          </div>
+                        </Tabs>
+                      )}
+                    </SheetContent>
+                  </Sheet>
+                </div>
+
+                {/* WooCommerce */}
+                <Card className="group h-full flex flex-col p-6 bg-slate-50/50 border border-slate-200/50 border-dashed rounded-[2rem] opacity-70 hover:opacity-100 transition-opacity min-h-[180px] relative">
+                  <ChevronRight className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1 text-slate-400" />
+                  <div className="flex flex-col h-full justify-between bg-transparent">
+                    <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-3xl mb-4 grayscale opacity-50 shadow-sm">
+                      📦
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-bold text-slate-400 group-hover:text-slate-600 transition-colors">WooCommerce</h4>
+                      <Badge variant="outline" className="mt-2 text-[10px] bg-transparent border-slate-300 text-slate-400">Coming Soon</Badge>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+            </div>
+          )}
+
+
+          {/* COMMUNICATION */}
+          {(filter === 'all' || filter === 'communication') && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 mb-2">
+                <h3 className="text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-green-500" /> Communication
+                </h3>
+                <div className="h-px bg-slate-100 flex-1 ml-4" />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {/* WhatsApp */}
+                <div className="md:col-span-1 md:row-span-1">
+                  <Sheet>
+                    <SheetTrigger asChild>
+                      <Card className="bg-white border border-slate-200 shadow-sm rounded-3xl overflow-hidden hover:bg-white hover:ring-2 hover:ring-green-100 transition-all duration-300 group relative h-full flex flex-col p-6 min-h-[180px]">
+                        <div className="absolute inset-0 bg-gradient-to-br from-green-50/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <div className="flex flex-col h-full justify-between relative z-10">
+                          <div className="flex justify-between items-start">
+                            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-3xl text-white shadow-lg shadow-green-200 group-hover:scale-110 group-hover:rotate-3 transition-transform mb-4">
+                              💬
+                            </div>
+                            {waProfiles.length > 0 && (
+                              <Badge variant="secondary" className="bg-green-50 text-green-700 hover:bg-green-100">
+                                Active
+                              </Badge>
+                            )}
+                          </div>
+
+                          <div>
+                            <h4 className="text-xl font-bold text-slate-900">WhatsApp</h4>
+                            <p className="text-sm text-slate-500 mt-2 font-medium leading-normal">Order recovery & confirms</p>
+                          </div>
+
+                          {/* Actions */}
+                          <div className="mt-4 pt-4 border-t border-slate-100/50 flex flex-col gap-2">
+                            <Button
+                              size="sm"
+                              className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white shadow-sm shadow-green-200"
+                            >
+                              <Plug size={14} className="mr-2" /> Configure
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    </SheetTrigger>
+
+                    {/* WhatsApp Sheet Content (Reused) */}
+                    <SheetContent className="sm:max-w-lg w-[90vw] flex flex-col h-full p-0 gap-0">
+                      <SheetHeader className="px-6 py-5 border-b border-slate-100 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+                        <SheetTitle className="flex items-center gap-2.5 text-xl">
+                          <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center text-lg">💬</div>
+                          Configure WhatsApp
+                        </SheetTitle>
+                        <SheetDescription>
+                          Manage WhatsApp profiles for order confirmation.
+                        </SheetDescription>
+                      </SheetHeader>
 
                       <ScrollArea className="flex-1 px-6">
-                        <TabsContent value="connect" className="mt-4 space-y-6 pb-8">
+                        <div className="py-6 space-y-6">
+                          {/* Profiles List */}
                           <div className="space-y-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="subdomain">Store Domain</Label>
-                              <div className="flex shadow-sm rounded-md">
-                                <Input
-                                  id="subdomain"
-                                  placeholder="my-store-name"
-                                  value={shopifyForm.subdomain}
-                                  onChange={e => setShopifyForm(prev => ({ ...prev, subdomain: e.target.value }))}
-                                  className="rounded-r-none focus-visible:ring-0 focus-visible:ring-offset-0 relative z-10"
-                                />
-                                <div className="bg-slate-50 border border-l-0 border-slate-200 px-3 py-2 text-sm text-slate-500 font-medium rounded-r-md flex items-center whitespace-nowrap">
-                                  .myshopify.com
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="grid gap-4">
-                              <div className="space-y-2">
-                                <Label htmlFor="clientId">Client ID</Label>
-                                <Input
-                                  id="clientId"
-                                  value={shopifyForm.clientId}
-                                  onChange={e => setShopifyForm(prev => ({ ...prev, clientId: e.target.value }))}
-                                  className="font-mono text-sm"
-                                  placeholder="From App settings"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="clientSecret">Client Secret</Label>
-                                <Input
-                                  id="clientSecret"
-                                  type="password"
-                                  value={shopifyForm.clientSecret}
-                                  onChange={e => setShopifyForm(prev => ({ ...prev, clientSecret: e.target.value }))}
-                                  className="font-mono text-sm"
-                                  placeholder="From App settings"
-                                />
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="bg-slate-50 border border-slate-100 rounded-lg p-3 text-xs text-slate-500">
-                            Credentials are used securely to establish the API connection.
-                          </div>
-                        </TabsContent>
-
-                        <TabsContent value="guide" className="mt-0 pb-8">
-                          <ShopifyGuide />
-                        </TabsContent>
-                      </ScrollArea>
-
-                      <div className="p-6 border-t border-slate-100 bg-slate-50/50 mt-auto sticky bottom-0 z-10">
-                        {activeTab === 'guide' ? (
-                          <Button className="w-full" onClick={() => setActiveTab('connect')}>
-                            Enter Credentials <ChevronRight size={16} className="ml-2" />
-                          </Button>
-                        ) : (
-                          <Button
-                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
-                            onClick={handleShopifyConnect}
-                            disabled={isConnecting}
-                          >
-                            {isConnecting ? <Loader2 size={16} className="animate-spin mr-2" /> : <Store size={16} className="mr-2" />}
-                            {isConnecting ? 'Verifying...' : 'Connect Store'}
-                          </Button>
-                        )}
-                      </div>
-                    </Tabs>
-                  </SheetContent>
-                </Sheet>
-              </div>
-
-              {/* WooCommerce */}
-              <Card className="group h-full flex flex-col p-6 bg-slate-50/50 border border-slate-200/50 border-dashed rounded-[2rem] opacity-70 hover:opacity-100 transition-opacity min-h-[200px] relative">
-                <ChevronRight className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1 text-slate-400" />
-                <div className="flex flex-col h-full justify-between bg-transparent">
-                  <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-3xl mb-4 grayscale opacity-50 shadow-sm">
-                    📦
-                  </div>
-                  <div>
-                    <h4 className="text-lg font-bold text-slate-400 group-hover:text-slate-600 transition-colors">WooCommerce</h4>
-                    <Badge variant="outline" className="mt-2 text-[10px] bg-transparent border-slate-300 text-slate-400">Coming Soon</Badge>
-                  </div>
-                </div>
-              </Card>
-            </div>
-          </div>
-
-
-          {/* 2. COMMUNICATION */}
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-green-500" /> Communication
-              </h3>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {/* WhatsApp */}
-              <div className="md:col-span-1 md:row-span-1">
-                <Sheet>
-                  <SheetTrigger asChild>
-                    <Card className="cursor-pointer bg-white border border-slate-200 shadow-sm rounded-3xl overflow-hidden hover:bg-white hover:ring-2 hover:ring-green-100 transition-all duration-300 group relative h-full flex flex-col p-6 min-h-[200px]">
-                      <ChevronRight className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1 text-slate-400" />
-                      <div className="absolute inset-0 bg-gradient-to-br from-green-50/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                      <div className="flex flex-col h-full justify-between relative z-10">
-                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-3xl text-white shadow-lg shadow-green-200 group-hover:scale-110 group-hover:rotate-3 transition-transform mb-4">
-                          💬
-                        </div>
-                        <div>
-                          <h4 className="text-xl font-bold text-slate-900">WhatsApp</h4>
-                          <p className="text-sm text-slate-500 mt-2 font-medium leading-normal">Order recovery & confirms</p>
-                        </div>
-                      </div>
-                    </Card>
-                  </SheetTrigger>
-
-                  {/* WhatsApp Sheet Content (Reused) */}
-                  <SheetContent className="sm:max-w-lg w-[90vw] flex flex-col h-full p-0 gap-0">
-                    <SheetHeader className="px-6 py-5 border-b border-slate-100 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
-                      <SheetTitle className="flex items-center gap-2.5 text-xl">
-                        <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center text-lg">💬</div>
-                        Configure WhatsApp
-                      </SheetTitle>
-                      <SheetDescription>
-                        Manage WhatsApp profiles for order confirmation.
-                      </SheetDescription>
-                    </SheetHeader>
-
-                    <ScrollArea className="flex-1 px-6">
-                      <div className="py-6 space-y-6">
-                        {/* Profiles List */}
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <h3 className="text-sm font-semibold text-slate-900">Profiles</h3>
-                            <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => handleEditWaProfile('new')}>+ Add Profile</Button>
-                          </div>
-
-                          {waProfiles.length === 0 && (
-                            <div className="text-center py-6 text-slate-400 text-xs">
-                              No WhatsApp profiles yet. Add one to get started.
-                            </div>
-                          )}
-
-                          {waProfiles.map(profile => (
-                            <div
-                              key={profile.id}
-                              className={`border rounded-lg p-3 flex items-center justify-between bg-white group transition-all cursor-pointer ${editingWaProfile !== 'new' && editingWaProfile?.id === profile.id ? 'border-green-500 ring-1 ring-green-100' : 'border-slate-200 hover:border-green-300'} `}
-                              onClick={() => handleEditWaProfile(profile)}
-                            >
-                              <div className="space-y-1">
-                                <div className="text-sm font-medium text-slate-900 flex items-center gap-2">
-                                  {profile.name}
-                                  {profile.isDefault && <Badge variant="secondary" className="text-[10px] bg-green-50 text-green-700 h-5 px-1.5">Default</Badge>}
-                                </div>
-                                <div className="text-xs text-slate-500 font-mono" dir="ltr">{profile.phoneNumber}</div>
-                              </div>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-green-600">
-                                <ChevronRight size={16} />
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* Edit Form */}
-                        {editingWaProfile && (
-                          <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-3 animate-in fade-in slide-in-from-top-2">
                             <div className="flex items-center justify-between">
-                              <h4 className="text-xs font-bold text-slate-500 uppercase">{editingWaProfile === 'new' ? 'New Profile' : 'Edit Profile'}</h4>
-                              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditingWaProfile(null)}><X size={14} /></Button>
+                              <h3 className="text-sm font-semibold text-slate-900">Profiles</h3>
+                              <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => handleEditWaProfile('new')}>+ Add Profile</Button>
                             </div>
-                            <div className="space-y-3">
-                              <div className="space-y-1">
-                                <Label className="text-xs">Profile Name</Label>
-                                <Input
-                                  placeholder="e.g. Sales Team"
-                                  className="bg-white"
-                                  value={waForm.name}
-                                  onChange={e => setWaForm({ ...waForm, name: e.target.value })}
-                                />
+
+                            {waProfiles.length === 0 && (
+                              <div className="text-center py-6 text-slate-400 text-xs">
+                                No WhatsApp profiles yet. Add one to get started.
                               </div>
-                              <div className="space-y-1">
-                                <Label className="text-xs">WhatsApp Number (International format)</Label>
-                                <div className="flex shadow-sm rounded-md">
-                                  <div className="bg-slate-100 border border-r-0 border-slate-200 px-3 py-2 text-sm text-slate-600 font-mono rounded-l-md flex items-center">
-                                    +213
+                            )}
+
+                            {waProfiles.map(profile => (
+                              <div
+                                key={profile.id}
+                                className={`border rounded-lg p-3 flex items-center justify-between bg-white group transition-all cursor-pointer ${editingWaProfile !== 'new' && editingWaProfile?.id === profile.id ? 'border-green-500 ring-1 ring-green-100' : 'border-slate-200 hover:border-green-300'} `}
+                                onClick={() => handleEditWaProfile(profile)}
+                              >
+                                <div className="space-y-1">
+                                  <div className="text-sm font-medium text-slate-900 flex items-center gap-2">
+                                    {profile.name}
+                                    {profile.isDefault && <Badge variant="secondary" className="text-[10px] bg-green-50 text-green-700 h-5 px-1.5">Default</Badge>}
                                   </div>
+                                  <div className="text-xs text-slate-500 font-mono" dir="ltr">{profile.phoneNumber}</div>
+                                </div>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-green-600">
+                                  <ChevronRight size={16} />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Edit Form */}
+                          {editingWaProfile && (
+                            <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-3 animate-in fade-in slide-in-from-top-2">
+                              <div className="flex items-center justify-between">
+                                <h4 className="text-xs font-bold text-slate-500 uppercase">{editingWaProfile === 'new' ? 'New Profile' : 'Edit Profile'}</h4>
+                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditingWaProfile(null)}><X size={14} /></Button>
+                              </div>
+                              <div className="space-y-3">
+                                <div className="space-y-1">
+                                  <Label className="text-xs">Profile Name</Label>
                                   <Input
-                                    placeholder="555123456"
-                                    className="bg-white font-mono rounded-l-none"
-                                    dir="ltr"
-                                    value={waForm.phoneNumber.replace(/^\+213/, '')}
-                                    onChange={e => {
-                                      const digits = e.target.value.replace(/\D/g, '');
-                                      setWaForm({ ...waForm, phoneNumber: '+213' + digits });
-                                    }}
+                                    placeholder="e.g. Sales Team"
+                                    className="bg-white"
+                                    value={waForm.name}
+                                    onChange={e => setWaForm({ ...waForm, name: e.target.value })}
                                   />
                                 </div>
-                              </div>
+                                <div className="space-y-1">
+                                  <Label className="text-xs">WhatsApp Number (International format)</Label>
+                                  <div className="flex shadow-sm rounded-md">
+                                    <div className="bg-slate-100 border border-r-0 border-slate-200 px-3 py-2 text-sm text-slate-600 font-mono rounded-l-md flex items-center">
+                                      +213
+                                    </div>
+                                    <Input
+                                      placeholder="555123456"
+                                      className="bg-white font-mono rounded-l-none"
+                                      dir="ltr"
+                                      value={waForm.phoneNumber.replace(/^\+213/, '')}
+                                      onChange={e => {
+                                        const digits = e.target.value.replace(/\D/g, '');
+                                        setWaForm({ ...waForm, phoneNumber: '+213' + digits });
+                                      }}
+                                    />
+                                  </div>
+                                </div>
 
-                              <div className="flex items-center gap-2 py-1">
-                                <Switch
-                                  id="wa-default"
-                                  checked={waForm.isDefault}
-                                  onCheckedChange={(checked) => setWaForm({ ...waForm, isDefault: checked })}
-                                />
-                                <Label htmlFor="wa-default" className="text-xs text-slate-600">Set as default profile</Label>
-                              </div>
+                                <div className="flex items-center gap-2 py-1">
+                                  <Switch
+                                    id="wa-default"
+                                    checked={waForm.isDefault}
+                                    onCheckedChange={(checked) => setWaForm({ ...waForm, isDefault: checked })}
+                                  />
+                                  <Label htmlFor="wa-default" className="text-xs text-slate-600">Set as default profile</Label>
+                                </div>
 
-                              <div className="flex gap-2 pt-2">
-                                <Button size="sm" className="flex-1 bg-[#25D366] hover:bg-[#20bd5a] text-white" onClick={handleSaveWaProfile}>
-                                  {editingWaProfile === 'new' ? 'Create Profile' : 'Save Changes'}
-                                </Button>
-                                {editingWaProfile !== 'new' && (
-                                  <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50 hover:text-red-700 border-red-100" onClick={() => handleDeleteWaProfile(editingWaProfile.id)}>
-                                    Delete
+                                <div className="flex gap-2 pt-2">
+                                  <Button size="sm" className="flex-1 bg-[#25D366] hover:bg-[#20bd5a] text-white" onClick={handleSaveWaProfile}>
+                                    {editingWaProfile === 'new' ? 'Create Profile' : 'Save Changes'}
                                   </Button>
-                                )}
+                                  {editingWaProfile !== 'new' && (
+                                    <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50 hover:text-red-700 border-red-100" onClick={() => handleDeleteWaProfile(editingWaProfile.id)}>
+                                      Delete
+                                    </Button>
+                                  )}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        )}
-                      </div>
-                    </ScrollArea>
-                  </SheetContent>
-                </Sheet>
+                          )}
+                        </div>
+                      </ScrollArea>
+                    </SheetContent>
+                  </Sheet>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
 
-          {/* 3. MARKETING & DATA */}
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-blue-500" /> Marketing & Data
-              </h3>
+          {/* MARKETING & DATA */}
+          {(filter === 'all' || filter === 'marketing') && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 mb-2">
+                <h3 className="text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-blue-500" /> Marketing & Data
+                </h3>
+                <div className="h-px bg-slate-100 flex-1 ml-4" />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {/* Meta Pixel */}
+                <Card className="group h-full flex flex-col p-6 bg-slate-50/50 border border-slate-200/50 border-dashed rounded-[2rem] opacity-70 hover:opacity-100 transition-opacity min-h-[180px] relative">
+                  <ChevronRight className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1 text-slate-400" />
+                  <div className="flex flex-col h-full justify-between">
+                    <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-3xl mb-4 grayscale opacity-50 shadow-sm">
+                      ♾️
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-bold text-slate-400 group-hover:text-slate-600 transition-colors">Meta Pixel</h4>
+                      <Badge variant="outline" className="mt-2 text-[10px] bg-transparent border-slate-300 text-slate-400">Coming Soon</Badge>
+                    </div>
+                  </div>
+                </Card>
+
+                {/* TikTok */}
+                <Card className="group h-full flex flex-col p-6 bg-slate-50/50 border border-slate-200/50 border-dashed rounded-[2rem] opacity-70 hover:opacity-100 transition-opacity min-h-[180px] relative">
+                  <ChevronRight className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1 text-slate-400" />
+                  <div className="flex flex-col h-full justify-between">
+                    <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-3xl mb-4 grayscale opacity-50 shadow-sm">
+                      🎵
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-bold text-slate-400 group-hover:text-slate-600 transition-colors">TikTok Pixel</h4>
+                      <Badge variant="outline" className="mt-2 text-[10px] bg-transparent border-slate-300 text-slate-400">Coming Soon</Badge>
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Google Sheets */}
+                <Card className="group h-full flex flex-col p-6 bg-slate-50/50 border border-slate-200/50 border-dashed rounded-[2rem] opacity-70 hover:opacity-100 transition-opacity min-h-[180px] relative">
+                  <ChevronRight className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1 text-slate-400" />
+                  <div className="flex flex-col h-full justify-between">
+                    <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-3xl mb-4 grayscale opacity-50 shadow-sm">
+                      📊
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-bold text-slate-400 group-hover:text-slate-600 transition-colors">Sheets</h4>
+                      <Badge variant="outline" className="mt-2 text-[10px] bg-transparent border-slate-300 text-slate-400">Coming Soon</Badge>
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Webhook */}
+                <Card className="group h-full flex flex-col p-6 bg-slate-50/50 border border-slate-200/50 border-dashed rounded-[2rem] opacity-70 hover:opacity-100 transition-opacity min-h-[180px] relative">
+                  <ChevronRight className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1 text-slate-400" />
+                  <div className="flex flex-col h-full justify-between">
+                    <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-3xl mb-4 grayscale opacity-50 shadow-sm">
+                      ⚡
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-bold text-slate-400 group-hover:text-slate-600 transition-colors">Webhook</h4>
+                      <Badge variant="outline" className="mt-2 text-[10px] bg-transparent border-slate-300 text-slate-400">Coming Soon</Badge>
+                    </div>
+                  </div>
+                </Card>
+              </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {/* Facebook/Meta */}
-              <Card className="group h-full flex flex-col p-6 bg-slate-50/50 border border-slate-200/50 border-dashed rounded-[2rem] opacity-70 hover:opacity-100 transition-opacity min-h-[200px] relative">
-                <ChevronRight className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1 text-slate-400" />
-                <div className="flex flex-col h-full justify-between">
-                  <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-3xl mb-4 grayscale opacity-50 shadow-sm">
-                    ♾️
-                  </div>
-                  <div>
-                    <h4 className="text-lg font-bold text-slate-400 group-hover:text-slate-600 transition-colors">Meta Pixel</h4>
-                    <Badge variant="outline" className="mt-2 text-[10px] bg-transparent border-slate-300 text-slate-400">Coming Soon</Badge>
-                  </div>
-                </div>
-              </Card>
+          )}
 
-              {/* TikTok */}
-              <Card className="group h-full flex flex-col p-6 bg-slate-50/50 border border-slate-200/50 border-dashed rounded-[2rem] opacity-70 hover:opacity-100 transition-opacity min-h-[200px] relative">
-                <ChevronRight className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1 text-slate-400" />
-                <div className="flex flex-col h-full justify-between">
-                  <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-3xl mb-4 grayscale opacity-50 shadow-sm">
-                    🎵
-                  </div>
-                  <div>
-                    <h4 className="text-lg font-bold text-slate-400 group-hover:text-slate-600 transition-colors">TikTok Pixel</h4>
-                    <Badge variant="outline" className="mt-2 text-[10px] bg-transparent border-slate-300 text-slate-400">Coming Soon</Badge>
-                  </div>
-                </div>
-              </Card>
 
-              {/* Google Sheets */}
-              <Card className="group h-full flex flex-col p-6 bg-slate-50/50 border border-slate-200/50 border-dashed rounded-[2rem] opacity-70 hover:opacity-100 transition-opacity min-h-[200px] relative">
-                <ChevronRight className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1 text-slate-400" />
-                <div className="flex flex-col h-full justify-between">
-                  <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-3xl mb-4 grayscale opacity-50 shadow-sm">
-                    📊
-                  </div>
-                  <div>
-                    <h4 className="text-lg font-bold text-slate-400 group-hover:text-slate-600 transition-colors">Sheets</h4>
-                    <Badge variant="outline" className="mt-2 text-[10px] bg-transparent border-slate-300 text-slate-400">Coming Soon</Badge>
-                  </div>
-                </div>
-              </Card>
+          {/* DELIVERY SERVICES */}
+          {(filter === 'all' || filter === 'delivery') && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 mb-2">
+                <h3 className="text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-amber-500" /> Delivery Integration
+                </h3>
+                <div className="h-px bg-slate-100 flex-1 ml-4" />
+              </div>
 
-              {/* Webhook */}
-              <Card className="group h-full flex flex-col p-6 bg-slate-50/50 border border-slate-200/50 border-dashed rounded-[2rem] opacity-70 hover:opacity-100 transition-opacity min-h-[200px] relative">
-                <ChevronRight className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1 text-slate-400" />
-                <div className="flex flex-col h-full justify-between">
-                  <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-3xl mb-4 grayscale opacity-50 shadow-sm">
-                    ⚡
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {/* Maystro Delivery */}
+                <Card className="group h-full flex flex-col p-6 bg-slate-50/50 border border-slate-200/50 border-dashed rounded-[2rem] opacity-70 hover:opacity-100 transition-opacity min-h-[180px] relative">
+                  <ChevronRight className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1 text-slate-400" />
+                  <div className="flex flex-col h-full justify-between">
+                    <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-3xl mb-4 grayscale opacity-50 shadow-sm">
+                      🚚
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-bold text-slate-400 group-hover:text-slate-600 transition-colors">Maystro Delivery</h4>
+                      <Badge variant="outline" className="mt-2 text-[10px] bg-transparent border-slate-300 text-slate-400">Coming Soon</Badge>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="text-lg font-bold text-slate-400 group-hover:text-slate-600 transition-colors">Webhook</h4>
-                    <Badge variant="outline" className="mt-2 text-[10px] bg-transparent border-slate-300 text-slate-400">Coming Soon</Badge>
+                </Card>
+
+                {/* ZR Delivery */}
+                <Card className="group h-full flex flex-col p-6 bg-slate-50/50 border border-slate-200/50 border-dashed rounded-[2rem] opacity-70 hover:opacity-100 transition-opacity min-h-[180px] relative">
+                  <ChevronRight className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1 text-slate-400" />
+                  <div className="flex flex-col h-full justify-between">
+                    <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-3xl mb-4 grayscale opacity-50 shadow-sm">
+                      🚛
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-bold text-slate-400 group-hover:text-slate-600 transition-colors">ZR Delivery</h4>
+                      <Badge variant="outline" className="mt-2 text-[10px] bg-transparent border-slate-300 text-slate-400">Coming Soon</Badge>
+                    </div>
                   </div>
-                </div>
-              </Card>
+                </Card>
+
+                {/* Yalidine */}
+                <Card className="group h-full flex flex-col p-6 bg-slate-50/50 border border-slate-200/50 border-dashed rounded-[2rem] opacity-70 hover:opacity-100 transition-opacity min-h-[180px] relative">
+                  <ChevronRight className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1 text-slate-400" />
+                  <div className="flex flex-col h-full justify-between">
+                    <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-3xl mb-4 grayscale opacity-50 shadow-sm">
+                      📮
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-bold text-slate-400 group-hover:text-slate-600 transition-colors">Yalidine</h4>
+                      <Badge variant="outline" className="mt-2 text-[10px] bg-transparent border-slate-300 text-slate-400">Coming Soon</Badge>
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Anderson */}
+                <Card className="group h-full flex flex-col p-6 bg-slate-50/50 border border-slate-200/50 border-dashed rounded-[2rem] opacity-70 hover:opacity-100 transition-opacity min-h-[180px] relative">
+                  <ChevronRight className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1 text-slate-400" />
+                  <div className="flex flex-col h-full justify-between">
+                    <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-3xl mb-4 grayscale opacity-50 shadow-sm">
+                      📦
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-bold text-slate-400 group-hover:text-slate-600 transition-colors">Anderson</h4>
+                      <Badge variant="outline" className="mt-2 text-[10px] bg-transparent border-slate-300 text-slate-400">Coming Soon</Badge>
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Ecommanager */}
+                <Card className="group h-full flex flex-col p-6 bg-slate-50/50 border border-slate-200/50 border-dashed rounded-[2rem] opacity-70 hover:opacity-100 transition-opacity min-h-[180px] relative">
+                  <ChevronRight className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1 text-slate-400" />
+                  <div className="flex flex-col h-full justify-between">
+                    <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-3xl mb-4 grayscale opacity-50 shadow-sm">
+                      💼
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-bold text-slate-400 group-hover:text-slate-600 transition-colors">Ecommanager</h4>
+                      <Badge variant="outline" className="mt-2 text-[10px] bg-transparent border-slate-300 text-slate-400">Coming Soon</Badge>
+                    </div>
+                  </div>
+                </Card>
+              </div>
             </div>
-          </div>
-
-
-          {/* 4. DELIVERY SERVICES */}
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-amber-500" /> App Delivery Integration
-              </h3>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {/* Maystro Delivery */}
-              <Card className="group h-full flex flex-col p-6 bg-slate-50/50 border border-slate-200/50 border-dashed rounded-[2rem] opacity-70 hover:opacity-100 transition-opacity min-h-[200px] relative">
-                <ChevronRight className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1 text-slate-400" />
-                <div className="flex flex-col h-full justify-between">
-                  <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-3xl mb-4 grayscale opacity-50 shadow-sm">
-                    🚚
-                  </div>
-                  <div>
-                    <h4 className="text-lg font-bold text-slate-400 group-hover:text-slate-600 transition-colors">Maystro Delivery</h4>
-                    <Badge variant="outline" className="mt-2 text-[10px] bg-transparent border-slate-300 text-slate-400">Coming Soon</Badge>
-                  </div>
-                </div>
-              </Card>
-
-              {/* ZR Delivery */}
-              <Card className="group h-full flex flex-col p-6 bg-slate-50/50 border border-slate-200/50 border-dashed rounded-[2rem] opacity-70 hover:opacity-100 transition-opacity min-h-[200px] relative">
-                <ChevronRight className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1 text-slate-400" />
-                <div className="flex flex-col h-full justify-between">
-                  <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-3xl mb-4 grayscale opacity-50 shadow-sm">
-                    🚛
-                  </div>
-                  <div>
-                    <h4 className="text-lg font-bold text-slate-400 group-hover:text-slate-600 transition-colors">ZR Delivery</h4>
-                    <Badge variant="outline" className="mt-2 text-[10px] bg-transparent border-slate-300 text-slate-400">Coming Soon</Badge>
-                  </div>
-                </div>
-              </Card>
-
-              {/* Yalidine */}
-              <Card className="group h-full flex flex-col p-6 bg-slate-50/50 border border-slate-200/50 border-dashed rounded-[2rem] opacity-70 hover:opacity-100 transition-opacity min-h-[200px] relative">
-                <ChevronRight className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1 text-slate-400" />
-                <div className="flex flex-col h-full justify-between">
-                  <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-3xl mb-4 grayscale opacity-50 shadow-sm">
-                    📮
-                  </div>
-                  <div>
-                    <h4 className="text-lg font-bold text-slate-400 group-hover:text-slate-600 transition-colors">Yalidine</h4>
-                    <Badge variant="outline" className="mt-2 text-[10px] bg-transparent border-slate-300 text-slate-400">Coming Soon</Badge>
-                  </div>
-                </div>
-              </Card>
-
-              {/* Anderson */}
-              <Card className="group h-full flex flex-col p-6 bg-slate-50/50 border border-slate-200/50 border-dashed rounded-[2rem] opacity-70 hover:opacity-100 transition-opacity min-h-[200px] relative">
-                <ChevronRight className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1 text-slate-400" />
-                <div className="flex flex-col h-full justify-between">
-                  <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-3xl mb-4 grayscale opacity-50 shadow-sm">
-                    📦
-                  </div>
-                  <div>
-                    <h4 className="text-lg font-bold text-slate-400 group-hover:text-slate-600 transition-colors">Anderson</h4>
-                    <Badge variant="outline" className="mt-2 text-[10px] bg-transparent border-slate-300 text-slate-400">Coming Soon</Badge>
-                  </div>
-                </div>
-              </Card>
-
-              {/* Ecommanager */}
-              <Card className="group h-full flex flex-col p-6 bg-slate-50/50 border border-slate-200/50 border-dashed rounded-[2rem] opacity-70 hover:opacity-100 transition-opacity min-h-[200px] relative">
-                <ChevronRight className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1 text-slate-400" />
-                <div className="flex flex-col h-full justify-between">
-                  <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-3xl mb-4 grayscale opacity-50 shadow-sm">
-                    💼
-                  </div>
-                  <div>
-                    <h4 className="text-lg font-bold text-slate-400 group-hover:text-slate-600 transition-colors">Ecommanager</h4>
-                    <Badge variant="outline" className="mt-2 text-[10px] bg-transparent border-slate-300 text-slate-400">Coming Soon</Badge>
-                  </div>
-                </div>
-              </Card>
-            </div>
-          </div>
+          )}
 
         </div>
-      )}
 
-      {selectedIntegration === 'shopify' && (
-        <div className="flex-1 flex flex-col min-h-0">
-          <div className="pb-4">
-            <Button variant="ghost" onClick={() => setSelectedIntegration('all')} className="text-slate-500 mb-2 hover:text-indigo-600 hover:bg-indigo-50">
-              <ChevronLeft size={16} className="mr-1" /> Back to Hub
-            </Button>
-          </div>
-          <ShopifyManager userId={userId} onAddStore={() => setOpenSheet(true)} />
-        </div>
-      )}
-
-    </div>
+      </div >
+    </div >
   );
 }

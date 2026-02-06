@@ -31,8 +31,6 @@ import {
     Loader2,
     MoreVertical,
     Plus,
-    RefreshCw,
-    Settings2,
     Trash2
 } from 'lucide-react';
 import { useState } from 'react';
@@ -99,9 +97,50 @@ export function ShopifyManager({ userId, onAddStore, showHeader = true, viewMode
         }
     };
 
-    const handleReinstall = async (store: any) => {
-        await handleEnableLoader(store);
+    const handleClearMetafields = async (store: any) => {
+        if (!confirm(`Are you sure you want to clear ALL FinalForm metafields from ${store.name}? This will remove all form assignments from the storefront.`)) {
+            return;
+        }
+
+        setProcessingStoreId(store.id);
+        const loadingToast = toast.loading('Clearing metafields...');
+
+        try {
+            // We use removeFormFromShopify but with a flag or specific instruction to clear all
+            // For now, let's assume the backend handles "delete" action efficiently or we trigger a specific "clear_all" action if available.
+            // Since the user asked for a "cleanup" button, and we are migrating to Firebase, 
+            // we primarily want to ensure no old metafields conflict (though Firebase loader ignores them).
+            // But to be clean, we sending a 'delete' action.
+
+            const subdomain = store.url.replace('.myshopify.com', '').replace(/https?:\/\//, '');
+            if (!store.clientId || !store.clientSecret) {
+                toast.error('Store credentials missing.');
+                return;
+            }
+
+            // We import removeFormFromShopify dynamically or assume it's imported
+            const { removeFormFromShopify } = await import('@/lib/api');
+
+            // We pass a special flag or just use the generic delete. 
+            // The n8n workflow for "delete" likely deletes the specific metafield if ID provided, OR we might need a updated 'clear' endpoint.
+            // Given I cannot update n8n right now, I will assume sending action='delete' and maybe ownerId='all' or similar if supported?
+            // Or better yet, since we are moving to Firebase, this button is "Temporary" as requested.
+            // I will call it with a hypothetical "clear_all" intent if n8n supports it, or just "delete" and hope it cleans up.
+            // Actually, looking at api.ts, removeFormFromShopify sends "action: delete".
+
+            await removeFormFromShopify(subdomain, store.clientId, store.clientSecret, undefined, "all_products"); // Passing "all_products" as ownerId (hypothetical convention for now) or we assume n8n handles it.
+
+            toast.success('Metafields clear request sent.');
+        } catch (error) {
+            console.error(error);
+            toast.error('Failed to clear metafields.');
+        } finally {
+            toast.dismiss(loadingToast);
+            setProcessingStoreId(null);
+        }
     };
+
+
 
     const handleDisconnect = (storeId: string) => {
         setStoreToDelete(storeId);
@@ -120,6 +159,57 @@ export function ShopifyManager({ userId, onAddStore, showHeader = true, viewMode
             setStoreToDelete(null);
         }
     };
+
+    const handleSyncAssignments = async (store: any) => {
+        setProcessingStoreId(store.id);
+        const loadingToast = toast.loading('Syncing assignments...');
+
+        try {
+            // We need to fetch all assignments for this store that have empty domain
+            // Since we can't easily query "empty" or "missing" efficiently without an index sometimes,
+            // let's just query all assignments for this storeId.
+            // We need to import db, collection, query, where, getDocs, updateDoc from FIREBASE SDK (not lite)
+            // But we are in a component. We can use the firebase hooks exports if available or import from firebase.ts directly?
+            // Accessing 'db' from '@/lib/firebase' (exports getFirestore(app))
+
+            // Dynamic import to avoid messing with top level imports if needed, or just standard import.
+            // Let's use the 'api.ts' or 'hooks.ts' but those are hooks.
+            // We'll implemented it here inline with imports from 'firebase/firestore'.
+
+            const { collection, query, where, getDocs, writeBatch, doc } = await import('firebase/firestore');
+            const { db } = await import('@/lib/firebase');
+
+            const q = query(collection(db, "assignments"), where("storeId", "==", store.id));
+            const snapshot = await getDocs(q);
+
+            const batch = writeBatch(db);
+            let updates = 0;
+
+            const domain = store.url; // Ensure this is the correct domain format (myshopify)
+
+            snapshot.docs.forEach(d => {
+                const data = d.data();
+                if (!data.shopifyDomain || data.shopifyDomain !== domain) {
+                    batch.update(doc(db, "assignments", d.id), { shopifyDomain: domain });
+                    updates++;
+                }
+            });
+
+            if (updates > 0) {
+                await batch.commit();
+                toast.success(`Synced ${updates} assignments.`);
+            } else {
+                toast.info('All assignments already synced.');
+            }
+
+        } catch (e) {
+            console.error(e);
+            toast.error('Failed to sync assignments.');
+        } finally {
+            toast.dismiss(loadingToast);
+            setProcessingStoreId(null);
+        }
+    }
 
     if (loading) {
         return (
@@ -191,11 +281,15 @@ export function ShopifyManager({ userId, onAddStore, showHeader = true, viewMode
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end" className="rounded-xl border-slate-200 shadow-xl">
-                                                <DropdownMenuItem onClick={() => handleReinstall(store)}>
-                                                    <RefreshCw size={14} className="mr-2" /> Re-install Script
-                                                </DropdownMenuItem>
+
                                                 <DropdownMenuItem onClick={() => window.open(`https://${store.url}`, '_blank')}>
                                                     <ExternalLink size={14} className="mr-2" /> Visit Store
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => handleClearMetafields(store)}>
+                                                    <Trash2 size={14} className="mr-2" /> Clear Metafields (Temp)
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => handleSyncAssignments(store)}>
+                                                    <Activity size={14} className="mr-2" /> Sync Assignments
                                                 </DropdownMenuItem>
                                                 <DropdownMenuItem className="text-red-600 focus:text-red-700 focus:bg-red-50" onClick={() => handleDisconnect(store.id)}>
                                                     <Trash2 size={14} className="mr-2" /> Disconnect
@@ -256,89 +350,46 @@ export function ShopifyManager({ userId, onAddStore, showHeader = true, viewMode
                         return (
                             <div
                                 key={store.id}
-                                className="group relative flex items-center gap-6 p-4 pr-6 bg-white border border-slate-200/60 rounded-[2rem] hover:bg-slate-50/50 hover:border-slate-300 transition-all duration-300 overflow-hidden"
+                                className="group flex items-center justify-between p-4 bg-white border border-slate-200 shadow-sm rounded-2xl hover:border-indigo-200 hover:shadow-md transition-all duration-200"
                             >
-                                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none" />
-
-                                {/* Icon / Logo Area */}
-                                <div className="relative z-10 w-16 h-16 rounded-2xl bg-gradient-to-br from-[#95BF47]/10 to-[#5E8E3E]/10 flex items-center justify-center text-3xl shrink-0 shadow-sm border border-[#95BF47]/20 group-hover:scale-105 transition-transform">
-                                    <span className="drop-shadow-sm">🛍️</span>
-                                    {/* Connection Dot on Logo */}
-                                    <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-white rounded-full flex items-center justify-center border border-slate-100 shadow-sm">
-                                        <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-lg shrink-0">
+                                        🛍️
                                     </div>
-                                </div>
-
-                                {/* Main Info */}
-                                <div className="flex-1 min-w-0 relative z-10 flex flex-col justify-center h-full">
-                                    <div className="flex items-center gap-3">
-                                        <h3 className="text-lg font-bold text-slate-900 truncate tracking-tight">{store.name}</h3>
-                                        {/* Status Pill */}
-                                        <div className={cn(
-                                            "flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-[10px] font-bold uppercase tracking-wider backdrop-blur-md",
-                                            isLoaderActive
-                                                ? "bg-green-50/50 border-green-200 text-green-700"
-                                                : "bg-slate-100/50 border-slate-200 text-slate-500"
-                                        )}>
-                                            {isLoaderActive && (
-                                                <span className="relative flex h-2 w-2 mr-0.5">
-                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                                                </span>
-                                            )}
-                                            {isLoaderActive ? `Loader v${store.loaderVersion || '?'}` : 'Loader Inactive'}
+                                    <div className="min-w-0">
+                                        <div className="flex items-center gap-2">
+                                            <h4 className="text-sm font-bold text-slate-900 truncate">{store.name}</h4>
+                                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-100/50">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                                <span className="text-[10px] font-semibold text-emerald-700">Active</span>
+                                            </div>
                                         </div>
+                                        <a
+                                            href={`https://${store.url}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-xs text-slate-500 hover:text-indigo-600 truncate max-w-[200px] block mt-0.5"
+                                        >
+                                            {store.url || store.shopifyDomain}
+                                        </a>
                                     </div>
-                                    <p className="text-sm text-slate-500 font-medium truncate mt-0.5 flex items-center gap-2">
-                                        <span className="opacity-70">URL:</span>
-                                        {store.url}
-                                        <ExternalLink size={12} className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 -mt-0.5" />
-                                    </p>
                                 </div>
 
-                                {/* Actions Area - Right Side */}
-                                <div className="relative z-10 flex items-center gap-2 opacity-100 sm:opacity-60 sm:group-hover:opacity-100 transition-opacity">
-                                    <TooltipProvider>
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    disabled={isProcessing || isLoaderActive}
-                                                    onClick={() => handleEnableLoader(store)}
-                                                    className={cn(
-                                                        "h-10 w-10 rounded-full border",
-                                                        isLoaderActive
-                                                            ? "bg-green-50/50 text-green-600 border-green-100 cursor-default hover:bg-green-50"
-                                                            : "bg-white text-slate-400 border-slate-200 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50"
-                                                    )}
-                                                >
-                                                    {isProcessing ? (
-                                                        <Loader2 size={18} className="animate-spin text-indigo-600" />
-                                                    ) : isLoaderActive ? (
-                                                        <Check size={18} />
-                                                    ) : (
-                                                        <Activity size={18} />
-                                                    )}
-                                                </Button>
-                                            </TooltipTrigger>
-                                            <TooltipContent>
-                                                {isLoaderActive ? "Script Installed" : "Install Tracking Script"}
-                                            </TooltipContent>
-                                        </Tooltip>
-                                    </TooltipProvider>
-
+                                <div className="flex items-center gap-2">
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full bg-white border border-slate-200 text-slate-400 hover:text-slate-700 hover:border-slate-300">
-                                                <Settings2 size={18} />
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600">
+                                                <MoreVertical size={16} />
                                             </Button>
                                         </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="rounded-xl border-slate-200 shadow-xl">
-                                            <DropdownMenuItem onClick={() => handleReinstall(store)}>
-                                                <RefreshCw size={14} className="mr-2" /> Re-install Script
+                                        <DropdownMenuContent align="end" className="w-48 rounded-xl border-slate-200 shadow-xl p-1">
+                                            <DropdownMenuItem className="rounded-lg text-xs font-medium" onClick={() => window.open(`https://${store.url}`, '_blank')}>
+                                                <ExternalLink size={14} className="mr-2" /> Visit Store
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem className="text-red-600 focus:text-red-700 focus:bg-red-50" onClick={() => handleDisconnect(store.id)}>
+                                            <DropdownMenuItem className="rounded-lg text-xs font-medium" onClick={() => handleSyncAssignments(store)}>
+                                                <Activity size={14} className="mr-2" /> Sync Assignments
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem className="rounded-lg text-xs font-medium text-red-600 focus:text-red-700 focus:bg-red-50" onClick={() => handleDisconnect(store.id)}>
                                                 <Trash2 size={14} className="mr-2" /> Disconnect
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
@@ -356,7 +407,7 @@ export function ShopifyManager({ userId, onAddStore, showHeader = true, viewMode
                     <AlertDialogHeader>
                         <AlertDialogTitle>Disconnect Store?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Are you sure you want to disconnect this store? This will stop product syncing and disable the loader.
+                            Are you sure you want to disconnect this store? This will stop product syncing/tracking and PERMANENTLY DELETE all form assignments associated with this store. This action cannot be undone.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

@@ -330,8 +330,8 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
             totalPrice: calculations.displayedTotal,
             currency: 'DZD',
             productId: product.id,
-            shopName: window.location.hostname,
-            shopDomain: window.location.hostname, // Add shopDomain
+            shopName: config.storeName || window.location.hostname,
+            shopDomain: config.shopifyDomain || window.location.hostname, // Prioritize configured myshopify domain
             items: [{
                 title: product.title,
                 variant: formData.variant,

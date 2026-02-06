@@ -1,21 +1,21 @@
 import {
-  addDoc,
-  collection,
-  deleteDoc,
-  doc,
-  getDocs,
-  onSnapshot,
-  query,
-  updateDoc,
-  where,
+    addDoc,
+    collection,
+    deleteDoc,
+    doc,
+    getDocs,
+    onSnapshot,
+    query,
+    updateDoc,
+    where
 } from "firebase/firestore";
 import { useCallback, useEffect, useState } from "react";
 import { db } from "../firebase";
 import {
-  checkStoreOwnership,
-  claimStoreOwnership,
-  normalizeShopifyDomain,
-  releaseStoreOwnership,
+    checkStoreOwnership,
+    claimStoreOwnership,
+    normalizeShopifyDomain,
+    releaseStoreOwnership,
 } from "./storeOwnership";
 import { ConnectedStore, FormAssignment, SavedForm } from "./types";
 
@@ -258,13 +258,45 @@ export const useConnectedStores = (userId: string) => {
       try {
         // Find the store to get its domain for ownership release
         const storeToDelete = stores.find((s) => s.id === storeId);
+        
+        // Handle "undefined store" error gracefully if store not found in state
+        if (!storeToDelete) {
+             // If not in state, try to fetch it first or just proceed with deletion based on ID if possible. 
+             // Ideally we need the domain for ownership release. 
+             // For now, let's assume if it's not in state, it might have been deleted, or we just delete the doc.
+             // But we should try to get the doc from Firestore if we really need the domain.
+             console.warn("Store not found in local state during deletion, checking Firestore...");
+             // logic could be expanded here, but for now we proceed to delete what we can.
+        }
+
         const shopifyDomain =
           storeToDelete?.shopifyDomain ||
           (storeToDelete?.url ? normalizeShopifyDomain(storeToDelete.url) : null);
 
+        // 0. Disable the loader script on Shopify (remove ScriptTag)
+        if (storeToDelete?.loaderInstalled && storeToDelete?.clientId && storeToDelete?.clientSecret) {
+          try {
+            const { disableLoader } = await import("../api");
+            const subdomain = storeToDelete.url?.replace('.myshopify.com', '').replace(/https?:\/\//, '') || '';
+            if (subdomain) {
+              await disableLoader(subdomain, storeToDelete.clientId, storeToDelete.clientSecret);
+            }
+          } catch (err) {
+            // Don't block disconnect if disableLoader fails - log and continue
+            console.warn("Failed to disable loader on Shopify during disconnect:", err);
+          }
+        }
+
+        // 1. Delete the Store Document
         await deleteDoc(doc(db, "stores", storeId));
 
-        // Release ownership of this store
+        // 2. Delete all Assignments associated with this store
+        const assignmentsQuery = query(collection(db, "assignments"), where("storeId", "==", storeId));
+        const assignmentsSnapshot = await getDocs(assignmentsQuery);
+        const deleteAssignmentsPromises = assignmentsSnapshot.docs.map(doc => deleteDoc(doc.ref));
+        await Promise.all(deleteAssignmentsPromises);
+
+        // 3. Release ownership of this store
         if (shopifyDomain) {
           await releaseStoreOwnership(shopifyDomain);
         }
@@ -327,15 +359,44 @@ export const useFormAssignments = (userId: string) => {
       type: "store" | "product";
       productId?: string;
       productHandle?: string;
+      shopifyDomain?: string; // New field
     }) => {
       if (!userId) throw new Error("User not authenticated");
       try {
         const { formId, storeId, type, productId, productHandle } = assignmentData;
+        // Fetch the store to get the domain
+        // We know storeId is valid because we usually select it from a list, but we should verify or pass the domain
+        // For now, let's try to find it in the 'stores' state if available, but this hook doesn't have access to 'stores'.
+        // We can pass it in assignmentData or fetch it.
+        // BETTER APPROACH: The UI calling this likely has the store object. Let's update the signature to accept shopifyDomain or optional.
+        // OR: We can rely on the fact that we might need to fetch the store if domain is missing.
+        // However, to keep it simple and efficient, we will require shopifyDomain in assignmentData or fetch it if missing.
+        
+        let shopifyDomain = assignmentData.shopifyDomain; 
+        
+        // If not provided, fetch from store
+        if (!shopifyDomain) {
+            try {
+                const storeDoc = await getDoc(doc(db, "stores", storeId));
+                if (storeDoc.exists()) {
+                    const storeData = storeDoc.data();
+                    // Use user-friendly domain or url, but we need what the loader sees.
+                    // Loader sees 'window.location.hostname'.
+                    // Store has 'url' (e.g. my-shop.myshopify.com) and 'customDomain'.
+                    // We should save the 'myshopify.com' usually as a base, or normalized domain.
+                    // 'store.url' usually is 'xxx.myshopify.com'.
+                    shopifyDomain = storeData.url; 
+                }
+            } catch (e) {
+                console.error("Failed to fetch store for domain:", e);
+            }
+        }
+        
         const newAssignment: Omit<FormAssignment, "id"> = {
           userId,
           formId,
           storeId,
-          shopifyDomain: "", // TODO: Get from store details if needed, or leave empty
+          shopifyDomain: shopifyDomain || "", // This needs to be populated!
           assignmentType: type,
           productId: type === "store" ? null : (productId ?? null),
           productHandle: type === "store" ? null : (productHandle ?? null),

@@ -82,42 +82,65 @@ export const ThankYouPopup = ({ config, lang, onClose, fixed = false, orderData 
         };
     }, [fixed]);
 
-    // Effects: Sound & Confetti - Run ONLY ON MOUNT to avoid loop in editor
-    // We pass [] as dependency array.
+    // Effects: Sound & Confetti - Run ONLY ON MOUNT
     useEffect(() => {
         if ((config as any).thankYou?.enableSound) {
             playSuccessSound();
         }
         if ((config as any).thankYou?.enableConfetti) {
-            const duration = 3000;
-            const end = Date.now() + duration;
-            const myConfetti = (!fixed && internalCanvasRef.current)
-                ? confetti.create(internalCanvasRef.current, { resize: true, useWorker: true })
-                : confetti;
+            // FIX: Always use the internal canvas if available, because in Shadow DOM/Portal, global confetti might not appear correctly or be z-indexed wrong.
+            // Even if fixed=true (Overlay), we render the canvas inside our popup container.
 
-            (function frame() {
-                myConfetti({
-                    particleCount: 2,
-                    angle: 60,
-                    spread: 55,
-                    origin: { x: 0 },
-                    colors: [config.accentColor || '#10b981', '#ffffff']
-                });
-                myConfetti({
-                    particleCount: 2,
-                    angle: 120,
-                    spread: 55,
-                    origin: { x: 1 },
-                    colors: [config.accentColor || '#10b981', '#ffffff']
-                });
+            const canvas = internalCanvasRef.current;
+            if (canvas) {
+                setTimeout(() => {
+                    try {
+                        const myConfetti = confetti.create(canvas, {
+                            resize: true,
+                            useWorker: false // Worker might cause issues in some environments/builds (ReferenceError)
+                        });
 
-                if (Date.now() < end) {
-                    requestAnimationFrame(frame);
-                }
-            }());
+                        const duration = 3000;
+                        const end = Date.now() + duration;
+
+                        (function frame() {
+                            try {
+                                // Launch from left
+                                myConfetti({
+                                    particleCount: 2,
+                                    angle: 60,
+                                    spread: 55,
+                                    origin: { x: 0 },
+                                    colors: [config.accentColor || '#10b981', '#ffffff']
+                                });
+                                // Launch from right
+                                myConfetti({
+                                    particleCount: 2,
+                                    angle: 120,
+                                    spread: 55,
+                                    origin: { x: 1 },
+                                    colors: [config.accentColor || '#10b981', '#ffffff']
+                                });
+
+                                if (Date.now() < end) {
+                                    requestAnimationFrame(frame);
+                                }
+                            } catch (e) {
+                                console.error("Confetti frame error:", e);
+                            }
+                        }());
+                    } catch (e) {
+                        console.error("Confetti init error:", e);
+                    }
+                }, 300); // Delay to ensure canvas is layouted
+
+                return () => {
+                    // Cleanup if needed
+                };
+            }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); // Empty dependency array fixed the loop issue!
+    }, []);
 
     // WhatsApp Helpers
     const getWhatsAppUrl = (mode: 'confirm' | 'modify') => {
@@ -160,10 +183,8 @@ export const ThankYouPopup = ({ config, lang, onClose, fixed = false, orderData 
 
                 <div className="relative w-full h-full md:max-w-md md:h-auto md:max-h-[85vh] md:rounded-3xl shadow-2xl overflow-hidden flex flex-col transition-all duration-500" style={{ backgroundColor: config.formBackground || '#ffffff' }}>
 
-                    {/* Confetti Canvas */}
-                    {!fixed && (
-                        <canvas ref={internalCanvasRef} className="absolute inset-0 w-full h-full pointer-events-none z-50" />
-                    )}
+                    {/* Confetti Canvas - Always render, z-index above everything inside the card but below content if needed, or just overlay */}
+                    <canvas ref={internalCanvasRef} className="absolute inset-0 w-full h-full pointer-events-none z-50" />
 
                     {/* VIEW 1: THANK YOU */}
                     {view === 'thankyou' && (

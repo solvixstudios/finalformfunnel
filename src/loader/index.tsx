@@ -1,12 +1,15 @@
 import '@/index.css';
+import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore/lite';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
+import { db } from './firebase';
 import { FormLoader } from './FormLoader';
 
 // Declare global variable defined in Vite config
 declare const __APP_VERSION__: string;
 
 const CONTAINER_ID = 'finalform-container';
+const SPINNER_ID = 'finalform-spinner';
 
 /**
  * Fetch product data from Shopify AJAX API
@@ -40,99 +43,77 @@ async function fetchShopifyProduct() {
 }
 
 /**
- * Fetch config from Storefront API
- * Hierarchy: Product Metafield > Shop Metafield
+ * Fetch config from Firebase Firestore (Source of Truth)
  */
-async function fetchConfigFromStorefrontApi(shop: string, token: string, productId?: string, productHandle?: string) {
-    if (!token) {
-        console.error('FinalForm: Missing sf_token in script URL. Cannot fetch config.');
-        return null;
-    }
-
-    console.log('FinalForm: Fetching config via Storefront API...');
-
-    let query = '';
-
-    // If we are on a product page, we want to check Product *and* Shop config
-    if (productHandle) {
-        query = `
-        query getConfigs($handle: String!) {
-            product(handle: $handle) {
-                metafield(namespace: "finalform", key: "config") {
-                    value
-                }
-            }
-            shop {
-                metafield(namespace: "finalform", key: "config") {
-                    value
-                }
-            }
-        }
-        `;
-    } else {
-        // Just Shop config
-        query = `
-        query getShopConfig {
-            shop {
-                metafield(namespace: "finalform", key: "config") {
-                    value
-                }
-            }
-        }
-        `;
-    }
+async function fetchConfigFromFirebase(shop: string, productId?: string, productHandle?: string) {
+    if (!shop) return null;
+    console.log('FinalForm: Fetching config from Firebase...');
 
     try {
-        const res = await fetch(`https://${shop}/api/2023-01/graphql.json`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Shopify-Storefront-Access-Token': token,
-            },
-            body: JSON.stringify({
-                query,
-                variables: { handle: productHandle }
-            })
-        });
+        // 1. Get all assignments for this shop
+        // We use shopifyDomain to filter. Ensure shop is normalized or matches what's saved.
+        // Usually 'shop' param is 'myshop.myshopify.com' or custom domain. The backend saves 'myshopify.com' usually if connected via API,
+        // but 'url' might be used. 'normalizeShopifyDomain' logic in backend is important.
+        // Here we assume 'shop' passed in params matches 'shopifyDomain' in Firestore.
 
-        if (!res.ok) {
-            console.error('FinalForm: SF API Error', res.statusText);
+        const assignmentsRef = collection(db, 'assignments');
+        const q = query(assignmentsRef, where('shopifyDomain', '==', shop), where('isActive', '==', true));
+        const snapshot = await getDocs(q);
+
+        if (snapshot.empty) {
+            console.warn('FinalForm: No assignments found for this shop.');
             return null;
         }
 
-        const json = await res.json();
+        const assignments = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as any));
 
-        // Priority 1: Product Config
-        const productConfig = json.data?.product?.metafield?.value;
-        if (productConfig) {
-            try {
-                const parsed = JSON.parse(productConfig);
-                console.log('FinalForm: Using Product-Specific Config');
-                return parsed;
-            } catch (e) {
-                console.error('FinalForm: Invalid JSON in Product Metafield', e);
-            }
+        // 2. Find Best Match
+        // Priority 1: Specific Product (by ID or Handle)
+        // Priority 2: Store Wide
+
+        // We sort by priority (descending) just in case, though logic below handles it
+        // assignments.sort((a, b) => b.priority - a.priority);
+
+        let match = null;
+
+        // Check Product ID Match
+        if (productId) {
+            match = assignments.find(a => a.assignmentType === 'product' && String(a.productId) === String(productId));
         }
 
-        // Priority 2: Shop Config (Global Fallback)
-        const shopConfig = json.data?.shop?.metafield?.value;
-        if (shopConfig) {
-            try {
-                const parsed = JSON.parse(shopConfig);
-                console.log('FinalForm: Using Global Shop Config');
-                return parsed;
-            } catch (e) {
-                console.error('FinalForm: Invalid JSON in Shop Metafield', e);
-            }
+        // Check Handle Match (if no ID match)
+        if (!match && productHandle) {
+            match = assignments.find(a => a.assignmentType === 'product' && a.productHandle === productHandle);
         }
 
-        console.warn('FinalForm: No configuration found in Metafields (Product or Shop).');
+        // Check Store Match (if no product match)
+        if (!match) {
+            match = assignments.find(a => a.assignmentType === 'store');
+        }
+
+        if (!match) {
+            console.warn('FinalForm: No matching assignment found for this context.');
+            return null;
+        }
+
+        console.log('FinalForm: Found assignment', match.id);
+
+        // 3. Fetch the Form Config
+        const formRef = doc(db, 'forms', match.formId);
+        const formSnap = await getDoc(formRef);
+
+        if (!formSnap.exists()) {
+            console.error('FinalForm: Assigned form document does not exist.');
+            return null;
+        }
+
+        const formData = formSnap.data();
+        return formData.config;
 
     } catch (e) {
-        console.error('FinalForm: SF API Fetch Exception', e);
+        console.error('FinalForm: Firebase Fetch Error', e);
+        return null;
     }
-
-    return null;
 }
 
 /**
@@ -141,6 +122,57 @@ async function fetchConfigFromStorefrontApi(shop: string, token: string, product
 async function initLoader() {
     const version = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'unknown';
     console.log(`FinalForm: Initializing v${version}...`);
+
+    // 0. Inject Loading Spinner IMMEDIATELY
+    if (!document.getElementById(SPINNER_ID)) {
+        const spinnerStyle = document.createElement('style');
+        spinnerStyle.textContent = `
+            #${SPINNER_ID} {
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                z-index: 2147483646;
+                width: 50px;
+                height: 50px;
+                background: white;
+                border-radius: 50%;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                opacity: 0;
+                transform: translateY(20px);
+                transition: opacity 0.3s, transform 0.3s;
+                pointer-events: none;
+            }
+            #${SPINNER_ID}.visible {
+                opacity: 1;
+                transform: translateY(0);
+                pointer-events: auto;
+            }
+            .ff-spinner {
+                width: 24px;
+                height: 24px;
+                border: 3px solid #f3f3f3;
+                border-top: 3px solid #4f46e5;
+                border-radius: 50%;
+                animation: ff-spin 1s linear infinite;
+            }
+            @keyframes ff-spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+        `;
+        document.head.appendChild(spinnerStyle);
+
+        const spinner = document.createElement('div');
+        spinner.id = SPINNER_ID;
+        spinner.innerHTML = '<div class="ff-spinner"></div>';
+        document.body.appendChild(spinner);
+
+        // Slight delay to fade in
+        setTimeout(() => spinner.classList.add('visible'), 50);
+    }
 
     // 1. Helper to parse script params
     const getScriptParams = () => {
@@ -161,7 +193,7 @@ async function initLoader() {
 
     const params = getScriptParams();
     const shop = params.shop || window.location.hostname;
-    const sfToken = params.sf_token;
+    // const sfToken = params.sf_token; // Deprecated with Firebase
 
     // 1.5. Remove Tailwind CDN Injection (We rely on built CSS now)
 
@@ -176,30 +208,31 @@ async function initLoader() {
 
     // Check if we are on a product page (required for product forms)
     // If we can't find a product ID/handle, we might skip unless it's a specific landing page form
-    if (!productId && !productHandle && !sfToken) {
-        console.log('FinalForm: No product context or token found. Skipping.');
+    if (!productId && !productHandle) {
+        console.log('FinalForm: No product context found. Skipping.');
+        const s = document.getElementById(SPINNER_ID);
+        if (s) s.remove();
         return;
     }
 
     console.log('FinalForm: Context', { shop, productId, productHandle });
 
-    // 3. Resolve Config (Storefront API Only)
-    let config = null;
-
-    if (sfToken) {
-        config = await fetchConfigFromStorefrontApi(shop, sfToken, productId, productHandle);
-    } else {
-        console.warn('FinalForm: sf_token missing. Please add ?sf_token=YOUR_TOKEN to the script tag.');
-    }
+    // 3. Resolve Config (Firebase)
+    // We pass shop, productId, productHandle to find the right assignment
+    const config = await fetchConfigFromFirebase(shop, productId, productHandle);
 
     if (!config) {
-        console.warn('FinalForm: Config load failed. Aborting.');
+        console.warn('FinalForm: Config load failed or no assignment found. Aborting.');
+        const s = document.getElementById(SPINNER_ID);
+        if (s) s.remove();
         return;
     }
 
     console.log('FinalForm: Config loaded successfully.');
 
     // 4. Fetch Product Data
+    // We fetch product data in parallel if possible, but for now sequential is fine or use Promise.all
+    // Actually config might dictate if we need product data, but usually we do.
     const productData = await fetchShopifyProduct();
 
     // 4.5 Process Host Overrides (Auto Hide Theme Elements)
@@ -324,6 +357,7 @@ share-button {
         overlayContainer.style.left = '0';
         overlayContainer.style.width = '100%';
         overlayContainer.style.height = '100%';
+        overlayContainer.style.background = 'transparent'; // EXT: Fix blank screen issue
         overlayContainer.style.pointerEvents = 'none'; // Allow clicks to pass through by default
         overlayContainer.style.zIndex = '2147483647'; // Max Z-Index
 
@@ -354,6 +388,10 @@ share-button {
         // Remove Skeleton if exists
         const skel = shadowRoot.getElementById('finalform-skeleton');
         if (skel) skel.remove();
+
+        // Remove Spinner
+        const spinner = document.getElementById(SPINNER_ID);
+        if (spinner) spinner.remove();
 
         const offers = config.offers || [];
         const shipping = config.shipping || { standard: { home: 0, desk: 0 } };

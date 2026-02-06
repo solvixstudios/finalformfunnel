@@ -120,6 +120,7 @@ export const getExportData = (
     ctaVariant: formConfig.ctaVariant,
     ctaAnimation: formConfig.ctaAnimation,
     ctaSticky: formConfig.ctaSticky,
+    ctaStickyVariant: formConfig.ctaStickyVariant,
     // Offers
     offers: exportOffers,
     // Shipping
