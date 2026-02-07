@@ -277,14 +277,18 @@ export const useConnectedStores = (userId: string) => {
         // 0. Disable the loader script on Shopify (remove ScriptTag)
         if (storeToDelete?.loaderInstalled && storeToDelete?.clientId && storeToDelete?.clientSecret) {
           try {
-            const { disableLoader } = await import("../api");
+            const { getAdapter } = await import("../integrations");
+            const adapter = getAdapter(storeToDelete.platform || 'shopify');
             const subdomain = storeToDelete.url?.replace('.myshopify.com', '').replace(/https?:\/\//, '') || '';
             if (subdomain) {
-              await disableLoader(subdomain, storeToDelete.clientId, storeToDelete.clientSecret);
+              await adapter.disableLoader(subdomain, {
+                clientId: storeToDelete.clientId,
+                clientSecret: storeToDelete.clientSecret
+              });
             }
           } catch (err) {
             // Don't block disconnect if disableLoader fails - log and continue
-            console.warn("Failed to disable loader on Shopify during disconnect:", err);
+            console.warn("Failed to disable loader during disconnect:", err);
           }
         }
 

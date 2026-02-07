@@ -8,8 +8,8 @@ import {
     SheetTitle,
 } from '@/components/ui/sheet';
 // Tabs removed
-import { assignFormToShopify, removeFormFromShopify } from '@/lib/api';
 import { useConnectedStores, useFormAssignments } from '@/lib/firebase/hooks';
+import { getAdapter } from '@/lib/integrations';
 import { getProductsFromCache, notifyProductSyncComplete, Product, syncProductsFromShopify } from '@/lib/products';
 import { cn } from '@/lib/utils';
 import {
@@ -285,17 +285,16 @@ export function PublishSheet({
             type: 'store',
         });
 
-        // Shopify
-        await assignFormToShopify(
+        // Shopify Push via adapter
+        const adapter = getAdapter(store.platform || 'shopify');
+        await adapter.assignForm(
             subdomain,
-            store.clientId!,
-            store.clientSecret!,
+            { clientId: store.clientId!, clientSecret: store.clientSecret! },
             formConfig,
-            undefined,
             {
                 formId,
                 formName,
-                assignmentType: 'shop',
+                assignmentType: 'store',
                 storeId: selectedStoreId,
                 storeName: store.name,
                 shopifyDomain: store.url,
@@ -339,13 +338,12 @@ export function PublishSheet({
                 });
             }
 
-            // Shopify Push
-            return assignFormToShopify(
+            // Shopify Push via adapter
+            const adapter = getAdapter(store.platform || 'shopify');
+            return adapter.assignForm(
                 subdomain,
-                store.clientId!,
-                store.clientSecret!,
+                { clientId: store.clientId!, clientSecret: store.clientSecret! },
                 formConfig,
-                pid,
                 {
                     formId,
                     formName,
@@ -386,9 +384,12 @@ export function PublishSheet({
                 const subdomain = store.url.replace('.myshopify.com', '').replace(/https?:\/\//, '');
                 const ownerId = assignment.assignmentType === 'product' ? assignment.productId : undefined;
 
-                // 1. Remove from Shopify
-                await removeFormFromShopify(subdomain, store.clientId, store.clientSecret, undefined, ownerId)
-                    .catch(e => console.warn(`Failed to remove from shopify for ${assignId}`, e));
+                // 1. Remove from Shopify via adapter
+                const adapter = getAdapter(store.platform || 'shopify');
+                await adapter.removeForm(subdomain, {
+                    clientId: store.clientId,
+                    clientSecret: store.clientSecret
+                }, ownerId).catch(e => console.warn(`Failed to remove for ${assignId}`, e));
 
                 // 2. Remove from Firebase
                 await deleteAssignment(assignId);
@@ -418,9 +419,12 @@ export function PublishSheet({
         const loadingToast = toast.loading('Unpublishing...');
 
         try {
-            // 1. Remove from Shopify (Metafield)
             const ownerId = assignment.assignmentType === 'product' ? assignment.productId : undefined;
-            await removeFormFromShopify(subdomain, store.clientId, store.clientSecret, undefined, ownerId);
+            const adapter = getAdapter(store.platform || 'shopify');
+            await adapter.removeForm(subdomain, {
+                clientId: store.clientId,
+                clientSecret: store.clientSecret
+            }, ownerId);
 
             // 2. Remove Assignment from Firebase
             await deleteAssignment(assignment.id);

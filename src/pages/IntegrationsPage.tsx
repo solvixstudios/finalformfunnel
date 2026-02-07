@@ -23,11 +23,11 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { connectToShopify, enableLoader, LOADER_VERSION } from '../lib/api';
 import { useConnectedStores } from '../lib/firebase/hooks';
 import { WhatsAppProfile } from '../lib/firebase/types';
 import { useWhatsAppProfiles } from '../lib/firebase/whatsappHooks';
 import { useI18n } from '../lib/i18n/i18nContext';
+import { getAdapter, LOADER_VERSION } from '../lib/integrations';
 
 interface IntegrationsPageProps {
   userId: string;
@@ -291,38 +291,45 @@ export default function IntegrationsPage({ userId }: IntegrationsPageProps) {
 
     setIsConnecting(true);
     try {
-      const result = await connectToShopify(cleanDomain, shopifyForm.clientId.trim(), shopifyForm.clientSecret.trim());
+      const shopifyAdapter = getAdapter('shopify');
+      const result = await shopifyAdapter.connect(cleanDomain, {
+        clientId: shopifyForm.clientId.trim(),
+        clientSecret: shopifyForm.clientSecret.trim()
+      });
 
-      if (result.success && result.shop) {
-        const shopifyDomain = result.shop.myshopify_domain || `${cleanDomain}.myshopify.com`;
+      if (result.success && result.store) {
+        const shopifyDomain = result.store.domain || `${cleanDomain}.myshopify.com`;
 
         try {
           const newStore = await addStore({
-            name: result.shop.name,
+            name: result.store.name,
             platform: 'shopify',
             url: shopifyDomain,
             shopifyDomain: shopifyDomain,
             clientId: shopifyForm.clientId.trim(),
             clientSecret: shopifyForm.clientSecret.trim(),
-            loaderInstalled: result.loaderInstalled || false,
-            loaderVersion: result.loaderVersion,
-            loaderScriptTagId: result.loaderScriptTagId,
-            loaderInstalledAt: result.loaderInstalled ? new Date().toISOString() : undefined
+            loaderInstalled: result.loader?.installed || false,
+            loaderVersion: result.loader?.version,
+            loaderScriptTagId: result.loader?.scriptId,
+            loaderInstalledAt: result.loader?.installed ? new Date().toISOString() : undefined
           });
 
           // Automatically enable loader if it wasn't already enabled
-          if (!result.loaderInstalled) {
+          if (!result.loader?.installed) {
             try {
-              const loaderResult = await enableLoader(cleanDomain, shopifyForm.clientId.trim(), shopifyForm.clientSecret.trim());
+              const loaderResult = await shopifyAdapter.enableLoader(cleanDomain, {
+                clientId: shopifyForm.clientId.trim(),
+                clientSecret: shopifyForm.clientSecret.trim()
+              });
 
               if (loaderResult.success) {
                 await updateStore(newStore.id, {
                   loaderInstalled: true,
                   loaderVersion: loaderResult.version || LOADER_VERSION,
-                  loaderScriptTagId: loaderResult.scriptTagId,
+                  loaderScriptTagId: loaderResult.scriptId,
                   loaderInstalledAt: new Date().toISOString()
                 });
-                toast.success(`Successfully connected and loader installed on ${result.shop.name}!`);
+                toast.success(`Successfully connected and loader installed on ${result.store.name}!`);
               } else {
                 toast.success(`Store connected, but failed to auto-install loader: ${loaderResult.error}`);
               }
@@ -331,7 +338,7 @@ export default function IntegrationsPage({ userId }: IntegrationsPageProps) {
               toast.success(`Store connected, but manual loader installation may be required.`);
             }
           } else {
-            toast.success(`Successfully connected ${result.shop.name} !`);
+            toast.success(`Successfully connected ${result.store.name} !`);
           }
 
           setOpenSheet(false);

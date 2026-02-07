@@ -13,37 +13,37 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -1040,
-        576
+        0,
+        0
       ],
-      "id": "184c273f-654f-4b17-bc40-6a2bcf75dd4a",
+      "id": "receive-order",
       "name": "Receive Order",
       "webhookId": "order-submit-webhook"
     },
     {
       "parameters": {
-        "jsCode": "// Parse and structure the order data\nconst body = $input.first().json.body;\n\nreturn [{\n  json: {\n    name: body.name || '',\n    phone: body.phone || '',\n    wilaya: body.wilaya || '',\n    commune: body.commune || '',\n    address: body.address || '',\n    note: body.note || '',\n    variant: body.variant || '',\n    offer: body.offer || '',\n    delivery: body.delivery || 'home',\n    promo: body.promo || '',\n    shopDomain: body.shopDomain || '',\n    productId: body.productId || '',\n    productHandle: body.productHandle || '',\n    productTitle: body.productTitle || '',\n    productPrice: body.productPrice || 0,\n    createdAt: new Date().toISOString()\n  }\n}];"
+        "jsCode": "// Parse and structure the order data from FormLoader\nconst body = $input.first().json.body;\n\nreturn [{\n  json: {\n    name: body.name || '',\n    phone: body.phone || '',\n    wilaya: body.wilaya || '',\n    wilayaId: body.wilayaId || '',\n    commune: body.commune || '',\n    address: body.address || '',\n    note: body.note || '',\n    shippingType: body.shippingType || 'home',\n    variant: body.variant || '',\n    variantId: body.variantId || null,\n    quantity: body.quantity || 1,\n    offerId: body.offerId || '',\n    promo: body.promo || '',\n    promoDiscount: body.promoDiscount || 0,\n    totalPrice: body.totalPrice || 0,\n    currency: body.currency || 'DZD',\n    shopDomain: body.shopDomain || '',\n    shopName: body.shopName || '',\n    productId: body.productId || '',\n    productHandle: body.productHandle || '',\n    productTitle: body.productTitle || '',\n    items: body.items || [],\n    createdAt: new Date().toISOString()\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -800,
-        576
+        240,
+        0
       ],
-      "id": "b4acff53-b86e-4aa0-9606-78edeb8f8dea",
+      "id": "parse-order",
       "name": "Parse Order Data"
     },
     {
       "parameters": {
-        "jsCode": "// Validate required fields\nconst order = $input.first().json;\nconst errors = [];\n\nif (!order.name || order.name.trim() === '') errors.push('Name is required');\nif (!order.phone || order.phone.trim() === '') errors.push('Phone is required');\nif (!order.wilaya || order.wilaya.trim() === '') errors.push('Wilaya is required');\nif (!order.shopDomain) errors.push('Shop domain is required');\n\nif (errors.length > 0) {\n  return [{ json: { valid: false, errors } }];\n}\n\nreturn [{ json: { valid: true, order } }];"
+        "jsCode": "// Validate required fields\nconst order = $input.first().json;\nconst errors = [];\n\nif (!order.name || order.name.trim() === '') errors.push('Name is required');\nif (!order.phone || order.phone.trim() === '') errors.push('Phone is required');\nif (!order.wilaya || order.wilaya.trim() === '') errors.push('Wilaya is required');\nif (!order.shopDomain) errors.push('Shop domain is required');\nif (!order.items || order.items.length === 0) errors.push('At least one item required');\n\nif (errors.length > 0) {\n  return [{ json: { valid: false, errors, order } }];\n}\n\nreturn [{ json: { valid: true, order } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -560,
-        576
+        480,
+        0
       ],
-      "id": "51b49f6f-338e-4547-9ef6-41d851ef22fd",
+      "id": "validate-order",
       "name": "Validate Order"
     },
     {
@@ -52,8 +52,7 @@
           "options": {
             "caseSensitive": true,
             "leftValue": "",
-            "typeValidation": "loose",
-            "version": 2
+            "typeValidation": "strict"
           },
           "conditions": [
             {
@@ -68,43 +67,203 @@
           ],
           "combinator": "and"
         },
-        "looseTypeValidation": true,
         "options": {}
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -320,
-        576
+        720,
+        0
       ],
-      "id": "30572bb5-6264-46db-b264-5c21fde33fa8",
+      "id": "is-valid",
       "name": "Is Valid?"
     },
     {
       "parameters": {
-        "jsCode": "// Create order (TODO: Integrate with Shopify API to create draft order)\nconst order = $input.first().json.order;\n\n// For now, just return the order data with a generated ID\nreturn [{ \n  json: {\n    orderId: 'FF-' + Date.now(),\n    status: 'pending',\n    ...order\n  }\n}];"
+        "resource": "table",
+        "options": {}
       },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
       "position": [
-        -80,
-        480
+        960,
+        -100
       ],
-      "id": "7d556ee5-257b-480e-8bd2-cd391f3c76b1",
-      "name": "Create Order"
+      "id": "list-tables",
+      "name": "List data tables",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
-        "jsCode": "// Format success response\nconst orderId = $input.first().json.orderId;\n\nreturn [{\n  json: {\n    success: true,\n    orderId: orderId,\n    message: 'Order received successfully'\n  }\n}];"
+        "fieldToSplitOut": "name",
+        "include": "selectedOtherFields",
+        "fieldsToInclude": "id",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        -100
+      ],
+      "id": "split-out",
+      "name": "Split Out",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "table-exists",
+              "leftValue": "={{ $json.name }}",
+              "rightValue": "stores",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1440,
+        -100
+      ],
+      "id": "if-table-exists",
+      "name": "If Table exists"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1680,
+        -200
+      ],
+      "id": "get-store-creds",
+      "name": "Get Store Credentials",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Find the matching store credentials\nconst rows = $input.all();\nconst shopDomain = $('Validate Order').first().json.order.shopDomain;\n\nconst store = rows.find(row => row.json.shopDomain === shopDomain);\n\nif (store) {\n  return [{ json: { found: true, store: store.json, order: $('Validate Order').first().json.order } }];\n}\n\nreturn [{ json: { found: false, shopDomain, order: $('Validate Order').first().json.order } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        160,
-        480
+        1920,
+        -200
       ],
-      "id": "e57cdb58-56ef-4fc2-8f3a-cd3446a13b7d",
-      "name": "Success Response"
+      "id": "find-store",
+      "name": "Find Store Credentials"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "creds-found",
+              "leftValue": "={{ $json.found }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2160,
+        -200
+      ],
+      "id": "if-creds-found",
+      "name": "Credentials Found?"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build Shopify Draft Order GraphQL mutation\nconst { store, order } = $input.first().json;\n\n// Format line items for Shopify\nlet lineItems = [];\n\n// If we have variantId, use it\nif (order.variantId) {\n  lineItems = [{\n    variantId: 'gid://shopify/ProductVariant/' + order.variantId,\n    quantity: order.quantity || 1\n  }];\n} else {\n  // Fallback to items array\n  lineItems = (order.items || []).map(item => ({\n    title: item.title || order.productTitle || 'Product',\n    quantity: item.quantity || 1,\n    originalUnitPrice: ((item.price || order.totalPrice) / 100).toFixed(2)\n  }));\n}\n\nconst draftOrderInput = {\n  input: {\n    lineItems: lineItems,\n    shippingAddress: {\n      firstName: order.name.split(' ')[0] || order.name,\n      lastName: order.name.split(' ').slice(1).join(' ') || '',\n      phone: order.phone,\n      address1: order.address || '',\n      city: order.commune || '',\n      province: order.wilaya || '',\n      country: 'Algeria',\n      countryCode: 'DZ'\n    },\n    phone: order.phone,\n    note: order.note || '',\n    tags: ['FinalForm', order.shippingType === 'desk' ? 'desk-delivery' : 'home-delivery']\n  }\n};\n\nconst query = `mutation draftOrderCreate($input: DraftOrderInput!) {\n  draftOrderCreate(input: $input) {\n    draftOrder { id name invoiceUrl status totalPrice }\n    userErrors { field message }\n  }\n}`;\n\nreturn [{ json: { order, store, graphqlQuery: query, graphqlVariables: draftOrderInput } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2400,
+        -300
+      ],
+      "id": "build-draft-order",
+      "name": "Build Draft Order Query"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://{{ $json.store.subdomain }}.myshopify.com/admin/api/2024-01/graphql.json",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Shopify-Access-Token",
+              "value": "={{ $json.store.accessToken }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ query: $json.graphqlQuery, variables: $json.graphqlVariables }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2640,
+        -300
+      ],
+      "id": "shopify-graphql",
+      "name": "Create Shopify Draft Order",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Shopify response\nconst input = $input.first().json;\nconst order = $('Build Draft Order Query').first().json.order;\n\nconst draftOrderResult = input.data?.draftOrderCreate;\nconst userErrors = draftOrderResult?.userErrors || [];\nconst draftOrder = draftOrderResult?.draftOrder;\n\nif (userErrors.length > 0) {\n  return [{\n    json: {\n      success: false,\n      shopifyError: true,\n      errors: userErrors.map(e => e.field + ': ' + e.message),\n      order\n    }\n  }];\n}\n\nconst orderId = 'FF-' + Date.now();\n\nreturn [{\n  json: {\n    success: true,\n    orderId: orderId,\n    shopifyDraftOrderId: draftOrder?.id,\n    shopifyDraftOrderName: draftOrder?.name,\n    shopifyInvoiceUrl: draftOrder?.invoiceUrl,\n    message: 'Order received and draft created in Shopify'\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2880,
+        -300
+      ],
+      "id": "parse-response",
+      "name": "Parse Shopify Response"
     },
     {
       "parameters": {
@@ -122,24 +281,50 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        400,
-        576
+        3120,
+        0
       ],
-      "id": "769166dd-373e-49b5-bce3-f882e479ade2",
+      "id": "respond",
       "name": "Respond"
     },
     {
       "parameters": {
-        "jsCode": "// Format error response with proper JSON structure\nconst errors = $input.first().json.errors || ['Unknown error'];\n\nreturn [{\n  json: {\n    success: false,\n    errors: errors\n  }\n}];"
+        "jsCode": "// Error response\nconst errors = $input.first().json.errors || ['Unknown error'];\n\nreturn [{\n  json: {\n    success: false,\n    errors: errors\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        160,
-        688
+        2880,
+        100
       ],
-      "id": "0c638c3e-0473-46f3-a70f-27569c55855d",
+      "id": "error-response",
       "name": "Error Response"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Store not found error\nreturn [{\n  json: {\n    success: false,\n    errors: ['Store credentials not found. Please reconnect your store.']\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2400,
+        -100
+      ],
+      "id": "no-creds-error",
+      "name": "No Credentials Error"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Table not found error\nreturn [{\n  json: {\n    success: false,\n    errors: ['Store credentials table not found. Please connect a store first.']\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        0
+      ],
+      "id": "no-table-error",
+      "name": "No Table Error"
     }
   ],
   "connections": {
@@ -180,7 +365,7 @@
       "main": [
         [
           {
-            "node": "Create Order",
+            "node": "List data tables",
             "type": "main",
             "index": 0
           }
@@ -194,18 +379,116 @@
         ]
       ]
     },
-    "Create Order": {
+    "List data tables": {
       "main": [
         [
           {
-            "node": "Success Response",
+            "node": "Split Out",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Success Response": {
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "If Table exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Table exists": {
+      "main": [
+        [
+          {
+            "node": "Get Store Credentials",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Table Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Store Credentials": {
+      "main": [
+        [
+          {
+            "node": "Find Store Credentials",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Store Credentials": {
+      "main": [
+        [
+          {
+            "node": "Credentials Found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Credentials Found?": {
+      "main": [
+        [
+          {
+            "node": "Build Draft Order Query",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Credentials Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Draft Order Query": {
+      "main": [
+        [
+          {
+            "node": "Create Shopify Draft Order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Shopify Draft Order": {
+      "main": [
+        [
+          {
+            "node": "Parse Shopify Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Shopify Response": {
       "main": [
         [
           {
@@ -221,6 +504,28 @@
         [
           {
             "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No Credentials Error": {
+      "main": [
+        [
+          {
+            "node": "Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No Table Error": {
+      "main": [
+        [
+          {
+            "node": "Error Response",
             "type": "main",
             "index": 0
           }

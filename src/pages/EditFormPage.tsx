@@ -19,7 +19,7 @@ import { FolderOpen, RotateCcw, RotateCw, Save, UploadCloud } from 'lucide-react
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import FormTab from '../components/FormTab';
-import { assignFormToShopify } from '../lib/api';
+import { getAdapter } from '../lib/integrations';
 
 import { useConnectedStores, useFormAssignments, useSavedForms } from '../lib/firebase/hooks';
 import { getExportData, loadFormWithValidation, normalizeImportedConfig, validateFormConfig } from '../lib/formManagement';
@@ -460,16 +460,15 @@ const EditFormPage = ({ userId }: EditFormPageProps) => {
               const subdomain = store.url.replace('.myshopify.com', '').replace(/https?:\/\//, '');
               const ownerId = assignment.assignmentType === 'product' ? assignment.productId : undefined;
 
-              await assignFormToShopify(
+              const adapter = getAdapter(store.platform || 'shopify');
+              await adapter.assignForm(
                 subdomain,
-                store.clientId,
-                store.clientSecret,
+                { clientId: store.clientId, clientSecret: store.clientSecret },
                 exportDataMemoized(),
-                ownerId,
                 {
                   formId: savedFormId!,
                   formName: formName.trim(),
-                  assignmentType: assignment.assignmentType === 'product' ? 'product' : 'shop',
+                  assignmentType: assignment.assignmentType === 'product' ? 'product' : 'store',
                   storeId: store.id,
                   storeName: store.name,
                   shopifyDomain: store.url,

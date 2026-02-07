@@ -4,7 +4,7 @@
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "shopify/products",
+        "path": "shopify/get-products",
         "responseMode": "responseNode",
         "options": {
           "allowedOrigins": "*"
@@ -13,65 +13,164 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        2128,
-        560
+        0,
+        0
       ],
-      "id": "939b4125-90d1-4674-9f12-ea1e8639d424",
+      "id": "products-webhook",
       "name": "Webhook",
-      "webhookId": "8caf245b-733d-460c-b3cf-9df3e5a10110"
+      "webhookId": "get-products-webhook"
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "=https://{{ $json.body.subdomain }}.myshopify.com/admin/oauth/access_token",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
+        "jsCode": "// Parse request and build shop domain\nconst body = $input.first().json.body;\nconst subdomain = body.subdomain;\nconst shopDomain = subdomain + '.myshopify.com';\n\nreturn [{ json: { \n  subdomain, \n  shopDomain,\n  search: body.search || null,\n  limit: body.limit || 250,\n  page_info: body.page_info || null\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ],
+      "id": "parse-request",
+      "name": "Parse Request"
+    },
+    {
+      "parameters": {
+        "resource": "table",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        480,
+        0
+      ],
+      "id": "list-tables",
+      "name": "List data tables",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "name",
+        "include": "selectedOtherFields",
+        "fieldsToInclude": "id",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        720,
+        0
+      ],
+      "id": "split-out",
+      "name": "Split Out",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
             {
-              "name": "Content-Type",
-              "value": "application/x-www-form-urlencoded"
+              "id": "table-exists",
+              "leftValue": "={{ $json.name }}",
+              "rightValue": "stores",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
             }
-          ]
-        },
-        "sendBody": true,
-        "contentType": "form-urlencoded",
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "grant_type",
-              "value": "client_credentials"
-            },
-            {
-              "name": "client_id",
-              "value": "={{ $json.body.clientId }}"
-            },
-            {
-              "name": "client_secret",
-              "value": "={{ $json.body.clientSecret }}"
-            }
-          ]
+          ],
+          "combinator": "and"
         },
         "options": {}
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3,
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
       "position": [
-        2352,
-        560
+        960,
+        0
       ],
-      "id": "bffdc886-7614-4f2f-ae86-0546c5cc66a0",
-      "name": "GetToken",
-      "onError": "continueErrorOutput"
+      "id": "if-table-exists",
+      "name": "If Table exists"
     },
     {
       "parameters": {
-        "url": "=https://{{ $('Webhook').item.json.body.subdomain }}.myshopify.com/admin/api/2024-01/products/count.json",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1200,
+        -100
+      ],
+      "id": "get-store-creds",
+      "name": "Get Store Credentials",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Find matching store\nconst rows = $input.all();\nconst req = $('Parse Request').first().json;\n\nconst store = rows.find(r => r.json.shopDomain === req.shopDomain);\n\nif (store && store.json.accessToken) {\n  return [{ json: { \n    found: true, \n    subdomain: req.subdomain, \n    accessToken: store.json.accessToken,\n    search: req.search,\n    limit: req.limit,\n    page_info: req.page_info\n  } }];\n}\n\nreturn [{ json: { found: false, subdomain: req.subdomain } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        -100
+      ],
+      "id": "find-store",
+      "name": "Find Store"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "found-check",
+              "leftValue": "={{ $json.found }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1680,
+        -100
+      ],
+      "id": "if-creds-found",
+      "name": "Credentials Found?"
+    },
+    {
+      "parameters": {
+        "url": "=https://{{ $json.subdomain }}.myshopify.com/admin/api/2024-01/products/count.json",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
             {
               "name": "title",
-              "value": "={{ $('Webhook').item.json.body.search ? $('Webhook').item.json.body.search : undefined }}"
+              "value": "={{ $json.search || undefined }}"
             }
           ]
         },
@@ -80,7 +179,7 @@
           "parameters": [
             {
               "name": "X-Shopify-Access-Token",
-              "value": "={{ $json.access_token }}"
+              "value": "={{ $json.accessToken }}"
             }
           ]
         },
@@ -89,22 +188,22 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        2560,
-        448
+        1920,
+        -240
       ],
-      "id": "479f9ca5-4ae1-4c89-ae1a-9dce4c43a729",
+      "id": "get-count",
       "name": "GetCount",
       "onError": "continueErrorOutput"
     },
     {
       "parameters": {
-        "url": "=https://{{ $('Webhook').item.json.body.subdomain }}.myshopify.com/admin/api/2024-01/products.json",
+        "url": "=https://{{ $('Find Store').first().json.subdomain }}.myshopify.com/admin/api/2024-01/products.json",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
             {
               "name": "limit",
-              "value": "={{ $('Webhook').item.json.body.limit || 250 }}"
+              "value": "={{ $('Find Store').first().json.limit }}"
             },
             {
               "name": "fields",
@@ -112,11 +211,11 @@
             },
             {
               "name": "title",
-              "value": "={{ !$('Webhook').item.json.body.page_info && $('Webhook').item.json.body.search ? $('Webhook').item.json.body.search : undefined }}"
+              "value": "={{ !$('Find Store').first().json.page_info && $('Find Store').first().json.search ? $('Find Store').first().json.search : undefined }}"
             },
             {
               "name": "page_info",
-              "value": "={{ $('Webhook').item.json.body.page_info || undefined }}"
+              "value": "={{ $('Find Store').first().json.page_info || undefined }}"
             }
           ]
         },
@@ -125,7 +224,7 @@
           "parameters": [
             {
               "name": "X-Shopify-Access-Token",
-              "value": "={{ $json.access_token }}"
+              "value": "={{ $('Find Store').first().json.accessToken }}"
             }
           ]
         },
@@ -140,10 +239,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        2560,
-        672
+        1920,
+        -40
       ],
-      "id": "ef34d14c-b804-4fbd-9d17-ccc6d6149000",
+      "id": "get-products",
       "name": "GetProducts",
       "onError": "continueErrorOutput"
     },
@@ -154,10 +253,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2784,
-        672
+        2160,
+        -40
       ],
-      "id": "591c5c68-5f4e-4d1e-ada7-7b28409667bf",
+      "id": "parse-pagination",
       "name": "ParsePagination"
     },
     {
@@ -169,10 +268,10 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 2.1,
       "position": [
-        3008,
-        560
+        2400,
+        -140
       ],
-      "id": "54d3a95a-0b9b-422b-9afc-a7fd925f211c",
+      "id": "merge",
       "name": "Merge"
     },
     {
@@ -182,10 +281,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3152,
-        560
+        2640,
+        -140
       ],
-      "id": "f93cb43c-7761-4021-9b1f-4bb230dd3ca9",
+      "id": "format-response",
       "name": "Format Response"
     },
     {
@@ -204,18 +303,18 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        3376,
-        560
+        2880,
+        -140
       ],
-      "id": "11f63852-5e1a-4108-a9f0-0bec5f36def0",
+      "id": "success",
       "name": "Success"
     },
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={\n  \"success\": false,\n  \"error\": \"{{ $json.error || $json.message || 'Connection Failed' }}\"\n}",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": \"Store not connected. Please connect your store first.\"\n}",
         "options": {
-          "responseCode": 401,
+          "responseCode": 400,
           "responseHeaders": {
             "entries": [
               {
@@ -229,11 +328,36 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        2560,
-        848
+        1920,
+        100
       ],
-      "id": "a173529f-9c98-46b9-b90e-0f4ee6b7c0da",
-      "name": "Connect Error"
+      "id": "no-creds-error",
+      "name": "No Credentials Error"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": \"Store credentials table not found. Please connect your store first.\"\n}",
+        "options": {
+          "responseCode": 400,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1200,
+        100
+      ],
+      "id": "no-table-error",
+      "name": "No Table Error"
     },
     {
       "parameters": {
@@ -254,10 +378,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        2784,
-        848
+        2160,
+        160
       ],
-      "id": "dcd9c1dd-0508-4aee-8af4-5576aa527135",
+      "id": "products-error",
       "name": "Products Error"
     }
   ],
@@ -266,14 +390,87 @@
       "main": [
         [
           {
-            "node": "GetToken",
+            "node": "Parse Request",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "GetToken": {
+    "Parse Request": {
+      "main": [
+        [
+          {
+            "node": "List data tables",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List data tables": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "If Table exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Table exists": {
+      "main": [
+        [
+          {
+            "node": "Get Store Credentials",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Table Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Store Credentials": {
+      "main": [
+        [
+          {
+            "node": "Find Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Store": {
+      "main": [
+        [
+          {
+            "node": "Credentials Found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Credentials Found?": {
       "main": [
         [
           {
@@ -289,7 +486,7 @@
         ],
         [
           {
-            "node": "Connect Error",
+            "node": "No Credentials Error",
             "type": "main",
             "index": 0
           }

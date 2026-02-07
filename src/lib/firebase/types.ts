@@ -99,3 +99,48 @@ export interface WhatsAppProfile {
   createdAt: string;
   updatedAt: string;
 }
+
+// Order Item
+export interface OrderItem {
+  title: string;
+  variant?: string;
+  variantId?: number | string;
+  quantity: number;
+  price: number;
+}
+
+// Order submitted from form
+export interface Order {
+  id: string;
+  // Customer Info
+  customerName: string;
+  phone: string;
+  wilaya: string;
+  wilayaId?: string;
+  commune?: string;
+  address?: string;
+  note?: string;
+  // Delivery
+  shippingType: 'home' | 'desk';
+  shippingCost?: number;
+  // Product & Pricing
+  items: OrderItem[];
+  totalPrice: number;
+  currency: string;
+  offerId?: string;
+  promoCode?: string;
+  // Store Info
+  storeId?: string;
+  shopDomain: string;
+  shopName?: string;
+  productId?: string | number;
+  // Shopify Integration
+  shopifyDraftOrderId?: string;
+  shopifyDraftOrderName?: string;
+  // Status
+  status: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
+  source: 'form' | 'manual';
+  // Timestamps
+  createdAt: string;
+  updatedAt: string;
+}

@@ -21,8 +21,8 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { enableLoader, LOADER_VERSION } from '@/lib/api';
 import { useConnectedStores } from '@/lib/firebase/hooks';
+import { getAdapter, LOADER_VERSION } from '@/lib/integrations';
 import { cn } from '@/lib/utils';
 import {
     Activity,
@@ -66,7 +66,11 @@ export function ShopifyManager({ userId, onAddStore, showHeader = true, viewMode
                 setProcessingStoreId(null);
                 return;
             }
-            const result = await enableLoader(subdomain, store.clientId, store.clientSecret);
+            const shopifyAdapter = getAdapter('shopify');
+            const result = await shopifyAdapter.enableLoader(subdomain, {
+                clientId: store.clientId,
+                clientSecret: store.clientSecret
+            });
 
             toast.dismiss(loadingToast);
 
@@ -74,7 +78,7 @@ export function ShopifyManager({ userId, onAddStore, showHeader = true, viewMode
                 await updateStore(store.id, {
                     loaderInstalled: true,
                     loaderVersion: result.version || CURRENT_LOADER_VERSION,
-                    loaderScriptTagId: result.scriptTagId,
+                    loaderScriptTagId: result.scriptId,
                     loaderInstalledAt: new Date().toISOString()
                 });
 
@@ -118,17 +122,12 @@ export function ShopifyManager({ userId, onAddStore, showHeader = true, viewMode
                 return;
             }
 
-            // We import removeFormFromShopify dynamically or assume it's imported
-            const { removeFormFromShopify } = await import('@/lib/api');
-
-            // We pass a special flag or just use the generic delete. 
-            // The n8n workflow for "delete" likely deletes the specific metafield if ID provided, OR we might need a updated 'clear' endpoint.
-            // Given I cannot update n8n right now, I will assume sending action='delete' and maybe ownerId='all' or similar if supported?
-            // Or better yet, since we are moving to Firebase, this button is "Temporary" as requested.
-            // I will call it with a hypothetical "clear_all" intent if n8n supports it, or just "delete" and hope it cleans up.
-            // Actually, looking at api.ts, removeFormFromShopify sends "action: delete".
-
-            await removeFormFromShopify(subdomain, store.clientId, store.clientSecret, undefined, "all_products"); // Passing "all_products" as ownerId (hypothetical convention for now) or we assume n8n handles it.
+            // Use adapter to remove form
+            const adapter = getAdapter('shopify');
+            await adapter.removeForm(subdomain, {
+                clientId: store.clientId,
+                clientSecret: store.clientSecret
+            }, 'all_products');
 
             toast.success('Metafields clear request sent.');
         } catch (error) {

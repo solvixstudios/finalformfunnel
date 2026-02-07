@@ -25,7 +25,7 @@ import { useCountdownTimer } from '@/components/FormTab/preview/hooks/useCountdo
 import { usePreviewCalculations } from '@/components/FormTab/preview/hooks/usePreviewCalculations';
 import { usePromoCode } from '@/components/FormTab/preview/hooks/usePromoCode';
 import { useStickyObserver } from '@/components/FormTab/preview/hooks/useStickyObserver';
-import { submitOrder } from '@/lib/api';
+import { getAdapter } from '@/lib/integrations';
 import { Commune, fetchCommunes, fetchWilayas, Wilaya } from '@/lib/location'; // New Location Utility
 
 // Types
@@ -112,6 +112,8 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
 
     const [showThankYou, setShowThankYou] = useState(false);
     const [finalOrderData, setFinalOrderData] = useState<any>(null); // To pass to popup
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submissionError, setSubmissionError] = useState<string | null>(null);
 
     // Refs
     const ctaRef = useRef<HTMLDivElement>(null);
@@ -330,28 +332,48 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
             totalPrice: calculations.displayedTotal,
             currency: 'DZD',
             productId: product.id,
+            productHandle: (product as any).handle || '', // Include handle for Shopify matching
+            productTitle: product.title,
             shopName: config.storeName || window.location.hostname,
             shopDomain: config.shopifyDomain || window.location.hostname, // Prioritize configured myshopify domain
+            promo: appliedPromoCode?.code || '', // Include applied promo code
+            promoDiscount: appliedPromoCode?.discountValue || 0,
             items: [{
                 title: product.title,
                 variant: formData.variant,
+                variantId: selectedVariantId,
                 quantity: formData.quantity,
                 price: basePrice,
             }]
         };
 
         setFinalOrderData(payload); // Pass to popup
-        setShowThankYou(true); // Optimistic success
+        setSubmissionError(null);
+        setIsSubmitting(true);
 
         if (!previewMode) {
             try {
                 // Background submission
-                await submitOrder(payload);
-                console.log("Order submitted successfully to n8n");
-            } catch (err) {
-                console.error("Submission failed silently:", err);
-                // We typically don't show error here if optimistic, unless we want to try again
+                const adapter = getAdapter('shopify');
+                await adapter.submitOrder(payload);
+                if (import.meta.env.DEV) {
+                    console.log("Order submitted successfully to n8n");
+                }
+                setShowThankYou(true); // Show success after submission completes
+            } catch (err: any) {
+                if (import.meta.env.DEV) {
+                    console.error("Submission failed:", err);
+                }
+                // Still show thank you for optimistic UX, but log error
+                setShowThankYou(true);
+                setSubmissionError(err.message || 'Submission failed');
+            } finally {
+                setIsSubmitting(false);
             }
+        } else {
+            // Preview mode - just show thank you
+            setShowThankYou(true);
+            setIsSubmitting(false);
         }
     };
 
@@ -715,6 +737,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                                     config={config}
                                     text={txt('cta')}
                                     onClick={handleFormSubmit}
+                                    isLoading={isSubmitting}
                                 />,
                                 index,
                                 ctaRef

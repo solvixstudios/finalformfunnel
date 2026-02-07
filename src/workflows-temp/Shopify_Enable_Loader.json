@@ -13,7 +13,7 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -864,
+        -1100,
         64
       ],
       "id": "72e709d3-dd44-465b-9fa8-645c6aeafaa7",
@@ -22,56 +22,155 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "=https://{{ $json.body.subdomain }}.myshopify.com/admin/oauth/access_token",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Content-Type",
-              "value": "application/x-www-form-urlencoded"
-            }
-          ]
-        },
-        "sendBody": true,
-        "contentType": "form-urlencoded",
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "grant_type",
-              "value": "client_credentials"
-            },
-            {
-              "name": "client_id",
-              "value": "={{ $json.body.clientId }}"
-            },
-            {
-              "name": "client_secret",
-              "value": "={{ $json.body.clientSecret }}"
-            }
-          ]
-        },
-        "options": {}
+        "jsCode": "// Parse request and build shop domain\nconst body = $input.first().json.body;\nconst subdomain = body.subdomain;\nconst shopDomain = subdomain + '.myshopify.com';\n\nreturn [{ json: { subdomain, shopDomain } }];"
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
-        -640,
+        -860,
         64
       ],
-      "id": "70fa6dff-0d4e-430d-97d9-c2d21404cbff",
-      "name": "Get Access Token",
-      "onError": "continueErrorOutput"
+      "id": "parse-request",
+      "name": "Parse Request"
     },
     {
       "parameters": {
-        "url": "=https://{{ $('Receive Enable Request').item.json.body.subdomain }}.myshopify.com/admin/api/2024-01/script_tags.json",
+        "resource": "table",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -620,
+        64
+      ],
+      "id": "list-tables",
+      "name": "List data tables",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "name",
+        "include": "selectedOtherFields",
+        "fieldsToInclude": "id",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -380,
+        64
+      ],
+      "id": "split-out",
+      "name": "Split Out",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "table-exists",
+              "leftValue": "={{ $json.name }}",
+              "rightValue": "stores",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -140,
+        64
+      ],
+      "id": "if-table-exists",
+      "name": "If Table exists"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        100,
+        -40
+      ],
+      "id": "get-store-creds",
+      "name": "Get Store Credentials",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Find matching store\nconst rows = $input.all();\nconst shopDomain = $('Parse Request').first().json.shopDomain;\nconst subdomain = $('Parse Request').first().json.subdomain;\n\nconst store = rows.find(r => r.json.shopDomain === shopDomain);\n\nif (store && store.json.accessToken) {\n  return [{ json: { found: true, subdomain, accessToken: store.json.accessToken } }];\n}\n\nreturn [{ json: { found: false, subdomain } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        340,
+        -40
+      ],
+      "id": "find-store",
+      "name": "Find Store"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "found-check",
+              "leftValue": "={{ $json.found }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        580,
+        -40
+      ],
+      "id": "if-creds-found",
+      "name": "Credentials Found?"
+    },
+    {
+      "parameters": {
+        "url": "=https://{{ $json.subdomain }}.myshopify.com/admin/api/2024-01/script_tags.json",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "X-Shopify-Access-Token",
-              "value": "={{ $json.access_token }}"
+              "value": "={{ $json.accessToken }}"
             }
           ]
         },
@@ -80,24 +179,24 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        -400,
-        64
+        820,
+        -140
       ],
-      "id": "fa441730-c704-4ce2-8d72-bf5c03f7523e",
+      "id": "check-scripts",
       "name": "Check Existing Scripts",
       "onError": "continueRegularOutput"
     },
     {
       "parameters": {
-        "jsCode": "const CURRENT_VERSION = '1.1.0';\nconst scriptTags = $input.first().json.script_tags || [];\nconst accessToken = $('Get Access Token').item.json.access_token;\n\n// Find existing FinalForm loader\nconst loaderTag = scriptTags.find(t => \n  t.src && (t.src.includes('finalform'))\n);\n\nif (loaderTag) {\n  // Extract version from URL\n  let existingVersion = null;\n  const versionMatch = loaderTag.src.match(/[?&]v(?:ersion)?=([0-9]+\\.[0-9]+\\.[0-9]+)/);\n  if (versionMatch) {\n    existingVersion = versionMatch[1];\n  }\n  \n  if (existingVersion === CURRENT_VERSION) {\n    // Already installed with same version\n    return [{\n      json: {\n        action: 'already_installed',\n        scriptTagId: loaderTag.id.toString(),\n        version: existingVersion,\n        accessToken\n      }\n    }];\n  } else {\n    // Needs upgrade - delete old, create new\n    return [{\n      json: {\n        action: 'upgrade',\n        oldScriptTagId: loaderTag.id.toString(),\n        oldVersion: existingVersion,\n        newVersion: CURRENT_VERSION,\n        accessToken\n      }\n    }];\n  }\n} else {\n  // No loader installed - proceed with installation\n  return [{\n    json: {\n      action: 'install',\n      version: CURRENT_VERSION,\n      accessToken\n    }\n  }];\n}"
+        "jsCode": "const CURRENT_VERSION = '1.1.0';\nconst scriptTags = $input.first().json.script_tags || [];\nconst accessToken = $('Find Store').first().json.accessToken;\nconst subdomain = $('Find Store').first().json.subdomain;\n\n// Find existing FinalForm loader\nconst loaderTag = scriptTags.find(t => \n  t.src && (t.src.includes('finalform'))\n);\n\nif (loaderTag) {\n  let existingVersion = null;\n  const versionMatch = loaderTag.src.match(/[?&]v(?:ersion)?=([0-9]+\\.[0-9]+\\.[0-9]+)/);\n  if (versionMatch) {\n    existingVersion = versionMatch[1];\n  }\n  \n  if (existingVersion === CURRENT_VERSION) {\n    return [{\n      json: {\n        action: 'already_installed',\n        scriptTagId: loaderTag.id.toString(),\n        version: existingVersion,\n        accessToken,\n        subdomain\n      }\n    }];\n  } else {\n    return [{\n      json: {\n        action: 'upgrade',\n        oldScriptTagId: loaderTag.id.toString(),\n        oldVersion: existingVersion,\n        newVersion: CURRENT_VERSION,\n        accessToken,\n        subdomain\n      }\n    }];\n  }\n} else {\n  return [{\n    json: {\n      action: 'install',\n      version: CURRENT_VERSION,\n      accessToken,\n      subdomain\n    }\n  }];\n}"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -160,
-        64
+        1060,
+        -140
       ],
-      "id": "fc51a21a-c98e-445d-8026-22abbe8267e8",
+      "id": "check-loader-status",
       "name": "Check Loader Status"
     },
     {
@@ -126,10 +225,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        80,
-        64
+        1300,
+        -140
       ],
-      "id": "7e3449e0-5b8d-4454-b467-915e52cfb93a",
+      "id": "already-installed",
       "name": "Already Installed?"
     },
     {
@@ -141,10 +240,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        320,
-        -96
+        1540,
+        -300
       ],
-      "id": "75d4452e-a441-4d42-9869-9f8f45dde900",
+      "id": "already-response",
       "name": "Already Installed Response"
     },
     {
@@ -173,16 +272,16 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        320,
-        64
+        1540,
+        -140
       ],
-      "id": "700b9249-477c-439e-b718-ceda0474f684",
+      "id": "needs-upgrade",
       "name": "Needs Upgrade?"
     },
     {
       "parameters": {
         "method": "DELETE",
-        "url": "=https://{{ $('Receive Enable Request').item.json.body.subdomain }}.myshopify.com/admin/api/2024-01/script_tags/{{ $json.oldScriptTagId }}.json",
+        "url": "=https://{{ $json.subdomain }}.myshopify.com/admin/api/2024-01/script_tags/{{ $json.oldScriptTagId }}.json",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -197,23 +296,23 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        560,
-        -96
+        1780,
+        -300
       ],
-      "id": "d64e1a29-1240-4157-92c3-a6a3b1ed75f2",
+      "id": "delete-old-script",
       "name": "Delete Old Script Tag",
       "onError": "continueRegularOutput"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://{{ $('Receive Enable Request').item.json.body.subdomain }}.myshopify.com/admin/api/2024-01/graphql.json",
+        "url": "=https://{{ $('Find Store').first().json.subdomain }}.myshopify.com/admin/api/2024-01/graphql.json",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "X-Shopify-Access-Token",
-              "value": "={{ $('Get Access Token').item.json.access_token }}"
+              "value": "={{ $('Find Store').first().json.accessToken }}"
             },
             {
               "name": "Content-Type",
@@ -229,23 +328,23 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        560,
-        208
+        1780,
+        20
       ],
-      "id": "3a541e64-086f-451f-9dbb-6f59982007c3",
+      "id": "create-product-metafield",
       "name": "Create Product Metafield Definition",
       "onError": "continueRegularOutput"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://{{ $('Receive Enable Request').item.json.body.subdomain }}.myshopify.com/admin/api/2024-01/graphql.json",
+        "url": "=https://{{ $('Find Store').first().json.subdomain }}.myshopify.com/admin/api/2024-01/graphql.json",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "X-Shopify-Access-Token",
-              "value": "={{ $('Get Access Token').item.json.access_token }}"
+              "value": "={{ $('Find Store').first().json.accessToken }}"
             },
             {
               "name": "Content-Type",
@@ -261,23 +360,23 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        800,
-        208
+        2020,
+        20
       ],
-      "id": "4e1c7084-ead1-4ce1-b3c3-ce0da0364473",
+      "id": "create-shop-metafield",
       "name": "Create Shop Metafield Definition",
       "onError": "continueRegularOutput"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://{{ $('Receive Enable Request').item.json.body.subdomain }}.myshopify.com/admin/api/2024-01/storefront_access_tokens.json",
+        "url": "=https://{{ $('Find Store').first().json.subdomain }}.myshopify.com/admin/api/2024-01/storefront_access_tokens.json",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "X-Shopify-Access-Token",
-              "value": "={{ $('Get Access Token').item.json.access_token }}"
+              "value": "={{ $('Find Store').first().json.accessToken }}"
             }
           ]
         },
@@ -289,23 +388,23 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        1040,
-        208
+        2260,
+        20
       ],
-      "id": "e801b575-6226-40c6-a3df-4688cb42bd7a",
+      "id": "create-sf-token",
       "name": "Create SF Token",
       "onError": "continueErrorOutput"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://{{ $('Receive Enable Request').item.json.body.subdomain }}.myshopify.com/admin/api/2024-01/script_tags.json",
+        "url": "=https://{{ $('Find Store').first().json.subdomain }}.myshopify.com/admin/api/2024-01/script_tags.json",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "X-Shopify-Access-Token",
-              "value": "={{ $('Get Access Token').item.json.access_token }}"
+              "value": "={{ $('Find Store').first().json.accessToken }}"
             }
           ]
         },
@@ -317,10 +416,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        1280,
-        208
+        2500,
+        20
       ],
-      "id": "13aab5f2-9f11-4c8e-b8b0-8800b0e1452f",
+      "id": "inject-script",
       "name": "Inject Script Tag",
       "onError": "continueErrorOutput"
     },
@@ -333,22 +432,22 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        1520,
-        208
+        2740,
+        20
       ],
-      "id": "c10b2cf6-1665-4f2a-b7f4-7a658c46fdfb",
+      "id": "success-response",
       "name": "Success Response"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://{{ $('Receive Enable Request').item.json.body.subdomain }}.myshopify.com/admin/api/2024-01/storefront_access_tokens.json",
+        "url": "=https://{{ $('Check Loader Status').first().json.subdomain }}.myshopify.com/admin/api/2024-01/storefront_access_tokens.json",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "X-Shopify-Access-Token",
-              "value": "={{ $('Get Access Token').item.json.access_token }}"
+              "value": "={{ $('Check Loader Status').first().json.accessToken }}"
             }
           ]
         },
@@ -360,23 +459,23 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        800,
-        -96
+        2020,
+        -300
       ],
-      "id": "ff6bb3bc-10ae-4d88-a1b1-17ff87e8f0a8",
+      "id": "create-sf-upgrade",
       "name": "Create SF Token (Upgrade)",
       "onError": "continueErrorOutput"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://{{ $('Receive Enable Request').item.json.body.subdomain }}.myshopify.com/admin/api/2024-01/script_tags.json",
+        "url": "=https://{{ $('Check Loader Status').first().json.subdomain }}.myshopify.com/admin/api/2024-01/script_tags.json",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "X-Shopify-Access-Token",
-              "value": "={{ $('Get Access Token').item.json.access_token }}"
+              "value": "={{ $('Check Loader Status').first().json.accessToken }}"
             }
           ]
         },
@@ -388,10 +487,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        1040,
-        -96
+        2260,
+        -300
       ],
-      "id": "cc346984-83a0-4d88-9725-c1bf937b40fe",
+      "id": "inject-script-upgrade",
       "name": "Inject Script Tag (Upgrade)",
       "onError": "continueErrorOutput"
     },
@@ -404,11 +503,45 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        1280,
-        -96
+        2500,
+        -300
       ],
-      "id": "5c22f3fb-705e-463d-a85a-5ef05032c8e7",
+      "id": "upgrade-response",
       "name": "Upgrade Success Response"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": \"Store not connected. Please connect your store first.\"\n}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        820,
+        60
+      ],
+      "id": "no-creds-error",
+      "name": "No Credentials Error"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": \"Store credentials table not found. Please connect your store first.\"\n}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        100,
+        160
+      ],
+      "id": "no-table-error",
+      "name": "No Table Error"
     },
     {
       "parameters": {
@@ -421,10 +554,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        560,
-        416
+        2740,
+        160
       ],
-      "id": "dc589f3a-4b02-4847-a257-f4946846a6f4",
+      "id": "error-response",
       "name": "Error Response"
     }
   ],
@@ -433,14 +566,87 @@
       "main": [
         [
           {
-            "node": "Get Access Token",
+            "node": "Parse Request",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Get Access Token": {
+    "Parse Request": {
+      "main": [
+        [
+          {
+            "node": "List data tables",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List data tables": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "If Table exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Table exists": {
+      "main": [
+        [
+          {
+            "node": "Get Store Credentials",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Table Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Store Credentials": {
+      "main": [
+        [
+          {
+            "node": "Find Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Store": {
+      "main": [
+        [
+          {
+            "node": "Credentials Found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Credentials Found?": {
       "main": [
         [
           {
@@ -451,7 +657,7 @@
         ],
         [
           {
-            "node": "Error Response",
+            "node": "No Credentials Error",
             "type": "main",
             "index": 0
           }
