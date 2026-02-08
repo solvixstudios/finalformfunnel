@@ -73,12 +73,13 @@ export const OffersSection: React.FC<OffersSectionProps> = ({
             <div className="space-y-2">
                 {offers.map((o) => {
                     const isSelected = selectedOfferId === o.id;
-                    // Calculate price
+                    // Calculate price (never negative)
                     const discountFactor = o._type === 'perc' ? o.discount / 100 : 0;
-                    const price =
+                    const rawPrice =
                         o._type === 'perc'
                             ? basePrice * o.qty * (1 - discountFactor)
                             : basePrice * o.qty - o.discount;
+                    const price = Math.max(0, rawPrice);
                     const titleText = o.title[lang] || o.title.fr || '';
                     const descText = o.desc[lang] || o.desc.fr || '';
 

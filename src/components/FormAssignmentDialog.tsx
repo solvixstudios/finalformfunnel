@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useConnectedStores, useFormAssignments, useSavedForms } from '@/lib/firebase/hooks';
+import { getAdapter } from '@/lib/integrations';
 import { cn } from '@/lib/utils';
 import {
     CheckCircle2,
@@ -93,6 +94,14 @@ export function FormAssignmentDialog({
             return;
         }
 
+        const store = stores.find(s => s.id === selectedStoreId);
+        const form = forms.find(f => f.id === selectedFormId);
+
+        if (!store || !form) {
+            toast.error('Store or form not found');
+            return;
+        }
+
         if (assignmentType === 'product' && selectedProductIds.length === 0) {
             toast.error('Please select at least one product');
             return;
@@ -100,21 +109,57 @@ export function FormAssignmentDialog({
 
         setIsSubmitting(true);
         try {
+            const adapter = getAdapter(store.platform || 'shopify');
+
+            // Prepare config with name
+            const formConfig = {
+                formId: form.id,
+                name: form.name,
+                ...form.config
+            };
+
+            const subdomain = store.url.replace('.myshopify.com', '').replace(/https?:\/\//, '');
+
+            if (!store.clientId || !store.clientSecret) {
+                throw new Error('Store credentials missing');
+            }
+
+            const credentials = {
+                clientId: store.clientId,
+                clientSecret: store.clientSecret
+            };
+
+            if (assignmentType === 'store') {
+                await adapter.assignForm(subdomain, credentials, formConfig);
+            } else {
+                // Assign to multiple products
+                const promises = selectedProductIds.map(productId =>
+                    adapter.assignForm(subdomain, credentials, formConfig, {
+                        productId,
+                        productHandle: mockProducts.find(p => p.id === productId)?.handle
+                    })
+                );
+                await Promise.all(promises);
+            }
+
+            // Also save to Firebase for listing visibility (legacy support)
+            // This ensures the "Active" tab is populated
             if (assignmentType === 'store') {
                 await assignForm({
                     formId: selectedFormId,
                     storeId: selectedStoreId,
-                    type: 'store'
+                    type: 'store',
+                    shopifyDomain: store.url // Ensure domain is saved
                 });
             } else {
-                // Assign to multiple products
                 const promises = selectedProductIds.map(productId =>
                     assignForm({
                         formId: selectedFormId,
                         storeId: selectedStoreId,
                         type: 'product',
                         productId,
-                        productHandle: mockProducts.find(p => p.id === productId)?.handle
+                        productHandle: mockProducts.find(p => p.id === productId)?.handle,
+                        shopifyDomain: store.url
                     })
                 );
                 await Promise.all(promises);
@@ -123,26 +168,51 @@ export function FormAssignmentDialog({
             toast.success(`Form assigned successfully to ${assignmentType === 'store' ? 'store' : selectedProductIds.length + ' products'}!`);
             onOpenChange(false);
 
-            // Reset but keep context if passed via props? Maybe full reset is safer.
             if (!initialFormId) setSelectedFormId('');
             if (!initialStoreId) setSelectedStoreId('');
             setSelectedProductIds([]);
             setAssignmentType('store');
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            toast.error('Failed to assign form');
+            toast.error(error.message || 'Failed to assign form');
         } finally {
             setIsSubmitting(false);
         }
     };
 
     const handleRemoveAssignment = async (id: string) => {
+        const assignment = assignments.find(a => a.id === id);
+
+        if (!assignment) {
+            try {
+                await deleteAssignment(id);
+                toast.success("Removed from list (details missing)");
+            } catch (e) {
+                toast.error("Failed to remove assignment");
+            }
+            return;
+        }
+
+        const store = stores.find(s => s.id === assignment.storeId);
+
         try {
+            // Only try to remove from Shopify/n8n if we have store context
+            if (store && store.clientId && store.clientSecret) {
+                const adapter = getAdapter(store.platform || 'shopify');
+                const subdomain = store.url.replace('.myshopify.com', '').replace(/https?:\/\//, '');
+
+                await adapter.removeForm(subdomain, {
+                    clientId: store.clientId,
+                    clientSecret: store.clientSecret
+                }, assignment.productId || undefined);
+            }
+
+            // Remove from Firebase legacy list
             await deleteAssignment(id);
             toast.success("Assignment removed");
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            toast.error("Failed to remove assignment");
+            toast.error(error.message || "Failed to remove assignment");
         }
     };
 

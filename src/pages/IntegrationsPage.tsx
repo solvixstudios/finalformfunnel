@@ -295,7 +295,7 @@ export default function IntegrationsPage({ userId }: IntegrationsPageProps) {
       const result = await shopifyAdapter.connect(cleanDomain, {
         clientId: shopifyForm.clientId.trim(),
         clientSecret: shopifyForm.clientSecret.trim()
-      });
+      }, userId);
 
       if (result.success && result.store) {
         const shopifyDomain = result.store.domain || `${cleanDomain}.myshopify.com`;

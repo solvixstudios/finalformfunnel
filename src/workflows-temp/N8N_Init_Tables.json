@@ -1,0 +1,184 @@
+{
+  "name": "N8N Init Tables",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "n8n/init",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [0, 0],
+      "id": "init-webhook",
+      "name": "Init Webhook",
+      "webhookId": "n8n-init-webhook"
+    },
+    {
+      "parameters": {
+        "resource": "table",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [240, 0],
+      "id": "list-tables",
+      "name": "List Existing Tables",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Check which tables exist\nconst tables = $input.all().map(t => t.json.name).filter(Boolean);\n\nconst requiredTables = [\n  'stores',\n  'store_configs'\n];\n\nconst toCreate = requiredTables.filter(t => !tables.includes(t));\n\nreturn [{ json: {\n  existingTables: tables,\n  tablesToCreate: toCreate,\n  allExist: toCreate.length === 0\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 0],
+      "id": "check-tables",
+      "name": "Check Required Tables"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "needs-stores",
+              "leftValue": "={{ $json.tablesToCreate.includes('stores') }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [720, 0],
+      "id": "if-needs-stores",
+      "name": "If Needs Stores"
+    },
+    {
+      "parameters": {
+        "resource": "table",
+        "operation": "create",
+        "tableName": "stores",
+        "columns": {
+          "column": [
+            { "name": "storeId" },
+            { "name": "shopDomain" },
+            { "name": "subdomain" },
+            { "name": "clientId" },
+            { "name": "clientSecret" },
+            { "name": "accessToken" },
+            { "name": "shopName" },
+            { "name": "userId" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [960, -100],
+      "id": "create-stores",
+      "name": "Create Stores Table"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "needs-configs",
+              "leftValue": "={{ $('Check Required Tables').first().json.tablesToCreate.includes('store_configs') }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1200, 0],
+      "id": "if-needs-configs",
+      "name": "If Needs Configs"
+    },
+    {
+      "parameters": {
+        "resource": "table",
+        "operation": "create",
+        "tableName": "store_configs",
+        "columns": {
+          "column": [
+            { "name": "storeId" },
+            { "name": "ownerId" },
+            { "name": "formId" },
+            { "name": "formData" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [1440, -100],
+      "id": "create-configs",
+      "name": "Create Configs Table"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"success\": true, \"message\": \"Tables initialized\"}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              { "name": "Access-Control-Allow-Origin", "value": "*" }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [1680, 0],
+      "id": "respond-success",
+      "name": "Respond Success"
+    }
+  ],
+  "connections": {
+    "Init Webhook": {
+      "main": [[{ "node": "List Existing Tables", "type": "main", "index": 0 }]]
+    },
+    "List Existing Tables": {
+      "main": [[{ "node": "Check Required Tables", "type": "main", "index": 0 }]]
+    },
+    "Check Required Tables": {
+      "main": [[{ "node": "If Needs Stores", "type": "main", "index": 0 }]]
+    },
+    "If Needs Stores": {
+      "main": [
+        [{ "node": "Create Stores Table", "type": "main", "index": 0 }],
+        [{ "node": "If Needs Configs", "type": "main", "index": 0 }]
+      ]
+    },
+    "Create Stores Table": {
+      "main": [[{ "node": "If Needs Configs", "type": "main", "index": 0 }]]
+    },
+    "If Needs Configs": {
+      "main": [
+        [{ "node": "Create Configs Table", "type": "main", "index": 0 }],
+        [{ "node": "Respond Success", "type": "main", "index": 0 }]
+      ]
+    },
+    "Create Configs Table": {
+      "main": [[{ "node": "Respond Success", "type": "main", "index": 0 }]]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "finalformfunnel"
+  }
+}

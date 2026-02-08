@@ -22,29 +22,16 @@
     },
     {
       "parameters": {
-        "jsCode": "// Parse and structure the order data from FormLoader\nconst body = $input.first().json.body;\n\nreturn [{\n  json: {\n    name: body.name || '',\n    phone: body.phone || '',\n    wilaya: body.wilaya || '',\n    wilayaId: body.wilayaId || '',\n    commune: body.commune || '',\n    address: body.address || '',\n    note: body.note || '',\n    shippingType: body.shippingType || 'home',\n    variant: body.variant || '',\n    variantId: body.variantId || null,\n    quantity: body.quantity || 1,\n    offerId: body.offerId || '',\n    promo: body.promo || '',\n    promoDiscount: body.promoDiscount || 0,\n    totalPrice: body.totalPrice || 0,\n    currency: body.currency || 'DZD',\n    shopDomain: body.shopDomain || '',\n    shopName: body.shopName || '',\n    productId: body.productId || '',\n    productHandle: body.productHandle || '',\n    productTitle: body.productTitle || '',\n    items: body.items || [],\n    createdAt: new Date().toISOString()\n  }\n}];"
+        "jsCode": "// Parse and structure the order data\nconst body = $input.first().json.body || {};\n\n// Basic Validation\nconst errors = [];\nif (!body.shopDomain) errors.push('Missing shopDomain');\nif (!body.items || !body.items.length) errors.push('Missing items');\nif (!body.name) errors.push('Missing name');\nif (!body.phone) errors.push('Missing phone');\n\nif (errors.length > 0) {\n  return [{ json: { valid: false, errors, body } }];\n}\n\nreturn [{\n  json: {\n    valid: true,\n    shopDomain: body.shopDomain,\n    orderData: body\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        240,
+        220,
         0
       ],
-      "id": "parse-order",
-      "name": "Parse Order Data"
-    },
-    {
-      "parameters": {
-        "jsCode": "// Validate required fields\nconst order = $input.first().json;\nconst errors = [];\n\nif (!order.name || order.name.trim() === '') errors.push('Name is required');\nif (!order.phone || order.phone.trim() === '') errors.push('Phone is required');\nif (!order.wilaya || order.wilaya.trim() === '') errors.push('Wilaya is required');\nif (!order.shopDomain) errors.push('Shop domain is required');\nif (!order.items || order.items.length === 0) errors.push('At least one item required');\n\nif (errors.length > 0) {\n  return [{ json: { valid: false, errors, order } }];\n}\n\nreturn [{ json: { valid: true, order } }];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        480,
-        0
-      ],
-      "id": "validate-order",
-      "name": "Validate Order"
+      "id": "validate-input",
+      "name": "Validate Input"
     },
     {
       "parameters": {
@@ -56,7 +43,7 @@
           },
           "conditions": [
             {
-              "id": "valid-check",
+              "id": "is-valid",
               "leftValue": "={{ $json.valid }}",
               "rightValue": true,
               "operator": {
@@ -72,105 +59,42 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        720,
+        440,
         0
       ],
-      "id": "is-valid",
+      "id": "check-validity",
       "name": "Is Valid?"
-    },
-    {
-      "parameters": {
-        "resource": "table",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1.1,
-      "position": [
-        960,
-        -100
-      ],
-      "id": "list-tables",
-      "name": "List data tables",
-      "alwaysOutputData": true
-    },
-    {
-      "parameters": {
-        "fieldToSplitOut": "name",
-        "include": "selectedOtherFields",
-        "fieldsToInclude": "id",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.splitOut",
-      "typeVersion": 1,
-      "position": [
-        1200,
-        -100
-      ],
-      "id": "split-out",
-      "name": "Split Out",
-      "alwaysOutputData": true
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
-          },
-          "conditions": [
-            {
-              "id": "table-exists",
-              "leftValue": "={{ $json.name }}",
-              "rightValue": "stores",
-              "operator": {
-                "type": "string",
-                "operation": "equals"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        1440,
-        -100
-      ],
-      "id": "if-table-exists",
-      "name": "If Table exists"
     },
     {
       "parameters": {
         "operation": "get",
         "dataTableId": {
           "__rl": true,
-          "value": "={{ $json.id }}",
-          "mode": "id"
+          "value": "stores",
+          "mode": "name"
         },
+        "returnAll": true,
         "options": {}
       },
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        1680,
-        -200
+        660,
+        -100
       ],
-      "id": "get-store-creds",
-      "name": "Get Store Credentials",
+      "id": "get-stores",
+      "name": "Get Stores",
       "alwaysOutputData": true
     },
     {
       "parameters": {
-        "jsCode": "// Find the matching store credentials\nconst rows = $input.all();\nconst shopDomain = $('Validate Order').first().json.order.shopDomain;\n\nconst store = rows.find(row => row.json.shopDomain === shopDomain);\n\nif (store) {\n  return [{ json: { found: true, store: store.json, order: $('Validate Order').first().json.order } }];\n}\n\nreturn [{ json: { found: false, shopDomain, order: $('Validate Order').first().json.order } }];"
+        "jsCode": "// Find matching store credential\nconst stores = $input.all().map(i => i.json);\nconst requestData = $('Validate Input').first().json;\nconst shopDomain = requestData.shopDomain;\n\nconst store = stores.find(s => s.shopDomain === shopDomain || s.subdomain === shopDomain.replace('.myshopify.com', ''));\n\nif (!store) {\n  return [{ json: { found: false, error: 'Store not found in database' } }];\n}\n\nif (!store.accessToken) {\n   return [{ json: { found: false, error: 'Store credentials missing (accessToken)' } }];\n}\n\nreturn [{ json: { found: true, store, orderData: requestData.orderData } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1920,
-        -200
+        880,
+        -100
       ],
       "id": "find-store",
       "name": "Find Store Credentials"
@@ -185,7 +109,7 @@
           },
           "conditions": [
             {
-              "id": "creds-found",
+              "id": "store-found",
               "leftValue": "={{ $json.found }}",
               "rightValue": true,
               "operator": {
@@ -201,24 +125,24 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        2160,
-        -200
+        1100,
+        -100
       ],
-      "id": "if-creds-found",
-      "name": "Credentials Found?"
+      "id": "check-store-found",
+      "name": "Store Found?"
     },
     {
       "parameters": {
-        "jsCode": "// Build Shopify Draft Order GraphQL mutation\nconst { store, order } = $input.first().json;\n\n// Format line items for Shopify\nlet lineItems = [];\n\n// If we have variantId, use it\nif (order.variantId) {\n  lineItems = [{\n    variantId: 'gid://shopify/ProductVariant/' + order.variantId,\n    quantity: order.quantity || 1\n  }];\n} else {\n  // Fallback to items array\n  lineItems = (order.items || []).map(item => ({\n    title: item.title || order.productTitle || 'Product',\n    quantity: item.quantity || 1,\n    originalUnitPrice: ((item.price || order.totalPrice) / 100).toFixed(2)\n  }));\n}\n\nconst draftOrderInput = {\n  input: {\n    lineItems: lineItems,\n    shippingAddress: {\n      firstName: order.name.split(' ')[0] || order.name,\n      lastName: order.name.split(' ').slice(1).join(' ') || '',\n      phone: order.phone,\n      address1: order.address || '',\n      city: order.commune || '',\n      province: order.wilaya || '',\n      country: 'Algeria',\n      countryCode: 'DZ'\n    },\n    phone: order.phone,\n    note: order.note || '',\n    tags: ['FinalForm', order.shippingType === 'desk' ? 'desk-delivery' : 'home-delivery']\n  }\n};\n\nconst query = `mutation draftOrderCreate($input: DraftOrderInput!) {\n  draftOrderCreate(input: $input) {\n    draftOrder { id name invoiceUrl status totalPrice }\n    userErrors { field message }\n  }\n}`;\n\nreturn [{ json: { order, store, graphqlQuery: query, graphqlVariables: draftOrderInput } }];"
+        "jsCode": "// Build Shopify Order GraphQL Mutation\nconst { store, orderData } = $input.first().json;\n\n// 1. Line Items\nlet lineItems = [];\nif (orderData.variantId) {\n  let vid = String(orderData.variantId);\n  if (!vid.startsWith('gid://')) vid = `gid://shopify/ProductVariant/${vid}`;\n  lineItems.push({ variantId: vid, quantity: orderData.quantity || 1 });\n} else {\n  // Custom items\n  lineItems = (orderData.items || []).map(item => ({\n     title: item.title || orderData.productTitle || 'Product',\n     quantity: item.quantity || 1,\n     originalUnitPrice: String(item.price || orderData.totalPrice || 0)\n  }));\n}\n\n// 2. Customer & Address\nconst rawName = (orderData.name || '').trim();\nconst spaceIndex = rawName.indexOf(' ');\nlet firstName = spaceIndex > -1 ? rawName.substring(0, spaceIndex) : rawName;\nlet lastName = spaceIndex > -1 ? rawName.substring(spaceIndex + 1) : '.';\nif (!firstName) firstName = 'Customer';\n\n// Ensure Phone is formatted (E.164 for Algeria)\nlet phone = (orderData.phone || '').replace(/\\s+/g, '');\nif (phone.startsWith('0')) phone = '+213' + phone.substring(1);\nif (phone.length === 9 && !phone.startsWith('+')) phone = '+213' + phone;\n\nconst address = {\n  firstName,\n  lastName,\n  phone,\n  address1: orderData.address || 'No Address Provided',\n  city: orderData.commune || orderData.city || '',\n  province: orderData.wilaya || orderData.province || '',\n  countryCode: 'DZ'\n};\n\n// 3. Custom Attributes (Note Attributes)\nconst customAttributes = [];\nconst addAttr = (key, val) => {\n  if (val !== undefined && val !== null && val !== '') {\n    customAttributes.push({ key, value: String(val) });\n  }\n};\n\naddAttr('Form ID', orderData.formId);\naddAttr('Offer ID', orderData.offerId);\naddAttr('Shipping Type', orderData.shippingType);\naddAttr('Promo Code', orderData.promo);\n\nconst cleanWilaya = (orderData.wilaya || '').replace(/^\\d+\\s*-\\s*/, '');\naddAttr('Wilaya Name', cleanWilaya);\naddAttr('Wilaya ID', orderData.wilayaId);\naddAttr('Commune Name', orderData.commune);\naddAttr('Commune ID', orderData.communeId);\n\n// 4. Tags\nconst tags = ['FinalForm', 'COD'];\nif (orderData.shippingType) tags.push(`${orderData.shippingType}-delivery`);\nif (orderData.promo) tags.push('PROMO');\nif (orderData.tags && Array.isArray(orderData.tags)) tags.push(...orderData.tags);\n\n// 5. Shipping Line\nconst shippingLines = [];\nif (orderData.shippingPrice && Number(orderData.shippingPrice) > 0) {\n  shippingLines.push({\n    title: orderData.shippingType === 'desk' ? 'Stop Desk Delivery' : 'Home Delivery',\n    price: String(orderData.shippingPrice)\n  });\n}\n\n// 6. Applied Discount\nlet appliedDiscount = null;\nif (orderData.promoDiscount && Number(orderData.promoDiscount) > 0) {\n  appliedDiscount = {\n    description: orderData.promo || 'Discount',\n    value: String(orderData.promoDiscount),\n    valueType: 'FIXED_AMOUNT',\n    title: orderData.promo || 'Promo'\n  };\n}\n\n// 7. Build Mutation Input\nconst orderInput = {\n  order: {\n    lineItems,\n    shippingLines,\n    shippingAddress: address,\n    billingAddress: address,\n    email: orderData.email || null,\n    phone: phone,\n    note: orderData.note || '',\n    customAttributes,\n    tags,\n    financialStatus: 'PENDING'\n  },\n  options: {\n    inventoryBehaviour: 'BYPASS'\n  }\n};\n\n// Add discount if exists\nif (appliedDiscount) {\n  orderInput.order.appliedDiscount = appliedDiscount;\n}\n\n// Corrected Mutation Signature\nconst query = `mutation orderCreate($order: OrderCreateOrderInput!, $options: OrderCreateOptionsInput) {\n  orderCreate(order: $order, options: $options) {\n    order { id name displayFinancialStatus legacyResourceId }\n    userErrors { field message }\n  }\n}`;\n\nreturn [{ json: { graphqlQuery: query, graphqlVariables: orderInput, store, orderData } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2400,
-        -300
+        1320,
+        -180
       ],
-      "id": "build-draft-order",
-      "name": "Build Draft Order Query"
+      "id": "build-mutation",
+      "name": "Build Mutation"
     },
     {
       "parameters": {
@@ -245,25 +169,57 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        2640,
-        -300
+        1540,
+        -180
       ],
-      "id": "shopify-graphql",
-      "name": "Create Shopify Draft Order",
+      "id": "shopify-api",
+      "name": "Shopify API",
       "onError": "continueErrorOutput"
     },
     {
       "parameters": {
-        "jsCode": "// Parse Shopify response\nconst input = $input.first().json;\nconst order = $('Build Draft Order Query').first().json.order;\n\nconst draftOrderResult = input.data?.draftOrderCreate;\nconst userErrors = draftOrderResult?.userErrors || [];\nconst draftOrder = draftOrderResult?.draftOrder;\n\nif (userErrors.length > 0) {\n  return [{\n    json: {\n      success: false,\n      shopifyError: true,\n      errors: userErrors.map(e => e.field + ': ' + e.message),\n      order\n    }\n  }];\n}\n\nconst orderId = 'FF-' + Date.now();\n\nreturn [{\n  json: {\n    success: true,\n    orderId: orderId,\n    shopifyDraftOrderId: draftOrder?.id,\n    shopifyDraftOrderName: draftOrder?.name,\n    shopifyInvoiceUrl: draftOrder?.invoiceUrl,\n    message: 'Order received and draft created in Shopify'\n  }\n}];"
+        "jsCode": "// Parse Response\nconst input = $input.first().json;\nconst orderData = $('Build Mutation').first().json.orderData;\n\n// Check Network/Auth Errors (top-level)\nif (input.errors) {\n   return [{ json: { success: false, errorType: 'GRAPHQL_SYSTEM', errors: input.errors.map(e => e.message) } }];\n}\n\n// Check User Errors (logic)\nconst result = input.data?.orderCreate;\nif (!result) {\n   return [{ json: { success: false, errorType: 'NO_DATA', errors: ['No data returned from Shopify'] } }];\n}\n\nif (result.userErrors && result.userErrors.length > 0) {\n   return [{ json: { success: false, errorType: 'USER_ERROR', errors: result.userErrors.map(e => `${e.field}: ${e.message}`) } }];\n}\n\n// Success\nconst order = result.order;\nreturn [{\n  json: {\n    success: true,\n    orderId: order.name,\n    shopifyId: order.id,\n    legacyId: order.legacyResourceId,\n    financialStatus: order.displayFinancialStatus,\n    message: 'Order created successfully'\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2880,
-        -300
+        1760,
+        -180
       ],
       "id": "parse-response",
-      "name": "Parse Shopify Response"
+      "name": "Parse Response"
+    },
+    {
+       "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "success-check",
+              "leftValue": "={{ $json.success }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1980,
+        -180
+      ],
+      "id": "check-success",
+      "name": "If Success"
     },
     {
       "parameters": {
@@ -281,50 +237,36 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        3120,
-        0
+        2200,
+        -180
       ],
-      "id": "respond",
-      "name": "Respond"
+      "id": "respond-success",
+      "name": "Respond Success"
     },
     {
       "parameters": {
-        "jsCode": "// Error response\nconst errors = $input.first().json.errors || ['Unknown error'];\n\nreturn [{\n  json: {\n    success: false,\n    errors: errors\n  }\n}];"
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"errors\": {{ JSON.stringify($json.errors || [$json.error]) }}\n}",
+        "options": {
+          "responseCode": 400,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
       },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
       "position": [
-        2880,
-        100
+        2200,
+        180
       ],
-      "id": "error-response",
-      "name": "Error Response"
-    },
-    {
-      "parameters": {
-        "jsCode": "// Store not found error\nreturn [{\n  json: {\n    success: false,\n    errors: ['Store credentials not found. Please reconnect your store.']\n  }\n}];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        2400,
-        -100
-      ],
-      "id": "no-creds-error",
-      "name": "No Credentials Error"
-    },
-    {
-      "parameters": {
-        "jsCode": "// Table not found error\nreturn [{\n  json: {\n    success: false,\n    errors: ['Store credentials table not found. Please connect a store first.']\n  }\n}];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1680,
-        0
-      ],
-      "id": "no-table-error",
-      "name": "No Table Error"
+      "id": "respond-error",
+      "name": "Respond Error"
     }
   ],
   "connections": {
@@ -332,25 +274,14 @@
       "main": [
         [
           {
-            "node": "Parse Order Data",
+            "node": "Validate Input",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Parse Order Data": {
-      "main": [
-        [
-          {
-            "node": "Validate Order",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Validate Order": {
+    "Validate Input": {
       "main": [
         [
           {
@@ -365,61 +296,21 @@
       "main": [
         [
           {
-            "node": "List data tables",
+            "node": "Get Stores",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Error Response",
+            "node": "Respond Error",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "List data tables": {
-      "main": [
-        [
-          {
-            "node": "Split Out",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Split Out": {
-      "main": [
-        [
-          {
-            "node": "If Table exists",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "If Table exists": {
-      "main": [
-        [
-          {
-            "node": "Get Store Credentials",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "No Table Error",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Get Store Credentials": {
+    "Get Stores": {
       "main": [
         [
           {
@@ -434,111 +325,81 @@
       "main": [
         [
           {
-            "node": "Credentials Found?",
+            "node": "Store Found?",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Credentials Found?": {
+    "Store Found?": {
       "main": [
         [
           {
-            "node": "Build Draft Order Query",
+            "node": "Build Mutation",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "No Credentials Error",
+            "node": "Respond Error",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Build Draft Order Query": {
+    "Build Mutation": {
       "main": [
         [
           {
-            "node": "Create Shopify Draft Order",
+            "node": "Shopify API",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Create Shopify Draft Order": {
+    "Shopify API": {
       "main": [
         [
           {
-            "node": "Parse Shopify Response",
+            "node": "Parse Response",
             "type": "main",
             "index": 0
           }
+        ]
+      ]
+    },
+    "Parse Response": {
+      "main": [
+        [
+          {
+            "node": "If Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Success": {
+      "main": [
+        [
+           {
+             "node": "Respond Success",
+             "type": "main",
+             "index": 0
+           }
         ],
         [
-          {
-            "node": "Error Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Parse Shopify Response": {
-      "main": [
-        [
-          {
-            "node": "Respond",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Error Response": {
-      "main": [
-        [
-          {
-            "node": "Respond",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "No Credentials Error": {
-      "main": [
-        [
-          {
-            "node": "Error Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "No Table Error": {
-      "main": [
-        [
-          {
-            "node": "Error Response",
-            "type": "main",
-            "index": 0
-          }
+           {
+             "node": "Respond Error",
+             "type": "main",
+             "index": 0
+           }
         ]
       ]
     }
-  },
-  "settings": {
-    "executionOrder": "v1",
-    "availableInMCP": false
-  },
-  "staticData": null,
-  "pinData": {},
-  "triggerCount": 1,
-  "meta": null
+  }
 }

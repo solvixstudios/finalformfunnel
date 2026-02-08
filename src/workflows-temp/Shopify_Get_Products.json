@@ -4,7 +4,7 @@
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "shopify/get-products",
+        "path": "shopify/products",
         "responseMode": "responseNode",
         "options": {
           "allowedOrigins": "*"

@@ -1,7 +1,7 @@
 {
   "name": "vite_react_shadcn_ts",
   "private": true,
-  "version": "1.2.12",
+  "version": "1.2.31",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,7 +10,7 @@
     "deploy:loader": "npm run build:loader && firebase deploy --only hosting",
     "build:dev": "vite build --mode development",
     "deploy": "firebase deploy",
-    "bnd": "vite build && npm run build:loader && firebase deploy",
+    "bnd": "vite build && npm run build:loader && firebase deploy && node scripts/init-n8n-tables.js",
     "lint": "eslint .",
     "preview": "vite preview"
   },

@@ -1,5 +1,4 @@
 {
-  "name": "Shopify Master Form Sync REST",
   "nodes": [
     {
       "parameters": {
@@ -13,24 +12,24 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
-        0,
-        0
+        -6448,
+        224
       ],
-      "id": "webhook-start",
+      "id": "e5123631-21b3-4921-bb6f-fd63f62a263d",
       "name": "Webhook Start",
       "webhookId": "master-sync-webhook"
     },
     {
       "parameters": {
-        "jsCode": "// Parse request and build shop domain\nconst body = $input.first().json.body;\nconst subdomain = body.subdomain;\nconst shopDomain = subdomain + '.myshopify.com';\nconst action = body.action || 'save';\nconst ownerId = body.ownerId;\nconst configData = body.data;\n\nreturn [{ json: { \n  subdomain, \n  shopDomain,\n  action,\n  ownerId,\n  configData\n} }];"
+        "jsCode": "// Parse request and build shop domain\nconst body = $input.first().json.body;\nconst subdomain = body.subdomain;\nconst shopDomain = subdomain + '.myshopify.com';\nconst action = body.action || 'save';\nconst ownerId = body.ownerId;\nconst configData = body.data;\nconst clientId = body.clientId;\nconst clientSecret = body.clientSecret;\n\nreturn [{ json: { \n  subdomain, \n  shopDomain,\n  action,\n  ownerId,\n  configData,\n  clientId,\n  clientSecret\n} }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        240,
-        0
+        -6208,
+        224
       ],
-      "id": "parse-request",
+      "id": "7e609359-585c-44ed-b138-8fd695f817f6",
       "name": "Parse Request"
     },
     {
@@ -41,10 +40,10 @@
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        480,
-        0
+        -5968,
+        224
       ],
-      "id": "list-tables",
+      "id": "d96afd73-fb6c-48d2-91de-8181976c9fc7",
       "name": "List data tables",
       "alwaysOutputData": true
     },
@@ -58,10 +57,10 @@
       "type": "n8n-nodes-base.splitOut",
       "typeVersion": 1,
       "position": [
-        720,
-        0
+        -5728,
+        224
       ],
-      "id": "split-out",
+      "id": "2b5596a8-d57b-4d88-95bc-96bd4942e0c3",
       "name": "Split Out",
       "alwaysOutputData": true
     },
@@ -91,10 +90,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        960,
-        0
+        -5488,
+        224
       ],
-      "id": "if-table-exists",
+      "id": "d2c8ee67-f6ea-455c-88c6-83280e1c67a2",
       "name": "If Table exists"
     },
     {
@@ -104,30 +103,29 @@
           "__rl": true,
           "value": "={{ $json.id }}",
           "mode": "id"
-        },
-        "options": {}
+        }
       },
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        1200,
-        -100
+        -5248,
+        128
       ],
-      "id": "get-store-creds",
+      "id": "38cb7ea1-2fc0-4516-92d5-039e1d55b581",
       "name": "Get Store Credentials",
       "alwaysOutputData": true
     },
     {
       "parameters": {
-        "jsCode": "// Find matching store\nconst rows = $input.all();\nconst req = $('Parse Request').first().json;\n\nconst store = rows.find(r => r.json.shopDomain === req.shopDomain);\n\nif (store && store.json.accessToken) {\n  return [{ json: { \n    found: true, \n    subdomain: req.subdomain, \n    accessToken: store.json.accessToken,\n    action: req.action,\n    ownerId: req.ownerId,\n    configData: req.configData\n  } }];\n}\n\nreturn [{ json: { found: false, subdomain: req.subdomain } }];"
+        "jsCode": "// Find matching store and verify credentials\nconst rows = $input.all();\nconst req = $('Parse Request').first().json;\n\nconst store = rows.find(r => r.json.shopDomain === req.shopDomain);\n\nif (store) {\n  const storedClientId = store.json.clientId;\n  const storedClientSecret = store.json.clientSecret;\n  \n  // Strict Credential Check\n  if (storedClientId === req.clientId && storedClientSecret === req.clientSecret) {\n    return [{ json: { \n      found: true, \n      rowId: store.id,\n      config: store.json.config,\n      subdomain: req.subdomain, \n      accessToken: store.json.accessToken,\n      action: req.action,\n      ownerId: req.ownerId,\n      configData: req.configData\n    } }];\n  }\n}\n\nreturn [{ json: { found: false, subdomain: req.subdomain, error: 'Invalid credentials or store not found' } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1440,
-        -100
+        -5008,
+        128
       ],
-      "id": "find-store",
+      "id": "9f3aa42d-1bfb-4c85-b3fb-e304fb78f27f",
       "name": "Find Store"
     },
     {
@@ -156,245 +154,151 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1680,
-        -100
+        -4768,
+        128
       ],
-      "id": "if-creds-found",
+      "id": "9a9577c6-0468-41c9-8b53-d18f50028113",
       "name": "Credentials Found?"
     },
     {
       "parameters": {
-        "jsCode": "const req = $input.first().json;\nconst subdomain = req.subdomain;\nconst accessToken = req.accessToken;\nconst action = req.action || 'save';\nconst rawOwnerId = req.ownerId;\nconst configData = req.configData;\n\n// Validate config data for save action\nif (action === 'save' && !configData) {\n  throw new Error('Missing config data in request body');\n}\n\n// Determine Scope and Path\nlet resourcePath = '';\nlet scope = 'SHOP';\n\nif (rawOwnerId) {\n  let numericId = String(rawOwnerId);\n  if (numericId.includes('/')) {\n    const parts = numericId.split('/');\n    numericId = parts[parts.length - 1];\n  }\n  \n  if (/^\\d+$/.test(numericId)) {\n    scope = 'PRODUCT';\n    resourcePath = `/products/${numericId}`;\n  }\n}\n\n// Base API URL\nconst baseUrl = `https://${subdomain}.myshopify.com/admin/api/2024-01`;\n\n// Endpoint Logic\nconst metafieldsEndpoint = `${baseUrl}${resourcePath}/metafields.json`;\n\n// Stringify config properly\nconst configString = configData ? JSON.stringify(configData) : '';\n\nreturn [{\n  json: {\n    scope,\n    baseUrl,\n    metafieldsEndpoint,\n    action,\n    configString,\n    accessToken,\n    subdomain\n  }\n}];"
+        "jsCode": "// Prepare Config Update\nconst req = $input.first().json;\n\n// Current Config from Data Table\nlet currentConfig = {};\ntry {\n  currentConfig = req.config ? JSON.parse(req.config) : {};\n} catch (e) {\n  currentConfig = {};\n}\n\n// Initialize structure if needed\nif (!currentConfig.shopConfig) currentConfig.shopConfig = null;\nif (!currentConfig.productConfigs) currentConfig.productConfigs = {};\n\nconst action = req.action || 'save';\nconst configData = req.configData;\nconst ownerId = req.ownerId;\n\n// Update Logic\nif (ownerId && String(ownerId).match(/^\\d+$/)) {\n  // Product Level\n  const productId = String(ownerId);\n  if (action === 'delete') {\n    delete currentConfig.productConfigs[productId];\n  } else {\n    currentConfig.productConfigs[productId] = configData;\n  }\n} else {\n  // Shop Level\n  if (action === 'delete') {\n    currentConfig.shopConfig = null;\n  } else {\n    currentConfig.shopConfig = configData;\n  }\n}\n\nconst newConfigString = JSON.stringify(currentConfig);\n\nreturn [{\n  json: {\n    rowId: req.rowId,\n    newConfigString\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1920,
-        -200
+        -4528,
+        16
       ],
-      "id": "prepare-context",
+      "id": "0b462e26-e31e-459a-9593-57070c7304df",
       "name": "Prepare Context"
     },
     {
       "parameters": {
-        "url": "={{ $json.metafieldsEndpoint }}",
-        "sendQuery": true,
-        "queryParameters": {
-          "parameters": [
-            {
-              "name": "namespace",
-              "value": "finalform"
-            },
-            {
-              "name": "key",
-              "value": "config"
-            }
-          ]
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "value": "={{ $('If Table exists').first().json.id }}",
+          "mode": "id"
         },
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "X-Shopify-Access-Token",
-              "value": "={{ $json.accessToken }}"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3,
-      "position": [
-        2160,
-        -200
-      ],
-      "id": "find-metafield",
-      "name": "Find Metafield",
-      "onError": "continueErrorOutput"
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
-          },
+        "filters": {
           "conditions": [
             {
-              "id": "is-delete",
-              "leftValue": "={{ $('Prepare Context').first().json.action }}",
-              "rightValue": "delete",
-              "operator": {
-                "type": "string",
-                "operation": "equals"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        2400,
-        -200
-      ],
-      "id": "is-delete",
-      "name": "Is Delete?"
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
-          },
-          "conditions": [
-            {
-              "id": "exists-delete",
-              "leftValue": "={{ $json.metafields && $json.metafields.length > 0 }}",
-              "rightValue": true,
-              "operator": {
-                "type": "boolean",
-                "operation": "equals"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        2640,
-        -300
-      ],
-      "id": "exists-delete",
-      "name": "Exists (Delete)?"
-    },
-    {
-      "parameters": {
-        "method": "DELETE",
-        "url": "={{ $('Prepare Context').first().json.baseUrl }}/metafields/{{ $json.metafields[0].id }}.json",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "X-Shopify-Access-Token",
-              "value": "={{ $('Prepare Context').first().json.accessToken }}"
+              "keyValue": "={{ $json.rowId }}"
             }
           ]
         },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3,
-      "position": [
-        2880,
-        -400
-      ],
-      "id": "delete-request",
-      "name": "Delete Request",
-      "onError": "continueErrorOutput"
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {
+            "config": "={{ $json.newConfigString }}"
           },
-          "conditions": [
+          "matchingColumns": [],
+          "schema": [
             {
-              "id": "exists-save",
-              "leftValue": "={{ $json.metafields && $json.metafields.length > 0 }}",
-              "rightValue": true,
-              "operator": {
-                "type": "boolean",
-                "operation": "equals"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        2640,
-        -100
-      ],
-      "id": "exists-save",
-      "name": "Exists (Save)?"
-    },
-    {
-      "parameters": {
-        "method": "PUT",
-        "url": "={{ $('Prepare Context').first().json.baseUrl }}/metafields/{{ $json.metafields[0].id }}.json",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "X-Shopify-Access-Token",
-              "value": "={{ $('Prepare Context').first().json.accessToken }}"
+              "id": "storeId",
+              "displayName": "storeId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
             },
             {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"metafield\": {\n    \"id\": {{ $json.metafields[0].id }},\n    \"value\": {{ $('Prepare Context').first().json.configString }},\n    \"type\": \"json\"\n  }\n}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3,
-      "position": [
-        2880,
-        -200
-      ],
-      "id": "update-request",
-      "name": "Update Request",
-      "onError": "continueErrorOutput"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "={{ $('Prepare Context').first().json.metafieldsEndpoint }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "X-Shopify-Access-Token",
-              "value": "={{ $('Prepare Context').first().json.accessToken }}"
+              "id": "userId",
+              "displayName": "userId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
             },
             {
-              "name": "Content-Type",
-              "value": "application/json"
+              "id": "shopDomain",
+              "displayName": "shopDomain",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "subdomain",
+              "displayName": "subdomain",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "clientId",
+              "displayName": "clientId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "clientSecret",
+              "displayName": "clientSecret",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "accessToken",
+              "displayName": "accessToken",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "shopName",
+              "displayName": "shopName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "config",
+              "displayName": "config",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
             }
-          ]
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
         },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"metafield\": {\n    \"namespace\": \"finalform\",\n    \"key\": \"config\",\n    \"value\": {{ $('Prepare Context').first().json.configString }},\n    \"type\": \"json\"\n  }\n}",
         "options": {}
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3,
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
       "position": [
-        2880,
-        0
+        -4288,
+        128
       ],
-      "id": "create-request",
-      "name": "Create Request",
+      "id": "8e56f26a-664d-42b0-b8f3-e7a20d86b82a",
+      "name": "Update Config in Table",
       "onError": "continueErrorOutput"
     },
     {
@@ -406,10 +310,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        3360,
-        -100
+        -3088,
+        128
       ],
-      "id": "success-response",
+      "id": "0e65fe82-b027-4957-ac4b-b24d8b5c1a15",
       "name": "Success Response"
     },
     {
@@ -423,26 +327,11 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        3360,
-        100
+        -3088,
+        320
       ],
-      "id": "error-response",
+      "id": "da0d2cd7-f756-47d8-bbcd-352417326dc7",
       "name": "Error Response"
-    },
-    {
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "{\n  \"success\": true,\n  \"message\": \"Nothing to delete\"\n}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.5,
-      "position": [
-        2880,
-        -300
-      ],
-      "id": "no-op-response",
-      "name": "No-Op Response"
     },
     {
       "parameters": {
@@ -455,10 +344,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        1920,
-        0
+        -4528,
+        224
       ],
-      "id": "no-creds-error",
+      "id": "5bc5a2c0-6b2f-4f1e-8352-9f61254bdfb2",
       "name": "No Credentials Error"
     },
     {
@@ -472,10 +361,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        1200,
-        100
+        -5248,
+        320
       ],
-      "id": "no-table-error",
+      "id": "e6f41228-6a65-46f0-817e-c348f29ef8b7",
       "name": "No Table Error"
     }
   ],
@@ -586,122 +475,14 @@
       "main": [
         [
           {
-            "node": "Find Metafield",
+            "node": "Update Config in Table",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Find Metafield": {
-      "main": [
-        [
-          {
-            "node": "Is Delete?",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Error Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Is Delete?": {
-      "main": [
-        [
-          {
-            "node": "Exists (Delete)?",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Exists (Save)?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Exists (Delete)?": {
-      "main": [
-        [
-          {
-            "node": "Delete Request",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "No-Op Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Exists (Save)?": {
-      "main": [
-        [
-          {
-            "node": "Update Request",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Create Request",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Delete Request": {
-      "main": [
-        [
-          {
-            "node": "Success Response",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Error Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Update Request": {
-      "main": [
-        [
-          {
-            "node": "Success Response",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Error Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Create Request": {
+    "Update Config in Table": {
       "main": [
         [
           {
@@ -720,12 +501,8 @@
       ]
     }
   },
-  "settings": {
-    "executionOrder": "v1",
-    "availableInMCP": false
-  },
-  "staticData": null,
   "pinData": {},
-  "triggerCount": 1,
-  "meta": null
+  "meta": {
+    "instanceId": "b55b8c5b490d75637e4db729caf7c75486c3398f3275794ad40beef7f9800920"
+  }
 }

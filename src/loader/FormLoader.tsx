@@ -152,15 +152,15 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
         if (!v) return 2500;
 
         if (v.price && typeof v.price === 'object' && 'amount' in (v.price as any) && (v.price as any).amount) {
-            return parseFloat((v.price as any).amount) * 100;
+            return parseFloat((v.price as any).amount);
         }
-        // REST API shape (price is number in cents)
+        // REST API shape (price is number in cents) -> Convert to units
         if (v.price && typeof v.price === 'number') {
-            return v.price;
+            return v.price / 100;
         }
         // REST API shape (string representation)
         if (v.price && typeof v.price === 'string') {
-            return parseFloat(v.price) * 100;
+            return parseFloat(v.price);
         }
         return 2500;
     };
@@ -338,6 +338,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
             shopDomain: config.shopifyDomain || window.location.hostname, // Prioritize configured myshopify domain
             promo: appliedPromoCode?.code || '', // Include applied promo code
             promoDiscount: appliedPromoCode?.discountValue || 0,
+            shippingPrice: calculations.shippingCost, // Add explicitly for Shopify Order
             items: [{
                 title: product.title,
                 variant: formData.variant,

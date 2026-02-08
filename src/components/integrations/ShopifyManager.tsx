@@ -101,43 +101,6 @@ export function ShopifyManager({ userId, onAddStore, showHeader = true, viewMode
         }
     };
 
-    const handleClearMetafields = async (store: any) => {
-        if (!confirm(`Are you sure you want to clear ALL FinalForm metafields from ${store.name}? This will remove all form assignments from the storefront.`)) {
-            return;
-        }
-
-        setProcessingStoreId(store.id);
-        const loadingToast = toast.loading('Clearing metafields...');
-
-        try {
-            // We use removeFormFromShopify but with a flag or specific instruction to clear all
-            // For now, let's assume the backend handles "delete" action efficiently or we trigger a specific "clear_all" action if available.
-            // Since the user asked for a "cleanup" button, and we are migrating to Firebase, 
-            // we primarily want to ensure no old metafields conflict (though Firebase loader ignores them).
-            // But to be clean, we sending a 'delete' action.
-
-            const subdomain = store.url.replace('.myshopify.com', '').replace(/https?:\/\//, '');
-            if (!store.clientId || !store.clientSecret) {
-                toast.error('Store credentials missing.');
-                return;
-            }
-
-            // Use adapter to remove form
-            const adapter = getAdapter('shopify');
-            await adapter.removeForm(subdomain, {
-                clientId: store.clientId,
-                clientSecret: store.clientSecret
-            }, 'all_products');
-
-            toast.success('Metafields clear request sent.');
-        } catch (error) {
-            console.error(error);
-            toast.error('Failed to clear metafields.');
-        } finally {
-            toast.dismiss(loadingToast);
-            setProcessingStoreId(null);
-        }
-    };
 
 
 
@@ -284,9 +247,7 @@ export function ShopifyManager({ userId, onAddStore, showHeader = true, viewMode
                                                 <DropdownMenuItem onClick={() => window.open(`https://${store.url}`, '_blank')}>
                                                     <ExternalLink size={14} className="mr-2" /> Visit Store
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => handleClearMetafields(store)}>
-                                                    <Trash2 size={14} className="mr-2" /> Clear Metafields (Temp)
-                                                </DropdownMenuItem>
+
                                                 <DropdownMenuItem onClick={() => handleSyncAssignments(store)}>
                                                     <Activity size={14} className="mr-2" /> Sync Assignments
                                                 </DropdownMenuItem>

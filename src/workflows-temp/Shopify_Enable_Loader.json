@@ -16,7 +16,7 @@
         -1100,
         64
       ],
-      "id": "72e709d3-dd44-465b-9fa8-645c6aeafaa7",
+      "id": "webhook-enable",
       "name": "Receive Enable Request",
       "webhookId": "enable-loader-webhook"
     },
@@ -301,70 +301,6 @@
       ],
       "id": "delete-old-script",
       "name": "Delete Old Script Tag",
-      "onError": "continueRegularOutput"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "=https://{{ $('Find Store').first().json.subdomain }}.myshopify.com/admin/api/2024-01/graphql.json",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "X-Shopify-Access-Token",
-              "value": "={{ $('Find Store').first().json.accessToken }}"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "{\n  \"query\": \"mutation CreateProductMetafieldDef { metafieldDefinitionCreate(definition: { name: \\\"FinalForm Config\\\", namespace: \\\"finalform\\\", key: \\\"config\\\", type: \\\"json\\\", ownerType: PRODUCT, access: { storefront: PUBLIC_READ } }) { createdDefinition { id } userErrors { field message } } }\"\n}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3,
-      "position": [
-        1780,
-        20
-      ],
-      "id": "create-product-metafield",
-      "name": "Create Product Metafield Definition",
-      "onError": "continueRegularOutput"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "=https://{{ $('Find Store').first().json.subdomain }}.myshopify.com/admin/api/2024-01/graphql.json",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "X-Shopify-Access-Token",
-              "value": "={{ $('Find Store').first().json.accessToken }}"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "{\n  \"query\": \"mutation CreateShopMetafieldDef { metafieldDefinitionCreate(definition: { name: \\\"FinalForm Config\\\", namespace: \\\"finalform\\\", key: \\\"config\\\", type: \\\"json\\\", ownerType: SHOP, access: { storefront: PUBLIC_READ } }) { createdDefinition { id } userErrors { field message } } }\"\n}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3,
-      "position": [
-        2020,
-        20
-      ],
-      "id": "create-shop-metafield",
-      "name": "Create Shop Metafield Definition",
       "onError": "continueRegularOutput"
     },
     {
@@ -715,7 +651,7 @@
         ],
         [
           {
-            "node": "Create Product Metafield Definition",
+            "node": "Create SF Token",
             "type": "main",
             "index": 0
           }
@@ -769,28 +705,6 @@
         ]
       ]
     },
-    "Create Product Metafield Definition": {
-      "main": [
-        [
-          {
-            "node": "Create Shop Metafield Definition",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Create Shop Metafield Definition": {
-      "main": [
-        [
-          {
-            "node": "Create SF Token",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Create SF Token": {
       "main": [
         [
@@ -827,13 +741,5 @@
         ]
       ]
     }
-  },
-  "settings": {
-    "executionOrder": "v1",
-    "availableInMCP": false
-  },
-  "staticData": null,
-  "pinData": {},
-  "triggerCount": 1,
-  "meta": null
+  }
 }

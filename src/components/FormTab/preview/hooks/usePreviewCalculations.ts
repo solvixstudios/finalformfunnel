@@ -62,12 +62,13 @@ export function usePreviewCalculations({
     // Find selected offer
     const selectedOffer = offers.find((o) => o.id === selectedOfferId) || offers[0];
 
-    // Calculate offer price
-    const offerPrice = selectedOffer
+    // Calculate offer price (never negative)
+    const rawOfferPrice = selectedOffer
       ? selectedOffer._type === "perc"
         ? basePricePerUnit * selectedOffer.qty * (1 - selectedOffer.discount / 100)
         : basePricePerUnit * selectedOffer.qty - selectedOffer.discount
       : basePricePerUnit;
+    const offerPrice = Math.max(0, rawOfferPrice);
 
     // Calculate base shipping rates (SSOT)
     const currentRates = (() => {
@@ -124,10 +125,11 @@ export function usePreviewCalculations({
     const promoDiscount = { subtotalDiscount, shippingDiscount, totalDiscount };
     const totalPromoDiscount = subtotalDiscount + shippingDiscount + totalDiscount;
 
-    // Calculate displayed total
-    const displayedTotal = hideShippingInSummary
+    // Calculate displayed total (never negative)
+    const rawTotal = hideShippingInSummary
       ? offerPrice - subtotalDiscount - totalDiscount
       : offerPrice + shippingCost - totalPromoDiscount;
+    const displayedTotal = Math.max(0, rawTotal);
 
     return {
       basePrice: basePricePerUnit,

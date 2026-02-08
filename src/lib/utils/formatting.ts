@@ -10,7 +10,8 @@ import type { Language } from "@/types";
  * Arabic uses "دج", French uses "DZD" on right
  */
 export function formatCurrency(amount: number, lang: Language = "fr"): string {
-  const formatted = amount.toLocaleString();
+  // Use 'en-US' with useGrouping: false to avoid commas
+  const formatted = new Intl.NumberFormat('en-US', { useGrouping: false }).format(amount);
   return lang === "ar" ? `${formatted} دج` : `${formatted} DZD`;
 }
 

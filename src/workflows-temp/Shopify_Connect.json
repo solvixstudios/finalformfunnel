@@ -2,393 +2,22 @@
   "nodes": [
     {
       "parameters": {
-        "respondWith": "json",
-        "responseBody": "={\n  \"success\": false,\n  \"error\": \"{{ $json.error || $json.message || 'Failed to retrieve shop details' }}\"\n}",
+        "httpMethod": "POST",
+        "path": "shopify/connect",
+        "responseMode": "responseNode",
         "options": {
-          "responseCode": 500,
-          "responseHeaders": {
-            "entries": [
-              {
-                "name": "Access-Control-Allow-Origin",
-                "value": "*"
-              }
-            ]
-          }
+          "allowedOrigins": "*"
         }
       },
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.5,
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
       "position": [
-        -3216,
-        560
+        -15744,
+        272
       ],
-      "id": "7326fd27-1be9-4400-b812-602c018ca72a",
-      "name": "Shop Error"
-    },
-    {
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={\n  \"success\": false,\n  \"error\": \"{{ $json.error || $json.message || 'Connection failed. Please verify your credentials.' }}\"\n}",
-        "options": {
-          "responseCode": 401,
-          "responseHeaders": {
-            "entries": [
-              {
-                "name": "Access-Control-Allow-Origin",
-                "value": "*"
-              }
-            ]
-          }
-        }
-      },
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.5,
-      "position": [
-        -3456,
-        560
-      ],
-      "id": "70c20d6a-dd03-4e81-9a8e-82654e679c4e",
-      "name": "Return Error"
-    },
-    {
-      "parameters": {
-        "options": {
-          "responseHeaders": {
-            "entries": [
-              {
-                "name": "Access-Control-Allow-Origin",
-                "value": "*"
-              }
-            ]
-          }
-        }
-      },
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.5,
-      "position": [
-        -336,
-        368
-      ],
-      "id": "da751e1d-f540-4a39-ace2-06ffe0fcc3ad",
-      "name": "Return Success"
-    },
-    {
-      "parameters": {
-        "jsCode": "// Return final success response\nconst responseData = $('Format Success Response').first().json;\n\nreturn [{\n  json: {\n    success: responseData.success,\n    shop: responseData.shop,\n    loaderInstalled: responseData.loaderInstalled,\n    loaderVersion: responseData.loaderVersion,\n    loaderScriptTagId: responseData.loaderScriptTagId,\n    accessToken: responseData.accessToken,\n    credentialsStored: true\n  }\n}];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -576,
-        368
-      ],
-      "id": "677216be-4b8c-4e3e-81e5-b43896884da3",
-      "name": "Final Response"
-    },
-    {
-      "parameters": {},
-      "type": "n8n-nodes-base.noOp",
-      "typeVersion": 1,
-      "position": [
-        -816,
-        368
-      ],
-      "id": "bdf7437b-af35-483c-8633-ceb935768426",
-      "name": "Done"
-    },
-    {
-      "parameters": {
-        "jsCode": "// Prepare row data for update\nconst storeData = $('Format Success Response').first().json.storeData;\nconst rowId = $('If row exists').first().json.rowId;\n\nreturn [{\n  json: {\n    rowId: rowId,\n    accessToken: storeData.accessToken,\n    shopName: storeData.shopName,\n    updatedAt: new Date().toISOString()\n  }\n}];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -1056,
-        48
-      ],
-      "id": "f84fe91d-e7a9-4332-bb3c-aa8300cd13eb",
-      "name": "Prepare Update Data"
-    },
-    {
-      "parameters": {
-        "operation": "update",
-        "dataTableId": {
-          "__rl": true,
-          "value": "stores",
-          "mode": "name"
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1.1,
-      "position": [
-        -816,
-        48
-      ],
-      "id": "1bca432d-650c-41d0-a1dd-933e60722525",
-      "name": "Update row"
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
-          },
-          "conditions": [
-            {
-              "id": "row-exists-check",
-              "leftValue": "={{ $json.exists }}",
-              "rightValue": true,
-              "operator": {
-                "type": "boolean",
-                "operation": "equals"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        -1296,
-        208
-      ],
-      "id": "b1f337d3-d917-477f-80fe-0509c1ae73ef",
-      "name": "If row exists"
-    },
-    {
-      "parameters": {
-        "jsCode": "// Check if store already exists\nconst rows = $input.all();\nconst shopDomain = $('Format Success Response').first().json.storeData.shopDomain;\n\nconst existingRow = rows.find(row => row.json.shopDomain === shopDomain);\n\nif (existingRow) {\n  return [{ json: { exists: true, rowId: existingRow.json.id, shopDomain } }];\n}\n\nreturn [{ json: { exists: false, shopDomain } }];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -1536,
-        208
-      ],
-      "id": "7dd925ba-8031-4055-a5df-01807bece00d",
-      "name": "Check Row Exists"
-    },
-    {
-      "parameters": {
-        "operation": "get",
-        "dataTableId": {
-          "__rl": true,
-          "value": "={{ $json.id }}",
-          "mode": "id"
-        }
-      },
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1.1,
-      "position": [
-        -1776,
-        208
-      ],
-      "id": "5f88530d-bb2c-4775-ba5f-8af5c77e73b4",
-      "name": "Get row(s)",
-      "alwaysOutputData": true
-    },
-    {
-      "parameters": {
-        "dataTableId": {
-          "__rl": true,
-          "value": "stores",
-          "mode": "name"
-        },
-        "columns": {
-          "mappingMode": "autoMapInputData",
-          "value": {},
-          "matchingColumns": [],
-          "schema": [],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": false
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1.1,
-      "position": [
-        -1296,
-        528
-      ],
-      "id": "4eea2ff4-02b2-4dc5-9410-fa82b7e58b6c",
-      "name": "Insert row"
-    },
-    {
-      "parameters": {
-        "jsCode": "// Prepare row data for insertion\nconst storeData = $('Format Success Response').first().json.storeData;\n\nreturn [{\n  json: {\n    shopDomain: storeData.shopDomain,\n    subdomain: storeData.subdomain,\n    clientId: storeData.clientId,\n    clientSecret: storeData.clientSecret,\n    accessToken: storeData.accessToken,\n    shopName: storeData.shopName,\n    createdAt: storeData.createdAt\n  }\n}];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -1536,
-        528
-      ],
-      "id": "cf5a5482-5b71-4495-a666-90cb0fc10745",
-      "name": "Prepare Insert Data"
-    },
-    {
-      "parameters": {
-        "resource": "table",
-        "operation": "create",
-        "tableName": "stores",
-        "columns": {
-          "column": [
-            {
-              "name": "shopName"
-            },
-            {
-              "name": "xxx"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1.1,
-      "position": [
-        -1776,
-        528
-      ],
-      "id": "cc648417-de0c-4957-81df-c7d8c3487de6",
-      "name": "Create a data table"
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
-          },
-          "conditions": [
-            {
-              "id": "dcf41050-a01d-44cb-83c2-a6768a7c833f",
-              "leftValue": "={{ $json.name }}",
-              "rightValue": "stores",
-              "operator": {
-                "type": "string",
-                "operation": "equals"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        -2016,
-        368
-      ],
-      "id": "06736571-d51f-478a-a108-82bea0d5342f",
-      "name": "If Table exists"
-    },
-    {
-      "parameters": {
-        "fieldToSplitOut": "name",
-        "include": "selectedOtherFields",
-        "fieldsToInclude": "id",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.splitOut",
-      "typeVersion": 1,
-      "position": [
-        -2256,
-        368
-      ],
-      "id": "cd52f49c-e1da-481b-adff-43e55967221d",
-      "name": "Split Out",
-      "alwaysOutputData": true
-    },
-    {
-      "parameters": {
-        "resource": "table",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1.1,
-      "position": [
-        -2496,
-        368
-      ],
-      "id": "ba25dd4c-d124-492a-ba37-7c38423117ea",
-      "name": "List data tables",
-      "alwaysOutputData": true
-    },
-    {
-      "parameters": {
-        "jsCode": "// Build the success response with proper JSON structure\nconst shopData = $('Get Shop Details').item.json.shop;\nconst accessToken = $('Get Access Token').item.json.access_token;\nconst scriptTags = $input.first().json.script_tags || [];\n\n// Prepare data for storage\nconst subdomain = $('Receive Connect Request').item.json.body.subdomain;\nconst clientId = $('Receive Connect Request').item.json.body.clientId;\nconst clientSecret = $('Receive Connect Request').item.json.body.clientSecret;\n\n// Find FinalForm loader script tag\nconst loaderTag = scriptTags.find(t => \n  t.src && (t.src.includes('finalform'))\n);\n\nconst loaderInstalled = !!loaderTag;\n\n// Extract version from URL if present\nlet loaderVersion = null;\nif (loaderTag && loaderTag.src) {\n  const versionMatch = loaderTag.src.match(/[?&]v(?:ersion)?=([0-9]+\\.[0-9]+\\.[0-9]+)/);\n  if (versionMatch) {\n    loaderVersion = versionMatch[1];\n  }\n}\n\nreturn [{\n  json: {\n    success: true,\n    shop: shopData,\n    loaderInstalled: loaderInstalled,\n    loaderVersion: loaderVersion,\n    loaderScriptTagId: loaderTag ? loaderTag.id.toString() : null,\n    accessToken: accessToken,\n    // Store data for data table\n    storeData: {\n      shopDomain: subdomain + '.myshopify.com',\n      subdomain: subdomain,\n      clientId: clientId,\n      clientSecret: clientSecret,\n      accessToken: accessToken,\n      shopName: shopData?.name || subdomain,\n      createdAt: new Date().toISOString()\n    }\n  }\n}];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -2736,
-        368
-      ],
-      "id": "786a97ee-c305-4296-b514-49d299c49b24",
-      "name": "Format Success Response"
-    },
-    {
-      "parameters": {
-        "url": "=https://{{ $('Receive Connect Request').item.json.body.subdomain }}.myshopify.com/admin/api/2024-01/script_tags.json",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            },
-            {
-              "name": "X-Shopify-Access-Token",
-              "value": "={{ $('Get Access Token').item.json.access_token }}"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3,
-      "position": [
-        -2976,
-        368
-      ],
-      "id": "e8ea821d-3602-46d5-ab82-b289ba0d87e2",
-      "name": "Check Existing ScriptTags",
-      "onError": "continueErrorOutput"
-    },
-    {
-      "parameters": {
-        "url": "=https://{{ $('Receive Connect Request').item.json.body.subdomain }}.myshopify.com/admin/api/2024-01/shop.json",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            },
-            {
-              "name": "X-Shopify-Access-Token",
-              "value": "={{ $json.access_token }}"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3,
-      "position": [
-        -3216,
-        368
-      ],
-      "id": "bc31ef98-cee4-4fc5-9564-1ef652684714",
-      "name": "Get Shop Details",
-      "onError": "continueErrorOutput"
+      "id": "765b9dd8-bd86-4fc7-9f60-6324ccda8e2c",
+      "name": "Receive Connect Request",
+      "webhookId": "shopify-connect-webhook"
     },
     {
       "parameters": {
@@ -426,225 +55,462 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        -3456,
-        368
+        -15504,
+        272
       ],
-      "id": "c8524293-6dae-45fb-ae3d-c5e32df8d2e6",
+      "id": "bfb7912f-e957-483f-bbd8-8e40ae1281c6",
       "name": "Get Access Token",
       "onError": "continueErrorOutput"
     },
     {
       "parameters": {
-        "httpMethod": "POST",
-        "path": "shopify/connect",
-        "responseMode": "responseNode",
-        "options": {
-          "allowedOrigins": "*"
+        "url": "=https://{{ $('Receive Connect Request').first().json.body.subdomain }}.myshopify.com/admin/api/2024-01/shop.json",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Shopify-Access-Token",
+              "value": "={{ $json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -15264,
+        272
+      ],
+      "id": "004af621-87a0-4002-a043-026035f935d7",
+      "name": "Get Shop Details",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "url": "=https://{{ $('Receive Connect Request').first().json.body.subdomain }}.myshopify.com/admin/api/2024-01/script_tags.json",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Shopify-Access-Token",
+              "value": "={{ $('Get Access Token').first().json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -15024,
+        272
+      ],
+      "id": "07036381-d2f8-49e6-8331-b69796b1259d",
+      "name": "Check Existing ScriptTags",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "action": "generate"
+      },
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "position": [
+        -14784,
+        272
+      ],
+      "id": "675555be-65f1-4fa1-92c0-c253f322aa06",
+      "name": "Crypto"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build the success response with proper JSON structure\n// After Crypto node, we need .first().json to access upstream nodes\nconst shopData = $('Get Shop Details').first().json.shop;\nconst accessToken = $('Get Access Token').first().json.access_token;\nconst scriptTags = $('Check Existing ScriptTags').first().json.script_tags || [];\n\n// Prepare data for storage\nconst subdomain = $('Receive Connect Request').first().json.body.subdomain;\nconst clientId = $('Receive Connect Request').first().json.body.clientId;\nconst clientSecret = $('Receive Connect Request').first().json.body.clientSecret;\n\n// Use the UUID generated by the Crypto node (output is in 'data' field)\nconst storeId = $('Crypto').first().json.data;\n\n// Find FinalForm loader script tag\nconst loaderTag = scriptTags.find(t => \n  t.src && (t.src.includes('finalform'))\n);\n\nconst loaderInstalled = !!loaderTag;\n\n// Extract version from URL if present\nlet loaderVersion = null;\nif (loaderTag && loaderTag.src) {\n  const versionMatch = loaderTag.src.match(/[?&]v(?:ersion)?=([0-9]+\\.[0-9]+\\.[0-9]+)/);\n  if (versionMatch) {\n    loaderVersion = versionMatch[1];\n  }\n}\n\nreturn [{\n  json: {\n    success: true,\n    shop: shopData,\n    loaderInstalled: loaderInstalled,\n    loaderVersion: loaderVersion,\n    loaderScriptTagId: loaderTag ? loaderTag.id.toString() : null,\n    accessToken: accessToken,\n    // Store data for data table\n    storeData: {\n      storeId: storeId, // UUID from Crypto node\n      shopDomain: subdomain + '.myshopify.com',\n      subdomain: subdomain,\n      clientId: clientId,\n      clientSecret: clientSecret,\n      accessToken: accessToken,\n      shopName: shopData?.name || subdomain,\n      createdAt: new Date().toISOString()\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -14544,
+        272
+      ],
+      "id": "4ecca447-6bb6-4858-b8b0-abfb301e5a38",
+      "name": "Format Success Response"
+    },
+    {
+      "parameters": {
+        "resource": "table",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -14576,
+        560
+      ],
+      "id": "cb81af01-719a-4a2c-a8ad-955f00cdb2e0",
+      "name": "List data tables",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "name",
+        "include": "selectedOtherFields",
+        "fieldsToInclude": "id",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -14304,
+        272
+      ],
+      "id": "30237a52-6294-4d40-9eda-43633be299a6",
+      "name": "Split Out",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "table-exists",
+              "leftValue": "={{ $json.name }}",
+              "rightValue": "stores",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -14064,
+        272
+      ],
+      "id": "f8a04bac-924f-4f3c-9af5-2d654b23b62e",
+      "name": "If Table exists"
+    },
+    {
+      "parameters": {
+        "resource": "table",
+        "operation": "create",
+        "tableName": "stores",
+        "columns": {
+          "column": [
+            {
+              "name": "storeId"
+            },
+            {
+              "name": "shopDomain"
+            },
+            {
+              "name": "subdomain"
+            },
+            {
+              "name": "clientId"
+            },
+            {
+              "name": "clientSecret"
+            },
+            {
+              "name": "accessToken"
+            },
+            {
+              "name": "shopName"
+            },
+            {
+              "name": "config"
+            },
+            {
+              "name": "userId"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -13824,
+        416
+      ],
+      "id": "d3f728fe-a5ba-4296-81da-c298a21a41aa",
+      "name": "Create a data table"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
         }
       },
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2.1,
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
       "position": [
-        -3696,
-        368
+        -13824,
+        128
       ],
-      "id": "cbc702ee-6811-46d7-a28b-c16fa8908dbb",
-      "name": "Receive Connect Request",
-      "webhookId": "shopify-connect-webhook"
+      "id": "ba48ad0a-9471-412c-9aca-3d069b699119",
+      "name": "Get row(s)",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Check if store already exists\nconst rows = $input.all();\nconst req = $('Receive Connect Request').first().json.body;\nconst shopDomain = $('Format Success Response').first().json.storeData.shopDomain;\nconst currentUserId = req.userId;\n\nconst existingRow = rows.find(row => row.json.shopDomain === shopDomain);\n\nif (existingRow) {\n  const rowUserId = existingRow.json.userId;\n  const storeId = existingRow.json.storeId;\n  // Enforce ownership: If row has userId and it doesn't match current request -> Error\n  if (rowUserId && currentUserId && rowUserId !== currentUserId) {\n     return [{ json: { error: 'Store already connected to another account', exists: true, accessDenied: true } }];\n  }\n  return [{ json: { exists: true, rowId: existingRow.json.id, storeId: storeId, shopDomain, userId: currentUserId } }];\n}\n\nreturn [{ json: { exists: false, shopDomain, userId: currentUserId } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -13584,
+        128
+      ],
+      "id": "176abe0a-cb6d-4036-91b6-83c8fbbc0dd9",
+      "name": "Check Row Exists"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "row-exists-check",
+              "leftValue": "={{ $json.exists }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -13344,
+        128
+      ],
+      "id": "8465b372-6f59-4f83-8d2c-86d84d8dd4cb",
+      "name": "If row exists"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare row data for update\nconst storeData = $('Format Success Response').first().json.storeData;\nconst rowExistsData = $('If row exists').first().json;\nconst rowId = rowExistsData.rowId;\nconst userId = rowExistsData.userId;\n\nreturn [{\n  json: {\n    id: rowId,\n    accessToken: storeData.accessToken,\n    shopName: storeData.shopName,\n    updatedAt: new Date().toISOString(),\n    ...(userId ? { userId } : {}) // Update userId if provided (claim ownership if empty? or just consistency)\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -13104,
+        32
+      ],
+      "id": "5a4a9e25-1efe-48d7-a979-f412291e45df",
+      "name": "Prepare Update Data",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "value": "stores",
+          "mode": "name"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyValue": "={{ $json.id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "accessToken": "={{ $json.accessToken }}",
+            "shopName": "={{ $json.shopName }}",
+            "userId": "={{ $json.userId }}"
+          },
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -12864,
+        32
+      ],
+      "id": "bb945062-0ff0-4743-860e-e553a0b6a078",
+      "name": "Update row"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare row data for insertion\nconst storeData = $('Format Success Response').first().json.storeData;\nconst userId = $('Receive Connect Request').first().json.body.userId;\n\nreturn [{\n  json: {\n    storeId: storeData.storeId,\n    shopDomain: storeData.shopDomain,\n    subdomain: storeData.subdomain,\n    clientId: storeData.clientId,\n    clientSecret: storeData.clientSecret,\n    accessToken: storeData.accessToken,\n    shopName: storeData.shopName,\n    createdAt: storeData.createdAt,\n    userId: userId\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -13104,
+        416
+      ],
+      "id": "ad8ddd5a-64b0-481d-b460-ac850442ba6f",
+      "name": "Prepare Insert Data"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "stores",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "storeId": "={{ $json.storeId }}",
+            "shopDomain": "={{ $json.shopDomain }}",
+            "subdomain": "={{ $json.subdomain }}",
+            "clientId": "={{ $json.clientId }}",
+            "clientSecret": "={{ $json.clientSecret }}",
+            "accessToken": "={{ $json.accessToken }}",
+            "shopName": "={{ $json.shopName }}",
+            "userId": "={{ $json.userId }}"
+          },
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -12864,
+        416
+      ],
+      "id": "58727adc-cbfa-4fd0-8373-59e8512904b3",
+      "name": "Insert row"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": \"{{ $json.error || $json.message || 'Failed to retrieve shop details' }}\"\n}",
+        "options": {
+          "responseCode": 500,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -15264,
+        496
+      ],
+      "id": "0f2dfd41-18f8-494e-ba0c-cff9559e4310",
+      "name": "Shop Error"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": \"{{ $json.error || $json.message || 'Connection failed. Please verify your credentials.' }}\"\n}",
+        "options": {
+          "responseCode": "={{ $json.accessDenied ? 403 : 401 }}",
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -15504,
+        496
+      ],
+      "id": "f20c9620-5485-4c74-af52-d9ed75e5631c",
+      "name": "Return Error"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Return final success response\nconst responseData = $('Format Success Response').first().json;\n\n// Safely check if Check Row Exists was executed (only when table existed)\nlet existingRow = null;\ntry {\n  existingRow = $('Check Row Exists').first().json;\n} catch (e) {\n  // Node wasn't executed (new table was created)\n  existingRow = null;\n}\n\n// If row existed and has storeId, use it; otherwise use the newly generated one\nconst finalStoreId = (existingRow && existingRow.exists && existingRow.storeId)\n  ? existingRow.storeId\n  : responseData.storeData.storeId;\n\nreturn [{\n  json: {\n    success: responseData.success,\n    storeId: finalStoreId,\n    shop: responseData.shop,\n    loaderInstalled: responseData.loaderInstalled,\n    loaderVersion: responseData.loaderVersion,\n    loaderScriptTagId: responseData.loaderScriptTagId,\n    accessToken: responseData.accessToken,\n    credentialsStored: true\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -12624,
+        272
+      ],
+      "id": "10122dc0-fba3-4ace-9c61-189af66cc71c",
+      "name": "Final Response"
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -12384,
+        272
+      ],
+      "id": "78ceb285-f085-49ab-a10d-6e1a314fc36f",
+      "name": "Return Success"
     }
   ],
   "connections": {
-    "Final Response": {
+    "Receive Connect Request": {
       "main": [
         [
           {
-            "node": "Return Success",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Done": {
-      "main": [
-        [
-          {
-            "node": "Final Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Prepare Update Data": {
-      "main": [
-        [
-          {
-            "node": "Update row",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Update row": {
-      "main": [
-        [
-          {
-            "node": "Done",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "If row exists": {
-      "main": [
-        [
-          {
-            "node": "Prepare Update Data",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Prepare Insert Data",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Check Row Exists": {
-      "main": [
-        [
-          {
-            "node": "If row exists",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Get row(s)": {
-      "main": [
-        [
-          {
-            "node": "Check Row Exists",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Insert row": {
-      "main": [
-        [
-          {
-            "node": "Done",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Prepare Insert Data": {
-      "main": [
-        [
-          {
-            "node": "Insert row",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Create a data table": {
-      "main": [
-        [
-          {
-            "node": "Prepare Insert Data",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "If Table exists": {
-      "main": [
-        [
-          {
-            "node": "Get row(s)",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Create a data table",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Split Out": {
-      "main": [
-        [
-          {
-            "node": "If Table exists",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "List data tables": {
-      "main": [
-        [
-          {
-            "node": "Split Out",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Format Success Response": {
-      "main": [
-        [
-          {
-            "node": "List data tables",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Check Existing ScriptTags": {
-      "main": [
-        [
-          {
-            "node": "Format Success Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Get Shop Details": {
-      "main": [
-        [
-          {
-            "node": "Check Existing ScriptTags",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Shop Error",
+            "node": "Get Access Token",
             "type": "main",
             "index": 0
           }
@@ -669,11 +535,197 @@
         ]
       ]
     },
-    "Receive Connect Request": {
+    "Get Shop Details": {
       "main": [
         [
           {
-            "node": "Get Access Token",
+            "node": "Check Existing ScriptTags",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Shop Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Existing ScriptTags": {
+      "main": [
+        [
+          {
+            "node": "Crypto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crypto": {
+      "main": [
+        [
+          {
+            "node": "Format Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Success Response": {
+      "main": [
+        [
+          {
+            "node": "List data tables",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List data tables": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "If Table exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Table exists": {
+      "main": [
+        [
+          {
+            "node": "Get row(s)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create a data table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a data table": {
+      "main": [
+        [
+          {
+            "node": "Prepare Insert Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s)": {
+      "main": [
+        [
+          {
+            "node": "Check Row Exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Row Exists": {
+      "main": [
+        [
+          {
+            "node": "If row exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If row exists": {
+      "main": [
+        [
+          {
+            "node": "Prepare Update Data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Insert Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Update Data": {
+      "main": [
+        [
+          {
+            "node": "Update row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update row": {
+      "main": [
+        [
+          {
+            "node": "Final Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Insert Data": {
+      "main": [
+        [
+          {
+            "node": "Insert row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert row": {
+      "main": [
+        [
+          {
+            "node": "Final Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Final Response": {
+      "main": [
+        [
+          {
+            "node": "Return Success",
             "type": "main",
             "index": 0
           }
@@ -681,53 +733,7 @@
       ]
     }
   },
-  "pinData": {
-    "Receive Connect Request": [
-      {
-        "headers": {
-          "host": "finalformv1.app.n8n.cloud",
-          "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36",
-          "content-length": "141",
-          "accept": "*/*",
-          "accept-encoding": "gzip, br",
-          "accept-language": "en-US,en;q=0.9",
-          "cdn-loop": "cloudflare; loops=1; subreqs=1",
-          "cf-connecting-ip": "154.243.218.4",
-          "cf-ew-via": "15",
-          "cf-ipcountry": "DZ",
-          "cf-ray": "9ca3c3095c962980-ORN",
-          "cf-visitor": "{\"scheme\":\"https\"}",
-          "cf-worker": "n8n.cloud",
-          "content-type": "application/json",
-          "origin": "https://finalformfunnel.web.app",
-          "priority": "u=1, i",
-          "referer": "https://finalformfunnel.web.app/",
-          "sec-ch-ua": "\"Not(A:Brand\";v=\"8\", \"Chromium\";v=\"144\", \"Google Chrome\";v=\"144\"",
-          "sec-ch-ua-mobile": "?0",
-          "sec-ch-ua-platform": "\"macOS\"",
-          "sec-fetch-dest": "empty",
-          "sec-fetch-mode": "cors",
-          "sec-fetch-site": "cross-site",
-          "x-forwarded-for": "154.243.218.4, 172.68.254.175",
-          "x-forwarded-host": "finalformv1.app.n8n.cloud",
-          "x-forwarded-port": "443",
-          "x-forwarded-proto": "https",
-          "x-forwarded-server": "traefik-prod-users-gwc-83-79dfc7d5f7-k57z6",
-          "x-is-trusted": "yes",
-          "x-real-ip": "154.243.218.4"
-        },
-        "params": {},
-        "query": {},
-        "body": {
-          "subdomain": "baraaelectromenager-com",
-          "clientId": "3267facf7b3733a5e74e1e9c3b077437",
-          "clientSecret": "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"
-        },
-        "webhookUrl": "https://finalformv1.app.n8n.cloud/webhook/shopify/connect",
-        "executionMode": "production"
-      }
-    ]
-  },
+  "pinData": {},
   "meta": {
     "instanceId": "b55b8c5b490d75637e4db729caf7c75486c3398f3275794ad40beef7f9800920"
   }

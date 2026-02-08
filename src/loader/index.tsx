@@ -1,8 +1,6 @@
 import '@/index.css';
-import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore/lite';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { db } from './firebase';
 import { FormLoader } from './FormLoader';
 
 // Declare global variable defined in Vite config
@@ -21,9 +19,8 @@ async function fetchShopifyProduct() {
         if (metaProduct && metaProduct.id && metaProduct.title) {
             console.log('FinalForm: Found complete product in window.meta');
             return metaProduct;
-        } else if (metaProduct) {
-            console.log('FinalForm: window.meta.product found but incomplete (missing title). Fetching full data...');
         }
+        // If meta.product exists but is incomplete (some themes only expose id), fall through to fetch .js
 
         // 2. Fallback to fetching .js
         if (window.location.pathname.includes('/products/')) {
@@ -43,75 +40,53 @@ async function fetchShopifyProduct() {
 }
 
 /**
- * Fetch config from Firebase Firestore (Source of Truth)
+ * Fetch config from n8n Data Table Webhook (Source of Truth)
  */
-async function fetchConfigFromFirebase(shop: string, productId?: string, productHandle?: string) {
+async function fetchConfigFromN8N(shop: string, productId?: string, productHandle?: string) {
     if (!shop) return null;
-    console.log('FinalForm: Fetching config from Firebase...');
+    console.log('FinalForm: Fetching config from n8n...');
 
     try {
-        // 1. Get all assignments for this shop
-        // We use shopifyDomain to filter. Ensure shop is normalized or matches what's saved.
-        // Usually 'shop' param is 'myshop.myshopify.com' or custom domain. The backend saves 'myshopify.com' usually if connected via API,
-        // but 'url' might be used. 'normalizeShopifyDomain' logic in backend is important.
-        // Here we assume 'shop' passed in params matches 'shopifyDomain' in Firestore.
+        // Construct URL for n8n webhook
+        // Construct URL for n8n webhook
+        const N8N_BACKEND_URL = import.meta.env.VITE_N8N_BACKEND_URL;
+        if (!N8N_BACKEND_URL) {
+            console.error('FinalForm: VITE_N8N_BACKEND_URL is not defined');
+            return null;
+        }
+        const N8N_WEBHOOK_URL = `${N8N_BACKEND_URL}/webhook/shopify/config`;
 
-        const assignmentsRef = collection(db, 'assignments');
-        const q = query(assignmentsRef, where('shopifyDomain', '==', shop), where('isActive', '==', true));
-        const snapshot = await getDocs(q);
+        const url = new URL(N8N_WEBHOOK_URL);
+        url.searchParams.append('shop', shop);
+        if (productId) url.searchParams.append('productId', productId);
+        if (productHandle) url.searchParams.append('productHandle', productHandle);
+        // Cache-busting timestamp to prevent stale data
+        url.searchParams.append('_t', Date.now().toString());
 
-        if (snapshot.empty) {
-            console.warn('FinalForm: No assignments found for this shop.');
+        const res = await fetch(url.toString(), {
+            cache: 'no-store',
+            headers: {
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache'
+            }
+        });
+
+        if (!res.ok) {
+            console.warn('FinalForm: Config fetch failed', res.status);
             return null;
         }
 
-        const assignments = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as any));
+        const config = await res.json();
 
-        // 2. Find Best Match
-        // Priority 1: Specific Product (by ID or Handle)
-        // Priority 2: Store Wide
-
-        // We sort by priority (descending) just in case, though logic below handles it
-        // assignments.sort((a, b) => b.priority - a.priority);
-
-        let match = null;
-
-        // Check Product ID Match
-        if (productId) {
-            match = assignments.find(a => a.assignmentType === 'product' && String(a.productId) === String(productId));
-        }
-
-        // Check Handle Match (if no ID match)
-        if (!match && productHandle) {
-            match = assignments.find(a => a.assignmentType === 'product' && a.productHandle === productHandle);
-        }
-
-        // Check Store Match (if no product match)
-        if (!match) {
-            match = assignments.find(a => a.assignmentType === 'store');
-        }
-
-        if (!match) {
-            console.warn('FinalForm: No matching assignment found for this context.');
+        if (!config || Object.keys(config).length === 0) {
+            console.warn('FinalForm: Empty config returned');
             return null;
         }
 
-        console.log('FinalForm: Found assignment', match.id);
-
-        // 3. Fetch the Form Config
-        const formRef = doc(db, 'forms', match.formId);
-        const formSnap = await getDoc(formRef);
-
-        if (!formSnap.exists()) {
-            console.error('FinalForm: Assigned form document does not exist.');
-            return null;
-        }
-
-        const formData = formSnap.data();
-        return formData.config;
+        return config;
 
     } catch (e) {
-        console.error('FinalForm: Firebase Fetch Error', e);
+        console.error('FinalForm: Config Fetch Error', e);
         return null;
     }
 }
@@ -217,9 +192,9 @@ async function initLoader() {
 
     console.log('FinalForm: Context', { shop, productId, productHandle });
 
-    // 3. Resolve Config (Firebase)
+    // 3. Resolve Config (n8n)
     // We pass shop, productId, productHandle to find the right assignment
-    const config = await fetchConfigFromFirebase(shop, productId, productHandle);
+    const config = await fetchConfigFromN8N(shop, productId, productHandle);
 
     if (!config) {
         console.warn('FinalForm: Config load failed or no assignment found. Aborting.');

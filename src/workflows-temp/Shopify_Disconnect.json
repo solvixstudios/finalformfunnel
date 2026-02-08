@@ -12,44 +12,31 @@
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [
-        0,
-        0
-      ],
-      "id": "disconnect-webhook",
+      "position": [0, 0],
+      "id": "webhook",
       "name": "Receive Disconnect Request",
       "webhookId": "shopify-disconnect-webhook"
     },
     {
       "parameters": {
-        "jsCode": "// Parse disconnect request\nconst body = $input.first().json.body;\n\nif (!body.shopDomain) {\n  return [{ json: { valid: false, error: 'shopDomain is required' } }];\n}\n\nreturn [{\n  json: {\n    valid: true,\n    shopDomain: body.shopDomain\n  }\n}];"
+        "jsCode": "// Parse disconnect request\nconst body = $input.first().json.body;\n\n// normalize shop domain\nlet shopDomain = body.shopDomain || '';\nif (shopDomain && !shopDomain.includes('.')) {\n  shopDomain += '.myshopify.com';\n}\n\nif (!shopDomain) {\n  return [{ json: { valid: false, error: 'shopDomain is required' } }];\n}\n\nreturn [{\n  json: {\n    valid: true,\n    shopDomain: shopDomain\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        240,
-        0
-      ],
+      "position": [240, 0],
       "id": "parse-request",
       "name": "Parse Request"
     },
     {
       "parameters": {
         "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
-          },
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
           "conditions": [
             {
               "id": "valid-check",
               "leftValue": "={{ $json.valid }}",
               "rightValue": true,
-              "operator": {
-                "type": "boolean",
-                "operation": "equals"
-              }
+              "operator": { "type": "boolean", "operation": "equals" }
             }
           ],
           "combinator": "and"
@@ -58,127 +45,47 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [
-        480,
-        0
-      ],
-      "id": "is-valid",
+      "position": [480, 0],
+      "id": "if-valid",
       "name": "Is Valid?"
-    },
-    {
-      "parameters": {
-        "resource": "table",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1.1,
-      "position": [
-        720,
-        -100
-      ],
-      "id": "list-tables",
-      "name": "List data tables",
-      "alwaysOutputData": true
-    },
-    {
-      "parameters": {
-        "fieldToSplitOut": "name",
-        "include": "selectedOtherFields",
-        "fieldsToInclude": "id",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.splitOut",
-      "typeVersion": 1,
-      "position": [
-        960,
-        -100
-      ],
-      "id": "split-out",
-      "name": "Split Out",
-      "alwaysOutputData": true
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
-          },
-          "conditions": [
-            {
-              "id": "table-exists",
-              "leftValue": "={{ $json.name }}",
-              "rightValue": "stores",
-              "operator": {
-                "type": "string",
-                "operation": "equals"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        1200,
-        -100
-      ],
-      "id": "if-table-exists",
-      "name": "If Table exists"
     },
     {
       "parameters": {
         "operation": "get",
         "dataTableId": {
           "__rl": true,
-          "value": "={{ $json.id }}",
-          "mode": "id"
+          "value": "stores",
+          "mode": "name"
         },
         "options": {}
       },
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
-      "position": [
-        1440,
-        -200
-      ],
-      "id": "get-row",
-      "name": "Get row(s)",
+      "position": [720, -100],
+      "id": "get-stores",
+      "name": "Get Stores",
       "alwaysOutputData": true
     },
     {
       "parameters": {
-        "jsCode": "// Find the row to delete\nconst rows = $input.all();\nconst shopDomain = $('Parse Request').first().json.shopDomain;\n\nconst row = rows.find(r => r.json.shopDomain === shopDomain);\n\nif (row) {\n  return [{ json: { found: true, rowId: row.json.id, shopDomain } }];\n}\n\nreturn [{ json: { found: false, shopDomain } }];"
+        "jsCode": "// Find the row to delete\nconst rows = $input.all();\nconst shopDomain = $('Parse Request').first().json.shopDomain;\n\nconst row = rows.find(r => r.json.shopDomain === shopDomain);\n\nif (row) {\n  return [{ json: { found: true, rowId: row.id, shopDomain } }];\n}\n\nreturn [{ json: { found: false, shopDomain } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1680,
-        -200
-      ],
+      "position": [960, -100],
       "id": "find-row",
       "name": "Find Row"
     },
     {
       "parameters": {
         "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
-          },
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
           "conditions": [
             {
               "id": "row-exists",
               "leftValue": "={{ $json.found }}",
               "rightValue": true,
-              "operator": {
-                "type": "boolean",
-                "operation": "equals"
-              }
+              "operator": { "type": "boolean", "operation": "equals" }
             }
           ],
           "combinator": "and"
@@ -187,267 +94,126 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [
-        1920,
-        -200
-      ],
+      "position": [1200, -100],
       "id": "if-row-exists",
       "name": "If row exists"
     },
     {
       "parameters": {
-        "operation": "delete",
+        "operation": "deleteRows",
         "dataTableId": {
           "__rl": true,
           "value": "stores",
           "mode": "name"
         },
-        "rowId": "={{ $json.rowId }}",
+        "filters": {
+          "conditions": [
+            {
+              "keyValue": "={{ $json.rowId }}"
+            }
+          ]
+        },
         "options": {}
       },
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
-      "position": [
-        2160,
-        -300
-      ],
+      "position": [1440, -200],
       "id": "delete-row",
       "name": "Delete row"
     },
     {
       "parameters": {
-        "jsCode": "// Success response\nreturn [{\n  json: {\n    success: true,\n    message: 'Store credentials removed successfully'\n  }\n}];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        2400,
-        -200
-      ],
-      "id": "success-response",
-      "name": "Success Response"
-    },
-    {
-      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, message: 'Store credentials removed successfully' }) }}",
         "options": {
           "responseHeaders": {
             "entries": [
-              {
-                "name": "Access-Control-Allow-Origin",
-                "value": "*"
-              }
+              { "name": "Access-Control-Allow-Origin", "value": "*" },
+              { "name": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
+              { "name": "Access-Control-Allow-Headers", "value": "*" }
             ]
           }
         }
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [
-        2640,
-        0
-      ],
-      "id": "respond",
+      "position": [1680, -100],
+      "id": "respond-success",
       "name": "Respond"
     },
     {
       "parameters": {
-        "jsCode": "// Error response\nconst error = $input.first().json.error || 'Invalid request';\nreturn [{\n  json: {\n    success: false,\n    error: error\n  }\n}];"
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, message: 'Store credentials already removed or not found' }) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              { "name": "Access-Control-Allow-Origin", "value": "*" },
+              { "name": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
+              { "name": "Access-Control-Allow-Headers", "value": "*" }
+            ]
+          }
+        }
       },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        2400,
-        100
-      ],
-      "id": "error-response",
-      "name": "Error Response"
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [1440, 0],
+      "id": "respond-not-found",
+      "name": "Not Found (OK)"
     },
     {
       "parameters": {
-        "jsCode": "// Not found - but still success (idempotent)\nreturn [{\n  json: {\n    success: true,\n    message: 'Store credentials already removed or not found'\n  }\n}];"
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: false, error: $json.error || 'Invalid request' }) }}",
+        "options": {
+          "responseCode": "400",
+          "responseHeaders": {
+            "entries": [
+              { "name": "Access-Control-Allow-Origin", "value": "*" },
+              { "name": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
+              { "name": "Access-Control-Allow-Headers", "value": "*" }
+            ]
+          }
+        }
       },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        2160,
-        -100
-      ],
-      "id": "not-found-ok",
-      "name": "Not Found (OK)"
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [720, 100],
+      "id": "respond-error",
+      "name": "Error Response"
     }
   ],
   "connections": {
     "Receive Disconnect Request": {
-      "main": [
-        [
-          {
-            "node": "Parse Request",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Parse Request", "type": "main", "index": 0 }]]
     },
     "Parse Request": {
-      "main": [
-        [
-          {
-            "node": "Is Valid?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Is Valid?", "type": "main", "index": 0 }]]
     },
     "Is Valid?": {
       "main": [
-        [
-          {
-            "node": "List data tables",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Error Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Get Stores", "type": "main", "index": 0 }],
+        [{ "node": "Error Response", "type": "main", "index": 0 }]
       ]
     },
-    "List data tables": {
-      "main": [
-        [
-          {
-            "node": "Split Out",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Split Out": {
-      "main": [
-        [
-          {
-            "node": "If Table exists",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "If Table exists": {
-      "main": [
-        [
-          {
-            "node": "Get row(s)",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Not Found (OK)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Get row(s)": {
-      "main": [
-        [
-          {
-            "node": "Find Row",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Get Stores": {
+      "main": [[{ "node": "Find Row", "type": "main", "index": 0 }]]
     },
     "Find Row": {
-      "main": [
-        [
-          {
-            "node": "If row exists",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "If row exists", "type": "main", "index": 0 }]]
     },
     "If row exists": {
       "main": [
-        [
-          {
-            "node": "Delete row",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Not Found (OK)",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Delete row", "type": "main", "index": 0 }],
+        [{ "node": "Not Found (OK)", "type": "main", "index": 0 }]
       ]
     },
     "Delete row": {
-      "main": [
-        [
-          {
-            "node": "Success Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Success Response": {
-      "main": [
-        [
-          {
-            "node": "Respond",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Error Response": {
-      "main": [
-        [
-          {
-            "node": "Respond",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Not Found (OK)": {
-      "main": [
-        [
-          {
-            "node": "Respond",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Respond", "type": "main", "index": 0 }]]
     }
   },
-  "settings": {
-    "executionOrder": "v1",
-    "availableInMCP": false
-  },
-  "staticData": null,
   "pinData": {},
-  "triggerCount": 1,
-  "meta": null
+  "meta": {
+    "instanceId": "finalformfunnel"
+  }
 }

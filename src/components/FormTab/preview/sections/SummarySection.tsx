@@ -84,10 +84,10 @@ export const SummarySection: React.FC<SummarySectionProps> = ({
                                 <span className="line-through text-gray-400 mr-2">
                                     {formatCurrency(offerPrice)}
                                 </span>
-                                {formatCurrency(offerPrice - promoDiscount.subtotalDiscount)}
+                                {formatCurrency(Math.max(0, offerPrice - promoDiscount.subtotalDiscount))}
                             </>
                         ) : (
-                            formatCurrency(offerPrice)
+                            formatCurrency(Math.max(0, offerPrice))
                         )}
                     </span>
                 </div>

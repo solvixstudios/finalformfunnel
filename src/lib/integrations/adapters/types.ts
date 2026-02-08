@@ -117,7 +117,7 @@ export interface PlatformAdapter {
   readonly platform: PlatformType;
 
   // Connection
-  connect(subdomain: string, credentials: PlatformCredentials): Promise<ConnectResult>;
+  connect(subdomain: string, credentials: PlatformCredentials, userId?: string): Promise<ConnectResult>;
 
   // Loader Management
   enableLoader(subdomain: string, credentials: PlatformCredentials): Promise<EnableLoaderResult>;

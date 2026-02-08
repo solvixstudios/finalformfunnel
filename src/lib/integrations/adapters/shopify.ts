@@ -4,13 +4,13 @@
  */
 
 import type {
-    AssignmentContext,
-    ConnectResult,
-    EnableLoaderResult,
-    OrderData,
-    PlatformAdapter,
-    PlatformCredentials,
-    Product,
+  AssignmentContext,
+  ConnectResult,
+  EnableLoaderResult,
+  OrderData,
+  PlatformAdapter,
+  PlatformCredentials,
+  Product,
 } from './types';
 
 const N8N_BACKEND_URL = import.meta.env.VITE_N8N_BACKEND_URL || 'https://your-n8n-instance.com';
@@ -80,7 +80,7 @@ function formatGid(id: string, type: string = 'Product'): string {
 export class ShopifyAdapter implements PlatformAdapter {
   readonly platform = 'shopify' as const;
 
-  async connect(subdomain: string, credentials: PlatformCredentials): Promise<ConnectResult> {
+  async connect(subdomain: string, credentials: PlatformCredentials, userId?: string): Promise<ConnectResult> {
     const { clientId, clientSecret } = credentials;
     
     if (!clientId || !clientSecret) {
@@ -91,7 +91,7 @@ export class ShopifyAdapter implements PlatformAdapter {
       const response = await fetch(`${N8N_BACKEND_URL}/${WEBHOOK_ENV}/shopify/connect`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subdomain, clientId, clientSecret }),
+        body: JSON.stringify({ subdomain, clientId, clientSecret, userId }),
       });
 
       if (!response.ok) {
@@ -185,15 +185,16 @@ export class ShopifyAdapter implements PlatformAdapter {
   ): Promise<any> {
     const { clientId, clientSecret } = credentials;
     
-    // Merge context into form data
-    const data = { ...formConfig, ...context };
+    // Build shopDomain from subdomain
+    const shopDomain = `${subdomain}.myshopify.com`;
 
     const payload: any = {
-      subdomain,
+      shopDomain,
       clientId,
       clientSecret,
-      action: 'save',
-      data,
+      formId: context?.formId || formConfig.formId || null,
+      formData: formConfig,
+      ownerId: null, // Store-level by default
     };
 
     // Add owner ID if product assignment
@@ -201,7 +202,7 @@ export class ShopifyAdapter implements PlatformAdapter {
       payload.ownerId = formatGid(context.productId);
     }
 
-    const response = await fetch(`${N8N_BACKEND_URL}/${WEBHOOK_ENV}/shopify/master-sync`, {
+    const response = await fetch(`${N8N_BACKEND_URL}/${WEBHOOK_ENV}/shopify/save-config`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -211,7 +212,7 @@ export class ShopifyAdapter implements PlatformAdapter {
     const result = normalizeResponse(responseData);
 
     if (!response.ok || result.error || result.success === false) {
-      throw new Error(result.error || result.message || 'Failed to sync form to Shopify');
+      throw new Error(result.error || result.message || 'Failed to save config to Shopify');
     }
 
     return result;
@@ -220,18 +221,17 @@ export class ShopifyAdapter implements PlatformAdapter {
   async removeForm(subdomain: string, credentials: PlatformCredentials, ownerId?: string): Promise<void> {
     const { clientId, clientSecret } = credentials;
     
+    // Build shopDomain from subdomain
+    const shopDomain = `${subdomain}.myshopify.com`;
+    
     const payload: any = {
-      subdomain,
+      shopDomain,
       clientId,
       clientSecret,
-      action: 'delete',
+      ownerId: ownerId ? formatGid(ownerId) : null,
     };
 
-    if (ownerId) {
-      payload.ownerId = formatGid(ownerId);
-    }
-
-    const response = await fetch(`${N8N_BACKEND_URL}/${WEBHOOK_ENV}/shopify/master-sync`, {
+    const response = await fetch(`${N8N_BACKEND_URL}/${WEBHOOK_ENV}/shopify/delete-config`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -239,7 +239,7 @@ export class ShopifyAdapter implements PlatformAdapter {
 
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));
-      throw new Error(err.error || 'Failed to remove form from Shopify');
+      throw new Error(err.error || 'Failed to remove config from Shopify');
     }
   }
 
