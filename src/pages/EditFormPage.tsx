@@ -19,7 +19,7 @@ import { FolderOpen, RotateCcw, RotateCw, Save, UploadCloud } from 'lucide-react
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import FormTab from '../components/FormTab';
-import { getAdapter } from '../lib/integrations';
+import { syncFormChanges } from '../lib/sync';
 
 import { useConnectedStores, useFormAssignments, useSavedForms } from '../lib/firebase/hooks';
 import { getExportData, loadFormWithValidation, normalizeImportedConfig, validateFormConfig } from '../lib/formManagement';
@@ -437,60 +437,28 @@ const EditFormPage = ({ userId }: EditFormPageProps) => {
         navigate(`/dashboard/forms/edit/${savedForm.id}`, { replace: true });
       }
 
-      // AUTO-SYNC: Always sync changes to active Shopify assignments
+      // AUTO-SYNC: Sync changes to active Shopify assignments via centralized service
       if (savedFormId) {
-        // Filter for active assignments for this specific form
-        const formAssignments = assignments.filter(a => a.formId === savedFormId && a.isActive);
+        const activeAssignments = assignments.filter(a => a.formId === savedFormId && a.isActive);
 
-        if (formAssignments.length > 0) {
-          const toastId = toast.loading(`Syncing to ${formAssignments.length} destination(s)...`);
+        if (activeAssignments.length > 0) {
+          const toastId = toast.loading(`Syncing to ${activeAssignments.length} destination(s)...`);
 
-          let successCount = 0;
-          let failCount = 0;
-
-          const publishPromises = formAssignments.map(async (assignment) => {
-            try {
-              const store = stores.find(s => s.id === assignment.storeId);
-              if (!store || !store.clientId || !store.clientSecret) {
-                console.warn(`Store not found or missing credentials for assignment:`, assignment);
-                failCount++;
-                return;
-              }
-
-              const subdomain = store.url.replace('.myshopify.com', '').replace(/https?:\/\//, '');
-              const ownerId = assignment.assignmentType === 'product' ? assignment.productId : undefined;
-
-              const adapter = getAdapter(store.platform || 'shopify');
-              await adapter.assignForm(
-                subdomain,
-                { clientId: store.clientId, clientSecret: store.clientSecret },
-                exportDataMemoized(),
-                {
-                  formId: savedFormId!,
-                  formName: formName.trim(),
-                  assignmentType: assignment.assignmentType === 'product' ? 'product' : 'store',
-                  storeId: store.id,
-                  storeName: store.name,
-                  shopifyDomain: store.url,
-                  productId: assignment.productId,
-                  productHandle: assignment.productHandle
-                }
-              );
-              successCount++;
-            } catch (syncError) {
-              console.error(`Failed to sync to ${assignment.storeId}:`, syncError);
-              failCount++;
-            }
+          const result = await syncFormChanges({
+            formId: savedFormId,
+            formName: formName.trim(),
+            formConfig: exportDataMemoized(),
+            assignments,
+            stores,
           });
 
-          await Promise.allSettled(publishPromises);
           toast.dismiss(toastId);
 
-          if (failCount === 0) {
-            toast.success(`✓ Synced to ${successCount} destination(s)`);
-          } else if (successCount > 0) {
-            toast.warning(`Synced ${successCount}/${formAssignments.length} (${failCount} failed)`);
-          } else {
+          if (result.failedCount === 0 && result.successCount > 0) {
+            toast.success(`✓ Synced to ${result.successCount} destination(s)`);
+          } else if (result.successCount > 0) {
+            toast.warning(`Synced ${result.successCount}/${result.totalCount} (${result.failedCount} failed)`);
+          } else if (result.failedCount > 0) {
             toast.error(`Failed to sync to Shopify`);
           }
         }

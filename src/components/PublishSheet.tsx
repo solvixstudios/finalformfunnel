@@ -9,8 +9,8 @@ import {
 } from '@/components/ui/sheet';
 // Tabs removed
 import { useConnectedStores, useFormAssignments } from '@/lib/firebase/hooks';
-import { getAdapter } from '@/lib/integrations';
 import { getProductsFromCache, notifyProductSyncComplete, Product, syncProductsFromShopify } from '@/lib/products';
+import { publishToStore, unpublishFromStore } from '@/lib/sync';
 import { cn } from '@/lib/utils';
 import {
     AlertTriangle,
@@ -272,7 +272,6 @@ export function PublishSheet({
     const executeStorePublish = async () => {
         const store = stores.find(s => s.id === selectedStoreId);
         if (!store) return;
-        const subdomain = store.url.replace('.myshopify.com', '').replace(/https?:\/\//, '');
 
         if (conflictAssignment) {
             await deleteAssignment(conflictAssignment.id!);
@@ -285,27 +284,23 @@ export function PublishSheet({
             type: 'store',
         });
 
-        // Shopify Push via adapter
-        const adapter = getAdapter(store.platform || 'shopify');
-        await adapter.assignForm(
-            subdomain,
-            { clientId: store.clientId!, clientSecret: store.clientSecret! },
+        // Shopify Push via syncService
+        const result = await publishToStore({
+            formId,
+            formName,
             formConfig,
-            {
-                formId,
-                formName,
-                assignmentType: 'store',
-                storeId: selectedStoreId,
-                storeName: store.name,
-                shopifyDomain: store.url,
-            }
-        );
+            store,
+            assignmentType: 'store',
+        });
+
+        if (!result.success) {
+            throw new Error(result.error || 'Failed to publish to store');
+        }
     };
 
     const executeProductPublish = async () => {
         const store = stores.find(s => s.id === selectedStoreId);
         if (!store) return;
-        const subdomain = store.url.replace('.myshopify.com', '').replace(/https?:\/\//, '');
 
         const promises = selectedProductIds.map(async (pid) => {
             const product = products.find(p => p.id.toString() === pid);
@@ -338,23 +333,22 @@ export function PublishSheet({
                 });
             }
 
-            // Shopify Push via adapter
-            const adapter = getAdapter(store.platform || 'shopify');
-            return adapter.assignForm(
-                subdomain,
-                { clientId: store.clientId!, clientSecret: store.clientSecret! },
+            // Shopify Push via syncService
+            const result = await publishToStore({
+                formId,
+                formName,
                 formConfig,
-                {
-                    formId,
-                    formName,
-                    assignmentType: 'product',
-                    storeId: selectedStoreId,
-                    storeName: store.name,
-                    shopifyDomain: store.url,
-                    productId: pid,
-                    productHandle: product?.handle,
-                }
-            );
+                store,
+                assignmentType: 'product',
+                productId: pid,
+                productHandle: product?.handle,
+            });
+
+            if (!result.success) {
+                console.error(`Failed to publish to product ${pid}:`, result.error);
+            }
+
+            return result;
         });
 
         await Promise.all(promises);
@@ -379,17 +373,15 @@ export function PublishSheet({
                 if (!assignment) return;
 
                 const store = stores.find(s => s.id === assignment.storeId);
-                if (!store || !store.clientId || !store.clientSecret) return; // Skip if cant find store creds
+                if (!store || !store.clientId || !store.clientSecret) return;
 
-                const subdomain = store.url.replace('.myshopify.com', '').replace(/https?:\/\//, '');
-                const ownerId = assignment.assignmentType === 'product' ? assignment.productId : undefined;
+                const productId = assignment.assignmentType === 'product' ? assignment.productId : undefined;
 
-                // 1. Remove from Shopify via adapter
-                const adapter = getAdapter(store.platform || 'shopify');
-                await adapter.removeForm(subdomain, {
-                    clientId: store.clientId,
-                    clientSecret: store.clientSecret
-                }, ownerId).catch(e => console.warn(`Failed to remove for ${assignId}`, e));
+                // 1. Remove from Shopify via syncService
+                await unpublishFromStore({
+                    store,
+                    productId,
+                }).catch(e => console.warn(`Failed to remove for ${assignId}:`, e));
 
                 // 2. Remove from Firebase
                 await deleteAssignment(assignId);
@@ -415,16 +407,20 @@ export function PublishSheet({
             return;
         }
 
-        const subdomain = store.url.replace('.myshopify.com', '').replace(/https?:\/\//, '');
         const loadingToast = toast.loading('Unpublishing...');
 
         try {
-            const ownerId = assignment.assignmentType === 'product' ? assignment.productId : undefined;
-            const adapter = getAdapter(store.platform || 'shopify');
-            await adapter.removeForm(subdomain, {
-                clientId: store.clientId,
-                clientSecret: store.clientSecret
-            }, ownerId);
+            const productId = assignment.assignmentType === 'product' ? assignment.productId : undefined;
+
+            // 1. Remove from Shopify via syncService
+            const result = await unpublishFromStore({
+                store,
+                productId,
+            });
+
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to unpublish');
+            }
 
             // 2. Remove Assignment from Firebase
             await deleteAssignment(assignment.id);

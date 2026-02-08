@@ -19,7 +19,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Parse request body\nconst body = $input.first().json.body;\n\nconst shopDomain = body.shopDomain;\nconst clientId = body.clientId;\nconst clientSecret = body.clientSecret;\nconst ownerId = body.ownerId || null;\n\nif (!shopDomain || !clientId || !clientSecret) {\n  return [{ json: { error: 'Missing required credentials', valid: false } }];\n}\n\nreturn [{ json: {\n  valid: true,\n  shopDomain,\n  clientId,\n  clientSecret,\n  ownerId: ownerId ? String(ownerId) : null\n} }];"
+        "jsCode": "// Parse request body\nconst body = $input.first().json.body;\n\nconst shopDomain = body.shopDomain;\nconst clientId = body.clientId;\nconst clientSecret = body.clientSecret;\n\n// Normalize ownerId: null, undefined, empty string, 'null' all become empty string\nlet ownerId = body.ownerId;\nif (!ownerId || ownerId === 'null' || ownerId === 'undefined') {\n  ownerId = '';\n} else {\n  ownerId = String(ownerId);\n}\n\nif (!shopDomain || !clientId || !clientSecret) {\n  return [{ json: { error: 'Missing required credentials', valid: false } }];\n}\n\nreturn [{ json: {\n  valid: true,\n  shopDomain,\n  clientId,\n  clientSecret,\n  ownerId\n} }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -117,7 +117,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Find config to delete\nconst rows = $input.all();\nconst verifyData = $('Verify Store').first().json;\n\nconst config = rows.find(r =>\n  r.json.storeId === verifyData.storeId &&\n  (r.json.ownerId || null) === verifyData.ownerId\n);\n\nif (config) {\n  return [{ json: { found: true, rowId: config.id } }];\n}\n\nreturn [{ json: { found: false } }];"
+        "jsCode": "// Find config to delete by storeId + ownerId\nconst rows = $input.all();\nconst verifyData = $('Verify Store').first().json;\n\nconst storeId = verifyData.storeId;\nconst ownerId = verifyData.ownerId; // Already normalized to empty string for store-level\n\nconst config = rows.find(r => {\n  const rowOwnerId = r.json.ownerId || '';\n  return r.json.storeId === storeId && rowOwnerId === ownerId;\n});\n\nif (config) {\n  return [{ json: { found: true, storeId, ownerId } }];\n}\n\nreturn [{ json: { found: false } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -149,20 +149,19 @@
     },
     {
       "parameters": {
-        "operation": "deleteRows",
+        "operation": "deleteRow",
         "dataTableId": {
           "__rl": true,
           "value": "store_configs",
           "mode": "name"
         },
-        "filters": {
-          "conditions": [
-            {
-              "keyValue": "={{ $json.rowId }}"
-            }
-          ]
-        },
-        "options": {}
+        "deleteByFilterColumn": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "storeId": "={{ $json.storeId }}",
+            "ownerId": "={{ $json.ownerId }}"
+          }
+        }
       },
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,

@@ -185,6 +185,14 @@ export class ShopifyAdapter implements PlatformAdapter {
   ): Promise<any> {
     const { clientId, clientSecret } = credentials;
     
+    // Validate required fields
+    if (!context?.formId && !formConfig.formId) {
+      throw new Error('formId is required for assignForm');
+    }
+    if (!context?.storeId) {
+      throw new Error('storeId is required for assignForm');
+    }
+    
     // Build shopDomain from subdomain
     const shopDomain = `${subdomain}.myshopify.com`;
 
@@ -192,9 +200,11 @@ export class ShopifyAdapter implements PlatformAdapter {
       shopDomain,
       clientId,
       clientSecret,
-      formId: context?.formId || formConfig.formId || null,
+      formId: context?.formId || formConfig.formId,
+      formName: context?.formName || formConfig.name || 'Untitled Form',
       formData: formConfig,
       ownerId: null, // Store-level by default
+      ownerType: context?.assignmentType || 'store',
     };
 
     // Add owner ID if product assignment

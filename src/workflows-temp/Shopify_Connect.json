@@ -161,20 +161,16 @@
     },
     {
       "parameters": {
-        "fieldToSplitOut": "name",
-        "include": "selectedOtherFields",
-        "fieldsToInclude": "id",
-        "options": {}
+        "jsCode": "// Check if 'stores' table exists in the list of tables\nconst tables = $input.all();\nconst tableNames = tables.map(t => t.json.name);\n\nconst storesTableExists = tableNames.includes('stores');\n\n// Also check for store_configs while we're here\nconst configsTableExists = tableNames.includes('store_configs');\n\n// Find the stores table ID if it exists\nlet storesTableId = null;\nif (storesTableExists) {\n  const storesTable = tables.find(t => t.json.name === 'stores');\n  storesTableId = storesTable ? storesTable.json.id : null;\n}\n\nreturn [{\n  json: {\n    storesTableExists,\n    configsTableExists,\n    storesTableId,\n    tableNames\n  }\n}];"
       },
-      "type": "n8n-nodes-base.splitOut",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
         -14304,
         272
       ],
       "id": "30237a52-6294-4d40-9eda-43633be299a6",
-      "name": "Split Out",
-      "alwaysOutputData": true
+      "name": "Check Tables Exist"
     },
     {
       "parameters": {
@@ -187,10 +183,10 @@
           "conditions": [
             {
               "id": "table-exists",
-              "leftValue": "={{ $json.name }}",
-              "rightValue": "stores",
+              "leftValue": "={{ $json.storesTableExists }}",
+              "rightValue": true,
               "operator": {
-                "type": "string",
+                "type": "boolean",
                 "operation": "equals"
               }
             }
@@ -260,7 +256,7 @@
         "operation": "get",
         "dataTableId": {
           "__rl": true,
-          "value": "={{ $json.id }}",
+          "value": "={{ $('Check Tables Exist').first().json.storesTableId }}",
           "mode": "id"
         }
       },
@@ -590,14 +586,14 @@
       "main": [
         [
           {
-            "node": "Split Out",
+            "node": "Check Tables Exist",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Split Out": {
+    "Check Tables Exist": {
       "main": [
         [
           {

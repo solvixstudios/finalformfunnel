@@ -1,5 +1,4 @@
 {
-  "name": "Shopify Save Config",
   "nodes": [
     {
       "parameters": {
@@ -12,31 +11,44 @@
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [0, 0],
-      "id": "webhook",
+      "position": [
+        -15552,
+        1056
+      ],
+      "id": "1e9e7d6a-5207-48ee-95cf-d4353553c3d1",
       "name": "Webhook",
       "webhookId": "save-config-webhook"
     },
     {
       "parameters": {
-        "jsCode": "// Parse request body\nconst body = $input.first().json.body;\n\nconst shopDomain = body.shopDomain;\nconst clientId = body.clientId;\nconst clientSecret = body.clientSecret;\nconst ownerId = body.ownerId || null;\nconst formId = body.formId;\nconst formData = body.formData;\n\n// Validate required fields\nif (!shopDomain || !clientId || !clientSecret) {\n  return [{ json: { error: 'Missing required credentials', valid: false } }];\n}\n\nif (!formId && !formData) {\n  return [{ json: { error: 'Missing formId or formData', valid: false } }];\n}\n\nreturn [{ json: {\n  valid: true,\n  shopDomain,\n  clientId,\n  clientSecret,\n  ownerId: ownerId ? String(ownerId) : null,\n  formId: formId || null,\n  formData: formData ? JSON.stringify(formData) : null\n} }];"
+        "jsCode": "// Parse request body\nconst body = $input.first().json.body;\n\nconst shopDomain = body.shopDomain;\nconst clientId = body.clientId;\nconst clientSecret = body.clientSecret;\nconst formId = body.formId;\nconst formData = body.formData;\n\n// Normalize ownerId:\n// - Empty string '' for store-level assignments\n// - Product ID string for product-level assignments\nlet ownerId = body.ownerId;\nif (!ownerId || ownerId === 'null' || ownerId === 'undefined') {\n  ownerId = '';\n} else {\n  ownerId = String(ownerId);\n}\n\n// Validate required fields\nif (!shopDomain || !clientId || !clientSecret) {\n  return [{ json: { error: 'Missing required credentials', valid: false } }];\n}\n\nif (!formId) {\n  return [{ json: { error: 'Missing formId', valid: false } }];\n}\n\nif (!formData) {\n  return [{ json: { error: 'Missing formData', valid: false } }];\n}\n\nreturn [{ json: {\n  valid: true,\n  shopDomain,\n  clientId,\n  clientSecret,\n  ownerId,\n  formId: String(formId),\n  formData: typeof formData === 'string' ? formData : JSON.stringify(formData)\n} }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [240, 0],
-      "id": "parse-request",
+      "position": [
+        -15312,
+        1056
+      ],
+      "id": "8e19e255-e5a6-407f-90af-9f052159eb57",
       "name": "Parse Request"
     },
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
           "conditions": [
             {
               "id": "valid-check",
               "leftValue": "={{ $json.valid }}",
               "rightValue": true,
-              "operator": { "type": "boolean", "operation": "equals" }
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
             }
           ],
           "combinator": "and"
@@ -45,8 +57,11 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [480, 0],
-      "id": "if-valid",
+      "position": [
+        -15072,
+        1056
+      ],
+      "id": "71e49cc0-16c5-4351-9794-029cebf44de9",
       "name": "If Valid"
     },
     {
@@ -56,13 +71,15 @@
           "__rl": true,
           "value": "stores",
           "mode": "name"
-        },
-        "options": {}
+        }
       },
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
-      "position": [720, -100],
-      "id": "get-stores",
+      "position": [
+        -14832,
+        960
+      ],
+      "id": "aac7930c-a28c-46e3-b40b-8d754f54589e",
       "name": "Get Stores",
       "alwaysOutputData": true
     },
@@ -72,20 +89,30 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [960, -100],
-      "id": "verify-store",
+      "position": [
+        -14592,
+        960
+      ],
+      "id": "758e9284-72cb-42d5-a211-369eff0dbb00",
       "name": "Verify Store"
     },
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
           "conditions": [
             {
               "id": "store-found",
               "leftValue": "={{ $json.found }}",
               "rightValue": true,
-              "operator": { "type": "boolean", "operation": "equals" }
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
             }
           ],
           "combinator": "and"
@@ -94,62 +121,16 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [1200, -100],
-      "id": "if-store-found",
+      "position": [
+        -14352,
+        960
+      ],
+      "id": "4647eaf8-c055-4e5f-96fe-56c8ac9d27b8",
       "name": "If Store Found"
     },
     {
       "parameters": {
-        "operation": "get",
-        "dataTableId": {
-          "__rl": true,
-          "value": "store_configs",
-          "mode": "name"
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1.1,
-      "position": [1440, -200],
-      "id": "get-configs",
-      "name": "Get Configs",
-      "alwaysOutputData": true
-    },
-    {
-      "parameters": {
-        "jsCode": "// Check if config exists for this storeId + ownerId\nconst rows = $input.all();\nconst verifyData = $('Verify Store').first().json;\n\nconst existing = rows.find(r =>\n  r.json.storeId === verifyData.storeId &&\n  (r.json.ownerId || null) === verifyData.ownerId\n);\n\nif (existing) {\n  return [{ json: {\n    exists: true,\n    rowId: existing.id,\n    storeId: verifyData.storeId,\n    ownerId: verifyData.ownerId,\n    formId: verifyData.formId,\n    formData: verifyData.formData\n  } }];\n}\n\nreturn [{ json: {\n  exists: false,\n  storeId: verifyData.storeId,\n  ownerId: verifyData.ownerId,\n  formId: verifyData.formId,\n  formData: verifyData.formData\n} }];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [1680, -200],
-      "id": "check-existing",
-      "name": "Check Existing Config"
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
-          "conditions": [
-            {
-              "id": "config-exists",
-              "leftValue": "={{ $json.exists }}",
-              "rightValue": true,
-              "operator": { "type": "boolean", "operation": "equals" }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [1920, -200],
-      "id": "if-exists",
-      "name": "If Config Exists"
-    },
-    {
-      "parameters": {
-        "operation": "update",
+        "operation": "upsert",
         "dataTableId": {
           "__rl": true,
           "value": "store_configs",
@@ -158,31 +139,12 @@
         "filters": {
           "conditions": [
             {
-              "keyValue": "={{ $json.rowId }}"
+              "keyName": "storeId"
+            },
+            {
+              "keyName": "ownerId"
             }
           ]
-        },
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "formId": "={{ $json.formId }}",
-            "formData": "={{ $json.formData }}"
-          }
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1.1,
-      "position": [2160, -300],
-      "id": "update-config",
-      "name": "Update Config"
-    },
-    {
-      "parameters": {
-        "dataTableId": {
-          "__rl": true,
-          "value": "store_configs",
-          "mode": "name"
         },
         "columns": {
           "mappingMode": "defineBelow",
@@ -191,34 +153,98 @@
             "ownerId": "={{ $json.ownerId }}",
             "formId": "={{ $json.formId }}",
             "formData": "={{ $json.formData }}"
-          }
+          },
+          "matchingColumns": ["storeId", "ownerId"],
+          "schema": [
+            {
+              "id": "storeId",
+              "displayName": "storeId",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "ownerId",
+              "displayName": "ownerId",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "formId",
+              "displayName": "formId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "formData",
+              "displayName": "formData",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
         },
         "options": {}
       },
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
-      "position": [2160, -100],
-      "id": "insert-config",
-      "name": "Insert Config"
+      "position": [
+        -14112,
+        848
+      ],
+      "id": "9bde60e8-994e-42b3-a990-9ae61c610bf1",
+      "name": "Upsert Config"
     },
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: true, action: 'saved' }) }}",
+        "responseBody": "={{ JSON.stringify({ success: true, action: 'saved', storeId: $json.storeId, ownerId: $json.ownerId, formId: $json.formId }) }}",
         "options": {
           "responseHeaders": {
             "entries": [
-              { "name": "Access-Control-Allow-Origin", "value": "*" },
-              { "name": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
-              { "name": "Access-Control-Allow-Headers", "value": "*" }
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "*"
+              },
+              {
+                "name": "Cache-Control",
+                "value": "no-cache, no-store, must-revalidate"
+              }
             ]
           }
         }
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [2400, -200],
-      "id": "respond-success",
+      "position": [
+        -13872,
+        848
+      ],
+      "id": "933cc9f6-198b-4744-aeb6-fd98815f1de9",
       "name": "Respond Success"
     },
     {
@@ -229,66 +255,127 @@
           "responseCode": "400",
           "responseHeaders": {
             "entries": [
-              { "name": "Access-Control-Allow-Origin", "value": "*" },
-              { "name": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
-              { "name": "Access-Control-Allow-Headers", "value": "*" }
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "*"
+              }
             ]
           }
         }
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [720, 100],
-      "id": "respond-error",
+      "position": [
+        -14416,
+        1312
+      ],
+      "id": "abaff7ef-cbee-4f37-a2dc-aeb3116579d7",
       "name": "Respond Error"
     }
   ],
   "connections": {
     "Webhook": {
-      "main": [[{ "node": "Parse Request", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Parse Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Parse Request": {
-      "main": [[{ "node": "If Valid", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "If Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "If Valid": {
       "main": [
-        [{ "node": "Get Stores", "type": "main", "index": 0 }],
-        [{ "node": "Respond Error", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Get Stores",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Get Stores": {
-      "main": [[{ "node": "Verify Store", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Verify Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Verify Store": {
-      "main": [[{ "node": "If Store Found", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "If Store Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "If Store Found": {
       "main": [
-        [{ "node": "Get Configs", "type": "main", "index": 0 }],
-        [{ "node": "Respond Error", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Upsert Config",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "Get Configs": {
-      "main": [[{ "node": "Check Existing Config", "type": "main", "index": 0 }]]
-    },
-    "Check Existing Config": {
-      "main": [[{ "node": "If Config Exists", "type": "main", "index": 0 }]]
-    },
-    "If Config Exists": {
+    "Upsert Config": {
       "main": [
-        [{ "node": "Update Config", "type": "main", "index": 0 }],
-        [{ "node": "Insert Config", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
-    },
-    "Update Config": {
-      "main": [[{ "node": "Respond Success", "type": "main", "index": 0 }]]
-    },
-    "Insert Config": {
-      "main": [[{ "node": "Respond Success", "type": "main", "index": 0 }]]
     }
   },
   "pinData": {},
   "meta": {
-    "instanceId": "finalformfunnel"
+    "instanceId": "b55b8c5b490d75637e4db729caf7c75486c3398f3275794ad40beef7f9800920"
   }
 }
