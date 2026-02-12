@@ -2,6 +2,7 @@ import { Sparkles } from 'lucide-react';
 import PacksManager from '../managers/PacksManager';
 import PromoCodeManager from '../managers/PromoCodeManager';
 import ShippingManager from '../managers/ShippingManager';
+import { AddonsEditor } from './editors/AddonsEditor';
 import { CtaEditor } from './editors/CtaEditor';
 import { DeliveryEditor } from './editors/DeliveryEditor';
 import { GlobalDesignEditor } from './editors/GlobalDesignEditor';
@@ -179,6 +180,10 @@ const EditorContent = ({
 
                     {editingSection === 'thank_you' && (
                         <ThankYouEditor />
+                    )}
+
+                    {editingSection === 'addons' && (
+                        <AddonsEditor />
                     )}
                 </div>
             )}

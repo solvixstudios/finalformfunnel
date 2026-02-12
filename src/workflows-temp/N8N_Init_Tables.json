@@ -1,5 +1,4 @@
 {
-  "name": "N8N Init Tables",
   "nodes": [
     {
       "parameters": {
@@ -12,8 +11,11 @@
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [0, 0],
-      "id": "init-webhook",
+      "position": [
+        -1568,
+        -160
+      ],
+      "id": "36bc558f-c520-462b-88e4-7900b8a9c1a3",
       "name": "Init Webhook",
       "webhookId": "n8n-init-webhook"
     },
@@ -24,8 +26,11 @@
       },
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
-      "position": [240, 0],
-      "id": "list-tables",
+      "position": [
+        -1328,
+        -160
+      ],
+      "id": "d8980eab-857d-431b-8597-2958d28c26f1",
       "name": "List Existing Tables",
       "alwaysOutputData": true
     },
@@ -35,20 +40,30 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [480, 0],
-      "id": "check-tables",
+      "position": [
+        -1088,
+        -160
+      ],
+      "id": "cf1da081-3109-40cb-81ce-b4627e6f9f77",
       "name": "Check Required Tables"
     },
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
           "conditions": [
             {
               "id": "needs-stores",
               "leftValue": "={{ $json.tablesToCreate.includes('stores') }}",
               "rightValue": true,
-              "operator": { "type": "boolean", "operation": "equals" }
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
             }
           ],
           "combinator": "and"
@@ -57,8 +72,11 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [720, 0],
-      "id": "if-needs-stores",
+      "position": [
+        -848,
+        -160
+      ],
+      "id": "dfdc5cfd-a0af-4822-9334-9dabe98ebd29",
       "name": "If Needs Stores"
     },
     {
@@ -68,34 +86,60 @@
         "tableName": "stores",
         "columns": {
           "column": [
-            { "name": "storeId" },
-            { "name": "shopDomain" },
-            { "name": "subdomain" },
-            { "name": "clientId" },
-            { "name": "clientSecret" },
-            { "name": "accessToken" },
-            { "name": "shopName" },
-            { "name": "userId" }
+            {
+              "name": "storeId"
+            },
+            {
+              "name": "shopDomain"
+            },
+            {
+              "name": "subdomain"
+            },
+            {
+              "name": "clientId"
+            },
+            {
+              "name": "clientSecret"
+            },
+            {
+              "name": "accessToken"
+            },
+            {
+              "name": "shopName"
+            },
+            {
+              "name": "userId"
+            }
           ]
         },
         "options": {}
       },
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
-      "position": [960, -100],
-      "id": "create-stores",
+      "position": [
+        -608,
+        -256
+      ],
+      "id": "4616ef71-9094-4168-a2ff-53389c4d9181",
       "name": "Create Stores Table"
     },
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
           "conditions": [
             {
               "id": "needs-configs",
               "leftValue": "={{ $('Check Required Tables').first().json.tablesToCreate.includes('store_configs') }}",
               "rightValue": true,
-              "operator": { "type": "boolean", "operation": "equals" }
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
             }
           ],
           "combinator": "and"
@@ -104,8 +148,11 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [1200, 0],
-      "id": "if-needs-configs",
+      "position": [
+        -368,
+        -160
+      ],
+      "id": "2200bf70-2b17-408a-a35b-817b1ece2ba2",
       "name": "If Needs Configs"
     },
     {
@@ -115,18 +162,29 @@
         "tableName": "store_configs",
         "columns": {
           "column": [
-            { "name": "storeId" },
-            { "name": "ownerId" },
-            { "name": "formId" },
-            { "name": "formData" }
+            {
+              "name": "storeId"
+            },
+            {
+              "name": "ownerId"
+            },
+            {
+              "name": "formId"
+            },
+            {
+              "name": "formData"
+            }
           ]
         },
         "options": {}
       },
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
-      "position": [1440, -100],
-      "id": "create-configs",
+      "position": [
+        -128,
+        -256
+      ],
+      "id": "af803547-55d3-4d90-a84e-658e848ec7fd",
       "name": "Create Configs Table"
     },
     {
@@ -136,49 +194,119 @@
         "options": {
           "responseHeaders": {
             "entries": [
-              { "name": "Access-Control-Allow-Origin", "value": "*" }
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
             ]
           }
         }
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [1680, 0],
-      "id": "respond-success",
+      "position": [
+        112,
+        -160
+      ],
+      "id": "d5e21c7e-2afc-4cb0-84b7-ea5c5cf46992",
       "name": "Respond Success"
     }
   ],
   "connections": {
     "Init Webhook": {
-      "main": [[{ "node": "List Existing Tables", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "List Existing Tables",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "List Existing Tables": {
-      "main": [[{ "node": "Check Required Tables", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Check Required Tables",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Check Required Tables": {
-      "main": [[{ "node": "If Needs Stores", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "If Needs Stores",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "If Needs Stores": {
       "main": [
-        [{ "node": "Create Stores Table", "type": "main", "index": 0 }],
-        [{ "node": "If Needs Configs", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Create Stores Table",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If Needs Configs",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Create Stores Table": {
-      "main": [[{ "node": "If Needs Configs", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "If Needs Configs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "If Needs Configs": {
       "main": [
-        [{ "node": "Create Configs Table", "type": "main", "index": 0 }],
-        [{ "node": "Respond Success", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Create Configs Table",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Create Configs Table": {
-      "main": [[{ "node": "Respond Success", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "pinData": {},
   "meta": {
-    "instanceId": "finalformfunnel"
+    "instanceId": "b55b8c5b490d75637e4db729caf7c75486c3398f3275794ad40beef7f9800920"
   }
 }

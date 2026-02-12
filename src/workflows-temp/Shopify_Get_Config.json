@@ -1,5 +1,4 @@
 {
-  "name": "Shopify Get Config",
   "nodes": [
     {
       "parameters": {
@@ -13,10 +12,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        0,
-        0
+        -11008,
+        -240
       ],
-      "id": "webhook",
+      "id": "b978bf31-f21a-4640-998c-7e1ac3d46c38",
       "name": "Webhook",
       "webhookId": "get-config-webhook"
     },
@@ -27,10 +26,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        240,
-        0
+        -10768,
+        -240
       ],
-      "id": "parse-request",
+      "id": "2bdfae36-5cb7-413c-8c81-dd241993bd6e",
       "name": "Parse Request"
     },
     {
@@ -59,10 +58,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        480,
-        0
+        -10528,
+        -240
       ],
-      "id": "if-valid",
+      "id": "81cf0a32-bc9e-4d6a-aa88-6cbcf4b5c0a3",
       "name": "If Valid"
     },
     {
@@ -72,16 +71,15 @@
           "__rl": true,
           "value": "stores",
           "mode": "name"
-        },
-        "options": {}
+        }
       },
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        720,
-        -100
+        -10288,
+        -352
       ],
-      "id": "get-stores",
+      "id": "cc842de1-3c8e-411b-9f23-88095d31376e",
       "name": "Get Stores",
       "alwaysOutputData": true
     },
@@ -92,10 +90,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        960,
-        -100
+        -10048,
+        -352
       ],
-      "id": "find-store",
+      "id": "88e0f446-56ff-4d5d-9d0b-19f59e232fe5",
       "name": "Find Store"
     },
     {
@@ -124,10 +122,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1200,
-        -100
+        -9808,
+        -352
       ],
-      "id": "if-store-found",
+      "id": "74f36ac0-443d-4553-b727-5bc6a38f69c5",
       "name": "If Store Found"
     },
     {
@@ -137,16 +135,15 @@
           "__rl": true,
           "value": "store_configs",
           "mode": "name"
-        },
-        "options": {}
+        }
       },
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        1440,
-        -200
+        -9568,
+        -448
       ],
-      "id": "get-configs",
+      "id": "ed9bce19-0354-4c3f-8e77-0daf667344a4",
       "name": "Get Configs",
       "alwaysOutputData": true
     },
@@ -157,10 +154,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1680,
-        -200
+        -9328,
+        -448
       ],
-      "id": "find-config",
+      "id": "d207333b-0ec7-425b-a6be-1a181bac2cd1",
       "name": "Find Config"
     },
     {
@@ -189,10 +186,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1920,
-        -200
+        -9088,
+        -448
       ],
-      "id": "if-config-found",
+      "id": "805bcf34-ddc9-4f54-8532-75582936d7f9",
       "name": "If Config Found"
     },
     {
@@ -225,10 +222,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        2160,
-        -300
+        -8848,
+        -544
       ],
-      "id": "respond-config",
+      "id": "62345f0a-1352-4d47-8b48-537f38c1e174",
       "name": "Respond with Config"
     },
     {
@@ -262,10 +259,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        2160,
-        -100
+        -8848,
+        -352
       ],
-      "id": "respond-empty",
+      "id": "af1467d0-2571-4c8f-976f-8a8916928482",
       "name": "Respond Empty"
     },
     {
@@ -295,10 +292,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        720,
-        100
+        -10288,
+        -144
       ],
-      "id": "respond-error",
+      "id": "3c15c6f6-90f9-4562-a3ca-27e2caa8a732",
       "name": "Respond Error"
     }
   ],
@@ -426,6 +423,6 @@
   },
   "pinData": {},
   "meta": {
-    "instanceId": "finalformfunnel"
+    "instanceId": "b55b8c5b490d75637e4db729caf7c75486c3398f3275794ad40beef7f9800920"
   }
 }

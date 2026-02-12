@@ -3,6 +3,7 @@ import {
   ChevronRight,
   LayoutGrid,
   Palette,
+  Puzzle,
   Tag,
   Ticket,
   Truck
@@ -160,6 +161,31 @@ export const MainMenu = () => {
             </span>
             <span className="block text-xs text-slate-400 mt-0.5">
               Thank you message
+            </span>
+          </div>
+        </div>
+
+        {/* ADDONS CARD */}
+        <div
+          onClick={() => setEditingSection("addons")}
+          className="group bg-white border border-slate-200 p-5 rounded-2xl flex flex-col gap-4 hover:border-pink-300 hover:shadow-xl hover:shadow-pink-100/50 active:scale-[0.98] transition-all duration-300 cursor-pointer relative overflow-hidden"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          <div className="flex items-start justify-between relative">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center text-white shadow-lg shadow-pink-200/50 group-hover:scale-110 transition-transform duration-300">
+              <Puzzle size={22} />
+            </div>
+            <ChevronRight
+              size={18}
+              className="text-slate-300 group-hover:text-pink-500 group-hover:translate-x-1 transition-all"
+            />
+          </div>
+          <div className="relative">
+            <span className="block text-sm font-bold text-slate-800">
+              Addons
+            </span>
+            <span className="block text-xs text-slate-400 mt-0.5">
+              WhatsApp, Sheets & more
             </span>
           </div>
         </div>

@@ -12,10 +12,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -15744,
-        272
+        -21056,
+        640
       ],
-      "id": "765b9dd8-bd86-4fc7-9f60-6324ccda8e2c",
+      "id": "d916496d-d08a-40f2-9944-4f90c64e56e5",
       "name": "Receive Connect Request",
       "webhookId": "shopify-connect-webhook"
     },
@@ -55,10 +55,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        -15504,
-        272
+        -20816,
+        640
       ],
-      "id": "bfb7912f-e957-483f-bbd8-8e40ae1281c6",
+      "id": "c2f76470-030d-42d5-8a13-529920ce0609",
       "name": "Get Access Token",
       "onError": "continueErrorOutput"
     },
@@ -83,10 +83,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        -15264,
-        272
+        -20576,
+        640
       ],
-      "id": "004af621-87a0-4002-a043-026035f935d7",
+      "id": "a1306da2-33d2-449a-ba82-4a202e567bcb",
       "name": "Get Shop Details",
       "onError": "continueErrorOutput"
     },
@@ -111,10 +111,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        -15024,
-        272
+        -20336,
+        640
       ],
-      "id": "07036381-d2f8-49e6-8331-b69796b1259d",
+      "id": "cce5778f-6bb7-4dab-b7d1-bb82bbb8f65b",
       "name": "Check Existing ScriptTags",
       "onError": "continueErrorOutput"
     },
@@ -125,10 +125,10 @@
       "type": "n8n-nodes-base.crypto",
       "typeVersion": 1,
       "position": [
-        -14784,
-        272
+        -20096,
+        640
       ],
-      "id": "675555be-65f1-4fa1-92c0-c253f322aa06",
+      "id": "6f65eb60-c60a-47eb-9809-c51dc7a897a9",
       "name": "Crypto"
     },
     {
@@ -138,10 +138,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -14544,
-        272
+        -19856,
+        640
       ],
-      "id": "4ecca447-6bb6-4858-b8b0-abfb301e5a38",
+      "id": "43eadc7a-9b1f-4730-8028-f605f14be9e8",
       "name": "Format Success Response"
     },
     {
@@ -152,10 +152,10 @@
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        -14576,
-        560
+        -19888,
+        928
       ],
-      "id": "cb81af01-719a-4a2c-a8ad-955f00cdb2e0",
+      "id": "6741b9e8-2591-47b1-b935-8dd05d273d46",
       "name": "List data tables",
       "alwaysOutputData": true
     },
@@ -166,10 +166,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -14304,
-        272
+        -19616,
+        640
       ],
-      "id": "30237a52-6294-4d40-9eda-43633be299a6",
+      "id": "658465c2-8e9c-42d8-8549-acc80fd5ee03",
       "name": "Check Tables Exist"
     },
     {
@@ -198,10 +198,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -14064,
-        272
+        -19376,
+        640
       ],
-      "id": "f8a04bac-924f-4f3c-9af5-2d654b23b62e",
+      "id": "87ec5c9a-1b86-4bfc-b908-da276fec576d",
       "name": "If Table exists"
     },
     {
@@ -245,10 +245,10 @@
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        -13824,
-        416
+        -19136,
+        784
       ],
-      "id": "d3f728fe-a5ba-4296-81da-c298a21a41aa",
+      "id": "659fd50b-c99d-4232-bca0-4a68f98ef088",
       "name": "Create a data table"
     },
     {
@@ -263,10 +263,10 @@
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        -13824,
-        128
+        -19136,
+        496
       ],
-      "id": "ba48ad0a-9471-412c-9aca-3d069b699119",
+      "id": "b53ca03d-d7e7-4f63-83df-e6ba122cb0dc",
       "name": "Get row(s)",
       "alwaysOutputData": true
     },
@@ -277,10 +277,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -13584,
-        128
+        -18896,
+        496
       ],
-      "id": "176abe0a-cb6d-4036-91b6-83c8fbbc0dd9",
+      "id": "bd3dff86-f05d-4a7a-a166-d2e79e48abe2",
       "name": "Check Row Exists"
     },
     {
@@ -309,10 +309,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -13344,
-        128
+        -18656,
+        496
       ],
-      "id": "8465b372-6f59-4f83-8d2c-86d84d8dd4cb",
+      "id": "10554add-955b-4f67-8022-0e0eb5c46e21",
       "name": "If row exists"
     },
     {
@@ -322,10 +322,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -13104,
-        32
+        -18416,
+        400
       ],
-      "id": "5a4a9e25-1efe-48d7-a979-f412291e45df",
+      "id": "10b4ccfd-cc20-4f11-be9d-e1ce4894073c",
       "name": "Prepare Update Data",
       "alwaysOutputData": true
     },
@@ -361,10 +361,10 @@
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        -12864,
-        32
+        -18176,
+        400
       ],
-      "id": "bb945062-0ff0-4743-860e-e553a0b6a078",
+      "id": "809483ed-70c0-48f5-b4ee-0768a96d570c",
       "name": "Update row"
     },
     {
@@ -374,10 +374,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -13104,
-        416
+        -18416,
+        784
       ],
-      "id": "ad8ddd5a-64b0-481d-b460-ac850442ba6f",
+      "id": "726a62bd-8e87-4f85-bb52-51a2c7e4b763",
       "name": "Prepare Insert Data"
     },
     {
@@ -409,10 +409,10 @@
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        -12864,
-        416
+        -18176,
+        784
       ],
-      "id": "58727adc-cbfa-4fd0-8373-59e8512904b3",
+      "id": "68af6f18-0f0a-4b47-aabc-3e932c85a731",
       "name": "Insert row"
     },
     {
@@ -434,10 +434,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -15264,
-        496
+        -20576,
+        864
       ],
-      "id": "0f2dfd41-18f8-494e-ba0c-cff9559e4310",
+      "id": "9c2a15b0-78fd-4c7b-982d-f841c08ce649",
       "name": "Shop Error"
     },
     {
@@ -459,10 +459,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -15504,
-        496
+        -20816,
+        864
       ],
-      "id": "f20c9620-5485-4c74-af52-d9ed75e5631c",
+      "id": "49e629fb-fec3-4049-a290-0dec750cacbc",
       "name": "Return Error"
     },
     {
@@ -472,10 +472,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -12624,
-        272
+        -17936,
+        640
       ],
-      "id": "10122dc0-fba3-4ace-9c61-189af66cc71c",
+      "id": "edd5834e-5d16-42a3-8f0e-95b1ccbb1558",
       "name": "Final Response"
     },
     {
@@ -494,10 +494,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -12384,
-        272
+        -17696,
+        640
       ],
-      "id": "78ceb285-f085-49ab-a10d-6e1a314fc36f",
+      "id": "9a76e23e-5284-4582-ac66-34e7bf2f18da",
       "name": "Return Success"
     }
   ],

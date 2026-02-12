@@ -380,6 +380,31 @@ export const DEFAULT_FORM_CONFIG = {
     enableSound: true,
   },
 
+  // Addons - Form-level integration settings
+  addons: {
+    enableSheets: false,
+    selectedSheetIds: [] as string[], // IDs of selected Google Sheet configs (multi-select)
+    selectedWhatsappProfileId: null as string | null, // ID of selected WhatsApp profile (single-select)
+    // Ordered columns for Google Sheets
+    sheetColumns: [
+      { id: 'orderId', label: 'Order ID', enabled: true },
+      { id: 'date', label: 'Date', enabled: true },
+      { id: 'status', label: 'Status', enabled: true },
+      { id: 'name', label: 'Nom', enabled: true },
+      { id: 'phone', label: 'Téléphone', enabled: true },
+      { id: 'wilaya', label: 'Wilaya', enabled: true },
+      { id: 'commune', label: 'Commune', enabled: true },
+      { id: 'address', label: 'Adresse', enabled: true },
+      { id: 'product', label: 'Produit', enabled: true },
+      { id: 'variant', label: 'Variante', enabled: true },
+      { id: 'quantity', label: 'Quantité', enabled: true },
+      { id: 'totalPrice', label: 'Prix Total', enabled: true },
+      { id: 'shippingPrice', label: 'Livraison', enabled: false },
+      { id: 'note', label: 'Note', enabled: false },
+      { id: 'source', label: 'Source', enabled: true },
+    ] as { id: string; label: string; enabled: boolean }[],
+  },
+
   // Embedding Settings
   // Automatically hide default Shopify theme elements (Title, Price, Variants, Buttons)
   autoHideThemeElements: true,

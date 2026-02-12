@@ -165,12 +165,30 @@ export const useWhatsAppProfiles = (userId: string) => {
   const isProfileAssigned = useCallback(
     async (profileId: string) => {
       if (!userId) return false;
-      const formsQuery = query(
+
+      // Check new single-select addon field
+      const singleQuery = query(
+        collection(db, "forms"),
+        where("config.addons.selectedWhatsappProfileId", "==", profileId),
+      );
+      const singleSnapshot = await getDocs(singleQuery);
+      if (!singleSnapshot.empty) return true;
+
+      // Check legacy multi-select addons field (for backward compat)
+      const addonsQuery = query(
+        collection(db, "forms"),
+        where("config.addons.selectedWhatsappProfileIds", "array-contains", profileId),
+      );
+      const addonsSnapshot = await getDocs(addonsQuery);
+      if (!addonsSnapshot.empty) return true;
+
+      // Fallback: check legacy single-select field
+      const legacyQuery = query(
         collection(db, "forms"),
         where("config.thankYou.selectedWhatsappProfileId", "==", profileId),
       );
-      const snapshot = await getDocs(formsQuery);
-      return !snapshot.empty;
+      const legacySnapshot = await getDocs(legacyQuery);
+      return !legacySnapshot.empty;
     },
     [userId],
   );

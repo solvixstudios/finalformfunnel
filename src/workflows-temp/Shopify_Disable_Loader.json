@@ -1,5 +1,4 @@
 {
-  "name": "Shopify Disable Loader",
   "nodes": [
     {
       "parameters": {
@@ -13,10 +12,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        0,
-        0
+        -14288,
+        -384
       ],
-      "id": "disable-webhook",
+      "id": "874e1de9-3b07-4485-86a2-987374d47721",
       "name": "Receive Disable Request",
       "webhookId": "disable-loader-webhook"
     },
@@ -27,10 +26,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        240,
-        0
+        -14048,
+        -384
       ],
-      "id": "parse-request",
+      "id": "5a003ee8-6c4c-4fce-8f35-d02814517dbd",
       "name": "Parse Request"
     },
     {
@@ -41,10 +40,10 @@
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        480,
-        0
+        -13808,
+        -384
       ],
-      "id": "list-tables",
+      "id": "66e2e355-cb67-45db-ae56-4cea0fc396a5",
       "name": "List data tables",
       "alwaysOutputData": true
     },
@@ -55,10 +54,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        720,
-        0
+        -13568,
+        -384
       ],
-      "id": "split-out",
+      "id": "5e7d8a6e-82b5-4c7b-b869-95ed3389dbab",
       "name": "Check Tables Exist"
     },
     {
@@ -87,10 +86,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        960,
-        0
+        -13328,
+        -384
       ],
-      "id": "if-table-exists",
+      "id": "ad349d44-e9ce-4080-a0c6-a24226cb3973",
       "name": "If Table exists"
     },
     {
@@ -100,16 +99,15 @@
           "__rl": true,
           "value": "={{ $('Check Tables Exist').first().json.storesTableId }}",
           "mode": "id"
-        },
-        "options": {}
+        }
       },
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        1200,
-        -100
+        -13088,
+        -496
       ],
-      "id": "get-store-creds",
+      "id": "81012c78-64a1-498f-8b8c-daf6edfcd4f4",
       "name": "Get Store Credentials",
       "alwaysOutputData": true
     },
@@ -120,10 +118,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1440,
-        -100
+        -12848,
+        -496
       ],
-      "id": "find-store",
+      "id": "4397fed8-4fe7-4a52-8cc4-06c790b6a459",
       "name": "Find Store"
     },
     {
@@ -152,10 +150,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1680,
-        -100
+        -12608,
+        -496
       ],
-      "id": "if-creds-found",
+      "id": "4e15f63c-b5e8-46c0-957a-77bd84830d88",
       "name": "Credentials Found?"
     },
     {
@@ -179,10 +177,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        1920,
-        -200
+        -12368,
+        -592
       ],
-      "id": "get-script-tags",
+      "id": "1a7d997b-7765-4218-9435-7fcc0bd76e6f",
       "name": "Get Existing ScriptTags",
       "onError": "continueErrorOutput"
     },
@@ -193,10 +191,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2160,
-        -200
+        -12128,
+        -592
       ],
-      "id": "find-loader",
+      "id": "a0b9732c-c404-44bd-bc1d-4bb73ad3ea88",
       "name": "Find Loader Script"
     },
     {
@@ -225,10 +223,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        2400,
-        -200
+        -11888,
+        -592
       ],
-      "id": "is-loader-found",
+      "id": "8e8d9308-62d9-4dab-96c1-019aad4939ce",
       "name": "Is Loader Found?"
     },
     {
@@ -249,10 +247,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        2640,
-        -300
+        -11648,
+        -688
       ],
-      "id": "delete-script",
+      "id": "fce2636a-a5d0-4e64-8757-2403416376b4",
       "name": "Delete Loader Script",
       "onError": "continueErrorOutput"
     },
@@ -263,10 +261,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2880,
-        -300
+        -11408,
+        -688
       ],
-      "id": "success-removed",
+      "id": "cdacf311-cd7a-4d11-932a-21dfb2515e2d",
       "name": "Success (Removed)"
     },
     {
@@ -276,10 +274,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2640,
-        -100
+        -11648,
+        -496
       ],
-      "id": "not-found",
+      "id": "979dc357-5227-4af1-b914-091fe9121a24",
       "name": "Not Found"
     },
     {
@@ -298,10 +296,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        3120,
-        0
+        -11168,
+        -384
       ],
-      "id": "respond",
+      "id": "26f480c1-6286-4d3c-87f9-cecf24eb435d",
       "name": "Respond"
     },
     {
@@ -315,10 +313,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        1920,
-        0
+        -12368,
+        -384
       ],
-      "id": "no-creds-error",
+      "id": "884e300b-4af6-4e69-8aad-01d5d4d69b2d",
       "name": "No Credentials Error"
     },
     {
@@ -332,10 +330,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        1200,
-        100
+        -13088,
+        -288
       ],
-      "id": "no-table-error",
+      "id": "26f7d9c2-531b-417e-9120-e886fc7ffa86",
       "name": "No Table Error"
     }
   ],
@@ -516,12 +514,8 @@
       ]
     }
   },
-  "settings": {
-    "executionOrder": "v1",
-    "availableInMCP": false
-  },
-  "staticData": null,
   "pinData": {},
-  "triggerCount": 1,
-  "meta": null
+  "meta": {
+    "instanceId": "b55b8c5b490d75637e4db729caf7c75486c3398f3275794ad40beef7f9800920"
+  }
 }

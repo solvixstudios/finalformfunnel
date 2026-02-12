@@ -273,9 +273,9 @@ export default function ProductsPage({ userId }: { userId: string }) {
 
     // Create Header Actions
     const headerActions = (
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
             <Select value={selectedStoreId} onValueChange={setSelectedStoreId}>
-                <SelectTrigger className="w-[200px] bg-white h-9 border-slate-200">
+                <SelectTrigger className="w-full sm:w-[200px] bg-white h-9 border-slate-200">
                     <SelectValue placeholder="Select Store" />
                 </SelectTrigger>
                 <SelectContent>
@@ -312,21 +312,22 @@ export default function ProductsPage({ userId }: { userId: string }) {
 
     // Create Title Component with Sync Status
     const titleComponent = (
-        <div className="flex items-center gap-4">
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+            <h1 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
                 Products
                 <div className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-700 border border-slate-200">
                     {products.length}
                 </div>
             </h1>
             {(lastSynced || filteredProducts.length !== products.length) && (
-                <div className="h-4 w-px bg-slate-200" />
+                <div className="hidden sm:block h-4 w-px bg-slate-200" />
             )}
-            <div className="flex items-center gap-3 text-xs">
+            <div className="flex items-center gap-2 sm:gap-3 text-xs flex-wrap">
                 {lastSynced ? (
                     <span className="text-green-600 flex items-center gap-1 font-medium bg-green-50 px-2 py-0.5 rounded-full border border-green-100">
                         <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
-                        Synced: {formatLastSynced(lastSynced)}
+                        <span className="hidden sm:inline">Synced: {formatLastSynced(lastSynced)}</span>
+                        <span className="sm:hidden">Synced</span>
                     </span>
                 ) : (
                     <span className="text-amber-600 font-medium bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100">Sync required</span>
@@ -339,7 +340,7 @@ export default function ProductsPage({ userId }: { userId: string }) {
     );
 
     return (
-        <div className="max-w-[1600px] mx-auto space-y-6 h-full flex flex-col">
+        <div className="max-w-[1600px] mx-auto space-y-4 sm:space-y-6 h-full flex flex-col">
             <PageHeader
                 title="Products"
                 breadcrumbs={[
@@ -351,8 +352,8 @@ export default function ProductsPage({ userId }: { userId: string }) {
             />
 
             {/* Toolbox & Pagination Top */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 shrink-0 px-1 py-2">
-                <div className="relative w-full sm:w-[300px]">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 shrink-0 px-1 py-2">
+                <div className="relative w-full sm:w-[280px] lg:w-[320px]">
                     <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                     <Input
                         value={searchTerm}
@@ -397,7 +398,7 @@ export default function ProductsPage({ userId }: { userId: string }) {
                             size="sm"
                             onClick={() => setCurrentPage(1)}
                             disabled={currentPage === 1 || products.length === 0}
-                            className="h-8 w-8 p-0"
+                            className="h-8 w-8 p-0 hidden sm:inline-flex"
                             title="First Page"
                         >
                             <ChevronsLeft size={14} />
@@ -432,7 +433,7 @@ export default function ProductsPage({ userId }: { userId: string }) {
                             size="sm"
                             onClick={() => setCurrentPage(totalPages)}
                             disabled={currentPage === totalPages || products.length === 0}
-                            className="h-8 w-8 p-0"
+                            className="h-8 w-8 p-0 hidden sm:inline-flex"
                             title="Last Page"
                         >
                             <ChevronsRight size={14} />
@@ -463,7 +464,7 @@ export default function ProductsPage({ userId }: { userId: string }) {
                 ) : paginatedProducts.length > 0 ? (
                     <>
                         {viewMode === 'list' ? (
-                            <div className="bg-white rounded-lg border border-slate-200 overflow-hidden shadow-sm">
+                            <div className="bg-white rounded-lg border border-slate-200 overflow-hidden shadow-sm overflow-x-auto">
                                 <Table>
                                     <TableHeader>
                                         <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
@@ -529,11 +530,11 @@ export default function ProductsPage({ userId }: { userId: string }) {
                                 </Table>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
-                                {paginatedProducts.map(product => (
-                                    <div key={product.id} className="group flex flex-col gap-3 cursor-pointer">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 lg:gap-6">
+                                {paginatedProducts.map((product, index) => (
+                                    <div key={product.id} className={`group flex flex-col gap-2 sm:gap-3 cursor-pointer animate-fade-up stagger-${Math.min(index + 1, 8)}`}>
                                         {/* Image Container */}
-                                        <div className="aspect-[4/5] bg-slate-50 rounded-2xl overflow-hidden relative border border-slate-100 shadow-sm group-hover:shadow-md transition-all duration-300">
+                                        <div className="aspect-[4/5] bg-slate-50 rounded-xl sm:rounded-2xl overflow-hidden relative border border-slate-100 shadow-sm group-hover:shadow-lg group-hover:border-slate-200 transition-all duration-300 card-hover">
                                             {product.images?.[0]?.src || product.image?.src ? (
                                                 <img
                                                     src={product.images?.[0]?.src || product.image?.src}
@@ -561,13 +562,13 @@ export default function ProductsPage({ userId }: { userId: string }) {
                                         </div>
 
                                         {/* Content info */}
-                                        <div className="space-y-1">
-                                            <h3 className="font-medium text-slate-900 leading-snug line-clamp-2 text-sm group-hover:text-indigo-600 transition-colors">
+                                        <div className="space-y-0.5 sm:space-y-1">
+                                            <h3 className="font-medium text-slate-900 leading-snug line-clamp-2 text-xs sm:text-sm group-hover:text-indigo-600 transition-colors">
                                                 {product.title}
                                             </h3>
-                                            <div className="flex items-center justify-between text-xs text-slate-500">
+                                            <div className="flex items-center justify-between text-[10px] sm:text-xs text-slate-500">
                                                 <span className="truncate">{product.vendor}</span>
-                                                <span className="font-mono">{product.variants?.length || 0} vars</span>
+                                                <span className="font-mono hidden sm:inline">{product.variants?.length || 0} vars</span>
                                             </div>
                                         </div>
                                     </div>
@@ -603,6 +604,6 @@ export default function ProductsPage({ userId }: { userId: string }) {
                     </div>
                 )}
             </div>
-        </div >
+        </div>
     );
 }

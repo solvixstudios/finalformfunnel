@@ -1,5 +1,4 @@
 {
-  "name": "Shopify Get Products",
   "nodes": [
     {
       "parameters": {
@@ -13,10 +12,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        0,
-        0
+        -4672,
+        832
       ],
-      "id": "products-webhook",
+      "id": "81e204f9-cd69-46a6-a280-c10d48424293",
       "name": "Webhook",
       "webhookId": "get-products-webhook"
     },
@@ -27,10 +26,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        240,
-        0
+        -4432,
+        832
       ],
-      "id": "parse-request",
+      "id": "39c5ff1f-6b20-4331-b544-b7cb3a5a263d",
       "name": "Parse Request"
     },
     {
@@ -41,10 +40,10 @@
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        480,
-        0
+        -4192,
+        832
       ],
-      "id": "list-tables",
+      "id": "46661193-a16b-4c30-9f24-5a5912465dc8",
       "name": "List data tables",
       "alwaysOutputData": true
     },
@@ -55,10 +54,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        720,
-        0
+        -3952,
+        832
       ],
-      "id": "split-out",
+      "id": "c08f380a-0e96-4fa9-a096-96d0606ebf4a",
       "name": "Check Tables Exist"
     },
     {
@@ -87,10 +86,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        960,
-        0
+        -3712,
+        832
       ],
-      "id": "if-table-exists",
+      "id": "0dda8ee4-6416-4482-bcf7-c532b13845c9",
       "name": "If Table exists"
     },
     {
@@ -100,16 +99,15 @@
           "__rl": true,
           "value": "={{ $('Check Tables Exist').first().json.storesTableId }}",
           "mode": "id"
-        },
-        "options": {}
+        }
       },
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        1200,
-        -100
+        -3472,
+        736
       ],
-      "id": "get-store-creds",
+      "id": "126937ee-0b84-4f17-bd9d-1c408dc82f6e",
       "name": "Get Store Credentials",
       "alwaysOutputData": true
     },
@@ -120,10 +118,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1440,
-        -100
+        -3232,
+        736
       ],
-      "id": "find-store",
+      "id": "5b00f87f-555a-4169-8284-f2aec896539a",
       "name": "Find Store"
     },
     {
@@ -152,10 +150,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1680,
-        -100
+        -2992,
+        736
       ],
-      "id": "if-creds-found",
+      "id": "1c393142-3487-4b5d-bf5f-2428f8dee133",
       "name": "Credentials Found?"
     },
     {
@@ -184,10 +182,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        1920,
-        -240
+        -2752,
+        592
       ],
-      "id": "get-count",
+      "id": "e1ca82cc-236b-4c6b-b8a8-91cb8a3926c8",
       "name": "GetCount",
       "onError": "continueErrorOutput"
     },
@@ -235,10 +233,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        1920,
-        -40
+        -2752,
+        800
       ],
-      "id": "get-products",
+      "id": "7bd8a40b-4a05-40ad-b47c-e2fad18c6eed",
       "name": "GetProducts",
       "onError": "continueErrorOutput"
     },
@@ -249,10 +247,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2160,
-        -40
+        -2512,
+        800
       ],
-      "id": "parse-pagination",
+      "id": "e530100e-d47b-4c29-8f2c-c9ce1705c8a7",
       "name": "ParsePagination"
     },
     {
@@ -264,10 +262,10 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 2.1,
       "position": [
-        2400,
-        -140
+        -2272,
+        704
       ],
-      "id": "merge",
+      "id": "f0241668-1348-45d0-b0b2-061d88a7c065",
       "name": "Merge"
     },
     {
@@ -277,10 +275,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2640,
-        -140
+        -2032,
+        704
       ],
-      "id": "format-response",
+      "id": "e2ad21c4-7570-4e3f-8a25-4cdc6d581d7f",
       "name": "Format Response"
     },
     {
@@ -299,10 +297,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        2880,
-        -140
+        -1792,
+        704
       ],
-      "id": "success",
+      "id": "f03018e9-f8b9-42fb-b50b-66e4fedf3ef7",
       "name": "Success"
     },
     {
@@ -324,10 +322,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        1920,
-        100
+        -2752,
+        944
       ],
-      "id": "no-creds-error",
+      "id": "8a9fd679-de9b-4802-a1ab-ad649afa40b0",
       "name": "No Credentials Error"
     },
     {
@@ -349,10 +347,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        1200,
-        100
+        -3472,
+        944
       ],
-      "id": "no-table-error",
+      "id": "498fe6c2-b6fa-40d1-bd20-4fbbd9cafbb5",
       "name": "No Table Error"
     },
     {
@@ -374,10 +372,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        2160,
-        160
+        -2512,
+        992
       ],
-      "id": "products-error",
+      "id": "212a3915-4cae-4d4f-bb77-9c131c80b38f",
       "name": "Products Error"
     }
   ],
@@ -559,12 +557,8 @@
       ]
     }
   },
-  "settings": {
-    "executionOrder": "v1",
-    "availableInMCP": false
-  },
-  "staticData": null,
   "pinData": {},
-  "triggerCount": 1,
-  "meta": null
+  "meta": {
+    "instanceId": "b55b8c5b490d75637e4db729caf7c75486c3398f3275794ad40beef7f9800920"
+  }
 }

@@ -114,6 +114,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
     const [finalOrderData, setFinalOrderData] = useState<any>(null); // To pass to popup
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submissionError, setSubmissionError] = useState<string | null>(null);
+    const [abandonedSent, setAbandonedSent] = useState(false);
 
     // Refs
     const ctaRef = useRef<HTMLDivElement>(null);
@@ -207,6 +208,11 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
         }
     }, [offers, formData.offerId]);
 
+    // Reset abandoned sentinel if phone changes significantly? 
+    // Actually, we usually only log once per session/form load to avoid spam. 
+    // If user changes phone, maybe we should log again? 
+    // For now, simple "once per load" is safer to prevent duplicates.
+
     // Fetch Wilayas on mount
     useEffect(() => {
         fetchWilayas().then(data => setWilayasList(data));
@@ -297,6 +303,60 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
         });
     };
 
+    // --- GOOGLE SHEETS HELPER ---
+    const formatSheetPayload = (data: any, status: 'completed' | 'abandoned', sheetName: string) => {
+        const columns = config.addons?.sheetColumns || [];
+        // If no columns configured (legacy), fall back to default payload
+        if (columns.length === 0) {
+            return {
+                ...data,
+                sheetName,
+                orderStatus: status,
+                submittedAt: new Date().toISOString()
+            };
+        }
+
+        // Map data to ordered columns
+        const rowData: Record<string, any> = {
+            sheetName, // script needs this to target tab
+            orderStatus: status,
+            submittedAt: new Date().toISOString()
+        };
+
+        columns.forEach((col: any) => {
+            if (!col.enabled) return;
+
+            let value = '';
+            switch (col.id) {
+                case 'orderId': value = data.orderId || `ORD-${Date.now()}`; break; // Fallback ID
+                case 'date': value = new Date().toLocaleString(lang); break;
+                case 'status': value = status === 'completed' ? 'Nouvelle commande' : 'Panier abandonné'; break;
+                case 'name': value = data.name; break;
+                case 'phone': value = data.phone; break;
+                case 'wilaya': value = data.wilaya; break;
+                case 'commune': value = data.commune; break;
+                case 'address': value = data.address; break;
+                case 'product': value = data.productTitle; break;
+                case 'variant': value = data.variant; break;
+                case 'quantity': value = data.quantity; break;
+                case 'totalPrice': value = data.totalPrice; break;
+                case 'shippingPrice': value = data.shippingPrice; break;
+                case 'note': value = data.note; break;
+                case 'source': value = data.shopDomain || window.location.hostname; break;
+            }
+            rowData[col.id] = value;
+        });
+
+        // Add special keys that script might expect if they aren't in columns
+        // (This depends on the AppScript implementation. Assuming script handles dynamic keys or we send all)
+        // For safety, let's keep the core identifying fields even if not in columns, 
+        // OR assume the script iterates over the payload. 
+        // Given the requirement "can be selected and ordered", we should probably send ONLY what is selected 
+        // PLUS the metadata needed for script routing (sheetName).
+
+        return rowData;
+    };
+
     const handleFormSubmit = async () => {
         // Validate with Zod
         const result = schema.safeParse(formData);
@@ -360,6 +420,34 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                 if (import.meta.env.DEV) {
                     console.log("Order submitted successfully to n8n");
                 }
+
+                // --- GOOGLE SHEETS INTEGRATION (Client-Side) ---
+                // Send completed order to all configured sheets
+                const sheets = config.addons?.sheets || [];
+
+                // Legacy fallback (rare for main order but safe)
+                if (sheets.length === 0 && config.addons?.sheetWebhookUrl) {
+                    sheets.push({
+                        webhookUrl: config.addons.sheetWebhookUrl,
+                        sheetName: 'Orders'
+                    });
+                }
+
+                sheets.forEach((sheet: any) => {
+                    if (!sheet.webhookUrl) return;
+
+                    const sheetPayload = formatSheetPayload(payload, 'completed', sheet.sheetName || 'Orders');
+
+                    // Fire and forget
+                    fetch(sheet.webhookUrl, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(sheetPayload)
+                    }).catch(err => console.error("Failed to send to sheet (completed):", err));
+                });
+                // -----------------------------------------------
+
                 setShowThankYou(true); // Show success after submission completes
             } catch (err: any) {
                 if (import.meta.env.DEV) {
@@ -375,6 +463,83 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
             // Preview mode - just show thank you
             setShowThankYou(true);
             setIsSubmitting(false);
+        }
+    };
+
+    const logAbandonedOrder = async () => {
+        // Log if enabled AND (phone is valid OR we have enough info)
+        // Currently triggered by phone blur valid check.
+        if (previewMode || abandonedSent || !config.addons?.enableSheets && !config.addons?.sheetWebhookUrl) return;
+
+        try {
+            // Resolve Wilaya Name for logging
+            const selectedWilayaObj = wilayasList.find(w => w.id === formData.wilaya);
+            const wilayaName = selectedWilayaObj ? selectedWilayaObj.name : formData.wilaya;
+
+            const payload = {
+                ...formData,
+                wilaya: wilayaName,
+                variantId: selectedVariantId,
+                totalPrice: calculations.displayedTotal,
+                currency: 'DZD',
+                productId: product.id,
+                productTitle: product.title,
+                shopName: config.storeName || window.location.hostname,
+                items: [{
+                    title: product.title,
+                    variant: formData.variant,
+                    variantId: selectedVariantId,
+                    quantity: formData.quantity,
+                    price: basePrice,
+                }]
+            };
+
+            if (import.meta.env.DEV) {
+                console.log("Logging abandoned order...", payload);
+            }
+
+            // Iterate over configured sheets (Multi-sheet support)
+            const sheets = config.addons?.sheets || [];
+
+            // Legacy fallback
+            if (sheets.length === 0 && config.addons?.sheetWebhookUrl) {
+                sheets.push({
+                    webhookUrl: config.addons.sheetWebhookUrl,
+                    abandonedSheetName: 'Abandoned'
+                });
+            }
+
+            // Send to all configured sheets
+            sheets.forEach(async (sheet: any) => {
+                if (!sheet.webhookUrl) return;
+
+                const sheetPayload = formatSheetPayload(payload, 'abandoned', sheet.abandonedSheetName || 'Abandoned');
+
+                try {
+                    await fetch(sheet.webhookUrl, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(sheetPayload)
+                    });
+                } catch (err) {
+                    console.error("Failed to send to sheet:", sheet.webhookUrl, err);
+                }
+            });
+
+            setAbandonedSent(true);
+
+        } catch (e) {
+            console.error("Failed to log abandoned order", e);
+        }
+    };
+
+    const handleInputBlur = (field: string, value: string) => {
+        if (field === 'phone') {
+            const isValidPhone = /^(05|06|07)[0-9]{8}$/.test(value);
+            if (isValidPhone) {
+                logAbandonedOrder();
+            }
         }
     };
 
@@ -617,6 +782,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                                                             onFocus={() => {
                                                                 // Optional: clear error on focus
                                                             }}
+                                                            onBlur={(e) => handleInputBlur(key, e.target.value)}
                                                         />
                                                         {formErrors[key] && Object.keys(formErrors)[0] === key && (
                                                             <div className="absolute right-2 top-1/2 -translate-y-1/2 z-20 animate-in fade-in zoom-in-95 duration-200 pointer-events-none">

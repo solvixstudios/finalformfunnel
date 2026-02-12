@@ -22,7 +22,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
-import { useFormImportExport } from '@/lib/formImportExport';
+
 import { cn } from '@/lib/utils';
 import { FormLoadingCard, FormLoadingCardSkeleton, FormLoadingEmptyState } from '../components/FormLoading/FormLoadingCard';
 import PrebuiltConfigModal from '../components/PrebuiltConfigModal';
@@ -55,7 +55,7 @@ export const FormsPage = () => {
     const [selectedFormForPublish, setSelectedFormForPublish] = useState<any>(null);
     const [templateModalOpen, setTemplateModalOpen] = useState(false);
 
-    const { importFromFile } = useFormImportExport();
+
     const loadFormConfig = useFormStore((state) => state.loadFormConfig);
     const resetToNewForm = useFormStore((state) => state.resetToNewForm);
 
@@ -153,30 +153,7 @@ export const FormsPage = () => {
         setShowPublishSheet(true);
     };
 
-    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
 
-        setIsImporting(true);
-        try {
-            const config = await importFromFile(file);
-            if (config) {
-                // Create as new form
-                await saveForm(
-                    `${file.name.replace('.json', '')} (Imported)`,
-                    'Imported from file',
-                    config
-                );
-                toast.success('Form imported successfully');
-            }
-        } catch (error) {
-            console.error(error);
-            toast.error('Failed to import form');
-        } finally {
-            setIsImporting(false);
-            if (fileInputRef.current) fileInputRef.current.value = '';
-        }
-    };
 
     const handleDuplicate = async (form: any) => {
         try {
@@ -212,11 +189,11 @@ export const FormsPage = () => {
     }
 
     const headerActions = (
-        <div className="flex items-center gap-3">
-            <div className="relative group hidden md:block">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+            <div className="relative group w-full sm:w-auto">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-hover:text-amber-600 transition-colors" size={14} />
                 <Input
-                    className="pl-9 w-[200px] h-9 bg-white border-slate-200 rounded-full focus:ring-amber-500/20 shadow-sm text-sm"
+                    className="pl-9 w-full sm:w-[200px] h-9 bg-white border-slate-200 rounded-full focus:ring-amber-500/20 shadow-sm text-sm"
                     placeholder="Search forms..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -225,7 +202,7 @@ export const FormsPage = () => {
 
             {/* Sort Dropdown */}
             <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-[140px] h-9 bg-white border-slate-200 rounded-full text-xs font-medium text-slate-600 shadow-sm">
+                <SelectTrigger className="w-full sm:w-[140px] h-9 bg-white border-slate-200 rounded-full text-xs font-medium text-slate-600 shadow-sm">
                     <ArrowUpDown size={12} className="mr-2 text-slate-400" />
                     <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
@@ -238,12 +215,12 @@ export const FormsPage = () => {
             </Select>
 
             {/* Filter Pills */}
-            <div className="flex items-center bg-slate-100/50 p-1 rounded-full border border-slate-200/60 h-9">
+            <div className="flex items-center bg-slate-100/50 p-1 rounded-full border border-slate-200/60 h-9 scroll-x-mobile">
                 <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => setFilter('all')}
-                    className={cn("rounded-full h-7 px-3 text-[10px] font-bold", filter === 'all' ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700")}
+                    className={cn("rounded-full h-7 px-3 text-[10px] font-bold transition-all", filter === 'all' ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700")}
                 >
                     All
                 </Button>
@@ -251,7 +228,7 @@ export const FormsPage = () => {
                     variant="ghost"
                     size="sm"
                     onClick={() => setFilter('published')}
-                    className={cn("rounded-full h-7 px-3 text-[10px] font-bold", filter === 'published' ? "bg-white shadow-sm text-green-700" : "text-slate-500 hover:text-slate-700")}
+                    className={cn("rounded-full h-7 px-3 text-[10px] font-bold transition-all", filter === 'published' ? "bg-white shadow-sm text-green-700" : "text-slate-500 hover:text-slate-700")}
                 >
                     Live
                 </Button>
@@ -259,19 +236,13 @@ export const FormsPage = () => {
                     variant="ghost"
                     size="sm"
                     onClick={() => setFilter('draft')}
-                    className={cn("rounded-full h-7 px-3 text-[10px] font-bold", filter === 'draft' ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700")}
+                    className={cn("rounded-full h-7 px-3 text-[10px] font-bold transition-all", filter === 'draft' ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700")}
                 >
                     Drafts
                 </Button>
             </div>
 
-            <input
-                type="file"
-                ref={fileInputRef}
-                accept=".json,application/json"
-                onChange={handleFileSelect}
-                className="hidden"
-            />
+
             <Button
                 onClick={() => fileInputRef.current?.click()}
                 variant="outline"
@@ -302,20 +273,20 @@ export const FormsPage = () => {
             <div className="flex-1 pb-20 max-w-7xl mx-auto w-full space-y-8">
 
                 {/* Unified Forms Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
                     {/* Create New Form Card */}
                     {(!searchQuery && filter === 'all') && (
                         <div
                             onClick={() => setTemplateModalOpen(true)}
-                            className="group relative bg-gradient-to-br from-indigo-50 via-white to-white border-2 border-indigo-100/80 rounded-3xl p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:border-indigo-400 hover:shadow-lg hover:shadow-indigo-100 transition-all duration-300 min-h-[200px] overflow-hidden"
+                            className="group relative bg-gradient-to-br from-indigo-50 via-white to-white border-2 border-indigo-100/80 rounded-3xl p-5 sm:p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:border-indigo-400 hover:shadow-lg hover:shadow-indigo-100 transition-all duration-300 min-h-[180px] sm:min-h-[200px] overflow-hidden card-hover gradient-border"
                         >
                             <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-indigo-400 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
-                            <div className="w-16 h-16 rounded-2xl bg-indigo-100 text-indigo-600 border border-indigo-200 group-hover:bg-indigo-600 group-hover:text-white group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 flex items-center justify-center mb-5 shadow-sm">
-                                <Plus size={32} strokeWidth={2.5} />
+                            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-indigo-100 text-indigo-600 border border-indigo-200 group-hover:bg-indigo-600 group-hover:text-white group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 flex items-center justify-center mb-4 sm:mb-5 shadow-sm">
+                                <Plus size={28} className="sm:w-8 sm:h-8" strokeWidth={2.5} />
                             </div>
-                            <h3 className="text-lg font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">Create New Form</h3>
-                            <p className="text-sm text-slate-500 mt-2 max-w-[200px] leading-relaxed">Start with a blank canvas or choose a pre-made template</p>
+                            <h3 className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">Create New Form</h3>
+                            <p className="text-xs sm:text-sm text-slate-500 mt-2 max-w-[200px] leading-relaxed">Start with a blank canvas or choose a pre-made template</p>
                         </div>
                     )}
 
@@ -326,18 +297,19 @@ export const FormsPage = () => {
                             <FormLoadingEmptyState hasSearchQuery={!!searchQuery} />
                         </div>
                     ) : (
-                        filteredForms.map(form => (
-                            <FormLoadingCard
-                                key={form.id}
-                                form={form}
-                                productAssignments={assignments[form.id] || []}
-                                storeAssignment={storeAssignments[form.id]}
-                                onClick={() => handleCardClick(form.id)}
-                                onDuplicate={() => handleDuplicate(form)}
-                                onPublish={(e) => handlePublishClick(e, form)}
-                                onRename={(name) => handleRenameForm(form.id, name)}
-                                onDelete={() => handleDeleteForm(form.id)}
-                            />
+                        filteredForms.map((form, index) => (
+                            <div key={form.id} className={`animate-fade-up stagger-${Math.min(index + 1, 8)}`}>
+                                <FormLoadingCard
+                                    form={form}
+                                    productAssignments={assignments[form.id] || []}
+                                    storeAssignment={storeAssignments[form.id]}
+                                    onClick={() => handleCardClick(form.id)}
+                                    onDuplicate={() => handleDuplicate(form)}
+                                    onPublish={(e) => handlePublishClick(e, form)}
+                                    onRename={(name) => handleRenameForm(form.id, name)}
+                                    onDelete={() => handleDeleteForm(form.id)}
+                                />
+                            </div>
                         ))
                     )}
                 </div>

@@ -12,10 +12,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
-        -6448,
-        224
+        -10560,
+        2288
       ],
-      "id": "e5123631-21b3-4921-bb6f-fd63f62a263d",
+      "id": "aae2fff5-993c-4ab8-a34f-7b81b996373a",
       "name": "Webhook Start",
       "webhookId": "master-sync-webhook"
     },
@@ -26,10 +26,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -6208,
-        224
+        -10320,
+        2288
       ],
-      "id": "7e609359-585c-44ed-b138-8fd695f817f6",
+      "id": "bad90c47-9d7b-4027-90ef-6ecf5352d0bf",
       "name": "Parse Request"
     },
     {
@@ -40,10 +40,10 @@
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        -5968,
-        224
+        -10080,
+        2288
       ],
-      "id": "d96afd73-fb6c-48d2-91de-8181976c9fc7",
+      "id": "f49c06c9-0562-4925-8547-f08299fe4545",
       "name": "List data tables",
       "alwaysOutputData": true
     },
@@ -54,10 +54,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -5728,
-        224
+        -9840,
+        2288
       ],
-      "id": "2b5596a8-d57b-4d88-95bc-96bd4942e0c3",
+      "id": "73193bc4-c465-4854-b69a-05366d6832a3",
       "name": "Check Tables Exist"
     },
     {
@@ -86,10 +86,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -5488,
-        224
+        -9600,
+        2288
       ],
-      "id": "d2c8ee67-f6ea-455c-88c6-83280e1c67a2",
+      "id": "3fc613be-cd8c-4bc6-9037-54cecda3f8c3",
       "name": "If Table exists"
     },
     {
@@ -104,10 +104,10 @@
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        -5248,
-        128
+        -9360,
+        2192
       ],
-      "id": "38cb7ea1-2fc0-4516-92d5-039e1d55b581",
+      "id": "d91f33fc-02b4-451a-ab7b-5611531d4f9b",
       "name": "Get Store Credentials",
       "alwaysOutputData": true
     },
@@ -118,10 +118,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -5008,
-        128
+        -9120,
+        2192
       ],
-      "id": "9f3aa42d-1bfb-4c85-b3fb-e304fb78f27f",
+      "id": "91cc8dff-40f6-4d94-abd1-926b4f967c71",
       "name": "Find Store"
     },
     {
@@ -150,10 +150,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -4768,
-        128
+        -8880,
+        2192
       ],
-      "id": "9a9577c6-0468-41c9-8b53-d18f50028113",
+      "id": "78e166fc-7bf3-4cac-affc-33e94b308e8a",
       "name": "Credentials Found?"
     },
     {
@@ -163,10 +163,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -4528,
-        16
+        -8640,
+        2080
       ],
-      "id": "0b462e26-e31e-459a-9593-57070c7304df",
+      "id": "2d4bcd6b-ad89-43ac-be25-6b49982f79d6",
       "name": "Prepare Context"
     },
     {
@@ -290,10 +290,10 @@
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        -4288,
-        128
+        -8400,
+        2192
       ],
-      "id": "8e56f26a-664d-42b0-b8f3-e7a20d86b82a",
+      "id": "80db6d37-4b80-47ff-9f20-aac5f617e2ba",
       "name": "Update Config in Table",
       "onError": "continueErrorOutput"
     },
@@ -306,10 +306,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -3088,
-        128
+        -7200,
+        2192
       ],
-      "id": "0e65fe82-b027-4957-ac4b-b24d8b5c1a15",
+      "id": "db4a41a6-6adb-4684-a098-8649fbf627cc",
       "name": "Success Response"
     },
     {
@@ -323,10 +323,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -3088,
-        320
+        -7200,
+        2384
       ],
-      "id": "da0d2cd7-f756-47d8-bbcd-352417326dc7",
+      "id": "42751e55-d699-48ae-b2a1-be099d8ac574",
       "name": "Error Response"
     },
     {
@@ -340,10 +340,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -4528,
-        224
+        -8640,
+        2288
       ],
-      "id": "5bc5a2c0-6b2f-4f1e-8352-9f61254bdfb2",
+      "id": "dcaf38e8-6638-4a42-a6dc-1b4151f788aa",
       "name": "No Credentials Error"
     },
     {
@@ -357,10 +357,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -5248,
-        320
+        -9360,
+        2384
       ],
-      "id": "e6f41228-6a65-46f0-817e-c348f29ef8b7",
+      "id": "f7baf96d-a0bd-45ba-802b-51f60c3a4dbc",
       "name": "No Table Error"
     }
   ],

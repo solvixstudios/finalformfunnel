@@ -119,7 +119,7 @@ const FormTab = ({ onSaveClick, onLoadClick, canSave, showSaveSuccess }: FormTab
       </div>
 
       {/* Mobile Tab Bar */}
-      <div className="flex-shrink-0 bg-white border-t border-slate-200 flex">
+      <div className="flex-shrink-0 bg-white border-t border-slate-200 flex pb-safe">
         <button
           onClick={() => setActiveTab('editor')}
           className={`flex-1 py-3 flex flex-col items-center gap-1 transition-colors ${activeTab === 'editor' ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400 hover:bg-slate-50'

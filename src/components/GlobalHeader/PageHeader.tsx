@@ -73,10 +73,10 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
                     {(onBack || backHref) && (
                         <button
                             onClick={handleBack}
-                            className="flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-all mr-1"
+                            className="flex items-center justify-center w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-all mr-1"
                             title="Go back"
                         >
-                            <ArrowLeft size={16} strokeWidth={2} />
+                            <ArrowLeft size={14} strokeWidth={2} />
                         </button>
                     )}
                     <div className="flex flex-col justify-center">
@@ -99,7 +99,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
                                                         className={cn("flex items-center gap-2 cursor-pointer hover:text-slate-900")}
                                                     >
                                                         {showIcon && <Icon size={16} className="text-slate-500" />}
-                                                        {crumb.label}
+                                                        <span className="truncate max-w-[150px] sm:max-w-[300px]">{crumb.label}</span>
                                                     </BreadcrumbLink>
                                                 ) : crumb.editable && crumb.onEdit ? (
                                                     <BreadcrumbPage className={cn("flex items-center gap-2", isLast && "font-semibold text-slate-900")}>
@@ -115,7 +115,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
                                                 ) : (
                                                     <BreadcrumbPage className={cn("flex items-center gap-2", isLast && "font-semibold text-slate-900")}>
                                                         {showIcon && <Icon size={16} className="text-slate-500" />}
-                                                        {crumb.label}
+                                                        <span className="truncate max-w-[150px] sm:max-w-[300px]">{crumb.label}</span>
                                                         {isSingleBreadcrumb && count !== undefined && (
                                                             <span className="ml-1 inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200 min-w-[20px]">
                                                                 {count}

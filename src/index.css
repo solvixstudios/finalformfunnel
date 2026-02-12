@@ -120,7 +120,7 @@ All colors MUST be HSL.
   body,
   :host,
   #finalform-shadow-wrapper {
-    @apply font-['Plus_Jakarta_Sans',sans-serif] bg-[#FAFAFA] text-slate-900 antialiased;
+    @apply font-sans bg-[#FAFAFA] text-slate-900 antialiased;
   }
 
   h1,
@@ -156,6 +156,7 @@ All colors MUST be HSL.
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -165,6 +166,7 @@ All colors MUST be HSL.
   from {
     transform: translateY(1.25rem);
   }
+
   to {
     transform: translateY(0);
   }
@@ -175,6 +177,7 @@ All colors MUST be HSL.
     transform: translateX(-0.5rem);
     opacity: 0;
   }
+
   to {
     transform: translateX(0);
     opacity: 1;
@@ -186,6 +189,7 @@ All colors MUST be HSL.
     transform: scale(0.95);
     opacity: 0;
   }
+
   to {
     transform: scale(1);
     opacity: 1;
@@ -218,6 +222,7 @@ All colors MUST be HSL.
   0% {
     transform: translateX(-100%);
   }
+
   100% {
     transform: translateX(100%);
   }
@@ -260,19 +265,24 @@ All colors MUST be HSL.
 
 /* PULSE - Gentle scale animation */
 @keyframes pulse-loop {
+
   0%,
   100% {
     transform: scale(1);
   }
+
   5% {
     transform: scale(1.03);
   }
+
   10% {
     transform: scale(1.06);
   }
+
   15% {
     transform: scale(1.03);
   }
+
   20%,
   100% {
     transform: scale(1);
@@ -281,16 +291,20 @@ All colors MUST be HSL.
 
 /* BOUNCE - Playful vertical bounce */
 @keyframes bounce-loop {
+
   0%,
   100% {
     transform: translateY(0);
   }
+
   5% {
     transform: translateY(-8px);
   }
+
   10% {
     transform: translateY(-4px);
   }
+
   15%,
   100% {
     transform: translateY(0);
@@ -299,13 +313,16 @@ All colors MUST be HSL.
 
 /* GLOW - Subtle shadow pulse effect */
 @keyframes glow-loop {
+
   0%,
   100% {
     filter: drop-shadow(0 0 0px currentColor);
   }
+
   8% {
     filter: drop-shadow(0 0 12px currentColor);
   }
+
   16%,
   100% {
     filter: drop-shadow(0 0 0px currentColor);
@@ -314,25 +331,32 @@ All colors MUST be HSL.
 
 /* SHAKE - Refined shake with rotation */
 @keyframes shake-loop {
+
   0%,
   100% {
     transform: translateX(0) rotate(0deg);
   }
+
   2% {
     transform: translateX(-4px) rotate(-1.5deg);
   }
+
   4% {
     transform: translateX(4px) rotate(1.5deg);
   }
+
   6% {
     transform: translateX(-4px) rotate(-1.5deg);
   }
+
   8% {
     transform: translateX(4px) rotate(1.5deg);
   }
+
   10% {
     transform: translateX(-2px) rotate(-0.5deg);
   }
+
   12%,
   100% {
     transform: translateX(0) rotate(0deg);
@@ -341,16 +365,20 @@ All colors MUST be HSL.
 
 /* SLIDE - Horizontal slide motion */
 @keyframes slide-loop {
+
   0%,
   100% {
     transform: translateX(0);
   }
+
   5% {
     transform: translateX(-6px);
   }
+
   10% {
     transform: translateX(6px);
   }
+
   15%,
   100% {
     transform: translateX(0);
@@ -359,13 +387,16 @@ All colors MUST be HSL.
 
 /* SCALE - Zoom in/out effect */
 @keyframes scale-loop {
+
   0%,
   100% {
     transform: scale(1);
   }
+
   6% {
     transform: scale(1.08);
   }
+
   12%,
   100% {
     transform: scale(1);
@@ -374,13 +405,16 @@ All colors MUST be HSL.
 
 /* FLOAT - Gentle vertical float */
 @keyframes float-loop {
+
   0%,
   100% {
     transform: translateY(0);
   }
+
   8% {
     transform: translateY(-5px);
   }
+
   16%,
   100% {
     transform: translateY(0);
@@ -389,16 +423,20 @@ All colors MUST be HSL.
 
 /* Spin - Gentle rotation */
 @keyframes spin-loop {
+
   0%,
   100% {
     transform: rotate(0deg);
   }
+
   5% {
     transform: rotate(5deg);
   }
+
   10% {
     transform: rotate(-5deg);
   }
+
   15%,
   100% {
     transform: rotate(0deg);
@@ -441,10 +479,12 @@ All colors MUST be HSL.
 
 /* Legacy shake animation (non-looping) */
 @keyframes shake {
+
   0%,
   100% {
     transform: translateX(0);
   }
+
   10%,
   30%,
   50%,
@@ -452,6 +492,7 @@ All colors MUST be HSL.
   90% {
     transform: translateX(-4px);
   }
+
   20%,
   40%,
   60%,
@@ -470,6 +511,7 @@ All colors MUST be HSL.
     transform: translateY(2rem);
     opacity: 0;
   }
+
   to {
     transform: translateY(0);
     opacity: 1;
@@ -481,6 +523,7 @@ All colors MUST be HSL.
     transform: translateY(3rem);
     opacity: 0;
   }
+
   to {
     transform: translateY(0);
     opacity: 1;
@@ -492,6 +535,7 @@ All colors MUST be HSL.
     transform: translateY(1rem);
     opacity: 0;
   }
+
   to {
     transform: translateY(0);
     opacity: 1;
@@ -548,4 +592,299 @@ aside {
 
 .will-change-opacity {
   will-change: opacity;
+}
+
+/* ============================================
+   GLASS-MORPHISM EFFECTS
+   Premium frosted glass UI elements
+   ============================================ */
+
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.glass-dark {
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-subtle {
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* ============================================
+   NEW MICRO-ANIMATIONS
+   Subtle, premium animations for UX polish
+   ============================================ */
+
+/* Fade Up - For card entrances */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Scale In - For modal/popup entrances */
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-scale-in {
+  animation: scale-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Stagger animation delays for lists */
+.stagger-1 {
+  animation-delay: 50ms;
+}
+
+.stagger-2 {
+  animation-delay: 100ms;
+}
+
+.stagger-3 {
+  animation-delay: 150ms;
+}
+
+.stagger-4 {
+  animation-delay: 200ms;
+}
+
+.stagger-5 {
+  animation-delay: 250ms;
+}
+
+.stagger-6 {
+  animation-delay: 300ms;
+}
+
+.stagger-7 {
+  animation-delay: 350ms;
+}
+
+.stagger-8 {
+  animation-delay: 400ms;
+}
+
+/* Subtle pulse for attention */
+@keyframes subtle-pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-subtle-pulse {
+  animation: subtle-pulse 2s ease-in-out infinite;
+}
+
+/* Gradient shimmer for loading states */
+@keyframes gradient-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.animate-gradient-shimmer {
+  background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.4) 50%,
+      transparent 100%);
+  background-size: 200% 100%;
+  animation: gradient-shimmer 1.5s ease-in-out infinite;
+}
+
+/* ============================================
+   ENHANCED CARD EFFECTS
+   Premium hover and focus states
+   ============================================ */
+
+.card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px -12px rgba(0, 0, 0, 0.15);
+}
+
+.card-hover:active {
+  transform: translateY(0);
+}
+
+/* Gradient border effect */
+.gradient-border {
+  position: relative;
+}
+
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(168, 85, 247, 0.3));
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.gradient-border:hover::before {
+  opacity: 1;
+}
+
+/* ============================================
+   RESPONSIVE UTILITIES
+   Mobile-first helper classes
+   ============================================ */
+
+/* Safe area padding for iOS */
+.safe-area-inset-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.safe-area-inset-top {
+  padding-top: env(safe-area-inset-top, 0);
+}
+
+/* Touch-friendly minimum sizes */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Hide on mobile, show on desktop */
+@media (max-width: 640px) {
+  .hide-mobile {
+    display: none !important;
+  }
+}
+
+/* Horizontal scroll container for mobile */
+.scroll-x-mobile {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scroll-x-mobile::-webkit-scrollbar {
+  display: none;
+}
+
+/* Safe area for notched devices */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Better focus states for accessibility */
+.focus-ring {
+  outline: none;
+}
+
+.focus-ring:focus-visible {
+  box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring));
+}
+
+/* ============================================
+   IMPROVED SCROLLBAR
+   Custom styled scrollbar for content areas
+   ============================================ */
+
+.custom-scroll-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scroll-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scroll-thin::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.2);
+  border-radius: 3px;
+}
+
+.custom-scroll-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.4);
+}
+
+/* ============================================
+   TEXT UTILITIES
+   Typography helpers
+   ============================================ */
+
+.text-balance {
+  text-wrap: balance;
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ============================================
+   RESPONSIVE TYPOGRAPHY
+   Fluid font sizes
+   ============================================ */
+
+@media (max-width: 640px) {
+  h1 {
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+    line-height: 2rem;
+  }
+
+  h3 {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+  }
 }

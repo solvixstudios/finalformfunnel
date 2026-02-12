@@ -1,5 +1,4 @@
 {
-  "name": "Shopify Enable Loader",
   "nodes": [
     {
       "parameters": {
@@ -13,10 +12,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -1100,
-        64
+        -8272,
+        752
       ],
-      "id": "webhook-enable",
+      "id": "406a88e3-6195-4242-8316-27c82a189918",
       "name": "Receive Enable Request",
       "webhookId": "enable-loader-webhook"
     },
@@ -27,10 +26,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -860,
-        64
+        -8032,
+        752
       ],
-      "id": "parse-request",
+      "id": "1d27c10b-132d-4df0-8830-4a1c457c0c60",
       "name": "Parse Request"
     },
     {
@@ -41,10 +40,10 @@
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        -620,
-        64
+        -7792,
+        752
       ],
-      "id": "list-tables",
+      "id": "5738c14e-2f12-4bd7-af72-443dc1363bcc",
       "name": "List data tables",
       "alwaysOutputData": true
     },
@@ -55,10 +54,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -380,
-        64
+        -7552,
+        752
       ],
-      "id": "split-out",
+      "id": "79ad3ffa-b1a4-4ff0-9c44-4ed1ea78618f",
       "name": "Check Tables Exist"
     },
     {
@@ -87,10 +86,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -140,
-        64
+        -7312,
+        752
       ],
-      "id": "if-table-exists",
+      "id": "5d4089e0-8bca-4b78-bf65-3e7be6551f51",
       "name": "If Table exists"
     },
     {
@@ -100,16 +99,15 @@
           "__rl": true,
           "value": "={{ $('Check Tables Exist').first().json.storesTableId }}",
           "mode": "id"
-        },
-        "options": {}
+        }
       },
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        100,
-        -40
+        -7072,
+        656
       ],
-      "id": "get-store-creds",
+      "id": "889dbec6-6c70-4b17-a0b2-09732950fba1",
       "name": "Get Store Credentials",
       "alwaysOutputData": true
     },
@@ -120,10 +118,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        340,
-        -40
+        -6832,
+        656
       ],
-      "id": "find-store",
+      "id": "421263d0-0eb2-4883-b1d3-5b8eef35e250",
       "name": "Find Store"
     },
     {
@@ -152,10 +150,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        580,
-        -40
+        -6592,
+        656
       ],
-      "id": "if-creds-found",
+      "id": "e9dac416-da12-43f3-802b-1fc4530f34d8",
       "name": "Credentials Found?"
     },
     {
@@ -175,10 +173,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        820,
-        -140
+        -6352,
+        544
       ],
-      "id": "check-scripts",
+      "id": "e78ff829-39db-41b4-a47a-c3d05ca5b5ce",
       "name": "Check Existing Scripts",
       "onError": "continueRegularOutput"
     },
@@ -189,10 +187,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1060,
-        -140
+        -6112,
+        544
       ],
-      "id": "check-loader-status",
+      "id": "63c5f19c-9d95-47c0-8e40-39533e1c73a7",
       "name": "Check Loader Status"
     },
     {
@@ -221,10 +219,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1300,
-        -140
+        -5872,
+        544
       ],
-      "id": "already-installed",
+      "id": "942c80a3-515c-4d1e-bb72-bb8456a7a9d5",
       "name": "Already Installed?"
     },
     {
@@ -236,10 +234,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        1540,
-        -300
+        -5632,
+        384
       ],
-      "id": "already-response",
+      "id": "f6e92888-7ce2-4eb7-bc45-268536e5de99",
       "name": "Already Installed Response"
     },
     {
@@ -268,10 +266,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1540,
-        -140
+        -5632,
+        544
       ],
-      "id": "needs-upgrade",
+      "id": "98088b34-284f-41db-8123-c592fa4f070c",
       "name": "Needs Upgrade?"
     },
     {
@@ -292,10 +290,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        1780,
-        -300
+        -5392,
+        384
       ],
-      "id": "delete-old-script",
+      "id": "b4451e14-7ec7-4ac4-89ed-52d55fdbf5dd",
       "name": "Delete Old Script Tag",
       "onError": "continueRegularOutput"
     },
@@ -320,10 +318,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        2260,
-        20
+        -4912,
+        704
       ],
-      "id": "create-sf-token",
+      "id": "0ba0d1e3-80c2-4d09-b06d-9347a3f2e665",
       "name": "Create SF Token",
       "onError": "continueErrorOutput"
     },
@@ -348,10 +346,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        2500,
-        20
+        -4672,
+        704
       ],
-      "id": "inject-script",
+      "id": "e1e8a911-6101-4f0a-b074-0ca074ce3c9d",
       "name": "Inject Script Tag",
       "onError": "continueErrorOutput"
     },
@@ -364,10 +362,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        2740,
-        20
+        -4432,
+        704
       ],
-      "id": "success-response",
+      "id": "52053c82-4101-4f91-a213-42b6a4f8d2ee",
       "name": "Success Response"
     },
     {
@@ -391,10 +389,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        2020,
-        -300
+        -5152,
+        384
       ],
-      "id": "create-sf-upgrade",
+      "id": "33a6f12f-6eaf-48f5-9fe0-f6c2332f780e",
       "name": "Create SF Token (Upgrade)",
       "onError": "continueErrorOutput"
     },
@@ -419,10 +417,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        2260,
-        -300
+        -4912,
+        384
       ],
-      "id": "inject-script-upgrade",
+      "id": "90a0614d-36bc-4155-89e5-6cc3818b4b8f",
       "name": "Inject Script Tag (Upgrade)",
       "onError": "continueErrorOutput"
     },
@@ -435,10 +433,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        2500,
-        -300
+        -4672,
+        384
       ],
-      "id": "upgrade-response",
+      "id": "0ff7eb58-b6f3-4f80-a08d-ae205d09e2ce",
       "name": "Upgrade Success Response"
     },
     {
@@ -452,10 +450,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        820,
-        60
+        -6352,
+        752
       ],
-      "id": "no-creds-error",
+      "id": "107dd44d-b037-4a49-884e-d34ae047f901",
       "name": "No Credentials Error"
     },
     {
@@ -469,10 +467,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        100,
-        160
+        -7072,
+        848
       ],
-      "id": "no-table-error",
+      "id": "37b3b7e8-c213-471a-b0de-ad77247319fd",
       "name": "No Table Error"
     },
     {
@@ -486,10 +484,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        2740,
-        160
+        -4432,
+        848
       ],
-      "id": "error-response",
+      "id": "cd2f983b-577d-4f0b-af95-107fe8e0fe63",
       "name": "Error Response"
     }
   ],
@@ -665,42 +663,6 @@
         ]
       ]
     },
-    "Create SF Token (Upgrade)": {
-      "main": [
-        [
-          {
-            "node": "Inject Script Tag (Upgrade)",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Error Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Inject Script Tag (Upgrade)": {
-      "main": [
-        [
-          {
-            "node": "Upgrade Success Response",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Error Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Create SF Token": {
       "main": [
         [
@@ -736,6 +698,46 @@
           }
         ]
       ]
+    },
+    "Create SF Token (Upgrade)": {
+      "main": [
+        [
+          {
+            "node": "Inject Script Tag (Upgrade)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inject Script Tag (Upgrade)": {
+      "main": [
+        [
+          {
+            "node": "Upgrade Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "b55b8c5b490d75637e4db729caf7c75486c3398f3275794ad40beef7f9800920"
   }
 }

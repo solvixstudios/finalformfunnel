@@ -1,5 +1,4 @@
 {
-  "name": "Shopify Disconnect",
   "nodes": [
     {
       "parameters": {
@@ -12,8 +11,11 @@
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [0, 0],
-      "id": "webhook",
+      "position": [
+        -11616,
+        208
+      ],
+      "id": "83fe3c51-0478-4ad6-81b7-256fbefabf57",
       "name": "Receive Disconnect Request",
       "webhookId": "shopify-disconnect-webhook"
     },
@@ -23,20 +25,30 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [240, 0],
-      "id": "parse-request",
+      "position": [
+        -11376,
+        208
+      ],
+      "id": "5d9d6058-535e-43df-a69e-26dd4e14ad72",
       "name": "Parse Request"
     },
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
           "conditions": [
             {
               "id": "valid-check",
               "leftValue": "={{ $json.valid }}",
               "rightValue": true,
-              "operator": { "type": "boolean", "operation": "equals" }
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
             }
           ],
           "combinator": "and"
@@ -45,8 +57,11 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [480, 0],
-      "id": "if-valid",
+      "position": [
+        -11136,
+        208
+      ],
+      "id": "1e1ad182-23de-4f78-97c3-dbea80f74923",
       "name": "Is Valid?"
     },
     {
@@ -56,13 +71,15 @@
           "__rl": true,
           "value": "stores",
           "mode": "name"
-        },
-        "options": {}
+        }
       },
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
-      "position": [720, -100],
-      "id": "get-stores",
+      "position": [
+        -10896,
+        112
+      ],
+      "id": "31509eb5-a4cf-4a25-bbb0-6887fcff538e",
       "name": "Get Stores",
       "alwaysOutputData": true
     },
@@ -72,20 +89,30 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [960, -100],
-      "id": "find-row",
+      "position": [
+        -10656,
+        112
+      ],
+      "id": "3ffc6af7-260a-4545-aaa5-b2343479688a",
       "name": "Find Row"
     },
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
           "conditions": [
             {
               "id": "row-exists",
               "leftValue": "={{ $json.found }}",
               "rightValue": true,
-              "operator": { "type": "boolean", "operation": "equals" }
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
             }
           ],
           "combinator": "and"
@@ -94,8 +121,11 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [1200, -100],
-      "id": "if-row-exists",
+      "position": [
+        -10416,
+        112
+      ],
+      "id": "a71f28b0-fd68-4659-bb5b-7b9587e1f22d",
       "name": "If row exists"
     },
     {
@@ -117,8 +147,11 @@
       },
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
-      "position": [1440, -200],
-      "id": "delete-row",
+      "position": [
+        -10176,
+        0
+      ],
+      "id": "9543fb6d-7aab-4de9-942c-963e0339e831",
       "name": "Delete row"
     },
     {
@@ -128,17 +161,29 @@
         "options": {
           "responseHeaders": {
             "entries": [
-              { "name": "Access-Control-Allow-Origin", "value": "*" },
-              { "name": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
-              { "name": "Access-Control-Allow-Headers", "value": "*" }
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "*"
+              }
             ]
           }
         }
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [1680, -100],
-      "id": "respond-success",
+      "position": [
+        -9936,
+        112
+      ],
+      "id": "84c99855-2b8b-498a-b5f1-26cf941a3c1c",
       "name": "Respond"
     },
     {
@@ -148,17 +193,29 @@
         "options": {
           "responseHeaders": {
             "entries": [
-              { "name": "Access-Control-Allow-Origin", "value": "*" },
-              { "name": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
-              { "name": "Access-Control-Allow-Headers", "value": "*" }
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "*"
+              }
             ]
           }
         }
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [1440, 0],
-      "id": "respond-not-found",
+      "position": [
+        -10176,
+        208
+      ],
+      "id": "4e22b854-6e00-4a3c-9ad6-e466b9034408",
       "name": "Not Found (OK)"
     },
     {
@@ -169,51 +226,127 @@
           "responseCode": "400",
           "responseHeaders": {
             "entries": [
-              { "name": "Access-Control-Allow-Origin", "value": "*" },
-              { "name": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
-              { "name": "Access-Control-Allow-Headers", "value": "*" }
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "*"
+              }
             ]
           }
         }
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [720, 100],
-      "id": "respond-error",
+      "position": [
+        -10896,
+        304
+      ],
+      "id": "3dff2c35-1f0b-46c7-b8db-1598e3e0b390",
       "name": "Error Response"
     }
   ],
   "connections": {
     "Receive Disconnect Request": {
-      "main": [[{ "node": "Parse Request", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Parse Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Parse Request": {
-      "main": [[{ "node": "Is Valid?", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Is Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Is Valid?": {
       "main": [
-        [{ "node": "Get Stores", "type": "main", "index": 0 }],
-        [{ "node": "Error Response", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Get Stores",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Get Stores": {
-      "main": [[{ "node": "Find Row", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Find Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Find Row": {
-      "main": [[{ "node": "If row exists", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "If row exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "If row exists": {
       "main": [
-        [{ "node": "Delete row", "type": "main", "index": 0 }],
-        [{ "node": "Not Found (OK)", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Delete row",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Not Found (OK)",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Delete row": {
-      "main": [[{ "node": "Respond", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "pinData": {},
   "meta": {
-    "instanceId": "finalformfunnel"
+    "instanceId": "b55b8c5b490d75637e4db729caf7c75486c3398f3275794ad40beef7f9800920"
   }
 }

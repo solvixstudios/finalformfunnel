@@ -55,5 +55,12 @@ service cloud.firestore {
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if isAuthenticated() && isOwner(resource.data.userId);
     }
+
+    // Google Sheets - users can only access their own sheets
+    match /google_sheets/{sheetId} {
+      allow read: if isAuthenticated() && isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && isOwner(resource.data.userId);
+    }
   }
 }

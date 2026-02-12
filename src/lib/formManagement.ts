@@ -20,10 +20,12 @@ export interface FormLoadResult {
  * - Includes all necessary metadata
  */
 import { WhatsAppProfile } from "./firebase/types";
+import { GoogleSheetConfig } from "./firebase/sheetsHooks";
 
 export const getExportData = (
   formConfig: FormConfig,
   profiles: WhatsAppProfile[] = [],
+  sheets: GoogleSheetConfig[] = [],
 ): Record<string, any> => {
   const exportFields: Record<string, any> = {};
 
@@ -139,19 +141,49 @@ export const getExportData = (
     // Thank You
     thankYou: {
       ...formConfig.thankYou,
-      // Resolve and embed WhatsApp number if profile is selected
-      whatsappNumber: (function () {
-        if (
-          formConfig.thankYou?.enableWhatsApp &&
-          formConfig.thankYou?.selectedWhatsappProfileId &&
-          profiles.length > 0
-        ) {
-          const profile = profiles.find(
-            (p) => p.id === formConfig.thankYou.selectedWhatsappProfileId,
-          );
-          if (profile) return profile.phoneNumber;
+      // Resolve WhatsApp numbers from selected profiles (multi-select)
+      whatsappNumbers: (function () {
+        // Resolve from new single-select ID
+        const selectedId = formConfig.addons?.selectedWhatsappProfileId;
+        if (selectedId && profiles.length > 0) {
+          const profile = profiles.find(p => p.id === selectedId);
+          if (profile) return [profile.phoneNumber];
         }
-        return formConfig.thankYou?.whatsappNumber;
+
+        // Fallback to legacy multi-select array if present (migration)
+        const selectedIds: string[] = (formConfig.addons as any)?.selectedWhatsappProfileIds || [];
+        if (selectedIds.length > 0 && profiles.length > 0) {
+          // Return just the first one to enforce single behavior, or all? 
+          // Let's return the first valid one to be safe with new UI.
+          const profile = profiles.find(p => p.id === selectedIds[0]);
+          if (profile) return [profile.phoneNumber];
+        }
+
+        // Fallback to legacy single profile
+        if (formConfig.thankYou?.selectedWhatsappProfileId && profiles.length > 0) {
+          const profile = profiles.find(p => p.id === formConfig.thankYou.selectedWhatsappProfileId);
+          if (profile) return [profile.phoneNumber];
+        }
+
+        return formConfig.thankYou?.whatsappNumber ? [formConfig.thankYou.whatsappNumber] : [];
+      })(),
+    },
+    // Addons - resolved sheet details for the public loader
+    addons: {
+      enableSheets: (formConfig.addons?.selectedSheetIds || []).length > 0,
+      sheets: (function () {
+        const selectedIds: string[] = formConfig.addons?.selectedSheetIds || [];
+        if (selectedIds.length > 0 && sheets.length > 0) {
+          return selectedIds
+            .map(id => sheets.find(s => s.id === id))
+            .filter(Boolean)
+            .map(s => ({
+              webhookUrl: s!.webhookUrl,
+              sheetName: s!.sheetName || "Orders",
+              abandonedSheetName: s!.abandonedSheetName || "Abandoned",
+            }));
+        }
+        return [];
       })(),
     },
   };

@@ -1,5 +1,4 @@
 {
-  "name": "Shopify Submit Order",
   "nodes": [
     {
       "parameters": {
@@ -13,10 +12,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        0,
-        0
+        -3264,
+        272
       ],
-      "id": "receive-order",
+      "id": "1796d9bb-7391-433f-be0c-96884cf63825",
       "name": "Receive Order",
       "webhookId": "order-submit-webhook"
     },
@@ -27,10 +26,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        220,
-        0
+        -3040,
+        272
       ],
-      "id": "validate-input",
+      "id": "f766971a-f570-4e35-b5ef-76f14ce79ba2",
       "name": "Validate Input"
     },
     {
@@ -59,10 +58,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        440,
-        0
+        -2816,
+        272
       ],
-      "id": "check-validity",
+      "id": "4b518405-1c4b-48ec-8d02-73cd28e00ddd",
       "name": "Is Valid?"
     },
     {
@@ -73,16 +72,15 @@
           "value": "stores",
           "mode": "name"
         },
-        "returnAll": true,
-        "options": {}
+        "returnAll": true
       },
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        660,
-        -100
+        -2592,
+        176
       ],
-      "id": "get-stores",
+      "id": "8b69c374-93e6-48cc-9401-de89cff4d391",
       "name": "Get Stores",
       "alwaysOutputData": true
     },
@@ -93,10 +91,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        880,
-        -100
+        -2384,
+        176
       ],
-      "id": "find-store",
+      "id": "88aa7bda-a529-4cf5-ad5d-f526879b7d4b",
       "name": "Find Store Credentials"
     },
     {
@@ -125,23 +123,23 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1100,
-        -100
+        -2160,
+        176
       ],
-      "id": "check-store-found",
+      "id": "06d421bf-ca9f-4400-a5c2-2fa006a40159",
       "name": "Store Found?"
     },
     {
       "parameters": {
-        "jsCode": "// Build Shopify Order GraphQL Mutation\nconst { store, orderData } = $input.first().json;\n\n// 1. Line Items\nlet lineItems = [];\nif (orderData.variantId) {\n  let vid = String(orderData.variantId);\n  if (!vid.startsWith('gid://')) vid = `gid://shopify/ProductVariant/${vid}`;\n  lineItems.push({ variantId: vid, quantity: orderData.quantity || 1 });\n} else {\n  // Custom items\n  lineItems = (orderData.items || []).map(item => ({\n     title: item.title || orderData.productTitle || 'Product',\n     quantity: item.quantity || 1,\n     originalUnitPrice: String(item.price || orderData.totalPrice || 0)\n  }));\n}\n\n// 2. Customer & Address\nconst rawName = (orderData.name || '').trim();\nconst spaceIndex = rawName.indexOf(' ');\nlet firstName = spaceIndex > -1 ? rawName.substring(0, spaceIndex) : rawName;\nlet lastName = spaceIndex > -1 ? rawName.substring(spaceIndex + 1) : '.';\nif (!firstName) firstName = 'Customer';\n\n// Ensure Phone is formatted (E.164 for Algeria)\nlet phone = (orderData.phone || '').replace(/\\s+/g, '');\nif (phone.startsWith('0')) phone = '+213' + phone.substring(1);\nif (phone.length === 9 && !phone.startsWith('+')) phone = '+213' + phone;\n\nconst address = {\n  firstName,\n  lastName,\n  phone,\n  address1: orderData.address || 'No Address Provided',\n  city: orderData.commune || orderData.city || '',\n  province: orderData.wilaya || orderData.province || '',\n  countryCode: 'DZ'\n};\n\n// 3. Custom Attributes (Note Attributes)\nconst customAttributes = [];\nconst addAttr = (key, val) => {\n  if (val !== undefined && val !== null && val !== '') {\n    customAttributes.push({ key, value: String(val) });\n  }\n};\n\naddAttr('Form ID', orderData.formId);\naddAttr('Offer ID', orderData.offerId);\naddAttr('Shipping Type', orderData.shippingType);\naddAttr('Promo Code', orderData.promo);\n\nconst cleanWilaya = (orderData.wilaya || '').replace(/^\\d+\\s*-\\s*/, '');\naddAttr('Wilaya Name', cleanWilaya);\naddAttr('Wilaya ID', orderData.wilayaId);\naddAttr('Commune Name', orderData.commune);\naddAttr('Commune ID', orderData.communeId);\n\n// 4. Tags\nconst tags = ['FinalForm', 'COD'];\nif (orderData.shippingType) tags.push(`${orderData.shippingType}-delivery`);\nif (orderData.promo) tags.push('PROMO');\nif (orderData.tags && Array.isArray(orderData.tags)) tags.push(...orderData.tags);\n\n// 5. Shipping Line\nconst shippingLines = [];\nif (orderData.shippingPrice && Number(orderData.shippingPrice) > 0) {\n  shippingLines.push({\n    title: orderData.shippingType === 'desk' ? 'Stop Desk Delivery' : 'Home Delivery',\n    price: String(orderData.shippingPrice)\n  });\n}\n\n// 6. Applied Discount\nlet appliedDiscount = null;\nif (orderData.promoDiscount && Number(orderData.promoDiscount) > 0) {\n  appliedDiscount = {\n    description: orderData.promo || 'Discount',\n    value: String(orderData.promoDiscount),\n    valueType: 'FIXED_AMOUNT',\n    title: orderData.promo || 'Promo'\n  };\n}\n\n// 7. Build Mutation Input\nconst orderInput = {\n  order: {\n    lineItems,\n    shippingLines,\n    shippingAddress: address,\n    billingAddress: address,\n    email: orderData.email || null,\n    phone: phone,\n    note: orderData.note || '',\n    customAttributes,\n    tags,\n    financialStatus: 'PENDING'\n  },\n  options: {\n    inventoryBehaviour: 'BYPASS'\n  }\n};\n\n// Add discount if exists\nif (appliedDiscount) {\n  orderInput.order.appliedDiscount = appliedDiscount;\n}\n\n// Corrected Mutation Signature\nconst query = `mutation orderCreate($order: OrderCreateOrderInput!, $options: OrderCreateOptionsInput) {\n  orderCreate(order: $order, options: $options) {\n    order { id name displayFinancialStatus legacyResourceId }\n    userErrors { field message }\n  }\n}`;\n\nreturn [{ json: { graphqlQuery: query, graphqlVariables: orderInput, store, orderData } }];"
+        "jsCode": "// Build Shopify Order GraphQL Mutation\nconst { store, orderData } = $input.first().json;\n\n// 1. LINE ITEMS\nlet lineItems = [];\nconst qty = Number(orderData.quantity) || 1;\n\nif (orderData.variantId) {\n  let vid = String(orderData.variantId);\n  if (!vid.startsWith('gid://')) vid = 'gid://shopify/ProductVariant/' + vid;\n  lineItems.push({ variantId: vid, quantity: qty, requiresShipping: true });\n} else {\n  const items = orderData.items || [{ title: orderData.productTitle || 'Product', price: orderData.totalPrice, quantity: qty }];\n  lineItems = items.map(item => ({\n    title: item.title || 'Product',\n    quantity: Number(item.quantity) || 1,\n    originalUnitPrice: String(item.price || 0),\n    requiresShipping: true\n  }));\n}\n\n// 2. PHONE - STRICT E.164 VALIDATION\nconst rawPhone = (orderData.phone || '').trim();\nconst phoneDigits = rawPhone.replace(/\\D/g, '');\nlet validPhone = undefined;\n\n// Parse Algerian: 0555123456 -> +213555123456\nlet local = phoneDigits;\nif (local.startsWith('00213')) local = local.substring(5);\nelse if (local.startsWith('213') && local.length > 10) local = local.substring(3);\nelse if (local.startsWith('0') && local.length === 10) local = local.substring(1);\n\nif (local.length === 9 && /^[5-7]/.test(local)) {\n    validPhone = '+213' + local;\n} else if (rawPhone.startsWith('+') && phoneDigits.length >= 10 && phoneDigits.length <= 15) {\n    validPhone = '+' + phoneDigits;\n}\n// If neither, validPhone stays undefined (will be OMITTED)\n\n// 3. NAME & EMAIL\nconst rawName = (orderData.name || '').trim();\nconst parts = rawName.split(' ');\nconst firstName = parts[0] || 'Guest';\nconst lastName = parts.slice(1).join(' ') || '.';\n\nlet email = orderData.email;\nif (!email || email.indexOf('@') < 0) {\n    email = 'guest.' + (validPhone ? validPhone.replace('+','') : Date.now()) + '@generated.local';\n}\n\n// 4. ADDRESS (conditionally include phone)\nconst wilaya = (orderData.wilaya || '').replace(/^\\d+\\s*-\\s*/, '');\nconst commune = orderData.commune || '';\n\nconst shippingAddress = {\n  firstName,\n  lastName,\n  address1: orderData.address || commune || 'N/A',\n  city: commune || wilaya || 'Algeria',\n  province: wilaya,\n  countryCode: 'DZ'\n};\nif (validPhone) shippingAddress.phone = validPhone;\n\n// 5. SHIPPING\nconst shippingLines = [];\nconst shipCost = Number(orderData.shippingPrice) || 0;\nif (shipCost > 0) {\n  shippingLines.push({\n    title: orderData.shippingType === 'desk' ? 'Stop Desk' : 'Home Delivery',\n    priceSet: { shopMoney: { amount: String(shipCost), currencyCode: orderData.currency || 'DZD' } }\n  });\n}\n\n// 6. TAGS & ATTRIBUTES\nconst tags = ['FinalForm', 'COD'];\nif (orderData.shippingType) tags.push(orderData.shippingType);\n\nconst customAttributes = [];\nconst addAttr = (k, v) => { if (v) customAttributes.push({ key: k, value: String(v) }); };\naddAttr('Wilaya', wilaya);\naddAttr('Commune', commune);\naddAttr('Original Phone', rawPhone);\naddAttr('Validated Phone', validPhone || 'OMITTED');\naddAttr('Form ID', orderData.formId);\n\n// 7. ORDER INPUT (conditionally include phone)\nconst orderInput = {\n  order: {\n    lineItems,\n    shippingLines,\n    shippingAddress,\n    billingAddress: shippingAddress,\n    email,\n    note: orderData.note || '',\n    customAttributes,\n    tags,\n    financialStatus: 'PENDING'\n  },\n  options: { inventoryBehaviour: 'BYPASS' }\n};\nif (validPhone) orderInput.order.phone = validPhone;\n\n// 8. QUERY\nconst query = `mutation orderCreate($order: OrderCreateOrderInput!, $options: OrderCreateOptionsInput) {\n  orderCreate(order: $order, options: $options) {\n    order { id name legacyResourceId }\n    userErrors { field message }\n  }\n}`;\n\nreturn [{ json: { graphqlQuery: query, graphqlVariables: orderInput, store, orderData, debug: { rawPhone, validPhone } } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1320,
-        -180
+        -1936,
+        96
       ],
-      "id": "build-mutation",
+      "id": "61aa8c9a-e3b2-476f-9d0c-0954604d2b64",
       "name": "Build Mutation"
     },
     {
@@ -169,28 +167,28 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        1540,
-        -180
+        -1712,
+        96
       ],
-      "id": "shopify-api",
+      "id": "ffc5f71e-6998-4510-8f20-42b945cf7fa7",
       "name": "Shopify API",
       "onError": "continueErrorOutput"
     },
     {
       "parameters": {
-        "jsCode": "// Parse Response\nconst input = $input.first().json;\nconst orderData = $('Build Mutation').first().json.orderData;\n\n// Check Network/Auth Errors (top-level)\nif (input.errors) {\n   return [{ json: { success: false, errorType: 'GRAPHQL_SYSTEM', errors: input.errors.map(e => e.message) } }];\n}\n\n// Check User Errors (logic)\nconst result = input.data?.orderCreate;\nif (!result) {\n   return [{ json: { success: false, errorType: 'NO_DATA', errors: ['No data returned from Shopify'] } }];\n}\n\nif (result.userErrors && result.userErrors.length > 0) {\n   return [{ json: { success: false, errorType: 'USER_ERROR', errors: result.userErrors.map(e => `${e.field}: ${e.message}`) } }];\n}\n\n// Success\nconst order = result.order;\nreturn [{\n  json: {\n    success: true,\n    orderId: order.name,\n    shopifyId: order.id,\n    legacyId: order.legacyResourceId,\n    financialStatus: order.displayFinancialStatus,\n    message: 'Order created successfully'\n  }\n}];"
+        "jsCode": "// Parse Response\nconst input = $input.first().json;\nconst orderData = $('Build Mutation').first().json.orderData;\n\nif (input.errors) {\n   return [{ json: { success: false, errorType: 'GRAPHQL_SYSTEM', errors: input.errors.map(e => e.message) } }];\n}\n\nconst result = input.data?.orderCreate;\nif (!result) {\n   return [{ json: { success: false, errorType: 'NO_DATA', errors: ['No data returned from Shopify'] } }];\n}\n\nif (result.userErrors && result.userErrors.length > 0) {\n   return [{ json: { success: false, errorType: 'USER_ERROR', errors: result.userErrors.map(e => e.field.join('.') + ': ' + e.message) } }];\n}\n\nconst order = result.order;\nreturn [{\n  json: {\n    success: true,\n    orderId: order.name,\n    shopifyId: order.id,\n    legacyId: order.legacyResourceId,\n    message: 'Order created successfully'\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1760,
-        -180
+        -1504,
+        96
       ],
-      "id": "parse-response",
+      "id": "8579eb4d-d179-4518-92c3-4568afef4e1f",
       "name": "Parse Response"
     },
     {
-       "parameters": {
+      "parameters": {
         "conditions": {
           "options": {
             "caseSensitive": true,
@@ -215,10 +213,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1980,
-        -180
+        -1280,
+        96
       ],
-      "id": "check-success",
+      "id": "5ade3dec-88ff-4f5d-a159-480a62c58f86",
       "name": "If Success"
     },
     {
@@ -237,11 +235,62 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        2200,
-        -180
+        -1056,
+        96
       ],
-      "id": "respond-success",
+      "id": "9d0b6f14-d4e9-423b-8e4f-2637fd13df72",
       "name": "Respond Success"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "has-google-sheet",
+              "leftValue": "={{ $('Receive Order').first().json.body.googleSheetConfig?.scriptUrl }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1056,
+        -128
+      ],
+      "id": "3955d380-028b-4fa7-a1e1-e3d22ba73ddf",
+      "name": "Check Google Sheet"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Receive Order').first().json.body.googleSheetConfig.scriptUrl }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  ...$('Receive Order').first().json.body,\n  orderId: $('Receive Order').first().json.body.orderId,\n  sheetName: $('Receive Order').first().json.body.googleSheetConfig.sheetName,\n  abandonedSheetName: $('Receive Order').first().json.body.googleSheetConfig.abandonedSheetName,\n  action: 'order'\n}) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -832,
+        -128
+      ],
+      "id": "148bb754-bbde-44de-9caf-3cce1907f1d8",
+      "name": "Google Sheet API",
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -262,10 +311,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        2200,
-        180
+        -1056,
+        464
       ],
-      "id": "respond-error",
+      "id": "7b2cd4a6-0aa4-4311-b860-341a974e0874",
       "name": "Respond Error"
     }
   ],
@@ -386,20 +435,40 @@
     "If Success": {
       "main": [
         [
-           {
-             "node": "Respond Success",
-             "type": "main",
-             "index": 0
-           }
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Check Google Sheet",
+            "type": "main",
+            "index": 0
+          }
         ],
         [
-           {
-             "node": "Respond Error",
-             "type": "main",
-             "index": 0
-           }
+          {
+            "node": "Respond Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Google Sheet": {
+      "main": [
+        [
+          {
+            "node": "Google Sheet API",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "b55b8c5b490d75637e4db729caf7c75486c3398f3275794ad40beef7f9800920"
   }
 }

@@ -10,12 +10,12 @@ const ProfilePage = ({ user }: ProfilePageProps) => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-black text-slate-900">Profile</h1>
+        <h1 className="text-2xl sm:text-3xl font-black text-slate-900">Profile</h1>
         <p className="text-slate-600 mt-2">Manage your account settings</p>
       </div>
 
       {/* Coming Soon */}
-      <div className="bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border border-indigo-200/50 rounded-2xl p-12 text-center">
+      <div className="bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border border-indigo-200/50 rounded-2xl p-6 sm:p-12 text-center">
         <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-100 rounded-xl mb-6">
           <span className="text-2xl">🚀</span>
         </div>

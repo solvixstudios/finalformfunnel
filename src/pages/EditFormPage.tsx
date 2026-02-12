@@ -15,6 +15,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/sonner';
 import { useWhatsAppProfiles } from '@/lib/firebase/whatsappHooks';
+import { useGoogleSheets } from '@/lib/firebase/sheetsHooks';
 import { FolderOpen, RotateCcw, RotateCw, Save, UploadCloud } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -38,6 +39,7 @@ const EditFormPage = ({ userId }: EditFormPageProps) => {
   const { assignments } = useFormAssignments(userId);
   const { stores } = useConnectedStores(userId);
   const { profiles: waProfiles } = useWhatsAppProfiles(userId);
+  const { sheets: gsSheets } = useGoogleSheets(userId);
   const formConfig = useFormStore((state) => state.formConfig);
   const formName = useFormStore((state) => state.formName);
   const formId = useFormStore((state) => state.formId);
@@ -195,7 +197,7 @@ const EditFormPage = ({ userId }: EditFormPageProps) => {
   }, [forms, setSavedFormsList, routeFormId]);
 
   // Use memoized wrapper to pass formConfig to getExportData
-  const exportDataMemoized = useCallback(() => getExportData(formConfig, waProfiles), [formConfig, waProfiles]);
+  const exportDataMemoized = useCallback(() => getExportData(formConfig, waProfiles, gsSheets), [formConfig, waProfiles, gsSheets]);
 
   // Format timestamp to relative time
   const getRelativeTime = (timestamp: string | null) => {
@@ -300,41 +302,6 @@ const EditFormPage = ({ userId }: EditFormPageProps) => {
     }
   };
 
-  const handleImportJson = (config: any) => {
-    // Check for unsaved changes
-    const importJson = () => {
-      // Use loadFormWithValidation to ensure consistent normalization and validation
-      // Imports get a unique ID that will be set to null to mark as new form
-      const result = loadFormWithValidation(
-        {
-          config,
-          name: 'Imported Form',
-          id: 'import-' + Date.now(),
-        },
-        {
-          showWarnings: true,
-          showSuccessToast: false,
-          onSuccess: () => {
-            // Set to null to mark as new form
-            setFormId(null);
-            setShowLoadModal(false);
-            toast.success('Form imported successfully');
-          },
-        }
-      );
-
-      if (!result.success) {
-        toast.error('Failed to import form');
-      }
-    };
-
-    if (hasUnsavedChanges()) {
-      setPendingAction(() => importJson);
-      setShowUnsavedChangesDialog(true);
-    } else {
-      importJson();
-    }
-  };
 
   const handleRenameForm = async (id: string, newName: string) => {
     if (!newName.trim()) {
@@ -589,6 +556,7 @@ const EditFormPage = ({ userId }: EditFormPageProps) => {
     shipping_manager: "Shipping Rates",
     promo_code_manager: "Promo Code",
     thank_you: "Thank You Page",
+    addons: "Addons",
 
     // Editor Sections - matching SECTION_LABELS from data/labels.ts
     header: "Header",

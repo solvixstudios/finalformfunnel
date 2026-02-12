@@ -133,7 +133,7 @@ const Landing = () => {
               </span>
             </div>
 
-            <h1 className="text-6xl md:text-7xl font-extrabold text-slate-900 mb-8 leading-[1.1] tracking-tighter">
+            <h1 className="text-4xl sm:text-5xl md:text-7xl font-extrabold text-slate-900 mb-8 leading-[1.1] tracking-tighter">
               {t('landing.title')}
               <span className="block text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-amber-600 mt-2 pb-2">
                 {t('landing.subtitle')}
@@ -191,7 +191,7 @@ const Landing = () => {
                 </div>
                 {/* Main Area */}
                 <div className="flex-1 flex flex-col gap-6">
-                  <div className="grid grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
                     <div className="h-32 bg-white rounded-2xl border border-slate-100 shadow-sm" />
                     <div className="h-32 bg-white rounded-2xl border border-slate-100 shadow-sm" />
                     <div className="h-32 bg-white rounded-2xl border border-slate-100 shadow-sm" />
@@ -282,7 +282,7 @@ const Landing = () => {
           </div>
 
           {/* Secondary Features Grid */}
-          <div className="grid sm:grid-cols-3 gap-6 mt-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mt-6">
             {[
               { icon: <Shield size={20} />, title: "Enterprise Security", desc: "Bank-grade SSL encryption." },
               { icon: <Smartphone size={20} />, title: "Mobile First", desc: "Looks perfect on any device." },
@@ -306,14 +306,14 @@ const Landing = () => {
       {/* --- CTA Section --- */}
       <section className="py-32 px-4 sm:px-6 lg:px-8">
         <div className="max-w-5xl mx-auto">
-          <div className="relative bg-slate-900 rounded-[3rem] p-12 md:p-24 text-center overflow-hidden">
+          <div className="relative bg-slate-900 rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-12 md:p-24 text-center overflow-hidden">
             {/* Background effects */}
             <div className="absolute top-0 left-0 w-full h-full bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
             <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-orange-500/30 blur-[100px] rounded-full" />
             <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-500/20 blur-[100px] rounded-full" />
 
             <div className="relative z-10">
-              <h2 className="text-4xl sm:text-6xl font-extrabold text-white mb-8 tracking-tight">
+              <h2 className="text-3xl sm:text-4xl md:text-6xl font-extrabold text-white mb-6 sm:mb-8 tracking-tight">
                 {t('landing.ready')}
               </h2>
               <p className="text-xl text-slate-300 mb-12 max-w-2xl mx-auto leading-relaxed">

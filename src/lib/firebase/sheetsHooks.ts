@@ -16,6 +16,7 @@ export interface GoogleSheetConfig {
     name: string;
     webhookUrl: string;
     sheetName: string;
+    abandonedSheetName?: string;
     isDefault: boolean;
     createdAt: string;
     updatedAt: string;

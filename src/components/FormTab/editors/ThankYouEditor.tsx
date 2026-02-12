@@ -452,28 +452,19 @@ export const ThankYouEditor = () => {
         </div>
         {formConfig.thankYou?.enableWhatsApp && (
           <div className="mt-3 space-y-2">
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-[9px] font-bold text-slate-400 uppercase">Profil WhatsApp à utiliser</Label>
-              <select
-                className="w-full text-[10px] border border-slate-200 rounded-lg p-2 outline-none focus:ring-1 focus:ring-green-400"
-                value={formConfig.thankYou.selectedWhatsappProfileId || ""}
-                onChange={(e) =>
-                  setFormConfig({
-                    ...formConfig,
-                    thankYou: {
-                      ...formConfig.thankYou,
-                      selectedWhatsappProfileId: e.target.value
-                    }
-                  })
-                }
-              >
-                <option value="">Utiliser le profil par défaut</option>
-                {profiles.map(p => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} {p.isDefault ? '(Défaut)' : ''} ({p.phoneNumber})
-                  </option>
-                ))}
-              </select>
+            <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-100 rounded-lg">
+              <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-600"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+              </div>
+              <div className="flex-1">
+                <p className="text-[10px] font-semibold text-green-800">WhatsApp Profile</p>
+                <p className="text-[9px] text-green-600">
+                  Configure in the <button
+                    onClick={() => useFormStore.getState().setEditingSection('addons')}
+                    className="font-bold underline hover:text-green-700"
+                  >Addons</button> tab
+                </p>
+              </div>
             </div>
             {profiles.length === 0 && (
               <p className="text-[9px] text-red-500">Aucun profil configuré. Allez dans Intégrations.</p>

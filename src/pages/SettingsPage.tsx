@@ -57,10 +57,10 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
             />
 
             {/* Settings Container - Master/Detail Layout */}
-            <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm grid grid-cols-1 md:grid-cols-[240px_1fr] flex-1">
+            <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 overflow-hidden shadow-sm grid grid-cols-1 md:grid-cols-[240px_1fr] flex-1">
                 {/* Vertical Sidebar */}
-                <div className="border-b md:border-b-0 md:border-r border-slate-200 bg-slate-50/50 p-4">
-                    <div className="flex flex-row md:flex-col gap-1 overflow-x-auto md:overflow-x-visible pb-2 md:pb-0">
+                <div className="border-b md:border-b-0 md:border-r border-slate-200 bg-slate-50/50 p-3 sm:p-4">
+                    <div className="flex flex-row md:flex-col gap-1 overflow-x-auto md:overflow-x-visible pb-2 md:pb-0 scroll-x-mobile">
                         {tabs.map((tab) => (
                             <button
                                 key={tab.id}
@@ -85,7 +85,7 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
                 </div>
 
                 {/* Content Area */}
-                <div className="p-6 md:p-8 overflow-y-auto w-full max-w-4xl">
+                <div className="p-4 sm:p-6 md:p-8 overflow-y-auto w-full max-w-4xl custom-scroll-thin">
                     {/* Profile Tab */}
                     {activeTab === 'profile' && (
                         <div className="space-y-8 animate-in fade-in duration-300">
@@ -205,17 +205,17 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
                                     <div className="flex items-center justify-between mb-8">
                                         <div>
                                             <p className="text-slate-400 text-sm font-medium mb-1">Current Plan</p>
-                                            <h3 className="text-3xl font-black text-white">Pro Plan</h3>
+                                            <h3 className="text-2xl sm:text-3xl font-black text-white truncate max-w-[200px]">Pro Plan</h3>
                                         </div>
                                         <span className="px-3 py-1 bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 rounded-full text-xs font-bold uppercase tracking-wider">
                                             Active
                                         </span>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-8 py-8 border-t border-white/5">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8 py-6 sm:py-8 border-t border-white/5">
                                         <div>
                                             <div className="flex items-end gap-2 mb-2">
-                                                <span className="text-3xl font-bold text-white">824</span>
+                                                <span className="text-2xl sm:text-3xl font-bold text-white">824</span>
                                                 <span className="text-sm text-slate-400 mb-1.5">Orders</span>
                                             </div>
                                             <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
@@ -224,7 +224,7 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
                                         </div>
                                         <div>
                                             <div className="flex items-end gap-2 mb-2">
-                                                <span className="text-3xl font-bold text-white">28</span>
+                                                <span className="text-2xl sm:text-3xl font-bold text-white">28</span>
                                                 <span className="text-sm text-slate-400 mb-1.5">Days Left</span>
                                             </div>
                                             <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">

@@ -185,24 +185,23 @@ export function ShopifyManager({ userId, onAddStore, showHeader = true, viewMode
         <div className={cn("space-y-6", className)}>
             {!showHeader && (
                 <div className="flex items-center justify-between">
-
-                    {/* Header Action for 'Hub' Style */}
-                    {onAddStore && (
-                        <Button onClick={onAddStore} className="rounded-full bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white shadow-lg hover:shadow-orange-500/25 px-5 h-10 transition-all hover:scale-105">
-                            <Plus size={18} className="mr-2" />
-                            Connect New Store
-                        </Button>
-                    )}
+                    {/* Header Action for 'Hub' Style removed to avoid duplication */}
                 </div>
             )}
 
             {shopifyStores.length === 0 ? (
-                // Empty State remains clean but uses no-scroll principles (if needed, but usually this is small)
-                <div className="text-center py-12 rounded-[2rem] border border-slate-200/60 border-dashed bg-slate-50/30">
-                    <p className="text-slate-400 font-medium">No stores connected yet.</p>
+                <div className="flex flex-col items-center justify-center py-12 text-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50">
+                    <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center mb-3">
+                        <span className="text-2xl grayscale opacity-50">🛍️</span>
+                    </div>
+                    <h3 className="text-sm font-semibold text-slate-900">No stores connected yet</h3>
+                    <p className="text-xs text-slate-500 mt-1 max-w-[200px]">Connect your Shopify store to sync products and orders.</p>
                     {onAddStore && (
-                        <Button variant="link" onClick={onAddStore} className="mt-2 text-indigo-600">
-                            Connect your first store
+                        <Button
+                            className="mt-4 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-lg shadow-indigo-100 px-5 h-9 text-xs font-medium rounded-full transition-all hover:scale-105"
+                            onClick={onAddStore}
+                        >
+                            Connect First Store
                         </Button>
                     )}
                 </div>
