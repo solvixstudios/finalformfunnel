@@ -1,0 +1,101 @@
+function doPost(e) {
+  var lock = LockService.getScriptLock();
+  lock.tryLock(10000);
+
+  try {
+    var data = JSON.parse(e.postData.contents);
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    
+    // 1. IDENTIFY TABS
+    var sheetName = data.sheetName || "Sheet1";
+    var action = data.action || "order"; // 'order' or 'abandoned'
+    
+    // 2. AUTO-CREATE SHEETS IF MISSING
+    var sheet = ensureSheetExists(ss, sheetName, getHeaders(action));
+    
+    // 3. PREPARE ROW DATA
+    var timestamp = new Date();
+    var rowData = [];
+    
+    if (action === 'abandoned') {
+      // Columns: OrderID, Date, Phone, Name, Product, Price, Wilaya
+      rowData = [
+        data.orderId || '',
+        timestamp,
+        data.phone || '',
+        data.name || '',
+        data.productTitle || '',
+        data.totalPrice || '',
+        data.wilaya || ''
+      ];
+    } else {
+      // Columns: OrderID, Date, Name, Phone, Wilaya, Commune, Product, Qty, Price, Total, Note
+      rowData = [
+        data.orderId || '',
+        timestamp,
+        data.name || '',
+        data.phone || '',
+        data.wilaya || '',
+        data.commune || '',
+        data.productTitle || '',
+        data.quantity || 1,
+        data.price || '',
+        data.totalPrice || '',
+        data.note || ''
+      ];
+    }
+
+    // 4. APPEND DATA
+    sheet.appendRow(rowData);
+    
+    // 5. CLEANUP ABANDONED (If Order)
+    if (action === 'order' && data.abandonedSheetName) {
+       try {
+         var abSheet = ss.getSheetByName(data.abandonedSheetName);
+         if (abSheet) {
+            var abData = abSheet.getDataRange().getValues();
+            // Assuming OrderID is Column 1 (Index 0)
+            if (data.orderId) {
+               for (var i = abData.length - 1; i >= 1; i--) {
+                  if (String(abData[i][0]) === String(data.orderId)) {
+                     abSheet.deleteRow(i + 1);
+                  }
+               }
+            }
+         }
+       } catch(e) {
+         // Ignore cleanup errors
+         console.log("Cleanup error: " + e);
+       }
+    }
+
+    return ContentService.createTextOutput(JSON.stringify({ "result": "success", "row": sheet.getLastRow() }))
+      .setMimeType(ContentService.MimeType.JSON);
+
+  } catch (e) {
+    return ContentService.createTextOutput(JSON.stringify({ "result": "error", "error": e.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// HELPER: Ensure sheet exists and has headers
+function ensureSheetExists(ss, sheetName, headers) {
+  var sheet = ss.getSheetByName(sheetName);
+  if (!sheet) {
+    sheet = ss.insertSheet(sheetName);
+    if (headers && headers.length > 0) {
+      sheet.appendRow(headers);
+      sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold");
+    }
+  }
+  return sheet;
+}
+
+function getHeaders(action) {
+  if (action === 'abandoned') {
+    return ["Order ID", "Date", "Phone", "Name", "Product", "Total", "Wilaya"];
+  }
+  return ["Order ID", "Date", "Customer Name", "Phone", "Wilaya", "Commune", "Product", "Quantity", "Unit Price", "Total Price", "Note"];
+}
