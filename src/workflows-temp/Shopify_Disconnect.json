@@ -85,7 +85,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Find the row to delete\nconst rows = $input.all();\nconst shopDomain = $('Parse Request').first().json.shopDomain;\n\nconst row = rows.find(r => r.json.shopDomain === shopDomain);\n\nif (row) {\n  return [{ json: { found: true, rowId: row.id, shopDomain } }];\n}\n\nreturn [{ json: { found: false, shopDomain } }];"
+        "jsCode": "// Find the row to delete\nconst rows = $input.all();\nconst shopDomain = $('Parse Request').first().json.shopDomain;\n\nconst row = rows.find(r => r.json.shopDomain === shopDomain);\n\nif (row) {\n  return [{ json: { found: true, rowId: row.id, storeId: row.json.storeId, shopDomain } }];\n}\n\nreturn [{ json: { found: false, shopDomain } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -152,12 +152,102 @@
         0
       ],
       "id": "9543fb6d-7aab-4de9-942c-963e0339e831",
-      "name": "Delete row"
+      "name": "Delete Store Row"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "store_configs",
+          "mode": "name"
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -10176,
+        160
+      ],
+      "id": "cascade-get-configs-001",
+      "name": "Get All Configs",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Find all store_configs rows matching the storeId being disconnected\nconst rows = $input.all();\nconst storeId = $('Find Row').first().json.storeId;\n\nif (!storeId) {\n  return [{ json: { configsFound: false, count: 0 } }];\n}\n\nconst matching = rows.filter(r => r.json.storeId === storeId);\n\nif (matching.length === 0) {\n  return [{ json: { configsFound: false, count: 0 } }];\n}\n\n// Return each matching row ID for deletion\nreturn matching.map(r => ({ json: { configsFound: true, configRowId: r.id, storeId } }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -9936,
+        160
+      ],
+      "id": "cascade-find-configs-001",
+      "name": "Find Configs to Delete"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "configs-found",
+              "leftValue": "={{ $json.configsFound }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -9696,
+        160
+      ],
+      "id": "cascade-if-configs-001",
+      "name": "If Configs Found"
+    },
+    {
+      "parameters": {
+        "operation": "deleteRows",
+        "dataTableId": {
+          "__rl": true,
+          "value": "store_configs",
+          "mode": "name"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyValue": "={{ $json.configRowId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -9456,
+        80
+      ],
+      "id": "cascade-delete-configs-001",
+      "name": "Delete Config Rows"
     },
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: true, message: 'Store credentials removed successfully' }) }}",
+        "responseBody": "={{ JSON.stringify({ success: true, message: 'Store credentials and configs removed successfully' }) }}",
         "options": {
           "responseHeaders": {
             "entries": [
@@ -180,7 +270,7 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -9936,
+        -9216,
         112
       ],
       "id": "84c99855-2b8b-498a-b5f1-26cf941a3c1c",
@@ -213,7 +303,7 @@
       "typeVersion": 1.5,
       "position": [
         -10176,
-        208
+        300
       ],
       "id": "4e22b854-6e00-4a3c-9ad6-e466b9034408",
       "name": "Not Found (OK)"
@@ -319,7 +409,12 @@
       "main": [
         [
           {
-            "node": "Delete row",
+            "node": "Delete Store Row",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get All Configs",
             "type": "main",
             "index": 0
           }
@@ -333,7 +428,7 @@
         ]
       ]
     },
-    "Delete row": {
+    "Delete Store Row": {
       "main": [
         [
           {
@@ -342,6 +437,40 @@
             "index": 0
           }
         ]
+      ]
+    },
+    "Get All Configs": {
+      "main": [
+        [
+          {
+            "node": "Find Configs to Delete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Configs to Delete": {
+      "main": [
+        [
+          {
+            "node": "If Configs Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Configs Found": {
+      "main": [
+        [
+          {
+            "node": "Delete Config Rows",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
       ]
     }
   },

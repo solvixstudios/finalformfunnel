@@ -8,7 +8,8 @@ import {
   onSnapshot,
   query,
   updateDoc,
-  where
+  where,
+  writeBatch
 } from "firebase/firestore";
 import { useCallback, useEffect, useState } from "react";
 import { db } from "../firebase";
@@ -105,7 +106,46 @@ export const useSavedForms = (userId: string) => {
     async (formId: string) => {
       if (!userId) throw new Error("User not authenticated");
       try {
-        await deleteDoc(doc(db, "forms", formId));
+        // CASCADE DELETE: Requests to delete a form should also delete all its assignments
+        const batch = writeBatch(db);
+
+        // 1. Delete the form
+        const formRef = doc(db, "forms", formId);
+        batch.delete(formRef);
+
+        // 2. Find and delete all assignments for this form
+        const assignmentsQuery = query(collection(db, "assignments"), where("formId", "==", formId));
+        const assignmentsSnapshot = await getDocs(assignmentsQuery);
+
+        // 2.5 Clean up n8n store_configs for each assignment (fire-and-forget)
+        for (const assignDoc of assignmentsSnapshot.docs) {
+          const assignment = assignDoc.data();
+          if (assignment.storeId) {
+            try {
+              const storeSnap = await getDoc(doc(db, "stores", assignment.storeId));
+              if (storeSnap.exists()) {
+                const storeData = storeSnap.data();
+                if (storeData.clientId && storeData.clientSecret) {
+                  const { getAdapter } = await import("../integrations");
+                  const adapter = getAdapter(storeData.platform || 'shopify');
+                  const subdomain = storeData.url?.replace('.myshopify.com', '').replace(/https?:\/\//, '') || '';
+                  await adapter.removeForm(subdomain, {
+                    clientId: storeData.clientId,
+                    clientSecret: storeData.clientSecret
+                  }, assignment.productId || undefined).catch(() => { });
+                }
+              }
+            } catch (e) {
+              console.warn("Failed to clean n8n config for assignment:", e);
+            }
+          }
+        }
+
+        assignmentsSnapshot.forEach((doc) => {
+          batch.delete(doc.ref);
+        });
+
+        await batch.commit();
         // No manual state update - listener handles it
       } catch (err: any) {
         setError(err.message);
@@ -122,7 +162,7 @@ export const useSavedForms = (userId: string) => {
     saveForm,
     updateForm,
     deleteForm,
-    refetch: () => {}, // No-op for realtime, kept for interface compat
+    refetch: () => { }, // No-op for realtime, kept for interface compat
   };
 };
 
@@ -130,32 +170,36 @@ export const useSavedForms = (userId: string) => {
 
 export const useConnectedStores = (userId: string) => {
   const [stores, setStores] = useState<ConnectedStore[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchStores = useCallback(async () => {
+  // Real-time subscription for stores
+  useEffect(() => {
     if (!userId) return;
     setLoading(true);
-    setError(null);
-    try {
-      const q = query(collection(db, "stores"), where("userId", "==", userId));
-      const querySnapshot = await getDocs(q);
-      const fetchedStores: ConnectedStore[] = [];
-      querySnapshot.forEach((doc) => {
-        fetchedStores.push({ id: doc.id, ...doc.data() } as ConnectedStore);
-      });
-      setStores(fetchedStores);
-    } catch (err: any) {
-      setError(err.message);
-      console.error("Failed to fetch stores:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [userId]);
 
-  useEffect(() => {
-    fetchStores();
-  }, [fetchStores]);
+    const q = query(collection(db, "stores"), where("userId", "==", userId));
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const fetchedStores: ConnectedStore[] = [];
+        snapshot.forEach((doc) => {
+          fetchedStores.push({ id: doc.id, ...doc.data() } as ConnectedStore);
+        });
+        setStores(fetchedStores);
+        setLoading(false);
+        setError(null);
+      },
+      (err) => {
+        console.error("Error fetching stores:", err);
+        setError(err.message);
+        setLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [userId]);
 
   const addStore = useCallback(
     async (storeData: {
@@ -221,7 +265,7 @@ export const useConnectedStores = (userId: string) => {
         // Claim ownership of this store
         await claimStoreOwnership(shopifyDomain, userId, docRef.id);
 
-        setStores((prev) => [...prev, savedStore]);
+        // No need to manually update state, onSnapshot will handle it
         return savedStore;
       } catch (err: any) {
         setError(err.message);
@@ -240,11 +284,7 @@ export const useConnectedStores = (userId: string) => {
           ...updates,
           updatedAt: new Date().toISOString(),
         });
-        setStores((prev) =>
-          prev.map((store) =>
-            store.id === storeId ? { ...store, ...updates } : store,
-          ),
-        );
+        // No manual state update - listener handles it
       } catch (err: any) {
         setError(err.message);
         throw err;
@@ -259,15 +299,10 @@ export const useConnectedStores = (userId: string) => {
       try {
         // Find the store to get its domain for ownership release
         const storeToDelete = stores.find((s) => s.id === storeId);
-        
+
         // Handle "undefined store" error gracefully if store not found in state
         if (!storeToDelete) {
-             // If not in state, try to fetch it first or just proceed with deletion based on ID if possible. 
-             // Ideally we need the domain for ownership release. 
-             // For now, let's assume if it's not in state, it might have been deleted, or we just delete the doc.
-             // But we should try to get the doc from Firestore if we really need the domain.
-             console.warn("Store not found in local state during deletion, checking Firestore...");
-             // logic could be expanded here, but for now we proceed to delete what we can.
+          console.warn("Store not found in local state during deletion, checking Firestore...");
         }
 
         const shopifyDomain =
@@ -292,21 +327,61 @@ export const useConnectedStores = (userId: string) => {
           }
         }
 
+        // 0.5 Clean up n8n store_configs for all assignments of this store
+        if (storeToDelete?.clientId && storeToDelete?.clientSecret) {
+          try {
+            const configAssignmentsQuery = query(
+              collection(db, "assignments"),
+              where("storeId", "==", storeId)
+            );
+            const configSnap = await getDocs(configAssignmentsQuery);
+            const { getAdapter } = await import("../integrations");
+            const adapter = getAdapter(storeToDelete.platform || 'shopify');
+            const subdomain = storeToDelete.url?.replace('.myshopify.com', '').replace(/https?:\/\//, '') || '';
+
+            // Delete each config from n8n (don't block disconnect)
+            const cleanupPromises = configSnap.docs.map(d => {
+              const data = d.data();
+              return adapter.removeForm(subdomain, {
+                clientId: storeToDelete.clientId!,
+                clientSecret: storeToDelete.clientSecret!
+              }, data.productId || undefined).catch(() => { });
+            });
+            // Also delete the store-level config (ownerId = null)
+            cleanupPromises.push(
+              adapter.removeForm(subdomain, {
+                clientId: storeToDelete.clientId!,
+                clientSecret: storeToDelete.clientSecret!
+              }).catch(() => { })
+            );
+            await Promise.allSettled(cleanupPromises);
+          } catch (err) {
+            console.warn("Failed to clean up n8n configs during disconnect:", err);
+          }
+        }
+
+        // Use batch for atomic deletion of store and assignments
+        const batch = writeBatch(db);
+
         // 1. Delete the Store Document
-        await deleteDoc(doc(db, "stores", storeId));
+        const storeRef = doc(db, "stores", storeId);
+        batch.delete(storeRef);
 
         // 2. Delete all Assignments associated with this store
         const assignmentsQuery = query(collection(db, "assignments"), where("storeId", "==", storeId));
         const assignmentsSnapshot = await getDocs(assignmentsQuery);
-        const deleteAssignmentsPromises = assignmentsSnapshot.docs.map(doc => deleteDoc(doc.ref));
-        await Promise.all(deleteAssignmentsPromises);
+        assignmentsSnapshot.forEach(doc => {
+          batch.delete(doc.ref);
+        });
+
+        await batch.commit();
 
         // 3. Release ownership of this store
         if (shopifyDomain) {
           await releaseStoreOwnership(shopifyDomain);
         }
 
-        setStores((prev) => prev.filter((s) => s.id !== storeId));
+        // No manual state update - listener handles it
       } catch (err: any) {
         setError(err.message);
         throw err;
@@ -322,7 +397,7 @@ export const useConnectedStores = (userId: string) => {
     addStore,
     updateStore,
     deleteStore,
-    refetch: fetchStores,
+    refetch: () => { }, // No-op
   };
 };
 
@@ -330,32 +405,36 @@ export const useConnectedStores = (userId: string) => {
 
 export const useFormAssignments = (userId: string) => {
   const [assignments, setAssignments] = useState<FormAssignment[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchAssignments = useCallback(async () => {
+  // Real-time subscription for assignments
+  useEffect(() => {
     if (!userId) return;
     setLoading(true);
-    setError(null);
-    try {
-      const q = query(collection(db, "assignments"), where("userId", "==", userId));
-      const querySnapshot = await getDocs(q);
-      const fetchedAssignments: FormAssignment[] = [];
-      querySnapshot.forEach((doc) => {
-        fetchedAssignments.push({ id: doc.id, ...doc.data() } as FormAssignment);
-      });
-      setAssignments(fetchedAssignments);
-    } catch (err: any) {
-      setError(err.message);
-      console.error("Failed to fetch assignments:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [userId]);
 
-  useEffect(() => {
-    fetchAssignments();
-  }, [fetchAssignments]);
+    const q = query(collection(db, "assignments"), where("userId", "==", userId));
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const fetchedAssignments: FormAssignment[] = [];
+        snapshot.forEach((doc) => {
+          fetchedAssignments.push({ id: doc.id, ...doc.data() } as FormAssignment);
+        });
+        setAssignments(fetchedAssignments);
+        setLoading(false);
+        setError(null);
+      },
+      (err) => {
+        console.error("Error fetching assignments:", err);
+        setError(err.message);
+        setLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [userId]);
 
   const assignForm = useCallback(
     async (assignmentData: {
@@ -369,39 +448,28 @@ export const useFormAssignments = (userId: string) => {
       if (!userId) throw new Error("User not authenticated");
       try {
         const { formId, storeId, type, productId, productHandle } = assignmentData;
-        // Fetch the store to get the domain
-        // We know storeId is valid because we usually select it from a list, but we should verify or pass the domain
-        // For now, let's try to find it in the 'stores' state if available, but this hook doesn't have access to 'stores'.
-        // We can pass it in assignmentData or fetch it.
-        // BETTER APPROACH: The UI calling this likely has the store object. Let's update the signature to accept shopifyDomain or optional.
-        // OR: We can rely on the fact that we might need to fetch the store if domain is missing.
-        // However, to keep it simple and efficient, we will require shopifyDomain in assignmentData or fetch it if missing.
-        
-        let shopifyDomain = assignmentData.shopifyDomain; 
-        
-        // If not provided, fetch from store
+
+        // Ensure shopifyDomain is present
+        let shopifyDomain = assignmentData.shopifyDomain;
+
+        // If not provided, fetch from store (fallback)
         if (!shopifyDomain) {
-            try {
-                const storeDoc = await getDoc(doc(db, "stores", storeId));
-                if (storeDoc.exists()) {
-                    const storeData = storeDoc.data();
-                    // Use user-friendly domain or url, but we need what the loader sees.
-                    // Loader sees 'window.location.hostname'.
-                    // Store has 'url' (e.g. my-shop.myshopify.com) and 'customDomain'.
-                    // We should save the 'myshopify.com' usually as a base, or normalized domain.
-                    // 'store.url' usually is 'xxx.myshopify.com'.
-                    shopifyDomain = storeData.url; 
-                }
-            } catch (e) {
-                console.error("Failed to fetch store for domain:", e);
+          try {
+            const storeDoc = await getDoc(doc(db, "stores", storeId));
+            if (storeDoc.exists()) {
+              const storeData = storeDoc.data();
+              shopifyDomain = storeData.url;
             }
+          } catch (e) {
+            console.error("Failed to fetch store for domain:", e);
+          }
         }
-        
+
         const newAssignment: Omit<FormAssignment, "id"> = {
           userId,
           formId,
           storeId,
-          shopifyDomain: shopifyDomain || "", // This needs to be populated!
+          shopifyDomain: shopifyDomain || "",
           assignmentType: type,
           productId: type === "store" ? null : (productId ?? null),
           productHandle: type === "store" ? null : (productHandle ?? null),
@@ -412,7 +480,8 @@ export const useFormAssignments = (userId: string) => {
         };
         const docRef = await addDoc(collection(db, "assignments"), newAssignment);
         const savedAssignment: FormAssignment = { id: docRef.id, ...newAssignment };
-        setAssignments((prev) => [...prev, savedAssignment]);
+
+        // No manual state update - listener handles it
         return savedAssignment;
       } catch (err: any) {
         setError(err.message);
@@ -427,7 +496,7 @@ export const useFormAssignments = (userId: string) => {
       if (!userId) throw new Error("User not authenticated");
       try {
         await deleteDoc(doc(db, "assignments", assignmentId));
-        setAssignments((prev) => prev.filter((a) => a.id !== assignmentId));
+        // No manual state update - listener handles it
       } catch (err: any) {
         setError(err.message);
         throw err;
@@ -442,6 +511,6 @@ export const useFormAssignments = (userId: string) => {
     error,
     assignForm,
     deleteAssignment,
-    refetch: fetchAssignments,
+    refetch: () => { }, // No-op
   };
 };

@@ -38,13 +38,19 @@ export const NavigationHeader = ({
     };
 
     return (
-        <div className="flex border-b border-slate-100 px-4 py-3 items-center justify-between shrink-0 bg-slate-50/50">
+        <div className="flex border-b border-slate-200/80 px-4 sm:px-5 py-3.5 items-center justify-between shrink-0 bg-white/80 backdrop-blur-sm shadow-[0_1px_3px_-1px_rgba(0,0,0,0.06)]">
             {editingSection ? (
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2.5">
                     {editingField ? (
                         <>
-                            <button onClick={() => setEditingField(null)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500" aria-label="Back"><ArrowLeft size={20} /></button>
-                            <h2 className="text-sm font-bold text-slate-800">Configuration Champ</h2>
+                            <button
+                                onClick={() => setEditingField(null)}
+                                className="p-2 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-slate-600 transition-all active:scale-95"
+                                aria-label="Back"
+                            >
+                                <ArrowLeft size={18} strokeWidth={2.5} />
+                            </button>
+                            <h2 className="text-[14px] font-bold text-slate-800 tracking-tight">Field Configuration</h2>
                         </>
                     ) : (
                         <>
@@ -56,12 +62,12 @@ export const NavigationHeader = ({
                                         setEditingSection('sections_list');
                                     }
                                 }}
-                                className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"
+                                className="p-2 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-slate-600 transition-all active:scale-95"
                                 aria-label="Back"
                             >
-                                <ChevronLeft size={20} />
+                                <ChevronLeft size={18} strokeWidth={2.5} />
                             </button>
-                            <h2 className="text-sm font-bold text-slate-800">
+                            <h2 className="text-[14px] font-bold text-slate-800 tracking-tight">
                                 {getSectionTitle(editingSection!)}
                             </h2>
                         </>
@@ -69,7 +75,7 @@ export const NavigationHeader = ({
                 </div>
             ) : (
                 <div className="flex items-center gap-2">
-                    <h2 className="text-sm font-bold text-slate-800">{t('editor.configureForm')}</h2>
+                    <h2 className="text-[14px] font-bold text-slate-800 tracking-tight">{t('editor.configureForm')}</h2>
                 </div>
             )}
         </div>

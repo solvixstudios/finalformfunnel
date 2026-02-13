@@ -4,7 +4,7 @@ import { Eye, Settings2 } from 'lucide-react';
 import { useState } from 'react';
 import { BuilderEditor } from './FormTab/BuilderEditor';
 import { BuilderPreview } from './FormTab/BuilderPreview';
-import { SideBuilderNavigation } from './FormTab/components/BottomBuilderMenu';
+
 
 interface FormTabProps {
   onSaveClick?: () => void;
@@ -77,8 +77,7 @@ const FormTab = ({ onSaveClick, onLoadClick, canSave, showSaveSuccess }: FormTab
           onLoadClick={onLoadClick}
         />
 
-        {/* Side Navigation */}
-        <SideBuilderNavigation />
+
 
         {/* Preview */}
         <div className="flex-1 h-full min-w-0">
@@ -96,7 +95,7 @@ const FormTab = ({ onSaveClick, onLoadClick, canSave, showSaveSuccess }: FormTab
       <div className="flex-1 overflow-hidden relative">
         <div className={`w-full h-full ${activeTab === 'editor' ? 'block' : 'hidden'}`}>
           <div className="flex w-full h-full">
-            <SideBuilderNavigation />
+
             <BuilderEditor
               editingSection={editingSection}
               editingField={editingField}

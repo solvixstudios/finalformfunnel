@@ -110,14 +110,16 @@ export function ShopifyManager({ userId, onAddStore, showHeader = true, viewMode
 
     const handleDeleteStore = async () => {
         if (!storeToDelete) return;
+        setProcessingStoreId(storeToDelete);
 
         try {
             await deleteStore(storeToDelete);
             toast.success('Store disconnected successfully');
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            toast.error('Failed to disconnect store');
+            toast.error(error.message || 'Failed to disconnect store');
         } finally {
+            setProcessingStoreId(null);
             setStoreToDelete(null);
         }
     };
@@ -361,7 +363,7 @@ export function ShopifyManager({ userId, onAddStore, showHeader = true, viewMode
             )}
 
             {/* Delete Confirmation Dialog */}
-            <AlertDialog open={!!storeToDelete} onOpenChange={(open) => !open && setStoreToDelete(null)}>
+            <AlertDialog open={!!storeToDelete} onOpenChange={(open) => !open && !processingStoreId && setStoreToDelete(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Disconnect Store?</AlertDialogTitle>
@@ -370,12 +372,23 @@ export function ShopifyManager({ userId, onAddStore, showHeader = true, viewMode
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel disabled={!!processingStoreId}>Cancel</AlertDialogCancel>
                         <AlertDialogAction
-                            onClick={handleDeleteStore}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                handleDeleteStore();
+                            }}
                             className="bg-red-600 hover:bg-red-700 text-white"
+                            disabled={!!processingStoreId}
                         >
-                            Disconnect
+                            {processingStoreId === storeToDelete ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Disconnecting...
+                                </>
+                            ) : (
+                                'Disconnect'
+                            )}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

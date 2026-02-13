@@ -1,7 +1,8 @@
-import { Check, ChevronDown, ChevronRight, Code, Layers, Palette, Sparkles, Square, Type } from "lucide-react";
+import { Check, Code, Layers, Palette, Sparkles, Square, Type } from "lucide-react";
 import { useState } from "react";
 import { PRESET_CATEGORIES, THEME_PRESETS } from "../../../lib/themePresets";
 import { useFormStore } from "../../../stores";
+import { CollapsibleSection } from "../components/CollapsibleSection";
 
 // Helper function to calculate if background is dark
 const isDarkBackground = (hex: string): boolean => {
@@ -27,42 +28,7 @@ const getHeadingColorForBackground = (bgHex: string): string => {
   return isDarkBackground(bgHex) ? '#ffffff' : '#0f172a';
 };
 
-// Collapsible Section Component
-const CollapsibleSection = ({
-  title,
-  icon: Icon,
-  children,
-  defaultOpen = false
-}: {
-  title: string;
-  icon: React.ElementType;
-  children: React.ReactNode;
-  defaultOpen?: boolean;
-}) => {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
 
-  return (
-    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-50 transition-colors"
-      >
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white">
-            <Icon size={14} />
-          </div>
-          <span className="text-xs font-bold text-slate-700">{title}</span>
-        </div>
-        {isOpen ? <ChevronDown size={16} className="text-slate-400" /> : <ChevronRight size={16} className="text-slate-400" />}
-      </button>
-      {isOpen && (
-        <div className="px-4 pb-4 pt-2 space-y-4 border-t border-slate-100 animate-in slide-in-from-top-2 duration-200">
-          {children}
-        </div>
-      )}
-    </div>
-  );
-};
 
 // Color Picker Component
 const ColorPicker = ({

@@ -12,12 +12,15 @@ import {
 } from 'lucide-react';
 import React, { useCallback, useMemo } from 'react';
 import { WILAYAS } from '../../lib/constants';
+import { CollapsibleSection } from '../FormTab/components/CollapsibleSection';
 
 // Types
 export interface ShippingException {
     id: string;
     home: number;
     desk: number;
+    homeEnabled?: boolean;
+    deskEnabled?: boolean;
 }
 
 export interface ShippingConfig {
@@ -40,7 +43,7 @@ interface ShippingManagerProps {
 interface ExceptionRowProps {
     exception: ShippingException;
     index: number;
-    onUpdate: (index: number, field: keyof ShippingException, value: string | number) => void;
+    onUpdate: (index: number, field: keyof ShippingException, value: string | number | boolean) => void;
     onRemove: (index: number) => void;
 }
 
@@ -197,7 +200,7 @@ const ShippingManager: React.FC<ShippingManagerProps> = ({
     const updateException = useCallback((
         index: number,
         field: keyof ShippingException,
-        value: string | number
+        value: string | number | boolean
     ) => {
         const newExceptions = [...shipping.exceptions];
         newExceptions[index] = { ...newExceptions[index], [field]: value };
@@ -226,29 +229,11 @@ const ShippingManager: React.FC<ShippingManagerProps> = ({
     ), [shipping.exceptions, updateException, removeException]);
 
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between px-1">
-                <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2">
-                    <Truck size={14} /> Tarifs de Livraison
-                </h3>
-            </div>
-
-            {/* Standard Rates Card - Now includes delivery type toggles */}
-            <div className="bg-gradient-to-br from-white to-slate-50 border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-                <div className="p-5">
-                    <div className="flex items-center justify-between mb-5">
-                        <div className="flex items-center gap-3">
-                            <div className="p-3 bg-gradient-to-br from-indigo-500 to-violet-600 text-white rounded-xl shadow-lg shadow-indigo-100">
-                                <Globe size={22} />
-                            </div>
-                            <div>
-                                <h4 className="font-black text-sm text-slate-900 tracking-tight">Frais Nationaux</h4>
-                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Tarifs par défaut</p>
-                            </div>
-                        </div>
-                    </div>
-
+        <div className="space-y-4">
+            {/* Standard Rates */}
+            <CollapsibleSection title="Frais Nationaux" icon={Globe} defaultOpen={true}>
+                <div className="space-y-4">
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest px-1">Tarifs par défaut</p>
                     <div className="grid grid-cols-2 gap-4">
                         {/* Home Delivery */}
                         <div className={`bg-white border rounded-xl p-4 space-y-3 transition-all ${enableHomeDelivery ? 'border-slate-200 hover:border-indigo-200' : 'border-slate-100 opacity-50'}`}>
@@ -327,50 +312,46 @@ const ShippingManager: React.FC<ShippingManagerProps> = ({
                         </div>
                     </div>
                 </div>
-            </div>
+            </CollapsibleSection>
 
             {/* Exceptions Section */}
-            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-                <div className="p-4 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div>
-                        <h4 className="font-bold text-xs text-slate-600 uppercase tracking-widest">
-                            Exceptions par Wilaya
-                        </h4>
-                        {shipping.exceptions.length > 0 && (
-                            <span className="text-[9px] font-black text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
-                                {shipping.exceptions.length}
-                            </span>
+            <CollapsibleSection
+                title="Exceptions par Wilaya"
+                icon={Truck}
+                defaultOpen={shipping.exceptions.length > 0}
+                badge={shipping.exceptions.length > 0 ? `${shipping.exceptions.length}` : undefined}
+            >
+                <div className="space-y-4">
+                    <div className="flex justify-between items-center px-1">
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                            Tarifs spécifiques
+                        </p>
+                        <button
+                            onClick={addException}
+                            className="flex items-center gap-1.5 text-[10px] font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition-colors border border-indigo-100/50"
+                        >
+                            <Plus size={14} /> Ajouter
+                        </button>
+                    </div>
+
+                    <div className="max-h-[320px] overflow-y-auto custom-scroll pr-1">
+                        {exceptionRows.length > 0 ? (
+                            <div className="space-y-2">
+                                {exceptionRows}
+                            </div>
+                        ) : (
+                            <div className="p-8 flex flex-col items-center justify-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                                <div className="w-12 h-12 rounded-xl bg-white border border-slate-200 flex items-center justify-center mb-2 shadow-sm">
+                                    <Truck size={20} className="text-slate-300" />
+                                </div>
+                                <p className="text-[10px] font-bold text-slate-400 text-center uppercase tracking-wide">
+                                    Utilise le tarif national
+                                </p>
+                            </div>
                         )}
                     </div>
-                    <button
-                        onClick={addException}
-                        className="flex items-center gap-1.5 text-[10px] font-bold text-indigo-600 bg-indigo-50 px-4 py-2 rounded-xl hover:bg-indigo-100 transition-colors border border-indigo-100 shadow-sm"
-                    >
-                        <Plus size={14} /> Ajouter Exception
-                    </button>
                 </div>
-
-                <div className="max-h-[320px] overflow-y-auto custom-scroll">
-                    {exceptionRows.length > 0 ? (
-                        <div className="p-4 space-y-2">
-                            {exceptionRows}
-                        </div>
-                    ) : (
-                        <div className="p-10 flex flex-col items-center justify-center">
-                            <div className="w-16 h-16 rounded-2xl bg-slate-50 flex items-center justify-center mb-3">
-                                <Truck size={28} className="text-slate-200" />
-                            </div>
-                            <p className="text-[11px] font-bold text-slate-400 text-center uppercase tracking-wide">
-                                Toutes les wilayas utilisent
-                            </p>
-                            <p className="text-[10px] font-bold text-slate-400 text-center uppercase tracking-wide">
-                                le tarif national par défaut
-                            </p>
-                        </div>
-                    )}
-                </div>
-            </div>
+            </CollapsibleSection>
         </div>
     );
 };

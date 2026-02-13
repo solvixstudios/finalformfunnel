@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, ExternalLink, FileSpreadsheet, MessageCircle, Phone, Zap } from "lucide-react";
+import { ExternalLink, FileSpreadsheet, MessageCircle, Phone, Zap } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { auth } from "../../../lib/firebase";
@@ -8,52 +8,9 @@ import { useFormStore } from "../../../stores";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DEFAULT_FORM_CONFIG } from "../../../config/defaults";
+import { CollapsibleSection } from "../components/CollapsibleSection";
 
-// Collapsible Section Component
-const CollapsibleSection = ({
-    title,
-    icon: Icon,
-    children,
-    defaultOpen = false,
-    badge
-}: {
-    title: string;
-    icon: React.ElementType;
-    children: React.ReactNode;
-    defaultOpen?: boolean;
-    badge?: string;
-}) => {
-    const [isOpen, setIsOpen] = useState(defaultOpen);
 
-    return (
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-            <button
-                onClick={() => setIsOpen(!isOpen)}
-                className="w-full px-4 py-3.5 flex items-center justify-between hover:bg-slate-50 transition-colors"
-            >
-                <div className="flex items-center gap-2.5">
-                    <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white shadow-sm">
-                        <Icon size={14} />
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-slate-700">{title}</span>
-                        {badge && (
-                            <span className="bg-indigo-50 text-indigo-600 text-[9px] font-black px-1.5 py-0.5 rounded tracking-wide uppercase">
-                                {badge}
-                            </span>
-                        )}
-                    </div>
-                </div>
-                {isOpen ? <ChevronDown size={16} className="text-slate-400" /> : <ChevronRight size={16} className="text-slate-400" />}
-            </button>
-            {isOpen && (
-                <div className="px-4 pb-4 pt-2 space-y-4 border-t border-slate-100 animate-in slide-in-from-top-2 duration-200">
-                    {children}
-                </div>
-            )}
-        </div>
-    );
-};
 
 // Multi-select checkbox item
 const CheckboxItem = ({
@@ -276,7 +233,7 @@ export const AddonsEditor = () => {
                             ))}
                             {selectedSheetIds.length > 0 && (
                                 <Badge variant="secondary" className="text-[9px] bg-emerald-50 text-emerald-700 border border-emerald-100 mt-1">
-                                    {selectedSheetIds.length} feuille{selectedSheetIds.length > 1 ? "s" : ""} sélectionnée{selectedSheetIds.length > 1 ? "s" : ""}
+                                    {sheets.filter(s => selectedSheetIds.includes(s.id)).length} feuille{sheets.filter(s => selectedSheetIds.includes(s.id)).length !== 1 ? "s" : ""} sélectionnée{sheets.filter(s => selectedSheetIds.includes(s.id)).length !== 1 ? "s" : ""}
                                 </Badge>
                             )}
                         </div>

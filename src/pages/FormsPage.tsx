@@ -1,4 +1,14 @@
 
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { PageHeader } from '@/components/GlobalHeader/PageHeader';
 import {
     Select,
@@ -49,11 +59,15 @@ export const FormsPage = () => {
     // Action States
     const [isImporting, setIsImporting] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // Modal States
     const [showPublishSheet, setShowPublishSheet] = useState(false);
     const [selectedFormForPublish, setSelectedFormForPublish] = useState<any>(null);
     const [templateModalOpen, setTemplateModalOpen] = useState(false);
+
+    // Delete Confirmation
+    const [formToDelete, setFormToDelete] = useState<string | null>(null);
 
 
     const loadFormConfig = useFormStore((state) => state.loadFormConfig);
@@ -167,12 +181,21 @@ export const FormsPage = () => {
         }
     };
 
-    const handleDeleteForm = async (formId: string) => {
+    const initiateDelete = (formId: string) => {
+        setFormToDelete(formId);
+    };
+
+    const confirmDelete = async () => {
+        if (!formToDelete) return;
+        setIsDeleting(true);
         try {
-            await deleteForm(formId);
-            toast.success("Form deleted");
-        } catch (e) {
-            toast.error("Failed to delete");
+            await deleteForm(formToDelete);
+            toast.success("Form deleted successfully");
+            setFormToDelete(null);
+        } catch (e: any) {
+            toast.error(e.message || "Failed to delete form");
+        } finally {
+            setIsDeleting(false);
         }
     }
 
@@ -243,16 +266,7 @@ export const FormsPage = () => {
             </div>
 
 
-            <Button
-                onClick={() => fileInputRef.current?.click()}
-                variant="outline"
-                size="icon"
-                disabled={isImporting}
-                className="rounded-full w-9 h-9 border-slate-200 bg-white text-slate-500 hover:text-indigo-600"
-                title="Import Form"
-            >
-                {isImporting ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-            </Button>
+
         </div>
     );
 
@@ -307,7 +321,7 @@ export const FormsPage = () => {
                                     onDuplicate={() => handleDuplicate(form)}
                                     onPublish={(e) => handlePublishClick(e, form)}
                                     onRename={(name) => handleRenameForm(form.id, name)}
-                                    onDelete={() => handleDeleteForm(form.id)}
+                                    onDelete={async () => initiateDelete(form.id)}
                                 />
                             </div>
                         ))
@@ -337,6 +351,38 @@ export const FormsPage = () => {
                     />
                 )
             }
+
+            <AlertDialog open={!!formToDelete} onOpenChange={(open) => !open && setFormToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete the form
+                            and remove all its connections to your stores.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={(e) => {
+                                e.preventDefault();
+                                confirmDelete();
+                            }}
+                            className="bg-red-600 hover:bg-red-700 text-white"
+                            disabled={isDeleting}
+                        >
+                            {isDeleting ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Deleting...
+                                </>
+                            ) : (
+                                'Delete Form'
+                            )}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div >
     );
 };

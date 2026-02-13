@@ -116,6 +116,9 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
     const [submissionError, setSubmissionError] = useState<string | null>(null);
     const [abandonedSent, setAbandonedSent] = useState(false);
 
+    // Persistent Session ID for this form load (to match abandoned vs completed)
+    const [formSessionId] = useState(() => `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`);
+
     // Refs
     const ctaRef = useRef<HTMLDivElement>(null);
     const formContainerRef = useRef<HTMLDivElement>(null);
@@ -304,21 +307,31 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
     };
 
     // --- GOOGLE SHEETS HELPER ---
-    const formatSheetPayload = (data: any, status: 'completed' | 'abandoned', sheetName: string) => {
+    const formatSheetPayload = (data: any, status: 'completed' | 'abandoned', sheetName: string, abandonedSheetName?: string) => {
         const columns = config.addons?.sheetColumns || [];
         // If no columns configured (legacy), fall back to default payload
         if (columns.length === 0) {
-            return {
+            const raw = {
                 ...data,
                 sheetName,
+                abandonedSheetName, // Include for cleanup logic
                 orderStatus: status,
-                submittedAt: new Date().toISOString()
+                submittedAt: new Date().toISOString(),
+                orderId: data.orderId || formSessionId // Force orderId for abandoned order matching
             };
+            // Stringify objects to avoid [object Object]
+            Object.keys(raw).forEach(k => {
+                if (typeof raw[k] === 'object' && raw[k] !== null) {
+                    raw[k] = JSON.stringify(raw[k]);
+                }
+            });
+            return raw;
         }
 
         // Map data to ordered columns
         const rowData: Record<string, any> = {
             sheetName, // script needs this to target tab
+            abandonedSheetName, // script needs this to find the abandoned tab to clean up
             orderStatus: status,
             submittedAt: new Date().toISOString()
         };
@@ -326,9 +339,9 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
         columns.forEach((col: any) => {
             if (!col.enabled) return;
 
-            let value = '';
+            let value: any = '';
             switch (col.id) {
-                case 'orderId': value = data.orderId || `ORD-${Date.now()}`; break; // Fallback ID
+                case 'orderId': value = data.orderId || formSessionId; break; // Use persistent ID
                 case 'date': value = new Date().toLocaleString(lang); break;
                 case 'status': value = status === 'completed' ? 'Nouvelle commande' : 'Panier abandonné'; break;
                 case 'name': value = data.name; break;
@@ -343,16 +356,22 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                 case 'shippingPrice': value = data.shippingPrice; break;
                 case 'note': value = data.note; break;
                 case 'source': value = data.shopDomain || window.location.hostname; break;
+                default: value = data[col.id] || '';
             }
-            rowData[col.id] = value;
+
+            // Ensure we never send [object Object]
+            if (typeof value === 'object' && value !== null) {
+                rowData[col.id] = JSON.stringify(value);
+            } else {
+                rowData[col.id] = value;
+            }
         });
 
-        // Add special keys that script might expect if they aren't in columns
-        // (This depends on the AppScript implementation. Assuming script handles dynamic keys or we send all)
-        // For safety, let's keep the core identifying fields even if not in columns, 
-        // OR assume the script iterates over the payload. 
-        // Given the requirement "can be selected and ordered", we should probably send ONLY what is selected 
-        // PLUS the metadata needed for script routing (sheetName).
+        // Force orderId for Abandoned Order Recovery logic
+        // The Apps Script needs this ID to find and delete the abandoned row
+        if (!rowData.orderId) {
+            rowData.orderId = data.orderId || formSessionId;
+        }
 
         return rowData;
     };
@@ -436,7 +455,12 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                 sheets.forEach((sheet: any) => {
                     if (!sheet.webhookUrl) return;
 
-                    const sheetPayload = formatSheetPayload(payload, 'completed', sheet.sheetName || 'Orders');
+                    const sheetPayload = formatSheetPayload(
+                        payload,
+                        'completed',
+                        sheet.sheetName || 'Orders',
+                        sheet.abandonedSheetName || 'Abandoned'
+                    );
 
                     // Fire and forget
                     fetch(sheet.webhookUrl, {
@@ -513,7 +537,12 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
             sheets.forEach(async (sheet: any) => {
                 if (!sheet.webhookUrl) return;
 
-                const sheetPayload = formatSheetPayload(payload, 'abandoned', sheet.abandonedSheetName || 'Abandoned');
+                const sheetPayload = formatSheetPayload(
+                    payload,
+                    'abandoned',
+                    sheet.abandonedSheetName || 'Abandoned',
+                    sheet.abandonedSheetName || 'Abandoned' // Pass for metadata consistency
+                );
 
                 try {
                     await fetch(sheet.webhookUrl, {

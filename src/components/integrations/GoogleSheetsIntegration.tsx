@@ -153,72 +153,105 @@ export function GoogleSheetsIntegration({ userId }: GoogleSheetsIntegrationProps
     };
 
     const appScriptCode = `function doPost(e) {
-  // --- CONFIGURATION ---
-  // These names are sent from the form, but default to:
-  var defaultOrdersSheet = "Orders";
-  var defaultAbandonedSheet = "Abandoned";
-  // ---------------------
-
-  if (!e || !e.postData) return ContentService.createTextOutput("No data");
+  var lock = LockService.getScriptLock();
+  lock.tryLock(10000);
 
   try {
+    var output = ContentService.createTextOutput();
+    output.setMimeType(ContentService.MimeType.JSON);
+
+    if (!e || !e.postData) {
+      return output.setContent(JSON.stringify({ result: "error", message: "No data" }));
+    }
+
     var data = JSON.parse(e.postData.contents);
-    var targetSheetName = data.sheetName || defaultOrdersSheet;
-    var isAbandoned = data.status === 'abandoned';
-    
-    // If it's an abandoned checkout, use valid abandoned sheet name
-    if (isAbandoned && data.abandonedSheetName) {
-      targetSheetName = data.abandonedSheetName;
-    }
-    
+    var sheetName = data.sheetName || "Orders";
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = ss.getSheetByName(targetSheetName);
-    
-    // Auto-create sheet if missing
+    var sheet = ss.getSheetByName(sheetName);
+
+    // Create sheet if missing
     if (!sheet) {
-      sheet = ss.insertSheet(targetSheetName);
-      sheet.appendRow(["Timestamp", "Order ID", "Customer Name", "Phone", "Total", "Items", "Status", "City", "Address"]);
+      sheet = ss.insertSheet(sheetName);
     }
-    
-    // LOGIC: If this is a VALID order, check if we need to remove it from Abandoned
-    if (!isAbandoned && data.id && data.abandonedSheetName) {
+
+    // --- HEADER MANAGEMENT ---
+    // Get existing headers
+    var lastCol = sheet.getLastColumn();
+    var headers = [];
+    if (lastCol > 0) {
+      headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+    }
+
+    // Identify keys from payload (excluding internal metadata if desired)
+    var payloadKeys = Object.keys(data).filter(function(k) { 
+      return k !== 'sheetName' && k !== 'abandonedSheetName'; 
+    });
+
+    // If sheet is empty, write all payload keys as headers
+    if (headers.length === 0) {
+      headers = payloadKeys;
+      sheet.appendRow(headers);
+    } 
+    // Logic to append NEW columns if payload has keys not in headers
+    else {
+      var newHeaders = [];
+      for (var i = 0; i < payloadKeys.length; i++) {
+        if (headers.indexOf(payloadKeys[i]) === -1) {
+          newHeaders.push(payloadKeys[i]);
+        }
+      }
+      if (newHeaders.length > 0) {
+        sheet.getRange(1, headers.length + 1, 1, newHeaders.length).setValues([newHeaders]);
+        headers = headers.concat(newHeaders);
+      }
+    }
+
+    // --- ROW DATA MAPPING ---
+    // Map payload values to the header order
+    var row = headers.map(function(header) {
+      var val = data[header];
+      // Convert objects/arrays to string if they aren't already
+      if (val && typeof val === 'object') {
+        return JSON.stringify(val);
+      }
+      return val || "";
+    });
+
+    sheet.appendRow(row);
+
+    // --- ABANDONED ORDER LOGIC ---
+    // If this is a COMPLETED order, check if we need to remove it from Abandoned sheet
+    if (data.orderStatus === 'completed' && data.abandonedSheetName) {
        var abSheet = ss.getSheetByName(data.abandonedSheetName);
        if (abSheet) {
          var abData = abSheet.getDataRange().getValues();
-         // Start from end to safe delete
-         for (var i = abData.length - 1; i >= 1; i--) {
-           // Assuming Col 2 (index 1) is Order ID
-           if (abData[i][1] == data.id) {
-             abSheet.deleteRow(i + 1);
-             break; // Found and deleted
-           }
+         // We look for a column named 'Order ID' or 'orderId'
+         var abHeaders = abData[0];
+         var idIndex = abHeaders.indexOf('Order ID');
+         if (idIndex === -1) idIndex = abHeaders.indexOf('orderId');
+         
+         // Only proceed if we have an orderId to match against
+         if (idIndex > -1 && (data['Order ID'] || data.orderId)) {
+             var targetId = data['Order ID'] || data.orderId;
+             
+             // Loop backwards to delete safely
+             for (var i = abData.length - 1; i >= 1; i--) {
+               if (abData[i][idIndex] == targetId) {
+                 abSheet.deleteRow(i + 1);
+                 // We can break if we assume unique orderIds
+                 // break; 
+               }
+             }
          }
        }
     }
 
-    // Prepare Row Data
-    var timestamp = new Date();
-    var itemsStr = "";
-    if (data.items && Array.isArray(data.items)) {
-      itemsStr = data.items.map(function(i) { return i.productName + " (x" + i.quantity + ")"; }).join(", ");
-    }
-    
-    sheet.appendRow([
-      timestamp,
-      data.id || "",
-      data.customerName || data.name || "",
-      data.customerPhone || data.phone || "",
-      data.totalPrice || 0,
-      itemsStr,
-      data.status || "new",
-      data.city || data.wilaya || "",
-      data.address || ""
-    ]);
-    
-    return ContentService.createTextOutput(JSON.stringify({result: "success"})).setMimeType(ContentService.MimeType.JSON);
-    
-  } catch (error) {
-    return ContentService.createTextOutput(JSON.stringify({result: "error", message: error.toString()})).setMimeType(ContentService.MimeType.JSON);
+    return output.setContent(JSON.stringify({ result: "success" }));
+
+  } catch (e) {
+    return ContentService.createTextOutput(JSON.stringify({ result: "error", error: e.toString() })).setMimeType(ContentService.MimeType.JSON);
+  } finally {
+    lock.releaseLock();
   }
 }`;
 

@@ -77,36 +77,35 @@ export default function PrebuiltConfigModal({
   if (!isOpen) return null;
 
   const handleApply = (config: Partial<typeof DEFAULT_FORM_CONFIG>) => {
-    onLoad(config); // The parent passes 'applyTemplate' or similar here?
-    // Wait, the parent of PrebuiltConfigModal is probably passing 'applyTemplate' logic or 'loadFormConfig'.
-    // We should change the interface semantic or ensure the parent passes the right function.
-    // The props say "onLoad".
-    // I will check where PrebuiltConfigModal is used.
+    onLoad(config);
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white border border-slate-200 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col animate-in zoom-in-95">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6">
+      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={onClose} />
+      <div className="relative bg-white border border-slate-200 rounded-2xl shadow-2xl w-full max-w-5xl h-full max-h-[90vh] sm:max-h-[85vh] flex flex-col animate-in zoom-in-95 duration-200 overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-slate-100 bg-white/50 backdrop-blur-sm shrink-0 z-10">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white">
-              <Sparkles size={20} />
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-200/50">
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-slate-900">Create New Form</h3>
-              <p className="text-xs text-slate-500">Choose a starting point</p>
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">Create New Form</h3>
+              <p className="text-xs text-slate-500 hidden sm:block">Choose a validated high-converting template</p>
             </div>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
-            <X size={24} />
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+          >
+            <X size={20} />
           </button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-auto p-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-50/50 custom-scroll">
           <TemplateGrid onApply={handleApply} />
         </div>
       </div>
