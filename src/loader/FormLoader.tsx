@@ -307,19 +307,37 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
     };
 
     // --- GOOGLE SHEETS HELPER ---
-    const formatSheetPayload = (data: any, status: 'completed' | 'abandoned', sheetName: string, abandonedSheetName?: string) => {
-        const columns = config.addons?.sheetColumns || [];
-        // If no columns configured (legacy), fall back to default payload
-        if (columns.length === 0) {
+    const formatSheetPayload = (
+        data: any,
+        status: 'completed' | 'abandoned',
+        sheetConfig: { sheetName: string; columns?: any[]; pinnedCount?: number }
+    ) => {
+        const columns = sheetConfig.columns || [];
+        const sheetName = sheetConfig.sheetName;
+        const pinnedCount = sheetConfig.pinnedCount ?? 3;
+
+        // Metadata for the Apps Script
+        const rowData: Record<string, any> = {
+            sheetName,
+            orderStatus: status,
+            submittedAt: new Date().toISOString(),
+            _pinnedCount: pinnedCount,
+        };
+
+        // Build ordered columns with labels for the Apps Script headers
+        const orderedColumns: { id: string; label: string }[] = [];
+
+        const enabledCols = columns.filter((col: any) => col.enabled);
+
+        // If no columns configured (legacy), send flat payload
+        if (enabledCols.length === 0) {
             const raw = {
                 ...data,
                 sheetName,
-                abandonedSheetName, // Include for cleanup logic
                 orderStatus: status,
                 submittedAt: new Date().toISOString(),
-                orderId: data.orderId || formSessionId // Force orderId for abandoned order matching
+                orderId: data.orderId || formSessionId
             };
-            // Stringify objects to avoid [object Object]
             Object.keys(raw).forEach(k => {
                 if (typeof raw[k] === 'object' && raw[k] !== null) {
                     raw[k] = JSON.stringify(raw[k]);
@@ -328,38 +346,33 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
             return raw;
         }
 
-        // Map data to ordered columns
-        const rowData: Record<string, any> = {
-            sheetName, // script needs this to target tab
-            abandonedSheetName, // script needs this to find the abandoned tab to clean up
-            orderStatus: status,
-            submittedAt: new Date().toISOString()
-        };
-
-        columns.forEach((col: any) => {
-            if (!col.enabled) return;
+        enabledCols.forEach((col: any) => {
+            orderedColumns.push({ id: col.id, label: col.label });
 
             let value: any = '';
             switch (col.id) {
-                case 'orderId': value = data.orderId || formSessionId; break; // Use persistent ID
+                case 'orderId': value = data.orderId || formSessionId; break;
                 case 'date': value = new Date().toLocaleString(lang); break;
                 case 'status': value = status === 'completed' ? 'Nouvelle commande' : 'Panier abandonné'; break;
                 case 'name': value = data.name; break;
-                case 'phone': value = data.phone; break;
+                case 'phone': value = data.phone || ''; break;
                 case 'wilaya': value = data.wilaya; break;
                 case 'commune': value = data.commune; break;
                 case 'address': value = data.address; break;
                 case 'product': value = data.productTitle; break;
                 case 'variant': value = data.variant; break;
                 case 'quantity': value = data.quantity; break;
+                case 'unitPrice': value = data.items?.[0]?.price || ''; break;
                 case 'totalPrice': value = data.totalPrice; break;
                 case 'shippingPrice': value = data.shippingPrice; break;
+                case 'shippingType': value = data.shippingType === 'desk' ? 'Bureau' : 'Domicile'; break;
+                case 'promoCode': value = data.promo || ''; break;
                 case 'note': value = data.note; break;
                 case 'source': value = data.shopDomain || window.location.hostname; break;
+                case 'ipAddress': value = ''; break; // Populated server-side if available
                 default: value = data[col.id] || '';
             }
 
-            // Ensure we never send [object Object]
             if (typeof value === 'object' && value !== null) {
                 rowData[col.id] = JSON.stringify(value);
             } else {
@@ -367,10 +380,17 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
             }
         });
 
-        // Force orderId for Abandoned Order Recovery logic
-        // The Apps Script needs this ID to find and delete the abandoned row
+        // Column order + labels for the Apps Script
+        rowData._orderedColumns = orderedColumns;
+
+        // Ensure orderId is always present for row matching
         if (!rowData.orderId) {
             rowData.orderId = data.orderId || formSessionId;
+        }
+
+        // On completed orders, tell script to find & update existing abandoned row
+        if (status === 'completed') {
+            rowData._updateExistingOrderId = rowData.orderId;
         }
 
         return rowData;
@@ -398,14 +418,14 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
         }
         setFormErrors({});
 
-        // Resolve Wilaya Name
+        // Resolve Wilaya Name — use rawName (plain, e.g. "Adrar") instead of display name ("01 - Adrar")
         const selectedWilayaObj = wilayasList.find(w => w.id === formData.wilaya);
-        const wilayaName = selectedWilayaObj ? selectedWilayaObj.name : formData.wilaya;
+        const wilayaName = selectedWilayaObj ? selectedWilayaObj.rawName : formData.wilaya;
 
         // Optimistic UI Data
         const payload = {
             ...formData,
-            wilaya: wilayaName, // Pass name instead of ID
+            wilaya: wilayaName, // Pass plain name instead of ID
             wilayaId: formData.wilaya, // Keep ID just in case
             variantId: selectedVariantId,
             totalPrice: calculations.displayedTotal,
@@ -458,8 +478,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                     const sheetPayload = formatSheetPayload(
                         payload,
                         'completed',
-                        sheet.sheetName || 'Orders',
-                        sheet.abandonedSheetName || 'Abandoned'
+                        { sheetName: sheet.sheetName || 'Orders', columns: sheet.columns, pinnedCount: sheet.pinnedCount }
                     );
 
                     // Fire and forget
@@ -493,12 +512,12 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
     const logAbandonedOrder = async () => {
         // Log if enabled AND (phone is valid OR we have enough info)
         // Currently triggered by phone blur valid check.
-        if (previewMode || abandonedSent || !config.addons?.enableSheets && !config.addons?.sheetWebhookUrl) return;
+        if (previewMode || abandonedSent || (!config.addons?.enableSheets && !config.addons?.sheetWebhookUrl)) return;
 
         try {
-            // Resolve Wilaya Name for logging
+            // Resolve Wilaya Name for logging — use rawName (plain, e.g. "Adrar")
             const selectedWilayaObj = wilayasList.find(w => w.id === formData.wilaya);
-            const wilayaName = selectedWilayaObj ? selectedWilayaObj.name : formData.wilaya;
+            const wilayaName = selectedWilayaObj ? selectedWilayaObj.rawName : formData.wilaya;
 
             const payload = {
                 ...formData,
@@ -540,8 +559,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                 const sheetPayload = formatSheetPayload(
                     payload,
                     'abandoned',
-                    sheet.abandonedSheetName || 'Abandoned',
-                    sheet.abandonedSheetName || 'Abandoned' // Pass for metadata consistency
+                    { sheetName: sheet.sheetName || 'Orders', columns: sheet.columns, pinnedCount: sheet.pinnedCount }
                 );
 
                 try {

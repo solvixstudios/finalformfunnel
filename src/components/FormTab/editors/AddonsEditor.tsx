@@ -1,5 +1,4 @@
 import { ExternalLink, FileSpreadsheet, MessageCircle, Phone, Zap } from "lucide-react";
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import { auth } from "../../../lib/firebase";
 import { useGoogleSheets } from "../../../lib/firebase/sheetsHooks";
@@ -7,10 +6,7 @@ import { useWhatsAppProfiles } from "../../../lib/firebase/whatsappHooks";
 import { useFormStore } from "../../../stores";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { DEFAULT_FORM_CONFIG } from "../../../config/defaults";
 import { CollapsibleSection } from "../components/CollapsibleSection";
-
-
 
 // Multi-select checkbox item
 const CheckboxItem = ({
@@ -85,11 +81,6 @@ export const AddonsEditor = () => {
     const { sheets, loading: sheetsLoading } = useGoogleSheets(userId);
     const selectedSheetIds: string[] = formConfig.addons?.selectedSheetIds || [];
 
-    // Fallback for existing forms
-    const effectiveColumns = (formConfig.addons?.sheetColumns && formConfig.addons.sheetColumns.length > 0)
-        ? formConfig.addons.sheetColumns
-        : DEFAULT_FORM_CONFIG.addons.sheetColumns;
-
     const selectProfile = (profileId: string) => {
         const newId = selectedProfileId === profileId ? null : profileId;
         setFormConfig({
@@ -114,13 +105,6 @@ export const AddonsEditor = () => {
                 selectedSheetIds: updated,
                 enableSheets: updated.length > 0,
             },
-        });
-    };
-
-    const updateColumns = (newColumns: typeof effectiveColumns) => {
-        setFormConfig({
-            ...formConfig,
-            addons: { ...formConfig.addons, sheetColumns: newColumns }
         });
     };
 
@@ -159,28 +143,20 @@ export const AddonsEditor = () => {
                         </div>
                     ) : (
                         <div className="space-y-2">
-                            {profiles.length === 0 ? (
-                                <div className="text-center py-8 text-slate-500 bg-slate-50 rounded-lg border border-dashed text-sm">
-                                    No WhatsApp profiles found.
-                                    <br />
-                                    Please add one in the main settings.
-                                </div>
-                            ) : (
-                                <div className="grid grid-cols-1 gap-2">
-                                    {profiles.map((profile) => (
-                                        <CheckboxItem
-                                            key={profile.id}
-                                            id={`wa-${profile.id}`}
-                                            checked={selectedProfileId === profile.id}
-                                            onChange={() => selectProfile(profile.id)}
-                                            label={profile.name}
-                                            sublabel={profile.phoneNumber}
-                                            icon={Phone}
-                                            iconColor="text-green-600"
-                                        />
-                                    ))}
-                                </div>
-                            )}
+                            <div className="grid grid-cols-1 gap-2">
+                                {profiles.map((profile) => (
+                                    <CheckboxItem
+                                        key={profile.id}
+                                        id={`wa-${profile.id}`}
+                                        checked={selectedProfileId === profile.id}
+                                        onChange={() => selectProfile(profile.id)}
+                                        label={profile.name}
+                                        sublabel={profile.phoneNumber}
+                                        icon={Phone}
+                                        iconColor="text-green-600"
+                                    />
+                                ))}
+                            </div>
                         </div>
                     )}
                 </div>
@@ -223,7 +199,7 @@ export const AddonsEditor = () => {
                                     key={sheet.id}
                                     id={`sheet-${sheet.id}`}
                                     label={sheet.name}
-                                    sublabel={`${sheet.sheetName} • ${sheet.abandonedSheetName || "—"}`}
+                                    sublabel={sheet.sheetName}
                                     icon={FileSpreadsheet}
                                     iconColor="text-emerald-600"
                                     bgColor="bg-emerald-100"
@@ -236,63 +212,6 @@ export const AddonsEditor = () => {
                                     {sheets.filter(s => selectedSheetIds.includes(s.id)).length} feuille{sheets.filter(s => selectedSheetIds.includes(s.id)).length !== 1 ? "s" : ""} sélectionnée{sheets.filter(s => selectedSheetIds.includes(s.id)).length !== 1 ? "s" : ""}
                                 </Badge>
                             )}
-                        </div>
-                    )}
-
-                    {/* Column Configuration */}
-                    {selectedSheetIds.length > 0 && (
-                        <div className="pt-4 border-t border-slate-100 space-y-3">
-                            <label className="text-[10px] font-bold text-slate-500 uppercase flex justify-between items-center">
-                                <span>Colonnes à exporter</span>
-                                <span className="text-[9px] font-normal text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded">
-                                    Ordre respecté
-                                </span>
-                            </label>
-
-                            <div className="space-y-1">
-                                {effectiveColumns.map((col, index) => (
-                                    <div key={col.id} className="flex items-center gap-2 p-2 rounded-md border border-slate-100 bg-slate-50/50 hover:bg-slate-100 transition-colors group">
-                                        <input
-                                            type="checkbox"
-                                            checked={col.enabled}
-                                            onChange={(e) => {
-                                                const newCols = [...effectiveColumns];
-                                                newCols[index] = { ...newCols[index], enabled: e.target.checked };
-                                                updateColumns(newCols);
-                                            }}
-                                            className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-3.5 w-3.5"
-                                        />
-                                        <span className={`text-[11px] font-medium flex-1 ${col.enabled ? 'text-slate-700' : 'text-slate-400'}`}>
-                                            {col.label}
-                                        </span>
-
-                                        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button
-                                                disabled={index === 0}
-                                                onClick={() => {
-                                                    const newCols = [...effectiveColumns];
-                                                    [newCols[index - 1], newCols[index]] = [newCols[index], newCols[index - 1]];
-                                                    updateColumns(newCols);
-                                                }}
-                                                className="p-1 hover:bg-white rounded disabled:opacity-30 disabled:hover:bg-transparent text-slate-400 hover:text-slate-600"
-                                            >
-                                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6" /></svg>
-                                            </button>
-                                            <button
-                                                disabled={index === effectiveColumns.length - 1}
-                                                onClick={() => {
-                                                    const newCols = [...effectiveColumns];
-                                                    [newCols[index + 1], newCols[index]] = [newCols[index], newCols[index + 1]];
-                                                    updateColumns(newCols);
-                                                }}
-                                                className="p-1 hover:bg-white rounded disabled:opacity-30 disabled:hover:bg-transparent text-slate-400 hover:text-slate-600"
-                                            >
-                                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
                         </div>
                     )}
                 </div>

@@ -14,11 +14,12 @@ import {
 } from '@/components/ui/sheet';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AlertCircle, Check, ChevronRight, Copy, ExternalLink, FileSpreadsheet, Plus, Trash2, X } from 'lucide-react';
+import { AlertCircle, Check, ChevronRight, Copy, ExternalLink, FileSpreadsheet, GripVertical, Lock, Pin, Plus, Trash2, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useGoogleSheets, GoogleSheetConfig } from '../../lib/firebase/sheetsHooks';
+import { DEFAULT_FORM_CONFIG } from '../../config/defaults';
 
 interface GoogleSheetsIntegrationProps {
     userId: string;
@@ -38,12 +39,15 @@ export function GoogleSheetsIntegration({ userId }: GoogleSheetsIntegrationProps
     const [view, setView] = useState<'list' | 'add' | 'edit'>('list');
 
     const [editingSheet, setEditingSheet] = useState<GoogleSheetConfig | null>(null);
+    const defaultColumns = DEFAULT_FORM_CONFIG.addons.sheetColumns;
+    const defaultPinnedCount = DEFAULT_FORM_CONFIG.addons.sheetPinnedCount;
     const [form, setForm] = useState({
         name: '',
         webhookUrl: '',
         sheetName: 'Orders',
-        abandonedSheetName: 'Abandoned',
-        isDefault: false
+        isDefault: false,
+        columns: [...defaultColumns],
+        pinnedCount: defaultPinnedCount,
     });
 
     const [searchParams] = useSearchParams();
@@ -86,8 +90,9 @@ export function GoogleSheetsIntegration({ userId }: GoogleSheetsIntegrationProps
             name: '',
             webhookUrl: '',
             sheetName: 'Orders',
-            abandonedSheetName: 'Abandoned',
-            isDefault: false
+            isDefault: false,
+            columns: [...defaultColumns],
+            pinnedCount: defaultPinnedCount,
         });
     };
 
@@ -97,8 +102,9 @@ export function GoogleSheetsIntegration({ userId }: GoogleSheetsIntegrationProps
             name: '',
             webhookUrl: '',
             sheetName: 'Orders',
-            abandonedSheetName: 'Abandoned',
-            isDefault: sheets.length === 0
+            isDefault: sheets.length === 0,
+            columns: [...defaultColumns],
+            pinnedCount: defaultPinnedCount,
         });
         setView('add');
     };
@@ -109,8 +115,9 @@ export function GoogleSheetsIntegration({ userId }: GoogleSheetsIntegrationProps
             name: sheet.name,
             webhookUrl: sheet.webhookUrl,
             sheetName: sheet.sheetName || 'Orders',
-            abandonedSheetName: sheet.abandonedSheetName || 'Abandoned',
-            isDefault: sheet.isDefault
+            isDefault: sheet.isDefault,
+            columns: sheet.columns?.length > 0 ? sheet.columns : [...defaultColumns],
+            pinnedCount: sheet.pinnedCount ?? defaultPinnedCount,
         });
         setView('edit');
     };
@@ -169,89 +176,256 @@ export function GoogleSheetsIntegration({ userId }: GoogleSheetsIntegrationProps
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var sheet = ss.getSheetByName(sheetName);
 
-    // Create sheet if missing
+    var isNewSheet = false;
     if (!sheet) {
       sheet = ss.insertSheet(sheetName);
+      isNewSheet = true;
+    }
+
+    // --- METADATA KEYS (never shown as columns) ---
+    var metaKeys = ['sheetName', 'abandonedSheetName', '_orderedColumns', '_updateExistingOrderId', '_pinnedCount', 'orderStatus', 'submittedAt'];
+
+    // --- DETERMINE COLUMN ORDER & LABELS ---
+    var orderedCols = data._orderedColumns || null;
+    var colIds = [];
+    var colLabels = {};
+
+    if (orderedCols && orderedCols.length > 0) {
+      for (var i = 0; i < orderedCols.length; i++) {
+        var col = orderedCols[i];
+        if (typeof col === 'object' && col.id) {
+          colIds.push(col.id);
+          colLabels[col.id] = col.label || col.id;
+        } else {
+          colIds.push(col);
+          colLabels[col] = col;
+        }
+      }
+    } else {
+      colIds = Object.keys(data).filter(function(k) {
+        return metaKeys.indexOf(k) === -1;
+      });
+      for (var j = 0; j < colIds.length; j++) {
+        colLabels[colIds[j]] = colIds[j];
+      }
     }
 
     // --- HEADER MANAGEMENT ---
-    // Get existing headers
     var lastCol = sheet.getLastColumn();
-    var headers = [];
+    var headers = []; // These are LABELS displayed in the sheet
+    var headerIds = []; // These are IDs for data mapping
     if (lastCol > 0) {
-      headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+      headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(function(h) { return h.toString(); });
+      // Build reverse map: label -> id
+      headerIds = headers.slice(); // default: assume headers equal IDs
     }
 
-    // Identify keys from payload (excluding internal metadata if desired)
-    var payloadKeys = Object.keys(data).filter(function(k) { 
-      return k !== 'sheetName' && k !== 'abandonedSheetName'; 
-    });
-
-    // If sheet is empty, write all payload keys as headers
-    if (headers.length === 0) {
-      headers = payloadKeys;
-      sheet.appendRow(headers);
-    } 
-    // Logic to append NEW columns if payload has keys not in headers
-    else {
-      var newHeaders = [];
-      for (var i = 0; i < payloadKeys.length; i++) {
-        if (headers.indexOf(payloadKeys[i]) === -1) {
-          newHeaders.push(payloadKeys[i]);
+    if (headers.length === 0 || isNewSheet) {
+      // Write labels as headers
+      headers = colIds.map(function(id) { return colLabels[id]; });
+      headerIds = colIds.slice();
+      sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+      formatHeaderRow(sheet, headers.length, data._pinnedCount || 3);
+    } else {
+      // Check for new columns not yet in headers
+      var newHeaderLabels = [];
+      var newHeaderIds = [];
+      for (var k = 0; k < colIds.length; k++) {
+        var label = colLabels[colIds[k]];
+        if (headers.indexOf(label) === -1) {
+          newHeaderLabels.push(label);
+          newHeaderIds.push(colIds[k]);
         }
       }
-      if (newHeaders.length > 0) {
-        sheet.getRange(1, headers.length + 1, 1, newHeaders.length).setValues([newHeaders]);
-        headers = headers.concat(newHeaders);
+      if (newHeaderLabels.length > 0) {
+        sheet.getRange(1, headers.length + 1, 1, newHeaderLabels.length).setValues([newHeaderLabels]);
+        headers = headers.concat(newHeaderLabels);
+        headerIds = headerIds.concat(newHeaderIds);
+        formatHeaderRow(sheet, headers.length, data._pinnedCount || 3);
       }
     }
 
-    // --- ROW DATA MAPPING ---
-    // Map payload values to the header order
+    // Build label-to-id map for data lookup
+    var labelToId = {};
+    for (var m = 0; m < colIds.length; m++) {
+      labelToId[colLabels[colIds[m]]] = colIds[m];
+    }
+
+    // --- BUILD ROW VALUES ---
     var row = headers.map(function(header) {
-      var val = data[header];
-      // Convert objects/arrays to string if they aren't already
-      if (val && typeof val === 'object') {
-        return JSON.stringify(val);
-      }
-      return val || "";
+      var id = labelToId[header] || header;
+      var val = data[id];
+      if (val && typeof val === 'object') return JSON.stringify(val);
+      return val !== undefined && val !== null ? val : "";
     });
 
-    sheet.appendRow(row);
+    // --- UPDATE EXISTING OR APPEND ---
+    var updateId = data._updateExistingOrderId || null;
+    var targetRow = -1;
 
-    // --- ABANDONED ORDER LOGIC ---
-    // If this is a COMPLETED order, check if we need to remove it from Abandoned sheet
-    if (data.orderStatus === 'completed' && data.abandonedSheetName) {
-       var abSheet = ss.getSheetByName(data.abandonedSheetName);
-       if (abSheet) {
-         var abData = abSheet.getDataRange().getValues();
-         // We look for a column named 'Order ID' or 'orderId'
-         var abHeaders = abData[0];
-         var idIndex = abHeaders.indexOf('Order ID');
-         if (idIndex === -1) idIndex = abHeaders.indexOf('orderId');
-         
-         // Only proceed if we have an orderId to match against
-         if (idIndex > -1 && (data['Order ID'] || data.orderId)) {
-             var targetId = data['Order ID'] || data.orderId;
-             
-             // Loop backwards to delete safely
-             for (var i = abData.length - 1; i >= 1; i--) {
-               if (abData[i][idIndex] == targetId) {
-                 abSheet.deleteRow(i + 1);
-                 // We can break if we assume unique orderIds
-                 // break; 
-               }
-             }
-         }
-       }
+    if (updateId) {
+      // Find existing row with matching orderId
+      var orderIdLabel = colLabels['orderId'] || 'orderId';
+      var orderIdCol = headers.indexOf(orderIdLabel);
+      if (orderIdCol > -1 && sheet.getLastRow() > 1) {
+        var allData = sheet.getRange(2, orderIdCol + 1, sheet.getLastRow() - 1, 1).getValues();
+        for (var r = 0; r < allData.length; r++) {
+          if (allData[r][0].toString() == updateId.toString()) {
+            targetRow = r + 2; // +2 for 1-index + header row
+            break;
+          }
+        }
+      }
+    }
+
+    if (targetRow > 0) {
+      // Update existing row in-place
+      sheet.getRange(targetRow, 1, 1, row.length).setValues([row]);
+      formatDataRow(sheet, targetRow, headers, labelToId);
+    } else {
+      // Append new row
+      var newRow = sheet.getLastRow() + 1;
+      sheet.getRange(newRow, 1, 1, row.length).setValues([row]);
+      formatDataRow(sheet, newRow, headers, labelToId);
     }
 
     return output.setContent(JSON.stringify({ result: "success" }));
 
-  } catch (e) {
-    return ContentService.createTextOutput(JSON.stringify({ result: "error", error: e.toString() })).setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(
+      JSON.stringify({ result: "error", error: err.toString() })
+    ).setMimeType(ContentService.MimeType.JSON);
   } finally {
     lock.releaseLock();
+  }
+}
+
+// ═══════════════════════════════════
+// STATUS CONFIG
+// ═══════════════════════════════════
+
+var STATUS_LIST = [
+  'Nouvelle commande',
+  'En attente',
+  'Confirmée',
+  'En préparation',
+  'Expédiée',
+  'Livrée',
+  'Échouée 1',
+  'Échouée 2',
+  'Échouée 3',
+  'Annulée',
+  'Retournée',
+  'Panier abandonné'
+];
+
+var STATUS_COLORS = {
+  'Nouvelle commande':  { bg: '#dbeafe', fg: '#1e40af' },
+  'En attente':         { bg: '#e0e7ff', fg: '#4338ca' },
+  'Confirmée':          { bg: '#d1fae5', fg: '#065f46' },
+  'En préparation':     { bg: '#fef3c7', fg: '#92400e' },
+  'Expédiée':           { bg: '#e0e7ff', fg: '#3730a3' },
+  'Livrée':             { bg: '#bbf7d0', fg: '#14532d' },
+  'Échouée 1':          { bg: '#fef2f2', fg: '#dc2626' },
+  'Échouée 2':          { bg: '#fee2e2', fg: '#b91c1c' },
+  'Échouée 3':          { bg: '#fecaca', fg: '#991b1b' },
+  'Annulée':            { bg: '#fee2e2', fg: '#991b1b' },
+  'Retournée':          { bg: '#fce7f3', fg: '#9d174d' },
+  'Panier abandonné':   { bg: '#f1f5f9', fg: '#64748b' }
+};
+
+// ═══════════════════════════════════
+// FORMATTING
+// ═══════════════════════════════════
+
+function formatHeaderRow(sheet, colCount, pinnedCount) {
+  var hr = sheet.getRange(1, 1, 1, colCount);
+  hr.setBackground('#0f172a')
+    .setFontColor('#f8fafc')
+    .setFontWeight('bold')
+    .setFontSize(10)
+    .setFontFamily('Inter, Arial, sans-serif')
+    .setHorizontalAlignment('center')
+    .setVerticalAlignment('middle')
+    .setWrap(true);
+
+  hr.setBorder(null, null, true, null, null, null, '#334155', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+
+  sheet.setRowHeight(1, 38);
+  sheet.setFrozenRows(1);
+  sheet.setFrozenColumns(pinnedCount || 3);
+
+  for (var i = 1; i <= colCount; i++) {
+    sheet.autoResizeColumn(i);
+    var w = sheet.getColumnWidth(i);
+    if (w < 110) sheet.setColumnWidth(i, 110);
+    if (w > 250) sheet.setColumnWidth(i, 250);
+  }
+}
+
+function formatDataRow(sheet, rowNum, headers, labelToId) {
+  var colCount = headers.length;
+  var rowRange = sheet.getRange(rowNum, 1, 1, colCount);
+
+  // --- Find status ---
+  var statusLabel = null;
+  for (var key in labelToId) {
+    if (labelToId[key] === 'status') { statusLabel = key; break; }
+  }
+  var statusIdx = statusLabel ? headers.indexOf(statusLabel) : -1;
+  var statusVal = '';
+  if (statusIdx > -1) {
+    statusVal = sheet.getRange(rowNum, statusIdx + 1).getValue().toString();
+  }
+
+  // --- ROW BACKGROUND based on status ---
+  var rowColor = STATUS_COLORS[statusVal];
+  if (rowColor) {
+    rowRange.setBackground(rowColor.bg);
+  } else {
+    // Alternating if no status match
+    rowRange.setBackground(rowNum % 2 === 0 ? '#f8fafc' : '#ffffff');
+  }
+
+  rowRange
+    .setFontSize(10)
+    .setFontFamily('Inter, Arial, sans-serif')
+    .setVerticalAlignment('middle')
+    .setWrap(false);
+
+  sheet.setRowHeight(rowNum, 32);
+  rowRange.setBorder(null, null, true, null, null, null, '#e2e8f0', SpreadsheetApp.BorderStyle.SOLID);
+
+  // --- PHONE COLUMN: text format ---
+  var phoneLabel = null;
+  for (var pk in labelToId) {
+    if (labelToId[pk] === 'phone') { phoneLabel = pk; break; }
+  }
+  var phoneIdx = phoneLabel ? headers.indexOf(phoneLabel) : -1;
+  if (phoneIdx > -1) {
+    var phoneCell = sheet.getRange(rowNum, phoneIdx + 1);
+    phoneCell.setNumberFormat('@'); // Force text
+    // Re-set value as string to preserve leading 0
+    var phoneVal = phoneCell.getValue().toString();
+    if (phoneVal && !isNaN(phoneVal)) {
+      phoneCell.setValue(phoneVal);
+    }
+  }
+
+  // --- STATUS COLUMN: dropdown + bold + color ---
+  if (statusIdx > -1) {
+    var statusCell = sheet.getRange(rowNum, statusIdx + 1);
+
+    var rule = SpreadsheetApp.newDataValidation()
+      .requireValueInList(STATUS_LIST, true)
+      .setAllowInvalid(false)
+      .build();
+    statusCell.setDataValidation(rule);
+
+    statusCell.setFontWeight('bold').setHorizontalAlignment('center');
+    if (rowColor) {
+      statusCell.setFontColor(rowColor.fg);
+    }
   }
 }`;
 
@@ -449,29 +623,110 @@ export function GoogleSheetsIntegration({ userId }: GoogleSheetsIntegrationProps
                                                 />
                                             </div>
 
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="space-y-2">
-                                                    <Label className="text-xs font-semibold text-slate-700">Valid Orders Tab</Label>
-                                                    <Input
-                                                        placeholder="Orders"
-                                                        className="bg-white h-10 border-slate-200"
-                                                        value={form.sheetName}
-                                                        onChange={(e) => setForm({ ...form, sheetName: e.target.value })}
-                                                    />
+                                            <div className="space-y-2">
+                                                <Label className="text-xs font-semibold text-slate-700">Tab Name</Label>
+                                                <Input
+                                                    placeholder="Orders"
+                                                    className="bg-white h-10 border-slate-200"
+                                                    value={form.sheetName}
+                                                    onChange={(e) => setForm({ ...form, sheetName: e.target.value })}
+                                                />
+                                                <p className="text-[10px] text-slate-400">
+                                                    Tab name must match your Google Sheet. Orders & abandoned orders go to the same tab.
+                                                </p>
+                                            </div>
+
+                                            {/* Column Configuration */}
+                                            <div className="pt-3 border-t border-slate-100 space-y-3">
+                                                <div className="flex justify-between items-center">
+                                                    <Label className="text-xs font-semibold text-slate-700 uppercase flex items-center gap-1.5">
+                                                        Colonnes
+                                                        {view === 'edit' && (
+                                                            <span className="text-[9px] font-normal text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                                                                <Lock size={8} /> Verrouillé
+                                                            </span>
+                                                        )}
+                                                    </Label>
+                                                    <span className="text-[9px] text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded">
+                                                        Glisser pour réordonner
+                                                    </span>
                                                 </div>
-                                                <div className="space-y-2">
-                                                    <Label className="text-xs font-semibold text-slate-700">Abandoned Tab</Label>
-                                                    <Input
-                                                        placeholder="Abandoned"
-                                                        className="bg-white h-10 border-slate-200"
-                                                        value={form.abandonedSheetName || ''}
-                                                        onChange={(e) => setForm({ ...form, abandonedSheetName: e.target.value })}
-                                                    />
+
+                                                {/* Pinned columns selector */}
+                                                <div className="flex items-center gap-2 px-3 py-2 bg-indigo-50/50 rounded-lg border border-indigo-100">
+                                                    <Pin size={12} className="text-indigo-500 shrink-0" />
+                                                    <span className="text-[10px] font-medium text-indigo-700 flex-1">Colonnes épinglées</span>
+                                                    <select
+                                                        value={form.pinnedCount}
+                                                        onChange={(e) => !editingSheet && setForm({ ...form, pinnedCount: Number(e.target.value) })}
+                                                        disabled={!!editingSheet}
+                                                        className="text-[10px] font-bold bg-white border border-indigo-200 text-indigo-700 rounded px-2 py-1 disabled:opacity-50"
+                                                    >
+                                                        <option value={0}>Aucune</option>
+                                                        <option value={1}>1 colonne</option>
+                                                        <option value={2}>2 colonnes</option>
+                                                        <option value={3}>3 colonnes</option>
+                                                    </select>
+                                                </div>
+
+                                                <div className="space-y-1 max-h-[240px] overflow-y-auto custom-scroll pr-1">
+                                                    {form.columns.map((col, index) => (
+                                                        <div
+                                                            key={col.id}
+                                                            className={`flex items-center gap-2 p-2 rounded-md border transition-colors group ${index < form.pinnedCount
+                                                                ? 'border-indigo-200 bg-indigo-50/50'
+                                                                : 'border-slate-100 bg-slate-50/50 hover:bg-slate-100'
+                                                                } ${editingSheet ? 'opacity-70' : ''}`}
+                                                        >
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={col.enabled}
+                                                                disabled={!!editingSheet}
+                                                                onChange={(e) => {
+                                                                    const newCols = [...form.columns];
+                                                                    newCols[index] = { ...newCols[index], enabled: e.target.checked };
+                                                                    setForm({ ...form, columns: newCols });
+                                                                }}
+                                                                className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-3.5 w-3.5 shrink-0"
+                                                            />
+                                                            {index < form.pinnedCount && (
+                                                                <Pin size={10} className="text-indigo-400 shrink-0" />
+                                                            )}
+                                                            <span className={`text-[11px] font-medium flex-1 ${col.enabled ? 'text-slate-700' : 'text-slate-400'
+                                                                }`}>
+                                                                {col.label}
+                                                            </span>
+
+                                                            {!editingSheet && (
+                                                                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                    <button
+                                                                        disabled={index === 0}
+                                                                        onClick={() => {
+                                                                            const newCols = [...form.columns];
+                                                                            [newCols[index - 1], newCols[index]] = [newCols[index], newCols[index - 1]];
+                                                                            setForm({ ...form, columns: newCols });
+                                                                        }}
+                                                                        className="p-1 hover:bg-white rounded disabled:opacity-30 text-slate-400 hover:text-slate-600"
+                                                                    >
+                                                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6" /></svg>
+                                                                    </button>
+                                                                    <button
+                                                                        disabled={index === form.columns.length - 1}
+                                                                        onClick={() => {
+                                                                            const newCols = [...form.columns];
+                                                                            [newCols[index + 1], newCols[index]] = [newCols[index], newCols[index + 1]];
+                                                                            setForm({ ...form, columns: newCols });
+                                                                        }}
+                                                                        className="p-1 hover:bg-white rounded disabled:opacity-30 text-slate-400 hover:text-slate-600"
+                                                                    >
+                                                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             </div>
-                                            <p className="text-[10px] text-slate-400">
-                                                Tab names must match EXACTLY what is in your Google Sheet.
-                                            </p>
 
                                             <div className="flex items-center gap-3 py-2 px-3 bg-slate-50 rounded-lg border border-slate-100">
                                                 <Switch

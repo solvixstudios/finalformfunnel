@@ -63,4 +63,5 @@ export const RAW_WILAYAS: [number, string][] = [
 export const WILAYAS = RAW_WILAYAS.map(([id, name]) => ({
   id: id.toString(),
   name: `${id.toString().padStart(2, "0")} - ${name}`,
+  rawName: name,
 }));

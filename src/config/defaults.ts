@@ -387,22 +387,27 @@ export const DEFAULT_FORM_CONFIG = {
     selectedWhatsappProfileId: null as string | null, // ID of selected WhatsApp profile (single-select)
     // Ordered columns for Google Sheets
     sheetColumns: [
-      { id: 'orderId', label: 'Order ID', enabled: true },
       { id: 'date', label: 'Date', enabled: true },
-      { id: 'status', label: 'Status', enabled: true },
-      { id: 'name', label: 'Nom', enabled: true },
+      { id: 'status', label: 'Statut', enabled: true },
       { id: 'phone', label: 'Téléphone', enabled: true },
+      { id: 'name', label: 'Nom', enabled: true },
       { id: 'wilaya', label: 'Wilaya', enabled: true },
       { id: 'commune', label: 'Commune', enabled: true },
       { id: 'address', label: 'Adresse', enabled: true },
       { id: 'product', label: 'Produit', enabled: true },
       { id: 'variant', label: 'Variante', enabled: true },
       { id: 'quantity', label: 'Quantité', enabled: true },
-      { id: 'totalPrice', label: 'Prix Total', enabled: true },
-      { id: 'shippingPrice', label: 'Livraison', enabled: false },
+      { id: 'unitPrice', label: 'Prix', enabled: true },
+      { id: 'shippingPrice', label: 'Livraison', enabled: true },
+      { id: 'totalPrice', label: 'Total', enabled: true },
+      { id: 'shippingType', label: 'Type de Livraison', enabled: true },
+      { id: 'promoCode', label: 'Code Promo', enabled: false },
       { id: 'note', label: 'Note', enabled: false },
       { id: 'source', label: 'Source', enabled: true },
+      { id: 'orderId', label: 'N° Commande', enabled: true },
+      { id: 'ipAddress', label: 'Adresse IP', enabled: false },
     ] as { id: string; label: string; enabled: boolean }[],
+    sheetPinnedCount: 3,
   },
 
   // Embedding Settings

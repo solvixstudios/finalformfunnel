@@ -17,6 +17,8 @@ export interface GoogleSheetConfig {
     webhookUrl: string;
     sheetName: string;
     abandonedSheetName?: string;
+    columns: { id: string; label: string; enabled: boolean }[];
+    pinnedCount: number; // 0-3, how many leftmost columns are frozen
     isDefault: boolean;
     createdAt: string;
     updatedAt: string;

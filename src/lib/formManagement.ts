@@ -180,7 +180,8 @@ export const getExportData = (
             .map(s => ({
               webhookUrl: s!.webhookUrl,
               sheetName: s!.sheetName || "Orders",
-              abandonedSheetName: s!.abandonedSheetName || "Abandoned",
+              columns: s!.columns?.length > 0 ? s!.columns : DEFAULT_FORM_CONFIG.addons.sheetColumns,
+              pinnedCount: s!.pinnedCount ?? DEFAULT_FORM_CONFIG.addons.sheetPinnedCount,
             }));
         }
         return [];
