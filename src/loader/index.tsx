@@ -182,12 +182,9 @@ async function initLoader() {
     const productHandle = window.location.pathname.split('/products/')[1]?.split('/')[0];
 
     // Check if we are on a product page (required for product forms)
-    // If we can't find a product ID/handle, we might skip unless it's a specific landing page form
+    // If we can't find a product ID/handle, we continue to fetch config for Global Pixels
     if (!productId && !productHandle) {
-        console.log('FinalForm: No product context found. Skipping.');
-        const s = document.getElementById(SPINNER_ID);
-        if (s) s.remove();
-        return;
+        console.log('FinalForm: No product context found. Proceeding to fetch global config.');
     }
 
     console.log('FinalForm: Context', { shop, productId, productHandle });
@@ -358,7 +355,48 @@ share-button {
         overlayShadow.appendChild(portalRoot);
     }
 
-    // 8. Render Form
+    // 7. Initialize Global Pixels (if not on product page)
+    // If we are on a product page, FormLoader handles this.
+    // If we are NOT on a product page, we must do it manually here.
+    const initGlobalPixels = (config: any) => {
+        const pixelData = config.addons?.pixelData || config.pixels || [];
+        if (pixelData.length > 0) {
+            console.log('FinalForm: Initializing Global Pixels...', pixelData.length);
+
+            // Inject Base Code if needed
+            if (!(window as any).fbq) {
+                const f = (window as any).fbq = function () {
+                    // @ts-ignore
+                    f.callMethod ? f.callMethod.apply(f, arguments) : f.queue.push(arguments)
+                };
+                if (!(window as any)._fbq) (window as any)._fbq = f;
+                // @ts-ignore
+                f.push = f;
+                // @ts-ignore
+                f.loaded = true;
+                // @ts-ignore
+                f.version = '2.0';
+                // @ts-ignore
+                f.queue = [];
+                const t = document.createElement('script');
+                t.async = true;
+                t.src = 'https://connect.facebook.net/en_US/fbevents.js';
+                const s = document.getElementsByTagName('script')[0];
+                s.parentNode!.insertBefore(t, s);
+            }
+
+            // Init Pixels
+            pixelData.forEach((p: any) => {
+                (window as any).fbq('init', p.pixelId);
+            });
+
+            // PageView
+            const eventId = `evt-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+            (window as any).fbq('track', 'PageView', {}, { eventID: eventId });
+        }
+    };
+
+    // 8. Render Form OR Init Global Pixels
     if (productData) {
         // Remove Skeleton if exists
         const skel = shadowRoot.getElementById('finalform-skeleton');
@@ -385,7 +423,22 @@ share-button {
             </React.StrictMode>
         );
     } else {
-        console.warn('FinalForm: Product data not available, cannot render FormLoader');
+        // No product data -> We are on a non-product page (Home, Collection, etc.)
+        // Just init pixels for global tracking
+        console.log('FinalForm: No product context. Initializing Global Pixels only.');
+        initGlobalPixels(config);
+
+        // Cleanup UI elements since we aren't rendering the form
+        const s = document.getElementById(SPINNER_ID);
+        if (s) s.remove();
+
+        // Remove container content if it was injected
+        // Actually, we might want to leave container invisible? 
+        // Better to just not render React.
+        // We can leave the container shell or remove it. 
+        // If we remove it, shadowRoot is gone.
+        // Let's just hide the container.
+        if (container) container.style.display = 'none';
     }
 }
 

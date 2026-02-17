@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { auth } from "../../../lib/firebase";
 import { useGoogleSheets } from "../../../lib/firebase/sheetsHooks";
 import { useWhatsAppProfiles } from "../../../lib/firebase/whatsappHooks";
+import { useMetaPixels } from "../../../lib/firebase/metaPixelHooks";
 import { useFormStore } from "../../../stores";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -83,6 +84,10 @@ export const AddonsEditor = () => {
     const { sheets, loading: sheetsLoading } = useGoogleSheets(userId);
     const selectedSheetIds: string[] = formConfig.addons?.selectedSheetIds || [];
 
+    // Meta Pixel
+    const { pixels, loading: pixelsLoading } = useMetaPixels(userId);
+    const selectedPixelIds: string[] = formConfig.addons?.metaPixelIds || [];
+
     const selectProfile = (profileId: string) => {
         const newId = selectedProfileId === profileId ? null : profileId;
         setFormConfig({
@@ -106,6 +111,67 @@ export const AddonsEditor = () => {
                 ...formConfig.addons,
                 selectedSheetIds: updated,
                 enableSheets: updated.length > 0,
+            },
+        });
+    };
+
+    const togglePixel = (pixelId: string, checked: boolean) => {
+        const current = [...selectedPixelIds];
+        const updatedIds = checked
+            ? [...current, pixelId]
+            : current.filter((id) => id !== pixelId);
+
+        // Derive pixelData
+        const currentData = formConfig.addons?.pixelData || [];
+        let updatedData = [...currentData];
+
+        if (checked) {
+            const profile = pixels.find(p => p.id === pixelId);
+            if (profile) {
+                // Remove if exists to avoid dupes, then push all pixels from profile
+                updatedData = updatedData.filter(p => !profile.pixels?.some(pp => pp.pixelId === p.pixelId));
+
+                // Add all pixels from this profile
+                // We need to store profile ID reference if we want to remove by profile later?
+                // Actually, logic is: add all pixels from this profile to pixelData.
+                // But wait, pixelData in config is flat.
+                // If we uncheck, we need to remove pixels associated with this profile.
+                // Store structure: pixelData: { id: profileId, pixelId: string, ... } ?
+                // The prompt says "Flatten selected profiles' pixels array into formConfig.addons.pixelData".
+
+                // Let's store profileId in the pixelData entries to track source.
+                const profilePixels = (profile.pixels || []).map(p => ({
+                    id: profile.id, // Profile ID for removal/tracking
+                    pixelId: p.pixelId,
+                    capiToken: p.capiToken,
+                    testCode: p.testCode,
+                    name: profile.name
+                }));
+
+                // If legacy profile has no pixels array but has pixelId (handled in types but just in case)
+                if (profilePixels.length === 0 && (profile as any).pixelId) {
+                    profilePixels.push({
+                        id: profile.id,
+                        pixelId: (profile as any).pixelId,
+                        capiToken: (profile as any).capiToken,
+                        testCode: (profile as any).testCode,
+                        name: profile.name
+                    });
+                }
+
+                updatedData.push(...profilePixels);
+            }
+        } else {
+            // Unchecked: remove all pixels belonging to this profile ID
+            updatedData = updatedData.filter(p => p.id !== pixelId);
+        }
+
+        setFormConfig({
+            ...formConfig,
+            addons: {
+                ...formConfig.addons,
+                metaPixelIds: updatedIds,
+                pixelData: updatedData
             },
         });
     };
@@ -234,6 +300,65 @@ export const AddonsEditor = () => {
                             {selectedSheetIds.length > 0 && (
                                 <Badge variant="secondary" className="text-[9px] bg-emerald-50 text-emerald-700 border border-emerald-100 mt-1">
                                     {sheets.filter(s => selectedSheetIds.includes(s.id)).length} feuille{sheets.filter(s => selectedSheetIds.includes(s.id)).length !== 1 ? "s" : ""} sélectionnée{sheets.filter(s => selectedSheetIds.includes(s.id)).length !== 1 ? "s" : ""}
+                                </Badge>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </CollapsibleSection>
+
+            {/* Meta Pixel Integration */}
+            <CollapsibleSection title="Meta Pixel" icon={Zap} badge="NEW">
+                <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase">
+                            Pixels de suivi
+                        </label>
+                        <Link to="/dashboard/integrations?open=meta-pixel">
+                            <span className="text-[10px] text-indigo-600 hover:underline flex items-center gap-1 cursor-pointer">
+                                Gérer <ExternalLink size={10} />
+                            </span>
+                        </Link>
+                    </div>
+
+                    {pixelsLoading ? (
+                        <div className="h-10 bg-slate-50 rounded-lg animate-pulse" />
+                    ) : pixels.length === 0 ? (
+                        <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 text-center">
+                            <p className="text-[10px] text-blue-700 font-bold mb-2">
+                                Aucun Pixel trouvé
+                            </p>
+                            <Link to="/dashboard/integrations?open=meta-pixel&pixelId=new">
+                                <Button size="sm" variant="outline" className="h-7 text-[10px] bg-white text-blue-700 border-blue-200">
+                                    Ajouter un Pixel
+                                </Button>
+                            </Link>
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            <p className="text-[10px] text-slate-400">
+                                Sélectionnez les pixels à utiliser sur ce formulaire
+                            </p>
+                            {pixels.map((pixel) => (
+                                <CheckboxItem
+                                    key={pixel.id}
+                                    id={`pixel-${pixel.id}`}
+                                    label={pixel.name}
+                                    sublabel={
+                                        (pixel.pixels && pixel.pixels.length > 0)
+                                            ? `${pixel.pixels.length} Pixel${pixel.pixels.length !== 1 ? 's' : ''}`
+                                            : `ID: ${(pixel as any).pixelId || 'N/A'}`
+                                    }
+                                    icon={Zap}
+                                    iconColor="text-blue-600"
+                                    bgColor="bg-blue-100"
+                                    checked={selectedPixelIds.includes(pixel.id)}
+                                    onChange={(checked) => togglePixel(pixel.id, checked)}
+                                />
+                            ))}
+                            {selectedPixelIds.length > 0 && (
+                                <Badge variant="secondary" className="text-[9px] bg-blue-50 text-blue-700 border border-blue-100 mt-1">
+                                    {pixels.filter(p => selectedPixelIds.includes(p.id)).length} pixel{pixels.filter(p => selectedPixelIds.includes(p.id)).length !== 1 ? "s" : ""} actif{pixels.filter(p => selectedPixelIds.includes(p.id)).length !== 1 ? "s" : ""}
                                 </Badge>
                             )}
                         </div>

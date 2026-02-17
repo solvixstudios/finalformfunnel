@@ -348,6 +348,21 @@
       ],
       "id": "7b2cd4a6-0aa4-4311-b860-341a974e0874",
       "name": "Respond Error"
+    },
+    {
+      "parameters": {
+        "workflowId": "meta-capi-handler",
+        "mode": "each",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [
+        -2592,
+        464
+      ],
+      "id": "exec-capi-workflow",
+      "name": "Trigger CAPI Workflow"
     }
   ],
   "connections": {
@@ -378,6 +393,11 @@
         [
           {
             "node": "Get Stores",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Trigger CAPI Workflow",
             "type": "main",
             "index": 0
           }

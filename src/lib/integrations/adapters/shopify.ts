@@ -215,6 +215,8 @@ export class ShopifyAdapter implements PlatformAdapter {
     const responseData = await response.json().catch(() => ({}));
     const result = normalizeResponse(responseData);
 
+    console.log('[ShopifyAdapter] assignForm response:', { status: response.status, result });
+
     if (!response.ok || result.error || result.success === false) {
       throw new Error(result.error || result.message || 'Failed to save config to Shopify');
     }
@@ -295,6 +297,7 @@ export class ShopifyAdapter implements PlatformAdapter {
       throw new Error(err.error || 'Order submission failed');
     }
 
-    return response.json();
+    const text = await response.text();
+    return text ? JSON.parse(text) : {};
   }
 }

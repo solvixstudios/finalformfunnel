@@ -21,6 +21,7 @@ import {
   releaseStoreOwnership,
 } from "./storeOwnership";
 import { ConnectedStore, FormAssignment, SavedForm } from "./types";
+import { propagateFormUpdate } from "./n8nSync";
 
 // ===== FORMS HOOKS =====
 
@@ -91,11 +92,21 @@ export const useSavedForms = (userId: string) => {
       if (!userId) throw new Error("User not authenticated");
       try {
         const formRef = doc(db, "forms", formId);
+
         await updateDoc(formRef, {
           ...updates,
           updatedAt: new Date().toISOString(),
         });
-        // No manual state update - listener handles it
+
+        // Trigger background sync to n8n if config or name changed
+        if (updates.config || updates.name) {
+          getDoc(formRef).then(snap => {
+            if (snap.exists()) {
+              const data = snap.data();
+              propagateFormUpdate(formId, data.name, data.config);
+            }
+          });
+        }
       } catch (err: any) {
         setError(err.message);
         throw err;
@@ -496,6 +507,47 @@ export const useFormAssignments = (userId: string) => {
         productHandle: type === 'product' ? (productHandle || undefined) : undefined,
       });
 
+      // 2. Persist to Firestore (restore persistence for sync logic and legacy support)
+      // Check for existing assignment to avoid duplicates
+      try {
+        const q = query(
+          collection(db, "assignments"),
+          where("storeId", "==", storeId),
+          where("assignmentType", "==", type),
+          ...(type === 'product' && productId ? [where("productId", "==", productId)] : [])
+        );
+
+        const snapshot = await getDocs(q);
+        const batch = writeBatch(db);
+
+        // Remove ANY existing assignments for this target (even if different formId)
+        // This ensures one-form-per-target consistency in Firestore
+        snapshot.forEach(doc => {
+          batch.delete(doc.ref);
+        });
+
+        const newAssignmentDoc = {
+          userId,
+          formId,
+          storeId,
+          assignmentType: type,
+          productId: type === 'product' ? (productId || null) : null,
+          productHandle: type === 'product' ? (productHandle || null) : null,
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          shopifyDomain: subdomain,
+        };
+
+        const newDocRef = doc(collection(db, "assignments"));
+        batch.set(newDocRef, newAssignmentDoc);
+
+        await batch.commit();
+      } catch (e) {
+        console.error("[assignForm] Failed to persist to Firestore:", e);
+        // Don't throw - n8n sync succeeded, that's what matters most
+      }
+
       // Refetch from n8n to sync UI state (unless skipped for batch ops)
       if (!assignmentData.skipRefetch) {
         await refetch();
@@ -540,7 +592,7 @@ export const useFormAssignments = (userId: string) => {
 
         const subdomain = (store.shopifyDomain || store.url || '').replace(/https?:\/\//, '').replace('.myshopify.com', '');
 
-        // Call adapter to remove from n8n
+        // 1. Call adapter to remove from n8n
         const { getAdapter } = await import("../integrations");
         const adapter = getAdapter(store.platform || 'shopify');
         await adapter.removeForm(subdomain, {
@@ -548,7 +600,32 @@ export const useFormAssignments = (userId: string) => {
           clientSecret: store.clientSecret,
         }, assignment.productId || undefined);
 
-        // Refetch to get updated data from n8n
+        // 2. Remove from Firestore assignments collection (to keep sync logic working)
+        // Since we identify by synthetic ID, we must query by properties
+        const q = query(
+          collection(db, "assignments"),
+          where("storeId", "==", assignment.storeId),
+          where("formId", "==", assignment.formId),
+          where("assignmentType", "==", assignment.assignmentType)
+        );
+
+        const snapshot = await getDocs(q);
+        const batch = writeBatch(db);
+
+        snapshot.forEach(doc => {
+          // Double check product ID match (handling nulls)
+          const data = doc.data();
+          const targetProdId = assignment.productId || null;
+          const docProdId = data.productId || null;
+
+          if (targetProdId === docProdId) {
+            batch.delete(doc.ref);
+          }
+        });
+
+        await batch.commit();
+
+        // 3. Refetch to get updated data from n8n
         await refetch();
       } catch (err: any) {
         console.error("[useFormAssignments] deleteAssignment error:", err);

@@ -27,6 +27,7 @@ import { usePromoCode } from '@/components/FormTab/preview/hooks/usePromoCode';
 import { useStickyObserver } from '@/components/FormTab/preview/hooks/useStickyObserver';
 import { getAdapter } from '@/lib/integrations';
 import { Commune, fetchCommunes, fetchWilayas, Wilaya } from '@/lib/location'; // New Location Utility
+import { getCookie } from '@/lib/utils/cookies';
 
 // Types
 interface Variant {
@@ -231,6 +232,112 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
             .catch(() => { });
     }, []);
 
+    // --- TRACKING EFFECTS ---
+    useEffect(() => {
+        // Initialize Meta Pixels
+        const pixelData = config.addons?.pixelData || [];
+        const pixelIds = config.addons?.metaPixelIds || [];
+
+        // Fallback: If no pixelData but we have IDs (legacy), we can only init client-side if we knew the ID.
+        // But for now, we rely on pixelData.
+        // Actually, if we implemented getFormConfig to return 'pixels', we could use that.
+        // But config.pixels might not be passed if using N8N.
+        // Let's us pixelData from config primarily.
+
+        const pixelsToInit = pixelData.length > 0 ? pixelData : (config.pixels || []);
+
+        // DEBUG: Trace Pixel Logic
+        console.log('FinalForm: Pixel Init Check', {
+            pixelDataLength: pixelData.length,
+            legacyPixelsLength: (config.pixels || []).length,
+            previewMode,
+            hasWindowFbq: !!(window as any).fbq
+        });
+
+        if (pixelsToInit.length > 0 && !previewMode) {
+            console.log('FinalForm: Initializing Pixels...', pixelsToInit);
+            // Inject Base Code
+            if (!(window as any).fbq) {
+                const f = (window as any).fbq = function () {
+                    // @ts-ignore
+                    f.callMethod ? f.callMethod.apply(f, arguments) : f.queue.push(arguments)
+                };
+                if (!(window as any)._fbq) (window as any)._fbq = f;
+                // @ts-ignore
+                f.push = f;
+                // @ts-ignore
+                f.loaded = true;
+                // @ts-ignore
+                f.version = '2.0';
+                // @ts-ignore
+                f.queue = [];
+                const t = document.createElement('script');
+                t.async = true;
+                t.src = 'https://connect.facebook.net/en_US/fbevents.js';
+                const s = document.getElementsByTagName('script')[0];
+                s.parentNode!.insertBefore(t, s);
+            }
+
+            // Init Pixels
+            pixelsToInit.forEach((p: any) => {
+                (window as any).fbq('init', p.pixelId);
+            });
+
+            // Generate Event ID for Deduplication
+            const eventId = `evt-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+            (window as any)._ff_event_id = eventId; // Store globally for submit handler
+
+            // PageView
+            (window as any).fbq('track', 'PageView', {}, { eventID: eventId });
+
+            // ViewContent (Product)
+            if (product) {
+                (window as any).fbq('track', 'ViewContent', {
+                    content_type: 'product',
+                    content_ids: [product.id],
+                    content_name: product.title,
+                    currency: 'DZD',
+                    value: getProductPrice() || 0,
+                }, { eventID: eventId });
+            }
+        }
+    }, [config, product]); // Run once on mount (or config change)
+
+    // InitiateCheckout (Once per interaction)
+    const hasInitiatedCheckout = useRef(false);
+    const handleInteraction = () => {
+        // DEBUG: Trace Interaction
+        if (!hasInitiatedCheckout.current) {
+            console.log('FinalForm: Handling Interaction', { previewMode, hasInit: hasInitiatedCheckout.current });
+        }
+
+        if (!hasInitiatedCheckout.current && !previewMode) {
+            const pixelData = config.addons?.pixelData || config.pixels || [];
+            if (pixelData.length > 0) {
+                const eventId = (window as any)._ff_event_id;
+                (window as any).fbq('track', 'InitiateCheckout', {
+                    content_type: 'product',
+                    content_ids: [product?.id],
+                    content_name: product?.title,
+                    currency: 'DZD',
+                    value: getProductPrice() || 0,
+                    num_items: formData.quantity
+                }, { eventID: eventId });
+                hasInitiatedCheckout.current = true;
+            }
+        }
+    };
+    // Bind interaction to container
+    useEffect(() => {
+        const container = formContainerRef.current;
+        if (container) {
+            const events = ['click', 'input', 'focusin'];
+            const handler = () => handleInteraction();
+            events.forEach(e => container.addEventListener(e, handler, { once: true }));
+            return () => events.forEach(e => container.removeEventListener(e, handler));
+        }
+    }, [formContainerRef]);
+
     // Fetch Communes when Wilaya changes
     useEffect(() => {
         if (formData.wilaya) {
@@ -239,6 +346,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                 setCommunesList(data);
                 setLoadingCommunes(false);
             });
+            handleInteraction(); // Also trigger checkout on wilaya change
         } else {
             setCommunesList([]);
         }
@@ -486,6 +594,11 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                 quantity: selectedOffer?.qty || formData.quantity,
                 price: basePrice,
             }],
+            // Meta Pixel Payload
+            metaPixelProfiles: config.addons?.pixelData || config.pixels || [],
+            event_id: (window as any)._ff_event_id,
+            fbp: getCookie('_fbp'),
+            fbc: getCookie('_fbc'),
             // Metadata for N8N routing
             status: 'completed',
             googleSheetConfig: activeSheet ? {
@@ -516,6 +629,19 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
 
                 if (import.meta.env.DEV) {
                     console.log("Order submitted successfully to n8n");
+                }
+
+                // Fire Purchase Pixel
+                const pixelData = config.addons?.pixelData || config.pixels || [];
+                if (pixelData.length > 0 && (window as any).fbq) {
+                    (window as any).fbq('track', 'Purchase', {
+                        content_type: 'product',
+                        content_ids: [product.id],
+                        content_name: product.title,
+                        currency: 'DZD',
+                        value: calculations.displayedTotal,
+                        num_items: formData.quantity,
+                    }, { eventID: (window as any)._ff_event_id });
                 }
 
                 setShowThankYou(true); // Show success after submission completes
@@ -598,7 +724,12 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                     sheetName: activeSheet.sheetName || 'Orders',
                     abandonedSheetName: activeSheet.abandonedSheetName || 'Abandoned'
                 },
-                sheetPayload
+                sheetPayload,
+                // Meta Pixel Payload
+                metaPixelProfiles: config.addons?.pixelData || config.pixels || [],
+                event_id: (window as any)._ff_event_id,
+                fbp: getCookie('_fbp'),
+                fbc: getCookie('_fbc')
             };
 
             if (import.meta.env.DEV) {

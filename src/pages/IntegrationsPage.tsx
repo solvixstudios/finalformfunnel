@@ -4,6 +4,7 @@ import { ComingSoonCard } from '@/components/integrations/ComingSoonCard';
 import { ShopifyIntegration } from '@/components/integrations/ShopifyIntegration';
 import { WhatsAppIntegration } from '@/components/integrations/WhatsAppIntegration';
 import { GoogleSheetsIntegration } from '@/components/integrations/GoogleSheetsIntegration';
+import { MetaPixelIntegration } from '@/components/integrations/MetaPixelIntegration';
 import { cn } from '@/lib/utils';
 import { Plug, Store } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -29,6 +30,7 @@ export default function IntegrationsPage({ userId }: IntegrationsPageProps) {
     if (target) {
       if (target === 'whatsapp') setFilter('communication');
       else if (target === 'google-sheets') setFilter('marketing');
+      else if (target === 'meta-pixel') setFilter('marketing');
       else setFilter('all');
     }
   }, [searchParams]);
@@ -115,7 +117,7 @@ export default function IntegrationsPage({ userId }: IntegrationsPageProps) {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                <ComingSoonCard name="Meta Pixel" emoji="♾️" />
+                <MetaPixelIntegration userId={userId} />
                 <ComingSoonCard name="TikTok Pixel" emoji="🎵" />
                 <GoogleSheetsIntegration userId={userId} />
                 <ComingSoonCard name="Webhook" emoji="⚡" />

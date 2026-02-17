@@ -171,6 +171,9 @@ export const getExportData = (
     // Addons - resolved sheet details for the public loader
     addons: {
       enableSheets: (formConfig.addons?.selectedSheetIds || []).length > 0,
+      selectedSheetIds: formConfig.addons?.selectedSheetIds || [],
+      metaPixelIds: formConfig.addons?.metaPixelIds || [],
+      pixelData: formConfig.addons?.pixelData || [], // Full pixel objects for loader
       sheets: (function () {
         const selectedIds: string[] = formConfig.addons?.selectedSheetIds || [];
         if (selectedIds.length > 0 && sheets.length > 0) {

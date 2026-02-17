@@ -101,6 +101,20 @@ export interface WhatsAppProfile {
   updatedAt: string;
 }
 
+// Meta Pixel Integration
+export interface MetaPixelProfile {
+  id: string;
+  userId: string;
+  name: string;
+  pixels: {
+    pixelId: string;
+    capiToken?: string;
+    testCode?: string;
+  }[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Order Item
 export interface OrderItem {
   title: string;

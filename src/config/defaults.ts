@@ -385,6 +385,8 @@ export const DEFAULT_FORM_CONFIG = {
   addons: {
     enableSheets: false,
     selectedSheetIds: [] as string[], // IDs of selected Google Sheet configs (multi-select)
+    metaPixelIds: [] as string[], // IDs of selected Meta Pixel profiles (multi-select)
+    pixelData: [] as any[], // Embedded Pixel Data (ID, Token, etc.) for loader
     selectedWhatsappProfileId: null as string | null, // ID of selected WhatsApp profile (single-select)
     // Ordered columns for Google Sheets
     sheetColumns: [
