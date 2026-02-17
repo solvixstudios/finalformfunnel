@@ -99,13 +99,13 @@ export const useSavedForms = (userId: string) => {
         });
 
         // Trigger background sync to n8n if config or name changed
+        // Trigger background sync to n8n if config or name changed
         if (updates.config || updates.name) {
-          getDoc(formRef).then(snap => {
-            if (snap.exists()) {
-              const data = snap.data();
-              propagateFormUpdate(formId, data.name, data.config);
-            }
-          });
+          const snap = await getDoc(formRef);
+          if (snap.exists()) {
+            const data = snap.data();
+            await propagateFormUpdate(formId, data.name, data.config);
+          }
         }
       } catch (err: any) {
         setError(err.message);

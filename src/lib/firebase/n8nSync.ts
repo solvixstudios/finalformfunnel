@@ -7,9 +7,58 @@ import { getAdapter } from "../integrations";
  * Propagates form configuration changes to all n8n assignments.
  * This ensures that when a form is edited, the changes are reflected in the store webhooks immediately.
  */
+
+/**
+ * Propagates form configuration changes to all n8n assignments.
+ * This ensures that when a form is edited, the changes are reflected in the store webhooks immediately.
+ */
 export async function propagateFormUpdate(formId: string, formName: string, config: any) {
     try {
         console.log(`[Sync] Propagating updates for form ${formId} to n8n...`);
+
+        // 0. Resolve Google Sheets if IDs are present but full objects are missing
+        // (FormLoader expects 'sheets' array with webhookUrl, etc.)
+        if (config?.addons?.selectedSheetIds?.length > 0) {
+            try {
+                const sheetIds = config.addons.selectedSheetIds;
+                const sheets: any[] = [];
+
+                // Fetch each sheet config
+                // We use Promise.all for parallel fetching
+                const sheetPromises = sheetIds.map(async (id: string) => {
+                    const docSnap = await getDoc(doc(db, "google_sheets", id));
+                    if (docSnap.exists()) {
+                        return { id: docSnap.id, ...docSnap.data() };
+                    }
+                    return null;
+                });
+
+                const results = await Promise.all(sheetPromises);
+
+                // Map to the format FormLoader expects
+                results.forEach((sheet: any) => {
+                    if (sheet) {
+                        sheets.push({
+                            webhookUrl: sheet.webhookUrl,
+                            sheetName: sheet.sheetName || "Orders",
+                            abandonedSheetName: sheet.abandonedSheetName,
+                            columns: sheet.columns || [],
+                            pinnedCount: sheet.pinnedCount ?? 3
+                        });
+                    }
+                });
+
+                // Inject into config
+                if (!config.addons) config.addons = {};
+                config.addons.sheets = sheets;
+                config.addons.enableSheets = sheets.length > 0;
+
+                console.log(`[Sync] Resolved ${sheets.length} Google Sheets for form.`);
+            } catch (e) {
+                console.warn("[Sync] Failed to resolve Google Sheets:", e);
+                // Continue with sync anyway, don't block
+            }
+        }
 
         // 1. Find all active assignments for this form
         const assignmentsQuery = query(
@@ -79,3 +128,4 @@ export async function propagateFormUpdate(formId: string, formName: string, conf
         // We don't throw here to avoid blocking the Firestore save UI
     }
 }
+

@@ -174,6 +174,8 @@ export const getExportData = (
       selectedSheetIds: formConfig.addons?.selectedSheetIds || [],
       metaPixelIds: formConfig.addons?.metaPixelIds || [],
       pixelData: formConfig.addons?.pixelData || [], // Full pixel objects for loader
+      tiktokPixelIds: formConfig.addons?.tiktokPixelIds || [],
+      tiktokPixelData: formConfig.addons?.tiktokPixelData || [],
       sheets: (function () {
         const selectedIds: string[] = formConfig.addons?.selectedSheetIds || [];
         if (selectedIds.length > 0 && sheets.length > 0) {

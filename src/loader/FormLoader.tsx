@@ -18,7 +18,7 @@ import {
 import { buildCtaStyles, buildInputStyles, buildRootStyles, buildSectionMargin, getFontFamilyCSS } from '@/lib/utils/cssEngine';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/utils/formatting';
 import { ChevronDown } from 'lucide-react';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { z } from 'zod'; // Import Zod
 
 import { useCountdownTimer } from '@/components/FormTab/preview/hooks/useCountdownTimer';
@@ -61,6 +61,37 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
 
     // Client IP (for sheet logging)
     const [clientIp, setClientIp] = useState('');
+
+    // --- CONSISTENT DATA HOOKS ---
+    const tiktokData = useMemo(() => {
+        let data = config.addons?.tiktokPixelData || [];
+
+        // Robust Fallback for Legacy Configs
+        if (data.length === 0) {
+            // Check all known legacy locations
+            const legacyId =
+                config.addons?.tiktokPixelId ||
+                config.tiktokPixelId ||
+                config.addons?.tiktokPixel ||
+                config.tiktokPixel ||
+                // Last ditch: check if it's in 'pixels' but mistyped? Unlikely.
+                null;
+
+            if (legacyId) {
+                data = [{ pixelId: legacyId }];
+            }
+        }
+
+        // Debug: Log config to help diagnose missing data
+        console.log('FinalForm: TikTok Config Debug', {
+            hasData: data.length > 0,
+            legacyIdFound: !!(config.addons?.tiktokPixelId || config.tiktokPixelId),
+            configAddons: config.addons,
+            fullConfigKeys: Object.keys(config)
+        });
+
+        return data;
+    }, [config]);
 
     const [formData, setFormData] = useState({
         name: '',
@@ -301,42 +332,126 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                 }, { eventID: eventId });
             }
         }
-    }, [config, product]); // Run once on mount (or config change)
 
-    // InitiateCheckout (Once per interaction)
-    const hasInitiatedCheckout = useRef(false);
-    const handleInteraction = () => {
-        // DEBUG: Trace Interaction
-        if (!hasInitiatedCheckout.current) {
-            console.log('FinalForm: Handling Interaction', { previewMode, hasInit: hasInitiatedCheckout.current });
-        }
+        // --- TIKTOK PIXEL LOGIC ---
+        // Using memoized tiktokData
+        // Debug
+        console.log('FinalForm: TikTok Init Check', {
+            tiktokDataLength: tiktokData.length,
+            hasWindowTtq: !!(window as any).ttq
+        });
 
-        if (!hasInitiatedCheckout.current && !previewMode) {
-            const pixelData = config.addons?.pixelData || config.pixels || [];
-            if (pixelData.length > 0) {
-                const eventId = (window as any)._ff_event_id;
-                (window as any).fbq('track', 'InitiateCheckout', {
+        if (tiktokData.length > 0 && !previewMode) {
+            // Lazy Load TikTok Base Code
+            if (!(window as any).ttq) {
+                const w = window as any;
+                const d = document;
+                const s = "https://analytics.tiktok.com/i18n/pixel/events.js";
+
+                (w as any).ttq = (w as any).ttq || [];
+                (w as any).ttq.methods = [
+                    "page", "track", "identify", "instances", "debug", "on", "off", "once", "ready", "alias", "group", "enableCookie", "disableCookie"
+                ];
+                (w as any).ttq.setAndDefer = function (t: any, e: any) {
+                    (t as any).ttq.push([e].concat(Array.prototype.slice.call(arguments, 0)))
+                };
+                (w as any).ttq.methods.forEach((method: string) => {
+                    (w as any).ttq.setAndDefer = function (t: any, e: any) {
+                        t[e] = function () {
+                            t.push([e].concat(Array.prototype.slice.call(arguments, 0)))
+                        }
+                    };
+                    (w as any).ttq.setAndDefer((w as any).ttq, method)
+                });
+
+                (w as any).ttq.load = function (e: any, n: any) {
+                    const i = "https://analytics.tiktok.com/i18n/pixel/events.js";
+                    (w as any).ttq._i = (w as any).ttq._i || {}, (w as any).ttq._i[e] = [], (w as any).ttq._i[e]._u = i, (w as any).ttq._t = (w as any).ttq._t || {}, (w as any).ttq._t[e] = +new Date, (w as any).ttq._o = (w as any).ttq._o || {}, (w as any).ttq._o[e] = n || {};
+                    const o = document.createElement("script");
+                    o.type = "text/javascript", o.async = !0, o.src = i + "?sdkid=" + e + "&lib=" + "ttq";
+                    const a = document.getElementsByTagName("script")[0];
+                    a.parentNode!.insertBefore(o, a)
+                };
+            }
+
+            // Init TikTok Pixels
+            tiktokData.forEach((p: any) => {
+                if ((window as any).ttq) {
+                    (window as any).ttq.load(p.pixelId);
+                    (window as any).ttq.page(); // Standard Page View
+                }
+            });
+
+            // ViewContent for TikTok
+            if (product && (window as any).ttq) {
+                (window as any).ttq.track('ViewContent', {
                     content_type: 'product',
-                    content_ids: [product?.id],
-                    content_name: product?.title,
+                    content_id: String(product.id),
+                    content_name: product.title,
+                    price: getProductPrice() || 0,
                     currency: 'DZD',
-                    value: getProductPrice() || 0,
-                    num_items: formData.quantity
-                }, { eventID: eventId });
-                hasInitiatedCheckout.current = true;
+                }, { event_id: (window as any)._ff_event_id }); // Using same Event ID for consistency
             }
         }
-    };
-    // Bind interaction to container
+    }, [config, product]); // Run once on mount (or config change)
+
+    // InitiateCheckout (When valid phone number is entered)
+    const hasInitiatedCheckout = useRef(false);
+
     useEffect(() => {
-        const container = formContainerRef.current;
-        if (container) {
-            const events = ['click', 'input', 'focusin'];
-            const handler = () => handleInteraction();
-            events.forEach(e => container.addEventListener(e, handler, { once: true }));
-            return () => events.forEach(e => container.removeEventListener(e, handler));
+        // Algeria Phone Regex: Starts with 05, 06, or 07 and has 10 digits total
+        const phoneRegex = /^(05|06|07)[0-9]{8}$/;
+        const isValidPhone = phoneRegex.test(formData.phone);
+
+        if (isValidPhone && !hasInitiatedCheckout.current && !previewMode && product) {
+            console.log("FinalForm: Valid Phone - Firing InitiateCheckout");
+
+            // Meta Pixel
+            const pixelData = config.addons?.pixelData || config.pixels || [];
+            if (pixelData.length > 0 && (window as any).fbq) {
+                const eventId = (window as any)._ff_event_id;
+                try {
+                    (window as any).fbq('track', 'InitiateCheckout', {
+                        content_type: 'product',
+                        content_ids: [product.id],
+                        content_name: product.title,
+                        currency: 'DZD',
+                        value: getProductPrice() || 0,
+                        num_items: formData.quantity
+                    }, { eventID: eventId });
+                } catch (e) {
+                    console.warn('FinalForm: Meta InitiateCheckout Error', e);
+                }
+            }
+
+            // TikTok Pixel
+            const tiktokData = config.addons?.tiktokPixelData || [];
+            if (tiktokData.length > 0 && (window as any).ttq) {
+                const eventId = (window as any)._ff_event_id;
+                try {
+                    (window as any).ttq.track('InitiateCheckout', {
+                        content_type: 'product',
+                        content_id: String(product.id),
+                        content_name: product.title,
+                        quantity: formData.quantity,
+                        price: getProductPrice() || 0,
+                        value: (getProductPrice() || 0) * formData.quantity,
+                        currency: 'DZD',
+                    }, { event_id: eventId });
+                } catch (e) {
+                    console.warn('FinalForm: TikTok InitiateCheckout Error', e);
+                }
+            }
+
+            hasInitiatedCheckout.current = true;
         }
-    }, [formContainerRef]);
+    }, [formData.phone, config, product, formData.quantity, previewMode]);
+
+    // Bind interaction to container (Removed generic interaction handler)
+    /* 
+       Previously invoked handleInteraction() on click/input. 
+       Now distinct events are fired specifically (e.g. InitiateCheckout on valid phone).
+    */
 
     // Fetch Communes when Wilaya changes
     useEffect(() => {
@@ -346,7 +461,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                 setCommunesList(data);
                 setLoadingCommunes(false);
             });
-            handleInteraction(); // Also trigger checkout on wilaya change
+            // handleInteraction removed: InitiateCheckout now strictly relies on phone validation.
         } else {
             setCommunesList([]);
         }
@@ -599,6 +714,9 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
             event_id: (window as any)._ff_event_id,
             fbp: getCookie('_fbp'),
             fbc: getCookie('_fbc'),
+            // TikTok Pixel Payload
+            tiktokPixelProfiles: config.addons?.tiktokPixelData || [],
+            ttclid: getCookie('ttclid'),
             // Metadata for N8N routing
             status: 'completed',
             googleSheetConfig: activeSheet ? {
@@ -623,25 +741,49 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
 
         if (!previewMode) {
             try {
+                // Fire Pixels Optimistically (Check valid first? We are in try block, so client validation passed)
+
+                // Fire Meta Purchase
+                const pixelData = config.addons?.pixelData || config.pixels || [];
+                if (pixelData.length > 0 && (window as any).fbq) {
+                    try {
+                        (window as any).fbq('track', 'Purchase', {
+                            content_type: 'product',
+                            content_ids: [product.id],
+                            content_name: product.title,
+                            currency: 'DZD',
+                            value: calculations.displayedTotal,
+                            num_items: formData.quantity,
+                        }, { eventID: (window as any)._ff_event_id });
+                    } catch (e) {
+                        console.warn('FinalForm: Meta Pixel Error', e);
+                    }
+                }
+
+                // Fire TikTok CompletePayment
+                const tiktokData = config.addons?.tiktokPixelData || [];
+                if (tiktokData.length > 0 && (window as any).ttq) {
+                    try {
+                        (window as any).ttq.track('CompletePayment', {
+                            content_type: 'product',
+                            content_id: String(product.id),
+                            content_name: product.title,
+                            quantity: formData.quantity,
+                            price: calculations.offerPrice || basePrice,
+                            value: calculations.displayedTotal,
+                            currency: 'DZD',
+                        }, { event_id: (window as any)._ff_event_id });
+                    } catch (e) {
+                        console.warn('FinalForm: TikTok Pixel Error', e);
+                    }
+                }
+
                 // Background submission (N8N handles Shopify + Sheets)
                 const adapter = getAdapter('shopify');
                 await adapter.submitOrder(payload);
 
                 if (import.meta.env.DEV) {
                     console.log("Order submitted successfully to n8n");
-                }
-
-                // Fire Purchase Pixel
-                const pixelData = config.addons?.pixelData || config.pixels || [];
-                if (pixelData.length > 0 && (window as any).fbq) {
-                    (window as any).fbq('track', 'Purchase', {
-                        content_type: 'product',
-                        content_ids: [product.id],
-                        content_name: product.title,
-                        currency: 'DZD',
-                        value: calculations.displayedTotal,
-                        num_items: formData.quantity,
-                    }, { eventID: (window as any)._ff_event_id });
                 }
 
                 setShowThankYou(true); // Show success after submission completes

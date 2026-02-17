@@ -12,10 +12,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -3264,
-        272
+        -10624,
+        1824
       ],
-      "id": "1796d9bb-7391-433f-be0c-96884cf63825",
+      "id": "5cde461c-a258-43cd-989e-0ab344881578",
       "name": "Receive Order",
       "webhookId": "order-submit-webhook"
     },
@@ -26,10 +26,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -3040,
-        272
+        -10400,
+        1824
       ],
-      "id": "f766971a-f570-4e35-b5ef-76f14ce79ba2",
+      "id": "360e4f77-8981-4520-8484-c9fc4763bb10",
       "name": "Validate Input"
     },
     {
@@ -58,10 +58,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -2816,
-        272
+        -10176,
+        1824
       ],
-      "id": "4b518405-1c4b-48ec-8d02-73cd28e00ddd",
+      "id": "8af71ce3-64bb-4f8f-857a-18b98f2d3c25",
       "name": "Is Valid?"
     },
     {
@@ -77,10 +77,10 @@
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        -2592,
-        176
+        -9952,
+        1728
       ],
-      "id": "8b69c374-93e6-48cc-9401-de89cff4d391",
+      "id": "f8acbd0a-45b8-4fc2-b3a5-e4b6a8771ef3",
       "name": "Get Stores",
       "alwaysOutputData": true
     },
@@ -91,10 +91,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2384,
-        176
+        -9744,
+        1728
       ],
-      "id": "88aa7bda-a529-4cf5-ad5d-f526879b7d4b",
+      "id": "7c68b07b-56fd-4e48-a659-5da37825d8b8",
       "name": "Find Store Credentials"
     },
     {
@@ -123,10 +123,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -2160,
-        176
+        -9520,
+        1728
       ],
-      "id": "06d421bf-ca9f-4400-a5c2-2fa006a40159",
+      "id": "ebf92993-1773-4224-a92a-c22f55217974",
       "name": "Store Found?"
     },
     {
@@ -155,10 +155,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -1960,
-        176
+        -9328,
+        1728
       ],
-      "id": "99887766-5544-3322-1100-checkstatus",
+      "id": "f10672eb-dda7-421f-9a73-84399463d0e9",
       "name": "Check Status"
     },
     {
@@ -168,10 +168,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1760,
-        96
+        -9120,
+        1648
       ],
-      "id": "61aa8c9a-e3b2-476f-9d0c-0954604d2b64",
+      "id": "ef0cb26b-35c9-4167-a5e1-b8254e4704b5",
       "name": "Build Mutation"
     },
     {
@@ -199,10 +199,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        -1560,
-        96
+        -8928,
+        1648
       ],
-      "id": "ffc5f71e-6998-4510-8f20-42b945cf7fa7",
+      "id": "9a99b322-af16-4718-b21c-9846a8fda338",
       "name": "Shopify API",
       "onError": "continueErrorOutput"
     },
@@ -213,10 +213,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1360,
-        96
+        -8720,
+        1648
       ],
-      "id": "8579eb4d-d179-4518-92c3-4568afef4e1f",
+      "id": "435f78eb-0348-4df8-b6d2-ae9857ca9811",
       "name": "Parse Response"
     },
     {
@@ -245,10 +245,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -1160,
-        96
+        -8528,
+        1648
       ],
-      "id": "5ade3dec-88ff-4f5d-a159-480a62c58f86",
+      "id": "f73d42c2-55ed-414b-b0d7-660a422c6f98",
       "name": "If Success"
     },
     {
@@ -267,10 +267,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -960,
-        96
+        -8320,
+        1648
       ],
-      "id": "9d0b6f14-d4e9-423b-8e4f-2637fd13df72",
+      "id": "0f98be9c-bad1-4f60-bb84-58d1724ad47a",
       "name": "Respond Success"
     },
     {
@@ -299,10 +299,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -960,
-        -128
+        -8320,
+        1424
       ],
-      "id": "3955d380-028b-4fa7-a1e1-e3d22ba73ddf",
+      "id": "12deee54-b094-4f5e-8b24-df22c69e7240",
       "name": "Check Google Sheet"
     },
     {
@@ -317,10 +317,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        -740,
-        -128
+        -8096,
+        1424
       ],
-      "id": "148bb754-bbde-44de-9caf-3cce1907f1d8",
+      "id": "6b5046c4-6f8f-45ff-b7a3-358bf27cb68e",
       "name": "Google Sheet API",
       "onError": "continueErrorOutput"
     },
@@ -343,26 +343,41 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -1160,
-        464
+        -8528,
+        2016
       ],
-      "id": "7b2cd4a6-0aa4-4311-b860-341a974e0874",
+      "id": "c456a797-5261-48e8-83fd-2fb6ff2f80bf",
       "name": "Respond Error"
     },
     {
       "parameters": {
-        "workflowId": "meta-capi-handler",
+        "workflowId": "tQGZLn60N0E_a0OkBkRb_",
         "mode": "each",
         "options": {}
       },
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1,
       "position": [
-        -2592,
-        464
+        -9952,
+        2016
       ],
-      "id": "exec-capi-workflow",
+      "id": "f8211da4-56ce-48c7-a07e-a2881cefd395",
       "name": "Trigger CAPI Workflow"
+    },
+    {
+      "parameters": {
+        "workflowId": "iUfbE1mb04UPBL_S1OKDq",
+        "mode": "each",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [
+        -9744,
+        2016
+      ],
+      "id": "4b5882fa-2c90-4182-9db1-32f7f59fed35",
+      "name": "Trigger TikTok CAPI Workflow"
     }
   ],
   "connections": {
@@ -398,6 +413,11 @@
           },
           {
             "node": "Trigger CAPI Workflow",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Trigger TikTok CAPI Workflow",
             "type": "main",
             "index": 0
           }
@@ -537,5 +557,8 @@
       ]
     }
   },
-  "pinData": {}
+  "pinData": {},
+  "meta": {
+    "instanceId": "b55b8c5b490d75637e4db729caf7c75486c3398f3275794ad40beef7f9800920"
+  }
 }

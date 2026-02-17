@@ -4,6 +4,7 @@ import { auth } from "../../../lib/firebase";
 import { useGoogleSheets } from "../../../lib/firebase/sheetsHooks";
 import { useWhatsAppProfiles } from "../../../lib/firebase/whatsappHooks";
 import { useMetaPixels } from "../../../lib/firebase/metaPixelHooks";
+import { useTikTokPixels } from "../../../lib/firebase/tiktokHooks";
 import { useFormStore } from "../../../stores";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -172,6 +173,62 @@ export const AddonsEditor = () => {
                 ...formConfig.addons,
                 metaPixelIds: updatedIds,
                 pixelData: updatedData
+            },
+        });
+    };
+
+    // TikTok Pixel
+    const { pixels: tiktokPixels, loading: tiktokLoading } = useTikTokPixels(userId);
+    const selectedTikTokIds: string[] = formConfig.addons?.tiktokPixelIds || [];
+
+    const toggleTikTok = (pixelId: string, checked: boolean) => {
+        const current = [...selectedTikTokIds];
+        const updatedIds = checked
+            ? [...current, pixelId]
+            : current.filter((id) => id !== pixelId);
+
+        // Derive tiktokPixelData
+        const currentData = formConfig.addons?.tiktokPixelData || [];
+        let updatedData = [...currentData];
+
+        if (checked) {
+            const profile = tiktokPixels.find(p => p.id === pixelId);
+            if (profile) {
+                // Remove if exists to avoid dupes
+                updatedData = updatedData.filter(p => !profile.pixels?.some(pp => pp.pixelId === p.pixelId));
+
+                const profilePixels = (profile.pixels || []).map(p => ({
+                    id: profile.id,
+                    pixelId: p.pixelId,
+                    accessToken: p.accessToken,
+                    testCode: p.testCode,
+                    name: profile.name
+                }));
+
+                // Fallback for legacy structure (no pixels array)
+                if (profilePixels.length === 0 && (profile as any).pixelId) {
+                    profilePixels.push({
+                        id: profile.id,
+                        pixelId: (profile as any).pixelId,
+                        accessToken: (profile as any).accessToken,
+                        testCode: (profile as any).testCode,
+                        name: profile.name
+                    });
+                }
+
+                updatedData.push(...profilePixels);
+            }
+        } else {
+            // Unchecked: remove all pixels belonging to this profile ID
+            updatedData = updatedData.filter(p => p.id !== pixelId);
+        }
+
+        setFormConfig({
+            ...formConfig,
+            addons: {
+                ...formConfig.addons,
+                tiktokPixelIds: updatedIds,
+                tiktokPixelData: updatedData
             },
         });
     };
@@ -359,6 +416,65 @@ export const AddonsEditor = () => {
                             {selectedPixelIds.length > 0 && (
                                 <Badge variant="secondary" className="text-[9px] bg-blue-50 text-blue-700 border border-blue-100 mt-1">
                                     {pixels.filter(p => selectedPixelIds.includes(p.id)).length} pixel{pixels.filter(p => selectedPixelIds.includes(p.id)).length !== 1 ? "s" : ""} actif{pixels.filter(p => selectedPixelIds.includes(p.id)).length !== 1 ? "s" : ""}
+                                </Badge>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </CollapsibleSection>
+
+            {/* TikTok Pixel Integration */}
+            <CollapsibleSection title="TikTok Pixel" icon={MessageCircle} badge="NEW">
+                <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase">
+                            TikTok Pixels
+                        </label>
+                        <Link to="/dashboard/integrations?open=tiktok-pixel">
+                            <span className="text-[10px] text-indigo-600 hover:underline flex items-center gap-1 cursor-pointer">
+                                Gérer <ExternalLink size={10} />
+                            </span>
+                        </Link>
+                    </div>
+
+                    {tiktokLoading ? (
+                        <div className="h-10 bg-slate-50 rounded-lg animate-pulse" />
+                    ) : tiktokPixels.length === 0 ? (
+                        <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-center">
+                            <p className="text-[10px] text-slate-700 font-bold mb-2">
+                                Aucun Pixel TikTok trouvé
+                            </p>
+                            <Link to="/dashboard/integrations?open=tiktok-pixel&profileId=new">
+                                <Button size="sm" variant="outline" className="h-7 text-[10px] bg-white text-slate-700 border-slate-200">
+                                    Ajouter un Pixel
+                                </Button>
+                            </Link>
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            <p className="text-[10px] text-slate-400">
+                                Sélectionnez les pixels TikTok pour ce formulaire
+                            </p>
+                            {tiktokPixels.map((pixel) => (
+                                <CheckboxItem
+                                    key={pixel.id}
+                                    id={`tiktok-${pixel.id}`}
+                                    label={pixel.name}
+                                    sublabel={
+                                        (pixel.pixels && pixel.pixels.length > 0)
+                                            ? `${pixel.pixels.length} Pixel${pixel.pixels.length !== 1 ? 's' : ''}`
+                                            : 'N/A'
+                                    }
+                                    icon={MessageCircle} // Using MessageCircle as placeholder icon, ideally Music note
+                                    iconColor="text-slate-900"
+                                    bgColor="bg-slate-100"
+                                    checked={selectedTikTokIds.includes(pixel.id)}
+                                    onChange={(checked) => toggleTikTok(pixel.id, checked)}
+                                />
+                            ))}
+                            {selectedTikTokIds.length > 0 && (
+                                <Badge variant="secondary" className="text-[9px] bg-slate-100 text-slate-900 border border-slate-200 mt-1">
+                                    {tiktokPixels.filter(p => selectedTikTokIds.includes(p.id)).length} pixel{tiktokPixels.filter(p => selectedTikTokIds.includes(p.id)).length !== 1 ? "s" : ""} actif{tiktokPixels.filter(p => selectedTikTokIds.includes(p.id)).length !== 1 ? "s" : ""}
                                 </Badge>
                             )}
                         </div>

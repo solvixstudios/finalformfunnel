@@ -12,10 +12,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -11616,
-        208
+        -14656,
+        560
       ],
-      "id": "83fe3c51-0478-4ad6-81b7-256fbefabf57",
+      "id": "a820b909-12f9-4817-82a6-17b22bfb0d37",
       "name": "Receive Disconnect Request",
       "webhookId": "shopify-disconnect-webhook"
     },
@@ -26,10 +26,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -11376,
-        208
+        -14416,
+        560
       ],
-      "id": "5d9d6058-535e-43df-a69e-26dd4e14ad72",
+      "id": "5b52427f-7c3f-421e-8a78-72347cc3f82f",
       "name": "Parse Request"
     },
     {
@@ -58,10 +58,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -11136,
-        208
+        -14176,
+        560
       ],
-      "id": "1e1ad182-23de-4f78-97c3-dbea80f74923",
+      "id": "ceec0367-fc5a-463a-bc81-4c156a05aaae",
       "name": "Is Valid?"
     },
     {
@@ -76,24 +76,24 @@
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        -10896,
-        112
+        -13936,
+        464
       ],
-      "id": "31509eb5-a4cf-4a25-bbb0-6887fcff538e",
+      "id": "02fd6cba-d6f3-44ca-95ab-cbf6eca1709d",
       "name": "Get Stores",
       "alwaysOutputData": true
     },
     {
       "parameters": {
-        "jsCode": "// Find the row to delete\nconst rows = $input.all();\nconst shopDomain = $('Parse Request').first().json.shopDomain;\n\nconst row = rows.find(r => r.json.shopDomain === shopDomain);\n\nif (row) {\n  return [{ json: { found: true, rowId: row.id, storeId: row.json.storeId, shopDomain } }];\n}\n\nreturn [{ json: { found: false, shopDomain } }];"
+        "jsCode": "// Find the row to delete (Case Insensitive)\nconst rows = $input.all();\nconst shopDomain = ($('Parse Request').first().json.shopDomain || '').toLowerCase();\n\nconst row = rows.find(r => \n  r.json.shopDomain && \n  r.json.shopDomain.toLowerCase() === shopDomain\n);\n\nif (row) {\n  return [{ json: { found: true, rowId: row.id, storeId: row.json.storeId, shopDomain } }];\n}\n\n// Debug info if not found\nconst availableDomains = rows.map(r => r.json.shopDomain);\nreturn [{ json: { found: false, searchDomain: shopDomain, availableDomains } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -10656,
-        112
+        -13696,
+        464
       ],
-      "id": "3ffc6af7-260a-4545-aaa5-b2343479688a",
+      "id": "19ac56df-fc43-4fbd-b641-ace48abb75e4",
       "name": "Find Row"
     },
     {
@@ -122,10 +122,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -10416,
-        112
+        -13456,
+        464
       ],
-      "id": "a71f28b0-fd68-4659-bb5b-7b9587e1f22d",
+      "id": "f58cfd47-2a81-4633-aeca-e74b400ff147",
       "name": "If row exists"
     },
     {
@@ -136,10 +136,16 @@
           "value": "stores",
           "mode": "name"
         },
+        "matchType": "allConditions",
         "filters": {
           "conditions": [
             {
-              "keyValue": "={{ $json.rowId }}"
+              "keyName": "storeId",
+              "keyValue": "={{ $json.storeId }}"
+            },
+            {
+              "keyName": "shopDomain",
+              "keyValue": "={{ $json.shopDomain }}"
             }
           ]
         },
@@ -148,10 +154,10 @@
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        -10176,
-        0
+        -12672,
+        144
       ],
-      "id": "9543fb6d-7aab-4de9-942c-963e0339e831",
+      "id": "a0851ab9-715d-45ef-a8d9-dd6140e68499",
       "name": "Delete Store Row"
     },
     {
@@ -166,10 +172,10 @@
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        -10176,
-        160
+        -13216,
+        512
       ],
-      "id": "cascade-get-configs-001",
+      "id": "dc723c1d-f238-4c90-8eee-80495775fbbf",
       "name": "Get All Configs",
       "alwaysOutputData": true
     },
@@ -180,10 +186,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -9936,
-        160
+        -12976,
+        512
       ],
-      "id": "cascade-find-configs-001",
+      "id": "f836c32c-8e69-4a8e-8d11-84d96fe1b27b",
       "name": "Find Configs to Delete"
     },
     {
@@ -212,10 +218,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -9696,
-        160
+        -12736,
+        512
       ],
-      "id": "cascade-if-configs-001",
+      "id": "1d62dab1-5788-4127-ab6e-6649b454d100",
       "name": "If Configs Found"
     },
     {
@@ -238,10 +244,10 @@
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        -9456,
-        80
+        -12496,
+        432
       ],
-      "id": "cascade-delete-configs-001",
+      "id": "d120c816-eb93-4c2c-86a2-404c25b87742",
       "name": "Delete Config Rows"
     },
     {
@@ -270,10 +276,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -9216,
-        112
+        -12256,
+        464
       ],
-      "id": "84c99855-2b8b-498a-b5f1-26cf941a3c1c",
+      "id": "2a856218-b34d-4294-abfa-e4a8876ab600",
       "name": "Respond"
     },
     {
@@ -302,10 +308,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -10176,
-        300
+        -13216,
+        656
       ],
-      "id": "4e22b854-6e00-4a3c-9ad6-e466b9034408",
+      "id": "f0baab35-4023-4f9e-9d71-9602726e8aaa",
       "name": "Not Found (OK)"
     },
     {
@@ -335,10 +341,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -10896,
-        304
+        -13936,
+        656
       ],
-      "id": "3dff2c35-1f0b-46c7-b8db-1598e3e0b390",
+      "id": "ceb49951-c9fc-4b20-8df3-5f1248c35321",
       "name": "Error Response"
     },
     {
@@ -353,10 +359,10 @@
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        -10176,
-        360
+        -13216,
+        720
       ],
-      "id": "cascade-get-product-configs-001",
+      "id": "087a097a-29c1-4b65-8885-cebf8679823f",
       "name": "Get All Product Configs",
       "alwaysOutputData": true
     },
@@ -367,10 +373,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -9936,
-        360
+        -12976,
+        720
       ],
-      "id": "cascade-find-product-configs-001",
+      "id": "bd4f074b-8a28-4ed3-b88d-eb3ec00578a8",
       "name": "Find Product Configs to Delete"
     },
     {
@@ -399,10 +405,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -9696,
-        360
+        -12736,
+        720
       ],
-      "id": "cascade-if-product-configs-001",
+      "id": "15408274-7298-4849-9d89-88f28959b278",
       "name": "If Product Configs Found"
     },
     {
@@ -425,10 +431,10 @@
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        -9456,
-        280
+        -12496,
+        640
       ],
-      "id": "cascade-delete-product-configs-001",
+      "id": "a275ccf8-9b61-4639-909d-b9bdc0d956fe",
       "name": "Delete Product Config Rows"
     }
   ],
@@ -564,8 +570,7 @@
             "type": "main",
             "index": 0
           }
-        ],
-        []
+        ]
       ]
     },
     "Get All Product Configs": {
@@ -598,8 +603,7 @@
             "type": "main",
             "index": 0
           }
-        ],
-        []
+        ]
       ]
     }
   },

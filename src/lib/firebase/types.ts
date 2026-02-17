@@ -115,6 +115,20 @@ export interface MetaPixelProfile {
   updatedAt: string;
 }
 
+// TikTok Pixel Integration
+export interface TikTokPixelProfile {
+  id: string;
+  userId: string;
+  name: string;
+  pixels: {
+    pixelId: string;
+    accessToken?: string; // For CAPI
+    testCode?: string;
+  }[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Order Item
 export interface OrderItem {
   title: string;

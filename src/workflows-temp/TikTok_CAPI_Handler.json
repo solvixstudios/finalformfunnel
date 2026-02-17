@@ -1,0 +1,159 @@
+{
+    "nodes": [
+        {
+            "parameters": {},
+            "id": "a67183e2-9668-4a81-9e73-4e8ed7058205",
+            "name": "Execute Workflow Trigger",
+            "type": "n8n-nodes-base.executeWorkflowTrigger",
+            "typeVersion": 1,
+            "position": [
+                624,
+                96
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Prepare CAPI Data: Split profiles if passed as array\nconst items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  const data = (item.json.orderData || item.json) as any;\n  const profiles = data.tiktokPixelProfiles || [];\n  \n  // If no specific profiles but we have legacy data (unlikely for new feature but good for robustness)\n  if (profiles.length === 0 && data.pixelId) {\n      // Backward compat or single profile logic if needed\n  }\n\n  for (const profile of profiles) {\n    results.push({\n      json: {\n        ...data,\n        ...profile\n      }\n    });\n  }\n}\n\nreturn results;"
+            },
+            "id": "83f87066-576c-4762-a3d2-b738e829febb",
+            "name": "Split Profiles",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                848,
+                96
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "string": [
+                        {
+                            "value1": "={{ $json.accessToken }}",
+                            "operation": "isNotEmpty"
+                        }
+                    ]
+                }
+            },
+            "id": "01fae7ff-2b35-41ed-a1c9-e1494dd016d2",
+            "name": "Has Token?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                1072,
+                96
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const crypto = require('crypto');\n\nconst item = $input.item.json;\n\n// Helper to hash\nfunction sha256(val) {\n  if (!val) return undefined;\n  return crypto.createHash('sha256').update(val).digest('hex');\n}\n\n// Normalize Phone (Algeria specific logic included)\nlet phone = item.phone ? item.phone.toString().replace(/\\D/g, '') : '';\nif (phone.startsWith('05') || phone.startsWith('06') || phone.startsWith('07')) {\n  phone = '213' + phone.substring(1);\n}\nif (phone.startsWith('5') || phone.startsWith('6') || phone.startsWith('7')) {\n  // Assume missing 0\n  phone = '213' + phone;\n}\n\n// Split Name\nconst nameParts = item.name ? item.name.trim().split(/\\s+/) : [];\nconst fn = nameParts.length > 0 ? nameParts[0].toLowerCase() : undefined;\nconst ln = nameParts.length > 1 ? nameParts.slice(1).join(' ').toLowerCase() : undefined;\n\n// Email (normalize and hash)\nconst em = item.email ? sha256(item.email.trim().toLowerCase()) : undefined;\n\n// Location (City/State/Country)\nconst ct = item.commune ? sha256(item.commune.trim().toLowerCase()) : undefined;\nconst st = item.wilaya ? sha256(item.wilaya.trim().toLowerCase()) : undefined;\nconst country = sha256('dz');\n\n// Construct User Data (TikTok context.user)\nconst user_context = {\n  email: em,\n  phone_number: phone ? sha256(phone) : undefined,\n  ip: item.clientIp,\n  user_agent: item.userAgent || item.client_user_agent\n};\n\n// Map Event Name\n// TikTok uses 'CompletePayment' or 'PlaceAnOrder'. 'CompletePayment' is more standard for e-commerce purchases.\nconst eventName = item.status === 'abandoned' ? 'InitiateCheckout' : 'CompletePayment';\n\nreturn {\n  pixel_code: item.pixelId,\n  access_token: item.accessToken,\n  test_event_code: item.testCode,\n  event: eventName,\n  event_time: Math.floor(Date.now() / 1000),\n  event_id: item.event_id,\n  context: {\n    user: user_context,\n    page: {\n        url: item.shopDomain\n    }\n  },\n  properties: {\n    value: item.totalPrice,\n    currency: 'DZD',\n    contents: [{\n        content_id: String(item.productId),\n        content_type: 'product',\n        content_name: item.productTitle,\n        quantity: item.quantity,\n        price: item.totalPrice / item.quantity\n    }]\n  }\n};"
+            },
+            "id": "8e974944-bb96-4733-a765-007f01901fb6",
+            "name": "Format & Hash Data",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1296,
+                96
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://business-api.tiktok.com/open_api/v1.3/pixel/track/",
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "pixel_code",
+                            "value": "={{ $json.pixel_code }}"
+                        },
+                        {
+                            "name": "event",
+                            "value": "={{ $json.event }}"
+                        },
+                        {
+                            "name": "event_id",
+                            "value": "={{ $json.event_id }}"
+                        },
+                        {
+                            "name": "timestamp",
+                            "value": "={{ $json.event_time }}"
+                        },
+                        {
+                            "name": "context",
+                            "value": "={{ $json.context }}"
+                        },
+                        {
+                            "name": "properties",
+                            "value": "={{ $json.properties }}"
+                        },
+                        {
+                            "name": "test_event_code",
+                            "value": "={{ $json.test_event_code || undefined }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "9d04b17c-37ea-4ce6-822c-d30e39d1bfd5",
+            "name": "Send TikTok Event",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                1504,
+                96
+            ]
+        }
+    ],
+    "connections": {
+        "Execute Workflow Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Split Profiles",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Split Profiles": {
+            "main": [
+                [
+                    {
+                        "node": "Has Token?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Has Token?": {
+            "main": [
+                [
+                    {
+                        "node": "Format & Hash Data",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Format & Hash Data": {
+            "main": [
+                [
+                    {
+                        "node": "Send TikTok Event",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "pinData": {},
+    "meta": {
+        "instanceId": "b55b8c5b490d75637e4db729caf7c75486c3398f3275794ad40beef7f9800920"
+    }
+}

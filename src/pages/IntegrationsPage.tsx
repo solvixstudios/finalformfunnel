@@ -5,6 +5,7 @@ import { ShopifyIntegration } from '@/components/integrations/ShopifyIntegration
 import { WhatsAppIntegration } from '@/components/integrations/WhatsAppIntegration';
 import { GoogleSheetsIntegration } from '@/components/integrations/GoogleSheetsIntegration';
 import { MetaPixelIntegration } from '@/components/integrations/MetaPixelIntegration';
+import { TikTokIntegration } from '@/components/integrations/TikTokIntegration';
 import { cn } from '@/lib/utils';
 import { Plug, Store } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -118,7 +119,7 @@ export default function IntegrationsPage({ userId }: IntegrationsPageProps) {
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 <MetaPixelIntegration userId={userId} />
-                <ComingSoonCard name="TikTok Pixel" emoji="🎵" />
+                <TikTokIntegration userId={userId} />
                 <GoogleSheetsIntegration userId={userId} />
                 <ComingSoonCard name="Webhook" emoji="⚡" />
               </div>

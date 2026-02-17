@@ -394,6 +394,28 @@ share-button {
             const eventId = `evt-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
             (window as any).fbq('track', 'PageView', {}, { eventID: eventId });
         }
+
+        // Initialize TikTok Pixels
+        const tiktokData = config.addons?.tiktokPixelData || [];
+        if (tiktokData.length > 0) {
+            console.log('FinalForm: Initializing TikTok Global Pixels...', tiktokData.length);
+
+            // Inject TikTok Base Script
+            if (!(window as any).ttq) {
+                (function (w, d, t) {
+                    // @ts-ignore
+                    w.TiktokAnalyticsObject = t; var tt = w[t] = w[t] || []; tt.methods = ["page", "track", "identify", "instances", "debug", "on", "off", "once", "ready", "alias", "group", "enableCookie", "disableCookie"], tt.setAndDefer = function (t, e) { t[e] = function () { t.push([e].concat(Array.prototype.slice.call(arguments, 0))) } }; for (var i = 0; i < tt.methods.length; i++)tt.setAndDefer(tt, tt.methods[i]); tt.instance = function (t) { for (var e = tt.methods[i], n = 0; n < tt.methods.length; n++)tt.setAndDefer(e, tt.methods[n]); return e }, tt.load = function (e, n) { var i = "https://analytics.tiktok.com/i18n/pixel/events.js"; tt._i = tt._i || {}, tt._i[e] = [], tt._i[e]._u = i, tt._t = tt._t || {}, tt._t[e] = +new Date, tt._o = tt._o || {}, tt._o[e] = n || {}; var o = document.createElement("script"); o.type = "text/javascript", o.async = !0, o.src = i + "?sdkid=" + e + "&lib=" + t; var a = document.getElementsByTagName("script")[0]; a.parentNode!.insertBefore(o, a) };
+                })(window, document, 'ttq');
+            }
+
+            // Load and Identify
+            tiktokData.forEach((p: any) => {
+                if (p.pixelId) {
+                    (window as any).ttq.load(p.pixelId);
+                    (window as any).ttq.page();
+                }
+            });
+        }
     };
 
     // 8. Render Form OR Init Global Pixels
