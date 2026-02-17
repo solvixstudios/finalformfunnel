@@ -10,7 +10,6 @@ import {
 // Tabs removed
 import { useConnectedStores, useFormAssignments } from '@/lib/firebase/hooks';
 import { getProductsFromCache, notifyProductSyncComplete, Product, syncProductsFromShopify } from '@/lib/products';
-import { publishToStore, unpublishFromStore } from '@/lib/sync';
 import { cn } from '@/lib/utils';
 import {
     AlertTriangle,
@@ -35,6 +34,7 @@ interface PublishSheetProps {
     formId: string;
     formName: string;
     formConfig: any;
+    formType?: 'store' | 'product';
     onPublishSuccess?: () => void;
 }
 
@@ -45,10 +45,11 @@ export function PublishSheet({
     formId,
     formName,
     formConfig,
+    formType = 'product',
     onPublishSuccess,
 }: PublishSheetProps) {
     const { stores, loading: storesLoading } = useConnectedStores(userId);
-    const { assignForm, deleteAssignment, assignments, loading: assignmentsLoading } = useFormAssignments(userId);
+    const { assignForm, deleteAssignment, assignments, loading: assignmentsLoading, refetch } = useFormAssignments(userId);
 
     // View State
     const [view, setView] = useState<'publish' | 'manage'>('publish');
@@ -56,7 +57,7 @@ export function PublishSheet({
     // Publish State
     const [step, setStep] = useState<1 | 2>(1);
     const [selectedStoreId, setSelectedStoreId] = useState<string>('');
-    const [assignmentType, setAssignmentType] = useState<'store' | 'product'>('store');
+    const [assignmentType, setAssignmentType] = useState<'store' | 'product'>(formType);
     const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
     const [productSearch, setProductSearch] = useState('');
     const [isPublishing, setIsPublishing] = useState(false);
@@ -127,7 +128,7 @@ export function PublishSheet({
         if (open) {
             setStep(1);
             setSelectedStoreId('');
-            setAssignmentType('store');
+            setAssignmentType(formType);
             setSelectedProductIds([]);
             setProductSearch('');
             setIsPublishing(false);
@@ -277,32 +278,21 @@ export function PublishSheet({
             await deleteAssignment(conflictAssignment.id!);
         }
 
-        // Firebase
+        // assignForm handles: adapter push to n8n + refetch for UI sync
         await assignForm({
             formId,
             storeId: selectedStoreId,
             type: 'store',
-        });
-
-        // Shopify Push via syncService
-        const result = await publishToStore({
-            formId,
             formName,
-            formConfig,
-            store,
-            assignmentType: 'store',
+            formConfig: { formId, name: formName, ...formConfig },
         });
-
-        if (!result.success) {
-            throw new Error(result.error || 'Failed to publish to store');
-        }
     };
 
     const executeProductPublish = async () => {
         const store = stores.find(s => s.id === selectedStoreId);
         if (!store) return;
 
-        const promises = selectedProductIds.map(async (pid) => {
+        for (const pid of selectedProductIds) {
             const product = products.find(p => p.id.toString() === pid);
 
             // Clean up existing assignment for this product (if any)
@@ -315,7 +305,7 @@ export function PublishSheet({
                 await deleteAssignment(existingProductAssignment.id!);
             }
 
-            // Firebase Add (if not duplicate of THIS form)
+            // Skip if this exact form is already assigned to this product
             const alreadyAssigned = assignments.find(a =>
                 a.storeId === selectedStoreId &&
                 a.assignmentType === 'product' &&
@@ -324,34 +314,23 @@ export function PublishSheet({
             );
 
             if (!alreadyAssigned) {
+                // assignForm handles: adapter push to n8n + refetch for UI sync
+                // We SKIP refetch here and do it once at the end
                 await assignForm({
                     formId,
                     storeId: selectedStoreId,
                     type: 'product',
                     productId: pid,
-                    productHandle: product?.handle
+                    productHandle: product?.handle,
+                    formName,
+                    formConfig: { formId, name: formName, ...formConfig },
+                    skipRefetch: true,
                 });
             }
+        }
 
-            // Shopify Push via syncService
-            const result = await publishToStore({
-                formId,
-                formName,
-                formConfig,
-                store,
-                assignmentType: 'product',
-                productId: pid,
-                productHandle: product?.handle,
-            });
-
-            if (!result.success) {
-                console.error(`Failed to publish to product ${pid}:`, result.error);
-            }
-
-            return result;
-        });
-
-        await Promise.all(promises);
+        // Single refetch after batch operation
+        await refetch();
     };
 
     // Bulk Management
@@ -368,24 +347,12 @@ export function PublishSheet({
         const loadingToast = toast.loading(`Unpublishing ${selectedAssignmentIds.length} items...`);
 
         try {
-            const promises = selectedAssignmentIds.map(async (assignId) => {
-                const assignment = currentFormAssignments.find(a => a.id === assignId);
-                if (!assignment) return;
-
-                const store = stores.find(s => s.id === assignment.storeId);
-                if (!store || !store.clientId || !store.clientSecret) return;
-
-                const productId = assignment.assignmentType === 'product' ? assignment.productId : undefined;
-
-                // 1. Remove from Shopify via syncService
-                await unpublishFromStore({
-                    store,
-                    productId,
-                }).catch(e => console.warn(`Failed to remove for ${assignId}:`, e));
-
-                // 2. Remove from Firebase
-                await deleteAssignment(assignId);
-            });
+            // deleteAssignment handles n8n cleanup internally
+            const promises = selectedAssignmentIds.map(assignId =>
+                deleteAssignment(assignId).catch(e =>
+                    console.warn(`Failed to unpublish ${assignId}:`, e)
+                )
+            );
 
             await Promise.allSettled(promises);
             toast.success("Bulk unpublish complete");
@@ -401,30 +368,11 @@ export function PublishSheet({
     };
 
     const handleSingleUnpublish = async (assignment: any) => {
-        const store = stores.find(s => s.id === assignment.storeId);
-        if (!store || !store.clientId || !store.clientSecret) {
-            toast.error('Store credentials missing');
-            return;
-        }
-
         const loadingToast = toast.loading('Unpublishing...');
 
         try {
-            const productId = assignment.assignmentType === 'product' ? assignment.productId : undefined;
-
-            // 1. Remove from Shopify via syncService
-            const result = await unpublishFromStore({
-                store,
-                productId,
-            });
-
-            if (!result.success) {
-                throw new Error(result.error || 'Failed to unpublish');
-            }
-
-            // 2. Remove Assignment from Firebase
+            // deleteAssignment handles n8n cleanup internally
             await deleteAssignment(assignment.id);
-
             toast.success('Unpublished successfully');
         } catch (e: any) {
             console.error('Unpublish error:', e);
@@ -525,33 +473,25 @@ export function PublishSheet({
                                         <Button variant="ghost" size="sm" onClick={() => setStep(1)} className="text-xs h-7 hover:bg-slate-50">Change</Button>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-3 shrink-0 mb-4">
-                                        <button
-                                            onClick={() => setAssignmentType('store')}
-                                            className={cn(
-                                                "p-4 rounded-xl border text-sm font-semibold transition-all flex flex-col items-center gap-2 relative overflow-hidden",
-                                                assignmentType === 'store'
-                                                    ? "border-indigo-600 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-600/20"
-                                                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
-                                            )}
-                                        >
-                                            <Store size={20} className={cn("mb-1", assignmentType === 'store' ? "text-indigo-600" : "text-slate-400")} />
-                                            Entire Store
-                                            {assignmentType === 'store' && <div className="absolute inset-0 bg-indigo-500/5" />}
-                                        </button>
-                                        <button
-                                            onClick={() => setAssignmentType('product')}
-                                            className={cn(
-                                                "p-4 rounded-xl border text-sm font-semibold transition-all flex flex-col items-center gap-2 relative overflow-hidden",
-                                                assignmentType === 'product'
-                                                    ? "border-indigo-600 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-600/20"
-                                                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
-                                            )}
-                                        >
-                                            <Package size={20} className={cn("mb-1", assignmentType === 'product' ? "text-indigo-600" : "text-slate-400")} />
-                                            Specific Products
-                                            {assignmentType === 'product' && <div className="absolute inset-0 bg-indigo-500/5" />}
-                                        </button>
+                                    {/* Scope indicator - auto-set from form type */}
+                                    <div className="shrink-0 mb-4 p-3.5 rounded-xl border border-slate-200 bg-white flex items-center gap-3">
+                                        <div className={cn(
+                                            "w-9 h-9 rounded-lg flex items-center justify-center",
+                                            formType === 'store' ? "bg-blue-50 text-blue-600" : "bg-purple-50 text-purple-600"
+                                        )}>
+                                            {formType === 'store' ? <Store size={18} /> : <Package size={18} />}
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-bold text-slate-900">
+                                                {formType === 'store' ? 'Store-wide Form' : 'Product Form'}
+                                            </p>
+                                            <p className="text-[10px] text-slate-500">
+                                                {formType === 'store'
+                                                    ? 'This form will be published to the entire store'
+                                                    : 'Select which products to assign this form to'
+                                                }
+                                            </p>
+                                        </div>
                                     </div>
 
                                     {assignmentType === 'product' && (

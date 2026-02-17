@@ -19,6 +19,7 @@ export interface SavedForm {
   status: "draft" | "published";
   createdAt: string;
   updatedAt: string;
+  type?: 'store' | 'product'; // Default to 'product' for backward compatibility
 }
 
 // Connected store

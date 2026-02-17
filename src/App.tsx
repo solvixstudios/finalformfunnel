@@ -11,6 +11,7 @@ import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from
 import { getStoredUser, GoogleUser, onAuthStateChange, signOutUser } from "./lib/authGoogle";
 import { I18nProvider } from "./lib/i18n/i18nContext";
 import { useFormStore } from "./stores";
+import { AssignmentsProvider } from "./contexts/AssignmentsContext";
 
 // Lazy load pages for better performance
 const Landing = lazy(() => import("./pages/Landing"));
@@ -128,34 +129,36 @@ const AppContent = () => {
                 onNavigate={handleNavigate}
                 onLogout={handleLogout}
               >
-                <Suspense fallback={<LoadingSpinner />}>
-                  <Routes>
-                    <Route
-                      path="forms"
-                      element={<FormsPage />}
-                    />
-                    <Route
-                      path="forms/edit"
-                      element={<Navigate to="/dashboard/forms" replace />}
-                    />
-                    <Route
-                      path="forms/edit/:formId"
-                      element={<EditFormPage userId={user.id} />}
-                    />
-                    <Route
-                      path="integrations"
-                      element={<IntegrationsPage userId={user.id} />}
-                    />
+                <AssignmentsProvider userId={user.id}>
+                  <Suspense fallback={<LoadingSpinner />}>
+                    <Routes>
+                      <Route
+                        path="forms"
+                        element={<FormsPage />}
+                      />
+                      <Route
+                        path="forms/edit"
+                        element={<Navigate to="/dashboard/forms" replace />}
+                      />
+                      <Route
+                        path="forms/edit/:formId"
+                        element={<EditFormPage userId={user.id} />}
+                      />
+                      <Route
+                        path="integrations"
+                        element={<IntegrationsPage userId={user.id} />}
+                      />
 
-                    <Route
-                      path="products"
-                      element={<ProductsPage userId={user.id} />}
-                    />
-                    <Route path="profile" element={<ProfilePage user={user} />} />
-                    <Route path="settings" element={<SettingsPage user={user} />} />
-                    <Route path="*" element={<Navigate to="/dashboard/forms" replace />} />
-                  </Routes>
-                </Suspense>
+                      <Route
+                        path="stores"
+                        element={<ProductsPage userId={user.id} />}
+                      />
+                      <Route path="profile" element={<ProfilePage user={user} />} />
+                      <Route path="settings" element={<SettingsPage user={user} />} />
+                      <Route path="*" element={<Navigate to="/dashboard/forms" replace />} />
+                    </Routes>
+                  </Suspense>
+                </AssignmentsProvider>
               </DashboardLayout>
             }
           />

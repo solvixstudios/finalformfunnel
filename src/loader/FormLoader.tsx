@@ -58,6 +58,9 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
     const [communesList, setCommunesList] = useState<Commune[]>([]);
     const [loadingCommunes, setLoadingCommunes] = useState(false);
 
+    // Client IP (for sheet logging)
+    const [clientIp, setClientIp] = useState('');
+
     const [formData, setFormData] = useState({
         name: '',
         phone: '',
@@ -80,10 +83,11 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
     // Track selected options (e.g. { "Size": "Small", "Color": "Red" })
     const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>(() => {
         const initialOptions: Record<string, string> = {};
-        if (product?.options && product.variants?.length > 0) {
+        if (product?.options?.length && product.variants?.length > 0) {
             const firstVariant = product.variants[0];
             product.options.forEach((opt, index) => {
                 const optKey = `option${index + 1}` as keyof Variant;
+                if (!opt || !opt.name) return;
                 const val = firstVariant[optKey];
                 if (typeof val === 'string') {
                     initialOptions[opt.name] = val;
@@ -95,10 +99,11 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
 
     // Update variant ID when options change
     useEffect(() => {
-        if (!product?.variants || !product.options) return;
+        if (!product?.variants || !product?.options?.length) return;
 
         const match = product.variants.find(v => {
             return product.options.every((opt, index) => {
+                if (!opt || !opt.name) return true;
                 const optKey = `option${index + 1}` as keyof Variant;
                 return v[optKey] === selectedOptions[opt.name];
             });
@@ -219,6 +224,11 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
     // Fetch Wilayas on mount
     useEffect(() => {
         fetchWilayas().then(data => setWilayasList(data));
+        // Fetch client IP silently
+        fetch('https://api.ipify.org?format=json')
+            .then(r => r.json())
+            .then(d => setClientIp(d.ip || ''))
+            .catch(() => { });
     }, []);
 
     // Fetch Communes when Wilaya changes
@@ -235,8 +245,18 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
     }, [formData.wilaya]);
 
     // --- HELPERS ---
-    const txt = (key: string) => config.translations[key]?.[lang] || config.translations[key]?.fr || '';
-    const getFieldTxt = (fieldKey: string) => config.fields[fieldKey]?.placeholder?.[lang] || config.fields[fieldKey]?.placeholder?.fr || '';
+    // Backwards-compat: if config has `settings` wrapper but no top-level fields, unwrap it
+    if (config.settings && !config.fields) {
+        Object.assign(config, config.settings);
+    }
+
+    const translations = config.translations || {};
+    // Revert to strict fields from config
+    const fields = config.fields || {};
+    const sectionSettings = config.sectionSettings || {};
+
+    const txt = (key: string) => translations[key]?.[lang] || translations[key]?.fr || '';
+    const getFieldTxt = (fieldKey: string) => fields[fieldKey]?.placeholder?.[lang] || fields[fieldKey]?.placeholder?.fr || '';
     const formatCurrency = (amount: number) => formatCurrencyUtil(amount, lang);
     const fontFamily = getFontFamilyCSS(config.fontFamily?.[lang] || (lang === 'fr' ? 'Inter' : 'Cairo'));
 
@@ -250,18 +270,18 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
 
     // Validation Schema
     const schema = z.object({
-        name: config.fields.name?.required ? z.string().min(2, lang === 'fr' ? 'Nom obligatoire' : 'الاسم مطلوب') : z.string().optional(),
-        phone: config.fields.phone?.required ? z.string().regex(/^(05|06|07)[0-9]{8}$/, lang === 'fr' ? 'Numéro invalide (05/06/07...)' : 'رقم غير صحيح') : z.string().optional(),
-        wilaya: config.fields.wilaya?.required ? z.string().min(1, lang === 'fr' ? 'Sélectionnez une wilaya' : 'اختر ولاية') : z.string().optional(),
-        commune: (config.fields?.commune?.visible && config.fields?.commune?.required && config.locationInputMode !== 'single_dropdown')
+        name: fields.name?.required ? z.string().min(2, lang === 'fr' ? 'Nom obligatoire' : 'الاسم مطلوب') : z.string().optional(),
+        phone: fields.phone?.required ? z.string().regex(/^(05|06|07)[0-9]{8}$/, lang === 'fr' ? 'Numéro invalide (05/06/07...)' : 'رقم غير صحيح') : z.string().optional(),
+        wilaya: fields.wilaya?.required ? z.string().min(1, lang === 'fr' ? 'Sélectionnez une wilaya' : 'اختر ولاية') : z.string().optional(),
+        commune: (fields.commune?.visible && fields.commune?.required && config.locationInputMode !== 'single_dropdown')
             ? z.string().min(1, lang === 'fr' ? 'Sélectionnez une commune' : 'اختر بلدية')
             : z.string().optional(),
     });
 
     // Field visibility logic
     const getVisibleFields = () => {
-        const fields = { ...config.fields };
-        const entries = Object.entries(fields)
+        const fieldsToCheck = config.fields || {};
+        const entries = Object.entries(fieldsToCheck)
             .filter(([key, field]: any) => field.visible && key !== 'location_block')
             .sort(([, a]: any, [, b]: any) => a.order - b.order);
 
@@ -288,7 +308,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
     const showLocationSideBySide = config.locationLayout === 'sideBySide' && isDoubleDropdown;
 
     // Variants (Static for now, should come from product)
-    const variants = product?.variants?.map((v: any) => v.title) || ['Modèle A', 'Modèle B', 'Modèle C'];
+    const variants = product?.variants?.filter(v => v).map((v: any) => v.title) || ['Modèle A', 'Modèle B', 'Modèle C'];
 
     // Delivery section visibility
     const showDeliverySection = shipping &&
@@ -361,15 +381,19 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                 case 'address': value = data.address; break;
                 case 'product': value = data.productTitle; break;
                 case 'variant': value = data.variant; break;
-                case 'quantity': value = data.quantity; break;
-                case 'unitPrice': value = data.items?.[0]?.price || ''; break;
+                case 'quantity': value = data.offerQty || data.quantity; break;
+                case 'unitPrice': value = data.offerPrice || data.totalPrice; break;
                 case 'totalPrice': value = data.totalPrice; break;
                 case 'shippingPrice': value = data.shippingPrice; break;
                 case 'shippingType': value = data.shippingType === 'desk' ? 'Bureau' : 'Domicile'; break;
+                case 'offerName': value = data.offerTitle || ''; break;
+                case 'offerId': value = data.offerId || ''; break;
+                case 'offerQuantity': value = data.offerQty || data.quantity; break;
+                case 'wilayaId': value = data.wilayaId || ''; break;
                 case 'promoCode': value = data.promo || ''; break;
                 case 'note': value = data.note; break;
                 case 'source': value = data.shopDomain || window.location.hostname; break;
-                case 'ipAddress': value = ''; break; // Populated server-side if available
+                case 'ipAddress': value = clientIp || ''; break;
                 default: value = data[col.id] || '';
             }
 
@@ -409,7 +433,6 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
 
             // Scroll to first error
             const firstErrorField = Object.keys(errors)[0];
-            // Use formContainerRef to find element inside Shadow DOM or current container
             const container = formContainerRef.current || document;
             const el = container.querySelector(`[name="${firstErrorField}"]`);
             if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -422,6 +445,20 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
         const selectedWilayaObj = wilayasList.find(w => w.id === formData.wilaya);
         const wilayaName = selectedWilayaObj ? selectedWilayaObj.rawName : formData.wilaya;
 
+        // Resolve selected offer
+        const selectedOffer = offers.find((o: any) => o.id === formData.offerId) || offers[0];
+
+        // Prepare Sheet Payload (Client-Side Formatting)
+        const sheets = config.addons?.sheets || [];
+        // Legacy fallback
+        if (sheets.length === 0 && config.addons?.sheetWebhookUrl) {
+            sheets.push({
+                webhookUrl: config.addons.sheetWebhookUrl,
+                sheetName: 'Orders'
+            });
+        }
+        const activeSheet = sheets[0]; // Proxy first sheet config through n8n
+
         // Optimistic UI Data
         const payload = {
             ...formData,
@@ -429,6 +466,9 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
             wilayaId: formData.wilaya, // Keep ID just in case
             variantId: selectedVariantId,
             totalPrice: calculations.displayedTotal,
+            offerPrice: calculations.offerPrice,
+            offerTitle: selectedOffer?.title?.[lang] || selectedOffer?.title?.fr || '',
+            offerQty: selectedOffer?.qty || formData.quantity,
             currency: 'DZD',
             productId: product.id,
             productHandle: (product as any).handle || '', // Include handle for Shopify matching
@@ -438,14 +478,31 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
             promo: appliedPromoCode?.code || '', // Include applied promo code
             promoDiscount: appliedPromoCode?.discountValue || 0,
             shippingPrice: calculations.shippingCost, // Add explicitly for Shopify Order
+            clientIp,
             items: [{
                 title: product.title,
                 variant: formData.variant,
                 variantId: selectedVariantId,
-                quantity: formData.quantity,
+                quantity: selectedOffer?.qty || formData.quantity,
                 price: basePrice,
-            }]
+            }],
+            // Metadata for N8N routing
+            status: 'completed',
+            googleSheetConfig: activeSheet ? {
+                scriptUrl: activeSheet.webhookUrl,
+                sheetName: activeSheet.sheetName || 'Orders',
+                abandonedSheetName: activeSheet.abandonedSheetName || 'Abandoned'
+            } : undefined
         };
+
+        // Attach formatted sheet payload if config exists
+        if (activeSheet && activeSheet.webhookUrl) {
+            (payload as any).sheetPayload = formatSheetPayload(
+                payload,
+                'completed',
+                { sheetName: activeSheet.sheetName || 'Orders', columns: activeSheet.columns, pinnedCount: activeSheet.pinnedCount }
+            );
+        }
 
         setFinalOrderData(payload); // Pass to popup
         setSubmissionError(null);
@@ -453,43 +510,13 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
 
         if (!previewMode) {
             try {
-                // Background submission
+                // Background submission (N8N handles Shopify + Sheets)
                 const adapter = getAdapter('shopify');
                 await adapter.submitOrder(payload);
+
                 if (import.meta.env.DEV) {
                     console.log("Order submitted successfully to n8n");
                 }
-
-                // --- GOOGLE SHEETS INTEGRATION (Client-Side) ---
-                // Send completed order to all configured sheets
-                const sheets = config.addons?.sheets || [];
-
-                // Legacy fallback (rare for main order but safe)
-                if (sheets.length === 0 && config.addons?.sheetWebhookUrl) {
-                    sheets.push({
-                        webhookUrl: config.addons.sheetWebhookUrl,
-                        sheetName: 'Orders'
-                    });
-                }
-
-                sheets.forEach((sheet: any) => {
-                    if (!sheet.webhookUrl) return;
-
-                    const sheetPayload = formatSheetPayload(
-                        payload,
-                        'completed',
-                        { sheetName: sheet.sheetName || 'Orders', columns: sheet.columns, pinnedCount: sheet.pinnedCount }
-                    );
-
-                    // Fire and forget
-                    fetch(sheet.webhookUrl, {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(sheetPayload)
-                    }).catch(err => console.error("Failed to send to sheet (completed):", err));
-                });
-                // -----------------------------------------------
 
                 setShowThankYou(true); // Show success after submission completes
             } catch (err: any) {
@@ -511,68 +538,76 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
 
     const logAbandonedOrder = async () => {
         // Log if enabled AND (phone is valid OR we have enough info)
-        // Currently triggered by phone blur valid check.
-        if (previewMode || abandonedSent || (!config.addons?.enableSheets && !config.addons?.sheetWebhookUrl)) return;
+        if (previewMode || abandonedSent) return;
+
+        // Check availability of sheets config
+        const sheets = config.addons?.sheets || [];
+        if (sheets.length === 0 && config.addons?.sheetWebhookUrl) {
+            sheets.push({ webhookUrl: config.addons.sheetWebhookUrl, abandonedSheetName: 'Abandoned' });
+        }
+        const activeSheet = sheets[0];
+
+        if (!activeSheet?.webhookUrl) return;
 
         try {
             // Resolve Wilaya Name for logging — use rawName (plain, e.g. "Adrar")
             const selectedWilayaObj = wilayasList.find(w => w.id === formData.wilaya);
             const wilayaName = selectedWilayaObj ? selectedWilayaObj.rawName : formData.wilaya;
 
-            const payload = {
+            // Resolve selected offer
+            const selectedOffer = offers.find((o: any) => o.id === formData.offerId) || offers[0];
+
+            const basePayload = {
                 ...formData,
                 wilaya: wilayaName,
+                wilayaId: formData.wilaya,
                 variantId: selectedVariantId,
                 totalPrice: calculations.displayedTotal,
+                offerPrice: calculations.offerPrice,
+                offerTitle: selectedOffer?.title?.[lang] || selectedOffer?.title?.fr || '',
+                offerQty: selectedOffer?.qty || formData.quantity,
                 currency: 'DZD',
                 productId: product.id,
                 productTitle: product.title,
                 shopName: config.storeName || window.location.hostname,
+                shopDomain: config.shopifyDomain || window.location.hostname,
+                promo: appliedPromoCode?.code || '',
+                shippingPrice: calculations.shippingCost,
+                clientIp,
                 items: [{
                     title: product.title,
                     variant: formData.variant,
                     variantId: selectedVariantId,
-                    quantity: formData.quantity,
+                    quantity: selectedOffer?.qty || formData.quantity,
                     price: basePrice,
                 }]
             };
 
+            const sheetPayload = formatSheetPayload(
+                { ...basePayload, orderId: formSessionId },
+                'abandoned',
+                { sheetName: activeSheet.sheetName || 'Orders', columns: activeSheet.columns, pinnedCount: activeSheet.pinnedCount }
+            );
+
+            // Send to N8N (status: abandoned)
+            const n8nPayload = {
+                ...basePayload,
+                status: 'abandoned',
+                googleSheetConfig: {
+                    scriptUrl: activeSheet.webhookUrl,
+                    sheetName: activeSheet.sheetName || 'Orders',
+                    abandonedSheetName: activeSheet.abandonedSheetName || 'Abandoned'
+                },
+                sheetPayload
+            };
+
             if (import.meta.env.DEV) {
-                console.log("Logging abandoned order...", payload);
+                console.log("Logging abandoned order to n8n...", n8nPayload);
             }
 
-            // Iterate over configured sheets (Multi-sheet support)
-            const sheets = config.addons?.sheets || [];
-
-            // Legacy fallback
-            if (sheets.length === 0 && config.addons?.sheetWebhookUrl) {
-                sheets.push({
-                    webhookUrl: config.addons.sheetWebhookUrl,
-                    abandonedSheetName: 'Abandoned'
-                });
-            }
-
-            // Send to all configured sheets
-            sheets.forEach(async (sheet: any) => {
-                if (!sheet.webhookUrl) return;
-
-                const sheetPayload = formatSheetPayload(
-                    payload,
-                    'abandoned',
-                    { sheetName: sheet.sheetName || 'Orders', columns: sheet.columns, pinnedCount: sheet.pinnedCount }
-                );
-
-                try {
-                    await fetch(sheet.webhookUrl, {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(sheetPayload)
-                    });
-                } catch (err) {
-                    console.error("Failed to send to sheet:", sheet.webhookUrl, err);
-                }
-            });
+            const adapter = getAdapter('shopify');
+            // Fire and forget - using submitOrder but with 'abandoned' status
+            adapter.submitOrder(n8nPayload).catch(err => console.error("Abandoned log failed", err));
 
             setAbandonedSent(true);
 
@@ -700,7 +735,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                 })()}
 
                 <div className="p-5">
-                    {config.sectionOrder.map((sectionId: string, index: number) => {
+                    {(config.sectionOrder || []).map((sectionId: string, index: number) => {
                         // Variants
                         if (sectionId === 'variants') {
                             const hasEffectiveVariants = product?.variants && (
@@ -718,7 +753,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                                     config={config}
                                     lang={lang}
                                     variants={variants}
-                                    options={product.options}
+                                    options={(product?.options || []).filter((o: any) => o && o.name)}
                                     selectedOptions={selectedOptions}
                                     onOptionSelect={(optName, val) => {
                                         setSelectedOptions(prev => ({
@@ -874,7 +909,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                             return renderSectionBlock(
                                 sectionId,
                                 <DeliverySection
-                                    config={config}
+                                    config={{ ...config, sectionSettings }}
                                     lang={lang}
                                     shippingType={formData.shippingType}
                                     onSelect={(type) => setFormData({ ...formData, shippingType: type })}
@@ -889,7 +924,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                         }
 
                         // Offers
-                        if (sectionId === 'offers') {
+                        if (sectionId === 'offers' && config.type !== 'store') {
                             return renderSectionBlock(
                                 sectionId,
                                 <OffersSection
@@ -949,7 +984,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                                 sectionId,
                                 <CtaButton
                                     config={config}
-                                    text={txt('cta')}
+                                    text={txt('cta') || (lang === 'fr' ? 'Commander maintenant' : 'اطلب الآن')}
                                     onClick={handleFormSubmit}
                                     isLoading={isSubmitting}
                                 />,

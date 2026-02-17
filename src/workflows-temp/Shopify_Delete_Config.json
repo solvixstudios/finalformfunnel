@@ -12,24 +12,24 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -6912,
-        256
+        -10320,
+        192
       ],
-      "id": "8719374b-1dd2-4e47-ba0b-b8db8a05edf0",
+      "id": "4a5fd03e-4296-400f-b07a-840ff3e5bef9",
       "name": "Webhook",
       "webhookId": "delete-config-webhook"
     },
     {
       "parameters": {
-        "jsCode": "// Parse request body\nconst body = $input.first().json.body;\n\nconst shopDomain = body.shopDomain;\nconst clientId = body.clientId;\nconst clientSecret = body.clientSecret;\n\n// Normalize ownerId: null, undefined, empty string, 'null' all become empty string\nlet ownerId = body.ownerId;\nif (!ownerId || ownerId === 'null' || ownerId === 'undefined') {\n  ownerId = '';\n} else {\n  ownerId = String(ownerId);\n}\n\nif (!shopDomain || !clientId || !clientSecret) {\n  return [{ json: { error: 'Missing required credentials', valid: false } }];\n}\n\nreturn [{ json: {\n  valid: true,\n  shopDomain,\n  clientId,\n  clientSecret,\n  ownerId\n} }];"
+        "jsCode": "// Parse request body\nconst body = $input.first().json.body;\n\nconst shopDomain = body.shopDomain;\nconst clientId = body.clientId;\nconst clientSecret = body.clientSecret;\n\n// Use productId (new) or ownerId (legacy fallback)\nlet productId = body.productId || body.ownerId || '';\nif (!productId || productId === 'null' || productId === 'undefined') {\n  productId = '';\n} else {\n  productId = String(productId).trim();\n  // Strip GID prefix if present (backwards compat)\n  const gidMatch = productId.match(/^gid:\\/\\/shopify\\/Product\\/(.+)$/);\n  if (gidMatch) productId = gidMatch[1];\n}\n\nif (!shopDomain || !clientId || !clientSecret) {\n  return [{ json: { error: 'Missing required credentials', valid: false } }];\n}\n\n// Determine target table\nconst isProductLevel = productId !== '';\n\nreturn [{ json: {\n  valid: true,\n  shopDomain,\n  clientId,\n  clientSecret,\n  productId,\n  isProductLevel\n} }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -6672,
-        256
+        -10080,
+        192
       ],
-      "id": "05513ed5-8edd-47e4-8e29-7b2a2d1cbb20",
+      "id": "3337769d-9d86-4fc2-b007-8bcc4d96ded6",
       "name": "Parse Request"
     },
     {
@@ -58,10 +58,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -6432,
-        256
+        -9840,
+        192
       ],
-      "id": "2e3a9682-2e92-4899-a3b2-0bc8cb40ff7a",
+      "id": "acfa467c-798f-478d-af36-28db2a5e1532",
       "name": "If Valid"
     },
     {
@@ -76,24 +76,24 @@
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        -6192,
-        160
+        -9600,
+        96
       ],
-      "id": "e4445e26-3d82-4a22-b42f-2f13a503354c",
+      "id": "3f39008b-df76-4de0-b366-7d5e29a9cca1",
       "name": "Get Stores",
       "alwaysOutputData": true
     },
     {
       "parameters": {
-        "jsCode": "// Find store and verify credentials\nconst rows = $input.all();\nconst req = $('Parse Request').first().json;\n\nconst store = rows.find(r => r.json.shopDomain === req.shopDomain);\n\nif (!store) {\n  return [{ json: { found: false, error: 'Store not found' } }];\n}\n\nif (store.json.clientId !== req.clientId || store.json.clientSecret !== req.clientSecret) {\n  return [{ json: { found: false, error: 'Invalid credentials' } }];\n}\n\nreturn [{ json: {\n  found: true,\n  storeId: store.json.storeId,\n  ownerId: req.ownerId\n} }];"
+        "jsCode": "// Find store and verify credentials\nconst rows = $input.all();\nconst req = $('Parse Request').first().json;\n\nconst store = rows.find(r => r.json.shopDomain === req.shopDomain);\n\nif (!store) {\n  return [{ json: { found: false, error: 'Store not found' } }];\n}\n\nif (store.json.clientId !== req.clientId || store.json.clientSecret !== req.clientSecret) {\n  return [{ json: { found: false, error: 'Invalid credentials' } }];\n}\n\nreturn [{ json: {\n  found: true,\n  storeId: store.json.storeId,\n  productId: req.productId,\n  isProductLevel: req.isProductLevel\n} }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -5952,
-        160
+        -9360,
+        96
       ],
-      "id": "29dd47d5-a1b2-4992-aac2-3d83c5dc7c61",
+      "id": "a1e62987-8ea0-4b9b-bcb1-a28295ce7702",
       "name": "Verify Store"
     },
     {
@@ -122,43 +122,75 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -5712,
-        160
+        -9120,
+        96
       ],
-      "id": "b3c5b249-035d-426d-b2dc-321291891c94",
+      "id": "b3805683-979f-449f-b6b4-1e9d980b2275",
       "name": "If Store Found"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "is-product-level",
+              "leftValue": "={{ $json.isProductLevel }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -8880,
+        96
+      ],
+      "id": "d2b3c99d-b9e1-42cc-92d1-6cf361a45fd9",
+      "name": "Is Product Level?"
     },
     {
       "parameters": {
         "operation": "get",
         "dataTableId": {
           "__rl": true,
-          "value": "store_configs",
+          "value": "product_configs",
           "mode": "name"
         }
       },
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        -5472,
-        64
+        -8640,
+        0
       ],
-      "id": "32c9ccc1-28fe-4c20-8d17-5b625f3c0fff",
-      "name": "Get Configs",
+      "id": "7cd069de-f648-4aa9-9d7d-b71cd66b2ef5",
+      "name": "Get Product Configs",
       "alwaysOutputData": true
     },
     {
       "parameters": {
-        "jsCode": "// Find config to delete by storeId + ownerId\nconst rows = $input.all();\nconst verifyData = $('Verify Store').first().json;\n\nconst storeId = verifyData.storeId;\nconst ownerId = verifyData.ownerId; // Already normalized to empty string for store-level\n\nconst config = rows.find(r => {\n  const rowOwnerId = r.json.ownerId || '';\n  return r.json.storeId === storeId && rowOwnerId === ownerId;\n});\n\nif (config) {\n  return [{ json: { found: true, storeId, ownerId } }];\n}\n\nreturn [{ json: { found: false } }];"
+        "jsCode": "// Find product config to delete\nconst rows = $input.all();\nconst verifyData = $('Verify Store').first().json;\nconst storeId = verifyData.storeId;\nconst productId = verifyData.productId;\n\nconst config = rows.find(r =>\n  r.json.storeId === storeId && r.json.productId === productId\n);\n\nif (config) {\n  return [{ json: { found: true, id: config.json.id, storeId, productId } }];\n}\n\nreturn [{ json: { found: false } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -5232,
-        64
+        -8400,
+        0
       ],
-      "id": "844af5c8-727b-4b9e-9ad7-69f62d4cd2f9",
-      "name": "Find Config"
+      "id": "636cd838-3291-4ea2-9ed7-3796e451788f",
+      "name": "Find Product Config"
     },
     {
       "parameters": {
@@ -186,15 +218,47 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -4992,
-        64
+        -8160,
+        0
       ],
-      "id": "7739a7d0-6b61-47a9-9170-35f5c98cddcc",
-      "name": "If Config Found"
+      "id": "a325abff-80d7-4341-a6e9-1147f562e23c",
+      "name": "If Product Config Found"
     },
     {
       "parameters": {
-        "operation": "deleteRow",
+        "operation": "deleteRows",
+        "matchType": "allConditions",
+        "dataTableId": {
+          "__rl": true,
+          "value": "product_configs",
+          "mode": "name"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "productId",
+              "keyValue": "={{ $json.productId }}"
+            },
+            {
+              "keyName": "storeId",
+              "keyValue": "={{ $json.storeId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -7920,
+        -80
+      ],
+      "id": "7da19cea-1671-4823-be80-cc2de754a767",
+      "name": "Delete Product Config"
+    },
+    {
+      "parameters": {
+        "operation": "get",
         "dataTableId": {
           "__rl": true,
           "value": "store_configs",
@@ -204,11 +268,85 @@
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        -4752,
-        -48
+        -8640,
+        192
       ],
-      "id": "c3f96baf-47a3-4493-b1e4-0a8ec1b50186",
-      "name": "Delete Config"
+      "id": "c755ef84-0e84-4a7a-b540-3cb8c717ee87",
+      "name": "Get Store Configs",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Find store config to delete\nconst rows = $input.all();\nconst verifyData = $('Verify Store').first().json;\nconst storeId = verifyData.storeId;\n\nconst config = rows.find(r => r.json.storeId === storeId);\n\nif (config) {\n  return [{ json: { found: true, id: config.json.id, storeId } }];\n}\n\nreturn [{ json: { found: false } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -8400,
+        192
+      ],
+      "id": "1ecf5ea1-aab8-4aee-a219-ab9c2e12ccdc",
+      "name": "Find Store Config"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "config-found",
+              "leftValue": "={{ $json.found }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -8160,
+        192
+      ],
+      "id": "1ff437f5-248a-4bc7-8631-c2e41fde8bce",
+      "name": "If Store Config Found"
+    },
+    {
+      "parameters": {
+        "operation": "deleteRows",
+        "dataTableId": {
+          "__rl": true,
+          "value": "store_configs",
+          "mode": "name"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "storeId",
+              "keyValue": "={{ $json.storeId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -7920,
+        128
+      ],
+      "id": "5193e958-6e4d-4139-8c0b-0a6b79faf12a",
+      "name": "Delete Store Config"
     },
     {
       "parameters": {
@@ -236,10 +374,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -4512,
+        -7680,
         64
       ],
-      "id": "69032df1-8751-47b2-ab7a-c91dbaffc5e6",
+      "id": "8d8168c3-05aa-44a8-a065-b7ed72985782",
       "name": "Respond Success"
     },
     {
@@ -269,10 +407,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -6192,
-        352
+        -9600,
+        288
       ],
-      "id": "fb58eb37-64a1-4337-ab00-d1e407df55a6",
+      "id": "561f203a-20cf-4f1c-bcf4-9c9fc81cffc9",
       "name": "Respond Error"
     }
   ],
@@ -343,7 +481,7 @@
       "main": [
         [
           {
-            "node": "Get Configs",
+            "node": "Is Product Level?",
             "type": "main",
             "index": 0
           }
@@ -357,33 +495,51 @@
         ]
       ]
     },
-    "Get Configs": {
+    "Is Product Level?": {
       "main": [
         [
           {
-            "node": "Find Config",
+            "node": "Get Product Configs",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Store Configs",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Find Config": {
+    "Get Product Configs": {
       "main": [
         [
           {
-            "node": "If Config Found",
+            "node": "Find Product Config",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "If Config Found": {
+    "Find Product Config": {
       "main": [
         [
           {
-            "node": "Delete Config",
+            "node": "If Product Config Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Product Config Found": {
+      "main": [
+        [
+          {
+            "node": "Delete Product Config",
             "type": "main",
             "index": 0
           }
@@ -397,7 +553,58 @@
         ]
       ]
     },
-    "Delete Config": {
+    "Delete Product Config": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Store Configs": {
+      "main": [
+        [
+          {
+            "node": "Find Store Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Store Config": {
+      "main": [
+        [
+          {
+            "node": "If Store Config Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Store Config Found": {
+      "main": [
+        [
+          {
+            "node": "Delete Store Config",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Store Config": {
       "main": [
         [
           {

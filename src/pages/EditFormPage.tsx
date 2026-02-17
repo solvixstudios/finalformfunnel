@@ -1,7 +1,6 @@
 import { BuilderSkeleton } from '@/components/FormLoading/BuilderSkeleton';
 import { FormLoadDialog } from '@/components/FormLoading/FormLoadDialog';
 import { PageHeader } from '@/components/GlobalHeader/PageHeader';
-import { PublishSheet } from '@/components/PublishSheet';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,9 +15,9 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/sonner';
 import { useWhatsAppProfiles } from '@/lib/firebase/whatsappHooks';
 import { useGoogleSheets } from '@/lib/firebase/sheetsHooks';
-import { FolderOpen, RotateCcw, RotateCw, Save, UploadCloud } from 'lucide-react';
+import { FolderOpen, RotateCcw, RotateCw, Save } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import FormTab from '../components/FormTab';
 import { syncFormChanges } from '../lib/sync';
 
@@ -33,6 +32,7 @@ interface EditFormPageProps {
 
 const EditFormPage = ({ userId }: EditFormPageProps) => {
   const { formId: routeFormId } = useParams<{ formId: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { t, dir } = useI18n();
   const { saveForm, updateForm, deleteForm, forms, loading: formsLoading } = useSavedForms(userId);
@@ -68,7 +68,6 @@ const EditFormPage = ({ userId }: EditFormPageProps) => {
   const [formDescription, setFormDescription] = useState('');
   const [showSaveSuccess, setShowSaveSuccess] = useState(false);
   const [formStatus, setFormStatus] = useState<'draft' | 'published'>('draft');
-  const [showPublishDialog, setShowPublishDialog] = useState(false);
 
   // Ref to track form ID we just saved - prevents reload after save
   const justSavedFormIdRef = useRef<string | null>(null);
@@ -120,8 +119,10 @@ const EditFormPage = ({ userId }: EditFormPageProps) => {
       if (formId) {
         useFormStore.getState().resetToNewForm();
       }
+
+
     }
-  }, [routeFormId, forms, formsLoading, formId, navigate]);
+  }, [routeFormId, forms, formsLoading, formId, navigate, searchParams]);
 
   // Block rendering until context is ready
   if (!isContextReady && !formsLoading) {
@@ -380,6 +381,7 @@ const EditFormPage = ({ userId }: EditFormPageProps) => {
           name: formName.trim(),
           description: formDescription.trim(),
           config: exportDataMemoized(),
+          type: formConfig.type || 'product',
         });
         markClean();
         // Clear history to prevent undoing past the save point
@@ -387,7 +389,7 @@ const EditFormPage = ({ userId }: EditFormPageProps) => {
         toast.success(`"${formName}" updated successfully!`);
       } else {
         // Save new form
-        const savedForm = await saveForm(formName.trim(), formDescription.trim(), exportDataMemoized());
+        const savedForm = await saveForm(formName.trim(), formDescription.trim(), exportDataMemoized(), formConfig.type || 'product');
         setFormName(savedForm.name);
         setFormId(savedForm.id);
         savedFormId = savedForm.id;
@@ -517,16 +519,7 @@ const EditFormPage = ({ userId }: EditFormPageProps) => {
             </span>
           )}
 
-          <Button
-            onClick={() => setShowPublishDialog(true)}
-            disabled={!formId}
-            size="sm"
-            variant="brand"
-            className="gap-2 transition-all hover:shadow-md active:scale-95"
-          >
-            <UploadCloud size={14} />
-            <span className="font-semibold text-xs tracking-wide">Publish</span>
-          </Button>
+
         </div>
       )}
     </div>
@@ -696,22 +689,7 @@ const EditFormPage = ({ userId }: EditFormPageProps) => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {formId && (
-        <PublishSheet
-          open={showPublishDialog}
-          onOpenChange={setShowPublishDialog}
-          userId={userId}
-          formId={formId}
-          formName={formName}
-          formConfig={formConfig}
-          onPublishSuccess={() => {
-            if (formStatus !== 'published') {
-              updateForm(formId, { status: 'published' });
-              setFormStatus('published');
-            }
-          }}
-        />
-      )}
+
     </div>
   );
 };

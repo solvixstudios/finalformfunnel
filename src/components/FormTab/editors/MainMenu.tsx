@@ -117,13 +117,16 @@ export const MainMenu = ({ onLoadClick }: { onLoadClick?: () => void }) => {
           onClick={() => setEditingSection("sections_list")}
         />
 
-        <MenuCard
-          icon={Tag}
-          label="Packs & Offers"
-          description="Manage your product offers"
-          accentClass="from-amber-500 to-orange-600"
-          onClick={() => setEditingSection("packs_manager")}
-        />
+        {/* Hide Offers for Store Forms */}
+        {useFormStore((state) => state.formConfig.type) !== 'store' && (
+          <MenuCard
+            icon={Tag}
+            label="Packs & Offers"
+            description="Manage your product offers"
+            accentClass="from-amber-500 to-orange-600"
+            onClick={() => setEditingSection("packs_manager")}
+          />
+        )}
 
         <MenuCard
           icon={Truck}

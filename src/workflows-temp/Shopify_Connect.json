@@ -161,7 +161,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Check if 'stores' table exists in the list of tables\nconst tables = $input.all();\nconst tableNames = tables.map(t => t.json.name);\n\nconst storesTableExists = tableNames.includes('stores');\n\n// Also check for store_configs while we're here\nconst configsTableExists = tableNames.includes('store_configs');\n\n// Find the stores table ID if it exists\nlet storesTableId = null;\nif (storesTableExists) {\n  const storesTable = tables.find(t => t.json.name === 'stores');\n  storesTableId = storesTable ? storesTable.json.id : null;\n}\n\nreturn [{\n  json: {\n    storesTableExists,\n    configsTableExists,\n    storesTableId,\n    tableNames\n  }\n}];"
+        "jsCode": "// Check if required tables exist in the list of tables\nconst tables = $input.all();\nconst tableNames = tables.map(t => t.json.name);\n\nconst storesTableExists = tableNames.includes('stores');\nconst configsTableExists = tableNames.includes('store_configs');\nconst productConfigsTableExists = tableNames.includes('product_configs');\n\n// Find the stores table ID if it exists\nlet storesTableId = null;\nif (storesTableExists) {\n  const storesTable = tables.find(t => t.json.name === 'stores');\n  storesTableId = storesTable ? storesTable.json.id : null;\n}\n\nreturn [{\n  json: {\n    storesTableExists,\n    configsTableExists,\n    productConfigsTableExists,\n    storesTableId,\n    tableNames\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,

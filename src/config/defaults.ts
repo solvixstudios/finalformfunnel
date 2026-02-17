@@ -51,6 +51,7 @@ export const DEFAULT_OFFERS = [
 // Default form configuration
 export const DEFAULT_FORM_CONFIG = {
   version: FORM_CONFIG_SCHEMA_VERSION,
+  type: "product" as "store" | "product",
   accentColor: "#6366f1",
   ctaColor: "#4f46e5",
   ctaShake: true,
@@ -401,6 +402,10 @@ export const DEFAULT_FORM_CONFIG = {
       { id: 'shippingPrice', label: 'Livraison', enabled: true },
       { id: 'totalPrice', label: 'Total', enabled: true },
       { id: 'shippingType', label: 'Type de Livraison', enabled: true },
+      { id: 'offerName', label: 'Nom de l\'Offre', enabled: true },
+      { id: 'offerId', label: 'ID Offre', enabled: false },
+      { id: 'offerQuantity', label: 'Quantité Offre', enabled: false },
+      { id: 'wilayaId', label: 'ID Wilaya', enabled: false },
       { id: 'promoCode', label: 'Code Promo', enabled: false },
       { id: 'note', label: 'Note', enabled: false },
       { id: 'source', label: 'Source', enabled: true },

@@ -82,65 +82,66 @@ export const ThankYouPopup = ({ config, lang, onClose, fixed = false, orderData 
         };
     }, [fixed]);
 
-    // Effects: Sound & Confetti - Run ONLY ON MOUNT
+    // Effects: Sound & Confetti - Run when popup is ready (portal resolved)
     useEffect(() => {
         if ((config as any).thankYou?.enableSound) {
             playSuccessSound();
         }
         if ((config as any).thankYou?.enableConfetti) {
-            // FIX: Always use the internal canvas if available, because in Shadow DOM/Portal, global confetti might not appear correctly or be z-indexed wrong.
-            // Even if fixed=true (Overlay), we render the canvas inside our popup container.
-
             const canvas = internalCanvasRef.current;
-            if (canvas) {
-                setTimeout(() => {
-                    try {
-                        const myConfetti = confetti.create(canvas, {
-                            resize: true,
-                            useWorker: false // Worker might cause issues in some environments/builds (ReferenceError)
-                        });
+            if (!canvas) return;
 
-                        const duration = 3000;
-                        const end = Date.now() + duration;
+            // Wait for canvas to be actually rendered with dimensions
+            const tryConfetti = () => {
+                if (canvas.offsetWidth === 0 || canvas.offsetHeight === 0) {
+                    // Canvas not ready yet, retry
+                    setTimeout(tryConfetti, 100);
+                    return;
+                }
 
-                        (function frame() {
-                            try {
-                                // Launch from left
-                                myConfetti({
-                                    particleCount: 2,
-                                    angle: 60,
-                                    spread: 55,
-                                    origin: { x: 0 },
-                                    colors: [config.accentColor || '#10b981', '#ffffff']
-                                });
-                                // Launch from right
-                                myConfetti({
-                                    particleCount: 2,
-                                    angle: 120,
-                                    spread: 55,
-                                    origin: { x: 1 },
-                                    colors: [config.accentColor || '#10b981', '#ffffff']
-                                });
+                try {
+                    const myConfetti = confetti.create(canvas, {
+                        resize: true,
+                        useWorker: false
+                    });
 
-                                if (Date.now() < end) {
-                                    requestAnimationFrame(frame);
-                                }
-                            } catch (e) {
-                                console.error("Confetti frame error:", e);
+                    const duration = 3000;
+                    const end = Date.now() + duration;
+
+                    (function frame() {
+                        try {
+                            myConfetti({
+                                particleCount: 2,
+                                angle: 60,
+                                spread: 55,
+                                origin: { x: 0 },
+                                colors: [config.accentColor || '#10b981', '#ffffff']
+                            });
+                            myConfetti({
+                                particleCount: 2,
+                                angle: 120,
+                                spread: 55,
+                                origin: { x: 1 },
+                                colors: [config.accentColor || '#10b981', '#ffffff']
+                            });
+
+                            if (Date.now() < end) {
+                                requestAnimationFrame(frame);
                             }
-                        }());
-                    } catch (e) {
-                        console.error("Confetti init error:", e);
-                    }
-                }, 300); // Delay to ensure canvas is layouted
+                        } catch (e) {
+                            console.error("Confetti frame error:", e);
+                        }
+                    }());
+                } catch (e) {
+                    console.error("Confetti init error:", e);
+                }
+            };
 
-                return () => {
-                    // Cleanup if needed
-                };
-            }
+            // Delay to let portal/DOM settle
+            setTimeout(tryConfetti, 400);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [portalContainer]);
 
     // WhatsApp Helpers
     const getWhatsAppUrl = (mode: 'confirm' | 'modify') => {

@@ -11,8 +11,9 @@ import {
   where,
   writeBatch
 } from "firebase/firestore";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { db } from "../firebase";
+// import { useStoreAssignments as useStoreAssignmentsHook } from "../hooks/useStoreAssignments"; // Removed
 import {
   checkStoreOwnership,
   claimStoreOwnership,
@@ -62,7 +63,7 @@ export const useSavedForms = (userId: string) => {
   }, [userId]);
 
   const saveForm = useCallback(
-    async (name: string, description: string, config: Record<string, any>) => {
+    async (name: string, description: string, config: Record<string, any>, type: 'store' | 'product' = 'product') => {
       if (!userId) throw new Error("User not authenticated");
       try {
         const newForm = {
@@ -70,6 +71,7 @@ export const useSavedForms = (userId: string) => {
           name,
           description,
           config,
+          type,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
@@ -309,7 +311,7 @@ export const useConnectedStores = (userId: string) => {
           storeToDelete?.shopifyDomain ||
           (storeToDelete?.url ? normalizeShopifyDomain(storeToDelete.url) : null);
 
-        // 0. Disable the loader script on Shopify (remove ScriptTag)
+        // 0. Disable the loader script on Shopify (remove ScriptTag ONLY, don't disconnect yet)
         if (storeToDelete?.loaderInstalled && storeToDelete?.clientId && storeToDelete?.clientSecret) {
           try {
             const { getAdapter } = await import("../integrations");
@@ -328,6 +330,9 @@ export const useConnectedStores = (userId: string) => {
         }
 
         // 0.5 Clean up n8n store_configs for all assignments of this store
+        // IMPORTANT: This must happen BEFORE disconnectStore, because removeForm
+        // needs the store row to still exist in n8n's stores table.
+        const subdomain = storeToDelete?.url?.replace('.myshopify.com', '').replace(/https?:\/\//, '') || '';
         if (storeToDelete?.clientId && storeToDelete?.clientSecret) {
           try {
             const configAssignmentsQuery = query(
@@ -337,7 +342,6 @@ export const useConnectedStores = (userId: string) => {
             const configSnap = await getDocs(configAssignmentsQuery);
             const { getAdapter } = await import("../integrations");
             const adapter = getAdapter(storeToDelete.platform || 'shopify');
-            const subdomain = storeToDelete.url?.replace('.myshopify.com', '').replace(/https?:\/\//, '') || '';
 
             // Delete each config from n8n (don't block disconnect)
             const cleanupPromises = configSnap.docs.map(d => {
@@ -357,6 +361,18 @@ export const useConnectedStores = (userId: string) => {
             await Promise.allSettled(cleanupPromises);
           } catch (err) {
             console.warn("Failed to clean up n8n configs during disconnect:", err);
+          }
+        }
+
+        // 0.9 NOW disconnect store from n8n (removes the stores row)
+        // This is AFTER config cleanup so removeForm can still find the store.
+        if (subdomain) {
+          try {
+            const { getAdapter } = await import("../integrations");
+            const adapter = getAdapter(storeToDelete?.platform || 'shopify');
+            await adapter.disconnectStore(subdomain);
+          } catch (err) {
+            console.warn("Failed to disconnect store from n8n:", err);
           }
         }
 
@@ -403,38 +419,30 @@ export const useConnectedStores = (userId: string) => {
 
 // ===== ASSIGNMENTS HOOKS =====
 
+import { useAssignmentsContext } from "../../contexts/AssignmentsContext";
+
 export const useFormAssignments = (userId: string) => {
-  const [assignments, setAssignments] = useState<FormAssignment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Bridge: data from n8n via AssignmentsContext (global state), mutations via adapter
+  const { stores, assignments: n8nAssignments, loading, error, refetch } = useAssignmentsContext();
 
-  // Real-time subscription for assignments
-  useEffect(() => {
-    if (!userId) return;
-    setLoading(true);
-
-    const q = query(collection(db, "assignments"), where("userId", "==", userId));
-
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const fetchedAssignments: FormAssignment[] = [];
-        snapshot.forEach((doc) => {
-          fetchedAssignments.push({ id: doc.id, ...doc.data() } as FormAssignment);
-        });
-        setAssignments(fetchedAssignments);
-        setLoading(false);
-        setError(null);
-      },
-      (err) => {
-        console.error("Error fetching assignments:", err);
-        setError(err.message);
-        setLoading(false);
-      }
-    );
-
-    return () => unsubscribe();
-  }, [userId]);
+  // Map n8n assignments to FormAssignment shape for consumer compatibility
+  const assignments: FormAssignment[] = useMemo(() =>
+    n8nAssignments.map((a, idx) => ({
+      id: `n8n-${a.storeId}-${a.type}-${a.productId || 'global'}-${idx}`,
+      userId,
+      formId: a.formId,
+      storeId: a.storeId,
+      productId: a.productId || null,
+      productHandle: null,
+      assignmentType: a.type,
+      priority: a.type === 'product' ? 10 : 1,
+      isActive: true,
+      shopifyDomain: '',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    })),
+    [n8nAssignments, userId]
+  );
 
   const assignForm = useCallback(
     async (assignmentData: {
@@ -443,66 +451,111 @@ export const useFormAssignments = (userId: string) => {
       type: "store" | "product";
       productId?: string;
       productHandle?: string;
-      shopifyDomain?: string; // New field
+      shopifyDomain?: string;
+      formName?: string;
+      formConfig?: Record<string, any>;
+      skipRefetch?: boolean;
     }) => {
       if (!userId) throw new Error("User not authenticated");
-      try {
-        const { formId, storeId, type, productId, productHandle } = assignmentData;
 
-        // Ensure shopifyDomain is present
-        let shopifyDomain = assignmentData.shopifyDomain;
+      const { formId, storeId, type, productId, productHandle } = assignmentData;
 
-        // If not provided, fetch from store (fallback)
-        if (!shopifyDomain) {
-          try {
-            const storeDoc = await getDoc(doc(db, "stores", storeId));
-            if (storeDoc.exists()) {
-              const storeData = storeDoc.data();
-              shopifyDomain = storeData.url;
-            }
-          } catch (e) {
-            console.error("Failed to fetch store for domain:", e);
-          }
-        }
-
-        const newAssignment: Omit<FormAssignment, "id"> = {
-          userId,
-          formId,
-          storeId,
-          shopifyDomain: shopifyDomain || "",
-          assignmentType: type,
-          productId: type === "store" ? null : (productId ?? null),
-          productHandle: type === "store" ? null : (productHandle ?? null),
-          priority: type === "product" ? 10 : 1,
-          isActive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        const docRef = await addDoc(collection(db, "assignments"), newAssignment);
-        const savedAssignment: FormAssignment = { id: docRef.id, ...newAssignment };
-
-        // No manual state update - listener handles it
-        return savedAssignment;
-      } catch (err: any) {
-        setError(err.message);
-        throw err;
+      // Find the store to get credentials
+      const store = stores.find(s => s.id === storeId);
+      if (!store || !store.clientId || !store.clientSecret) {
+        throw new Error("Store not found or missing credentials");
       }
+
+      const subdomain = (store.shopifyDomain || store.url || '').replace(/https?:\/\//, '').replace('.myshopify.com', '');
+
+      // Build form config — use provided or fetch from Firebase
+      let formConfig: Record<string, any> = assignmentData.formConfig || { formId };
+      if (!assignmentData.formConfig) {
+        try {
+          const formDoc = await getDoc(doc(db, "forms", formId));
+          if (formDoc.exists()) {
+            formConfig = { formId, name: formDoc.data().name, ...formDoc.data().config };
+          }
+        } catch (e) {
+          console.warn("Could not fetch form data for assignment:", e);
+        }
+      }
+
+      // Push to n8n via adapter (single source of truth)
+      const { getAdapter } = await import("../integrations");
+      const adapter = getAdapter(store.platform || 'shopify');
+      await adapter.assignForm(subdomain, {
+        clientId: store.clientId,
+        clientSecret: store.clientSecret,
+      }, formConfig, {
+        formId,
+        formName: assignmentData.formName || formConfig.name || 'Untitled Form',
+        storeId,
+        assignmentType: type,
+        productId: type === 'product' ? (productId || undefined) : undefined,
+        productHandle: type === 'product' ? (productHandle || undefined) : undefined,
+      });
+
+      // Refetch from n8n to sync UI state (unless skipped for batch ops)
+      if (!assignmentData.skipRefetch) {
+        await refetch();
+      }
+
+      // Return a FormAssignment shape for compatibility
+      const newAssignment: FormAssignment = {
+        id: `n8n-${storeId}-${type}-${productId || 'global'}-new`,
+        userId,
+        formId,
+        storeId,
+        productId: type === "store" ? null : (productId ?? null),
+        productHandle: type === "store" ? null : (productHandle ?? null),
+        assignmentType: type,
+        priority: type === "product" ? 10 : 1,
+        isActive: true,
+        shopifyDomain: '',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      return newAssignment;
     },
-    [userId],
+    [userId, stores, refetch],
   );
 
   const deleteAssignment = useCallback(
     async (assignmentId: string) => {
       if (!userId) throw new Error("User not authenticated");
       try {
-        await deleteDoc(doc(db, "assignments", assignmentId));
-        // No manual state update - listener handles it
+        // Parse the synthetic assignment ID to find the assignment
+        // Format: n8n-{storeId}-{type}-{productId|global}-{idx|new}
+        const assignment = assignments.find(a => a.id === assignmentId);
+        if (!assignment) {
+          console.warn("Assignment not found for deletion:", assignmentId);
+          return;
+        }
+
+        const store = stores.find(s => s.id === assignment.storeId);
+        if (!store || !store.clientId || !store.clientSecret) {
+          throw new Error("Store not found or missing credentials");
+        }
+
+        const subdomain = (store.shopifyDomain || store.url || '').replace(/https?:\/\//, '').replace('.myshopify.com', '');
+
+        // Call adapter to remove from n8n
+        const { getAdapter } = await import("../integrations");
+        const adapter = getAdapter(store.platform || 'shopify');
+        await adapter.removeForm(subdomain, {
+          clientId: store.clientId,
+          clientSecret: store.clientSecret,
+        }, assignment.productId || undefined);
+
+        // Refetch to get updated data from n8n
+        await refetch();
       } catch (err: any) {
-        setError(err.message);
+        console.error("[useFormAssignments] deleteAssignment error:", err);
         throw err;
       }
     },
-    [userId],
+    [userId, stores, assignments, refetch],
   );
 
   return {
@@ -511,6 +564,6 @@ export const useFormAssignments = (userId: string) => {
     error,
     assignForm,
     deleteAssignment,
-    refetch: () => { }, // No-op
+    refetch,
   };
 };

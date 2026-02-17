@@ -340,6 +340,96 @@
       ],
       "id": "3dff2c35-1f0b-46c7-b8db-1598e3e0b390",
       "name": "Error Response"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "product_configs",
+          "mode": "name"
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -10176,
+        360
+      ],
+      "id": "cascade-get-product-configs-001",
+      "name": "Get All Product Configs",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Find all product_configs rows matching the storeId being disconnected\nconst rows = $input.all();\nconst storeId = $('Find Row').first().json.storeId;\n\nif (!storeId) {\n  return [{ json: { configsFound: false, count: 0 } }];\n}\n\nconst matching = rows.filter(r => r.json.storeId === storeId);\n\nif (matching.length === 0) {\n  return [{ json: { configsFound: false, count: 0 } }];\n}\n\n// Return each matching row ID for deletion\nreturn matching.map(r => ({ json: { configsFound: true, configRowId: r.id, storeId } }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -9936,
+        360
+      ],
+      "id": "cascade-find-product-configs-001",
+      "name": "Find Product Configs to Delete"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "product-configs-found",
+              "leftValue": "={{ $json.configsFound }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -9696,
+        360
+      ],
+      "id": "cascade-if-product-configs-001",
+      "name": "If Product Configs Found"
+    },
+    {
+      "parameters": {
+        "operation": "deleteRows",
+        "dataTableId": {
+          "__rl": true,
+          "value": "product_configs",
+          "mode": "name"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyValue": "={{ $json.configRowId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -9456,
+        280
+      ],
+      "id": "cascade-delete-product-configs-001",
+      "name": "Delete Product Config Rows"
     }
   ],
   "connections": {
@@ -417,6 +507,11 @@
             "node": "Get All Configs",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Get All Product Configs",
+            "type": "main",
+            "index": 0
           }
         ],
         [
@@ -466,6 +561,40 @@
         [
           {
             "node": "Delete Config Rows",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Get All Product Configs": {
+      "main": [
+        [
+          {
+            "node": "Find Product Configs to Delete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Product Configs to Delete": {
+      "main": [
+        [
+          {
+            "node": "If Product Configs Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Product Configs Found": {
+      "main": [
+        [
+          {
+            "node": "Delete Product Config Rows",
             "type": "main",
             "index": 0
           }

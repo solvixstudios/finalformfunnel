@@ -36,7 +36,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Check which tables exist\nconst tables = $input.all().map(t => t.json.name).filter(Boolean);\n\nconst requiredTables = [\n  'stores',\n  'store_configs'\n];\n\nconst toCreate = requiredTables.filter(t => !tables.includes(t));\n\nreturn [{ json: {\n  existingTables: tables,\n  tablesToCreate: toCreate,\n  allExist: toCreate.length === 0\n} }];"
+        "jsCode": "// Check which tables exist\nconst tables = $input.all().map(t => t.json.name).filter(Boolean);\n\nconst requiredTables = [\n  'stores',\n  'store_configs',\n  'product_configs'\n];\n\nconst toCreate = requiredTables.filter(t => !tables.includes(t));\n\nreturn [{ json: {\n  existingTables: tables,\n  tablesToCreate: toCreate,\n  allExist: toCreate.length === 0\n} }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -166,9 +166,6 @@
               "name": "storeId"
             },
             {
-              "name": "ownerId"
-            },
-            {
               "name": "formId"
             },
             {
@@ -189,6 +186,70 @@
     },
     {
       "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "needs-product-configs",
+              "leftValue": "={{ $('Check Required Tables').first().json.tablesToCreate.includes('product_configs') }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        112,
+        -160
+      ],
+      "id": "if-needs-product-configs",
+      "name": "If Needs Product Configs"
+    },
+    {
+      "parameters": {
+        "resource": "table",
+        "operation": "create",
+        "tableName": "product_configs",
+        "columns": {
+          "column": [
+            {
+              "name": "storeId"
+            },
+            {
+              "name": "productId"
+            },
+            {
+              "name": "formId"
+            },
+            {
+              "name": "formData"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        352,
+        -256
+      ],
+      "id": "create-product-configs-table",
+      "name": "Create Product Configs Table"
+    },
+    {
+      "parameters": {
         "respondWith": "json",
         "responseBody": "{\"success\": true, \"message\": \"Tables initialized\"}",
         "options": {
@@ -205,7 +266,7 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        112,
+        592,
         -160
       ],
       "id": "d5e21c7e-2afc-4cb0-84b7-ea5c5cf46992",
@@ -286,7 +347,7 @@
         ],
         [
           {
-            "node": "Respond Success",
+            "node": "If Needs Product Configs",
             "type": "main",
             "index": 0
           }
@@ -294,6 +355,35 @@
       ]
     },
     "Create Configs Table": {
+      "main": [
+        [
+          {
+            "node": "If Needs Product Configs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Needs Product Configs": {
+      "main": [
+        [
+          {
+            "node": "Create Product Configs Table",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Product Configs Table": {
       "main": [
         [
           {

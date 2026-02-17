@@ -133,6 +133,25 @@
         "operation": "get",
         "dataTableId": {
           "__rl": true,
+          "value": "product_configs",
+          "mode": "name"
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -9568,
+        -544
+      ],
+      "id": "get-product-configs-node",
+      "name": "Get Product Configs",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
           "value": "store_configs",
           "mode": "name"
         }
@@ -141,15 +160,15 @@
       "typeVersion": 1.1,
       "position": [
         -9568,
-        -448
+        -352
       ],
       "id": "ed9bce19-0354-4c3f-8e77-0daf667344a4",
-      "name": "Get Configs",
+      "name": "Get Store Configs",
       "alwaysOutputData": true
     },
     {
       "parameters": {
-        "jsCode": "// Find config with fallback: product -> store-level\nconst rows = $input.all();\nconst storeData = $('Find Store').first().json;\n\nconst storeId = storeData.storeId;\nconst productId = storeData.productId;\n\n// Normalize ownerId: productId or empty string for store-level\nconst normalizeOwnerId = (id) => (!id || id === 'null' || id === 'undefined') ? '' : String(id);\n\n// First try to find product-specific config\nlet config = null;\nif (productId) {\n  const targetOwnerId = normalizeOwnerId(productId);\n  config = rows.find(r => {\n    const rowOwnerId = normalizeOwnerId(r.json.ownerId);\n    return r.json.storeId === storeId && rowOwnerId === targetOwnerId;\n  });\n}\n\n// Fallback to store-level config (ownerId is empty string)\nif (!config) {\n  config = rows.find(r => {\n    const rowOwnerId = normalizeOwnerId(r.json.ownerId);\n    return r.json.storeId === storeId && rowOwnerId === '';\n  });\n}\n\nif (config) {\n  let formData = {};\n  try {\n    if (config.json.formData) {\n      if (typeof config.json.formData === 'string') {\n        formData = JSON.parse(config.json.formData);\n      } else {\n        formData = config.json.formData;\n      }\n    }\n  } catch (e) {\n    formData = {};\n  }\n  return [{ json: {\n    found: true,\n    formId: config.json.formId,\n    formData,\n    updatedAt: config.json.updatedAt || new Date().toISOString(),\n    ownerId: config.json.ownerId,\n    isProductLevel: !!(productId && normalizeOwnerId(config.json.ownerId) === normalizeOwnerId(productId))\n  } }];\n}\n\nreturn [{ json: { found: false, formData: {} } }];"
+        "jsCode": "// Dual-Table Config Lookup\n// Priority: 1. product_configs match -> 2. store_configs match -> 3. empty\n\nconst storeData = $('Find Store').first().json;\nconst storeId = storeData.storeId;\nconst reqProductId = storeData.productId ? String(storeData.productId).trim() : '';\n\n// Strip GID prefix if present\nconst normalize = (val) => {\n  if (!val) return '';\n  let s = String(val).trim();\n  const gidMatch = s.match(/^gid:\\/\\/shopify\\/Product\\/(.+)$/);\n  if (gidMatch) s = gidMatch[1];\n  return s;\n};\n\nconst normalizedReqProductId = normalize(reqProductId);\n\n// Read both tables\nconst productConfigs = $('Get Product Configs').all();\nconst storeConfigs = $('Get Store Configs').all();\n\nlet match = null;\nlet matchType = 'none';\n\n// 1. Try product_configs table first (exact productId match)\nif (normalizedReqProductId !== '') {\n  const productMatch = productConfigs.find(r =>\n    r.json.storeId === storeId && normalize(r.json.productId) === normalizedReqProductId\n  );\n  if (productMatch) {\n    match = productMatch;\n    matchType = 'product';\n  }\n}\n\n// 2. Fallback to store_configs table (global store-level config)\nif (!match) {\n  const storeMatch = storeConfigs.find(r => r.json.storeId === storeId);\n  if (storeMatch) {\n    match = storeMatch;\n    matchType = 'global';\n  }\n}\n\n// 3. Return result\nif (match) {\n  let formData = {};\n  try {\n    formData = typeof match.json.formData === 'string'\n      ? JSON.parse(match.json.formData)\n      : match.json.formData || {};\n  } catch (e) {\n    formData = {};\n  }\n\n  return [{ json: {\n    found: true,\n    matchType,\n    formId: match.json.formId,\n    formData,\n    updatedAt: match.json.updatedAt || new Date().toISOString()\n  } }];\n}\n\nreturn [{ json: { found: false, error: 'No config found' } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -366,7 +385,7 @@
       "main": [
         [
           {
-            "node": "Get Configs",
+            "node": "Get Store Configs",
             "type": "main",
             "index": 0
           }
@@ -380,7 +399,18 @@
         ]
       ]
     },
-    "Get Configs": {
+    "Get Store Configs": {
+      "main": [
+        [
+          {
+            "node": "Get Product Configs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Product Configs": {
       "main": [
         [
           {

@@ -28,6 +28,7 @@ import { toast } from 'sonner';
 import { useConnectedStores } from '../../lib/firebase/hooks';
 import { getAdapter, LOADER_VERSION } from '../../lib/integrations';
 import { cn } from '@/lib/utils';
+import { syncProductsFromShopify, notifyProductSyncComplete } from '../../lib/products';
 
 // --- CONSTANTS ---
 const SHOPIFY_SCOPES = [
@@ -279,6 +280,17 @@ export function ShopifyIntegration({ userId }: ShopifyIntegrationProps) {
                         }
                     } else {
                         toast.success(`Successfully connected ${result.store.name}!`);
+                    }
+
+                    // Auto-sync products
+                    toast.info("Syncing products...");
+                    try {
+                        const syncedProducts = await syncProductsFromShopify(newStore);
+                        notifyProductSyncComplete(newStore.id, syncedProducts);
+                        toast.success(`Synced ${syncedProducts.length} products`);
+                    } catch (syncErr) {
+                        console.error("Auto-sync failed", syncErr);
+                        toast.warning("Store connected, but initial product sync failed.");
                     }
 
                     setView('list');

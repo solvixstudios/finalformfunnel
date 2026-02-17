@@ -1,0 +1,371 @@
+{
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "shopify/assignments",
+                "responseMode": "responseNode",
+                "options": {
+                    "allowedOrigins": "*"
+                }
+            },
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2.1,
+            "position": [
+                -1920,
+                32
+            ],
+            "id": "fd91a45d-7b4d-461f-933b-10f054b2752a",
+            "name": "Webhook",
+            "webhookId": "get-assignments-webhook"
+        },
+        {
+            "parameters": {
+                "jsCode": "// Parse request body\nconst body = $input.first().json.body;\n\nconst shopDomain = body.shopDomain;\nconst clientId = body.clientId;\nconst clientSecret = body.clientSecret;\n\nif (!shopDomain || !clientId || !clientSecret) {\n  return [{ json: { error: 'Missing required credentials', valid: false } }];\n}\n\nreturn [{ json: {\n  valid: true,\n  shopDomain,\n  clientId,\n  clientSecret\n} }];"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -1680,
+                32
+            ],
+            "id": "b029c369-787b-46f8-bb8d-a356642fbeb2",
+            "name": "Parse Request"
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict"
+                    },
+                    "conditions": [
+                        {
+                            "id": "valid-check",
+                            "leftValue": "={{ $json.valid }}",
+                            "rightValue": true,
+                            "operator": {
+                                "type": "boolean",
+                                "operation": "equals"
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.2,
+            "position": [
+                -1440,
+                32
+            ],
+            "id": "0cdb1f6c-e446-4b46-985b-6ecbb681cda9",
+            "name": "If Valid"
+        },
+        {
+            "parameters": {
+                "operation": "get",
+                "dataTableId": {
+                    "__rl": true,
+                    "value": "stores",
+                    "mode": "name"
+                }
+            },
+            "type": "n8n-nodes-base.dataTable",
+            "typeVersion": 1.1,
+            "position": [
+                -1200,
+                -64
+            ],
+            "id": "49b5bd7e-4ac8-4138-9d5e-b7135fc61463",
+            "name": "Get Stores",
+            "alwaysOutputData": true
+        },
+        {
+            "parameters": {
+                "jsCode": "// Find store and verify credentials\nconst rows = $input.all();\nconst req = $('Parse Request').first().json;\n\nconst store = rows.find(r => r.json.shopDomain === req.shopDomain);\n\nif (!store) {\n  return [{ json: { found: false, error: 'Store not found' } }];\n}\n\nif (store.json.clientId !== req.clientId || store.json.clientSecret !== req.clientSecret) {\n  return [{ json: { found: false, error: 'Invalid credentials' } }];\n}\n\nreturn [{ json: {\n  found: true,\n  storeId: store.json.storeId\n} }];"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -960,
+                -64
+            ],
+            "id": "4035763c-3136-4618-95d2-b26b0f847999",
+            "name": "Verify Store"
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict"
+                    },
+                    "conditions": [
+                        {
+                            "id": "store-found",
+                            "leftValue": "={{ $json.found }}",
+                            "rightValue": true,
+                            "operator": {
+                                "type": "boolean",
+                                "operation": "equals"
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.2,
+            "position": [
+                -720,
+                -64
+            ],
+            "id": "7b29c8d7-6bb4-48cd-8064-885531fcd44e",
+            "name": "If Store Found"
+        },
+        {
+            "parameters": {
+                "operation": "get",
+                "dataTableId": {
+                    "__rl": true,
+                    "value": "store_configs",
+                    "mode": "name"
+                }
+            },
+            "type": "n8n-nodes-base.dataTable",
+            "typeVersion": 1.1,
+            "position": [
+                -480,
+                -160
+            ],
+            "id": "a9a82d1f-ee81-43d4-b6a2-242395d86f06",
+            "name": "Get Store Configs",
+            "alwaysOutputData": true
+        },
+        {
+            "parameters": {
+                "operation": "get",
+                "dataTableId": {
+                    "__rl": true,
+                    "value": "product_configs",
+                    "mode": "name"
+                }
+            },
+            "type": "n8n-nodes-base.dataTable",
+            "typeVersion": 1.1,
+            "position": [
+                -480,
+                32
+            ],
+            "id": "f48d4c4b-95a8-423c-98d9-c19586e14abb",
+            "name": "Get Product Configs",
+            "alwaysOutputData": true
+        },
+        {
+            "parameters": {
+                "jsCode": "// Build assignments list from both tables\nconst storeData = $('Verify Store').first().json;\nconst storeId = storeData.storeId;\n\nconst storeConfigs = $('Get Store Configs').all();\nconst productConfigs = $('Get Product Configs').all();\n\nconst assignments = [];\n\n// Global store assignment\nconst storeConfig = storeConfigs.find(r => r.json.storeId === storeId);\nif (storeConfig) {\n  assignments.push({\n    type: 'store',\n    formId: storeConfig.json.formId,\n    storeId: storeId\n  });\n}\n\n// Product-level assignments\nproductConfigs\n  .filter(r => r.json.storeId === storeId)\n  .forEach(r => {\n    assignments.push({\n      type: 'product',\n      formId: r.json.formId,\n      productId: r.json.productId,\n      storeId: storeId\n    });\n  });\n\nreturn [{ json: { success: true, assignments } }];"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -240,
+                -64
+            ],
+            "id": "92a4e072-0309-4986-90d0-b15d7c4b9e40",
+            "name": "Build Assignments"
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={{ JSON.stringify($json) }}",
+                "options": {
+                    "responseHeaders": {
+                        "entries": [
+                            {
+                                "name": "Access-Control-Allow-Origin",
+                                "value": "*"
+                            },
+                            {
+                                "name": "Access-Control-Allow-Methods",
+                                "value": "GET, POST, OPTIONS"
+                            },
+                            {
+                                "name": "Access-Control-Allow-Headers",
+                                "value": "*"
+                            },
+                            {
+                                "name": "Cache-Control",
+                                "value": "no-cache, no-store, must-revalidate"
+                            }
+                        ]
+                    }
+                }
+            },
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.5,
+            "position": [
+                0,
+                -64
+            ],
+            "id": "a418d786-be40-4105-81c6-f60011639457",
+            "name": "Respond Success"
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={{ JSON.stringify({ success: false, error: $json.error || 'Unknown error' }) }}",
+                "options": {
+                    "responseCode": "400",
+                    "responseHeaders": {
+                        "entries": [
+                            {
+                                "name": "Access-Control-Allow-Origin",
+                                "value": "*"
+                            },
+                            {
+                                "name": "Access-Control-Allow-Methods",
+                                "value": "GET, POST, OPTIONS"
+                            },
+                            {
+                                "name": "Access-Control-Allow-Headers",
+                                "value": "*"
+                            }
+                        ]
+                    }
+                }
+            },
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.5,
+            "position": [
+                -1200,
+                128
+            ],
+            "id": "5a6f46ff-0f91-4e04-92b1-553cc03f1cc4",
+            "name": "Respond Error"
+        }
+    ],
+    "connections": {
+        "Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Parse Request",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parse Request": {
+            "main": [
+                [
+                    {
+                        "node": "If Valid",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "If Valid": {
+            "main": [
+                [
+                    {
+                        "node": "Get Stores",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Respond Error",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Stores": {
+            "main": [
+                [
+                    {
+                        "node": "Verify Store",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Verify Store": {
+            "main": [
+                [
+                    {
+                        "node": "If Store Found",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "If Store Found": {
+            "main": [
+                [
+                    {
+                        "node": "Get Store Configs",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Respond Error",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Store Configs": {
+            "main": [
+                [
+                    {
+                        "node": "Get Product Configs",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Product Configs": {
+            "main": [
+                [
+                    {
+                        "node": "Build Assignments",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Build Assignments": {
+            "main": [
+                [
+                    {
+                        "node": "Respond Success",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "pinData": {},
+    "meta": {
+        "instanceId": "b55b8c5b490d75637e4db729caf7c75486c3398f3275794ad40beef7f9800920"
+    }
+}

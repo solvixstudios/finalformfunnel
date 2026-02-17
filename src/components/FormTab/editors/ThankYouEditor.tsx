@@ -7,15 +7,11 @@ import {
   Settings,
 } from "lucide-react";
 import { useFormStore } from "../../../stores";
-
-import { auth } from "../../../lib/firebase";
-import { useWhatsAppProfiles } from "../../../lib/firebase/whatsappHooks";
 import { CollapsibleSection } from "../components/CollapsibleSection";
 
 export const ThankYouEditor = () => {
   const formConfig = useFormStore((state) => state.formConfig);
   const setFormConfig = useFormStore((state) => state.setFormConfig);
-  const { profiles } = useWhatsAppProfiles(auth.currentUser?.uid || "");
   return (
 
     <div className="space-y-4">
@@ -255,48 +251,6 @@ export const ThankYouEditor = () => {
                 placeholder="تأكيد عبر واتساب"
               />
             </div>
-          </div>
-
-          <div className="pt-2 border-t border-slate-100">
-            <div className="flex items-center justify-between mb-2">
-              <div className="space-y-0.5">
-                <Label className="text-[10px] font-bold text-slate-500 uppercase">Intégration WhatsApp</Label>
-                <p className="text-[9px] text-slate-400">Afficher le bouton de confirmation</p>
-              </div>
-              <Switch
-                checked={formConfig.thankYou?.enableWhatsApp || false}
-                onCheckedChange={(checked) =>
-                  setFormConfig({
-                    ...formConfig,
-                    thankYou: {
-                      ...formConfig.thankYou,
-                      enableWhatsApp: checked,
-                    },
-                  })
-                }
-              />
-            </div>
-            {formConfig.thankYou?.enableWhatsApp && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-100 rounded-lg">
-                  <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-600"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-[10px] font-semibold text-green-800">WhatsApp Profile</p>
-                    <p className="text-[9px] text-green-600">
-                      Configure in the <button
-                        onClick={() => useFormStore.getState().setEditingSection('addons')}
-                        className="font-bold underline hover:text-green-700"
-                      >Addons</button> tab
-                    </p>
-                  </div>
-                </div>
-                {profiles.length === 0 && (
-                  <p className="text-[9px] text-red-500">Aucun profil configuré. Allez dans Intégrations.</p>
-                )}
-              </div>
-            )}
           </div>
 
           <div className="space-y-1 pt-2 border-t border-slate-100">

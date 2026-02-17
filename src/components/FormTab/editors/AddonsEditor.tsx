@@ -6,6 +6,8 @@ import { useWhatsAppProfiles } from "../../../lib/firebase/whatsappHooks";
 import { useFormStore } from "../../../stores";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { CollapsibleSection } from "../components/CollapsibleSection";
 
 // Multi-select checkbox item
@@ -157,6 +159,28 @@ export const AddonsEditor = () => {
                                     />
                                 ))}
                             </div>
+                        </div>
+                    )}
+
+                    {/* Enable WhatsApp on Thank You Page */}
+                    {selectedProfileId && (
+                        <div className="flex items-center justify-between p-3 bg-green-50/50 border border-green-100 rounded-lg mt-1">
+                            <div className="space-y-0.5">
+                                <Label className="text-[10px] font-bold text-green-800 uppercase">Bouton WhatsApp</Label>
+                                <p className="text-[9px] text-green-600">Afficher sur la page de confirmation</p>
+                            </div>
+                            <Switch
+                                checked={formConfig.thankYou?.enableWhatsApp || false}
+                                onCheckedChange={(checked) =>
+                                    setFormConfig({
+                                        ...formConfig,
+                                        thankYou: {
+                                            ...formConfig.thankYou,
+                                            enableWhatsApp: checked,
+                                        },
+                                    })
+                                }
+                            />
                         </div>
                     )}
                 </div>

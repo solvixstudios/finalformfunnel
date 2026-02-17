@@ -1,10 +1,11 @@
 {
   "name": "vite_react_shadcn_ts",
   "private": true,
-  "version": "1.2.63",
+  "version": "1.2.88",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently \"npm run server\" \"vite\"",
+    "server": "cd server && npm run dev",
     "build": "vite build && npm run build:loader",
     "build:loader": "node scripts/bump-version.js && vite build --config vite.loader.config.ts && vite build --config vite.global.config.ts && node scripts/build-loader.js",
     "deploy:loader": "npm run build:loader && firebase deploy --only hosting",
@@ -86,6 +87,7 @@
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react-swc": "^3.11.0",
     "autoprefixer": "^10.4.21",
+    "concurrently": "^9.2.1",
     "esbuild": "^0.27.2",
     "eslint": "^9.32.0",
     "eslint-plugin-react-hooks": "^5.2.0",

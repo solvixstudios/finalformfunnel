@@ -320,18 +320,27 @@ var STATUS_LIST = [
 ];
 
 var STATUS_COLORS = {
-  'Nouvelle commande':  { bg: '#dbeafe', fg: '#1e40af' },
-  'En attente':         { bg: '#e0e7ff', fg: '#4338ca' },
-  'Confirmée':          { bg: '#d1fae5', fg: '#065f46' },
-  'En préparation':     { bg: '#fef3c7', fg: '#92400e' },
-  'Expédiée':           { bg: '#e0e7ff', fg: '#3730a3' },
-  'Livrée':             { bg: '#bbf7d0', fg: '#14532d' },
+  // 🔵 New / Pending — Blue family
+  'Nouvelle commande':  { bg: '#dbeafe', fg: '#1d4ed8' },
+  'En attente':         { bg: '#e0f2fe', fg: '#0369a1' },
+  'Panier abandonné':   { bg: '#f1f5f9', fg: '#64748b' },
+
+  // 🟢 Success — Green family
+  'Confirmée':          { bg: '#dcfce7', fg: '#15803d' },
+  'Livrée':             { bg: '#bbf7d0', fg: '#166534' },
+
+  // 🟠 In Progress — Amber / Orange family
+  'En préparation':     { bg: '#fef3c7', fg: '#b45309' },
+  'Expédiée':           { bg: '#ffedd5', fg: '#c2410c' },
+
+  // 🔴 Failed — Red gradient (progressive intensity)
   'Échouée 1':          { bg: '#fef2f2', fg: '#dc2626' },
   'Échouée 2':          { bg: '#fee2e2', fg: '#b91c1c' },
   'Échouée 3':          { bg: '#fecaca', fg: '#991b1b' },
-  'Annulée':            { bg: '#fee2e2', fg: '#991b1b' },
-  'Retournée':          { bg: '#fce7f3', fg: '#9d174d' },
-  'Panier abandonné':   { bg: '#f1f5f9', fg: '#64748b' }
+
+  // ⚫ Terminal — Distinct dark tones
+  'Annulée':            { bg: '#f5f5f4', fg: '#78716c' },
+  'Retournée':          { bg: '#fae8ff', fg: '#a21caf' }
 };
 
 // ═══════════════════════════════════
@@ -426,6 +435,52 @@ function formatDataRow(sheet, rowNum, headers, labelToId) {
     if (rowColor) {
       statusCell.setFontColor(rowColor.fg);
     }
+  }
+}
+
+// ═══════════════════════════════════
+// ON-EDIT TRIGGER: Re-color row when status changes
+// ═══════════════════════════════════
+
+function onEdit(e) {
+  if (!e || !e.range) return;
+  var sheet = e.range.getSheet();
+  var row = e.range.getRow();
+  var col = e.range.getColumn();
+
+  // Only act on data rows (skip header)
+  if (row <= 1) return;
+
+  // Check if edited column is a status column
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var headerVal = headers[col - 1];
+  if (!headerVal) return;
+
+  // Match status column by common labels
+  var statusLabels = ['Statut', 'Status', 'statut', 'status'];
+  var isStatusCol = false;
+  for (var i = 0; i < statusLabels.length; i++) {
+    if (headerVal.toString().toLowerCase() === statusLabels[i].toLowerCase()) {
+      isStatusCol = true;
+      break;
+    }
+  }
+  if (!isStatusCol) return;
+
+  var newStatus = e.range.getValue().toString();
+  var colCount = headers.length;
+  var rowRange = sheet.getRange(row, 1, 1, colCount);
+  var statusCell = e.range;
+
+  var colors = STATUS_COLORS;
+
+  var match = colors[newStatus];
+  if (match) {
+    rowRange.setBackground(match.bg);
+    statusCell.setFontWeight('bold').setFontColor(match.fg);
+  } else {
+    rowRange.setBackground(row % 2 === 0 ? '#f8fafc' : '#ffffff');
+    statusCell.setFontWeight('bold').setFontColor('#334155');
   }
 }`;
 

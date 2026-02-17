@@ -49,11 +49,11 @@ async function parseErrorResponse(response: Response, fallbackMessage: string): 
   try {
     const data = await response.json();
     const errorMessage = data.error || data.message || fallbackMessage;
-    
+
     if (isDev) {
       console.error('[ShopifyAdapter] Error:', { status: response.status, data });
     }
-    
+
     return errorMessage;
   } catch {
     return fallbackMessage;
@@ -82,7 +82,7 @@ export class ShopifyAdapter implements PlatformAdapter {
 
   async connect(subdomain: string, credentials: PlatformCredentials, userId?: string): Promise<ConnectResult> {
     const { clientId, clientSecret } = credentials;
-    
+
     if (!clientId || !clientSecret) {
       return { success: false, error: 'Shopify requires clientId and clientSecret' };
     }
@@ -130,7 +130,7 @@ export class ShopifyAdapter implements PlatformAdapter {
 
   async enableLoader(subdomain: string, credentials: PlatformCredentials): Promise<EnableLoaderResult> {
     const { clientId, clientSecret } = credentials;
-    
+
     const response = await fetch(`${N8N_BACKEND_URL}/${WEBHOOK_ENV}/shopify/enable-loader`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -151,8 +151,8 @@ export class ShopifyAdapter implements PlatformAdapter {
 
   async disableLoader(subdomain: string, credentials: PlatformCredentials): Promise<void> {
     const { clientId, clientSecret } = credentials;
-    
-    // Disable the loader script tag
+
+    // Disable the loader script tag ONLY (don't remove store from n8n yet)
     const response = await fetch(`${N8N_BACKEND_URL}/${WEBHOOK_ENV}/shopify/disable-loader`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -162,8 +162,9 @@ export class ShopifyAdapter implements PlatformAdapter {
     if (!response.ok) {
       throw new Error('Failed to disable loader');
     }
+  }
 
-    // Also remove credentials from n8n data table
+  async disconnectStore(subdomain: string): Promise<void> {
     const shopDomain = `${subdomain}.myshopify.com`;
     try {
       await fetch(`${N8N_BACKEND_URL}/${WEBHOOK_ENV}/shopify/disconnect`, {
@@ -172,8 +173,7 @@ export class ShopifyAdapter implements PlatformAdapter {
         body: JSON.stringify({ shopDomain }),
       });
     } catch (e) {
-      // Silently fail - credentials removal is secondary
-      console.warn('Failed to remove credentials from n8n:', e);
+      console.warn('Failed to remove store from n8n:', e);
     }
   }
 
@@ -184,7 +184,7 @@ export class ShopifyAdapter implements PlatformAdapter {
     context?: AssignmentContext
   ): Promise<any> {
     const { clientId, clientSecret } = credentials;
-    
+
     // Validate required fields
     if (!context?.formId && !formConfig.formId) {
       throw new Error('formId is required for assignForm');
@@ -192,7 +192,7 @@ export class ShopifyAdapter implements PlatformAdapter {
     if (!context?.storeId) {
       throw new Error('storeId is required for assignForm');
     }
-    
+
     // Build shopDomain from subdomain
     const shopDomain = `${subdomain}.myshopify.com`;
 
@@ -203,14 +203,8 @@ export class ShopifyAdapter implements PlatformAdapter {
       formId: context?.formId || formConfig.formId,
       formName: context?.formName || formConfig.name || 'Untitled Form',
       formData: formConfig,
-      ownerId: null, // Store-level by default
-      ownerType: context?.assignmentType || 'store',
+      productId: context?.productId ? String(context.productId) : null,
     };
-
-    // Add owner ID if product assignment
-    if (context?.productId) {
-      payload.ownerId = formatGid(context.productId);
-    }
 
     const response = await fetch(`${N8N_BACKEND_URL}/${WEBHOOK_ENV}/shopify/save-config`, {
       method: 'POST',
@@ -228,17 +222,17 @@ export class ShopifyAdapter implements PlatformAdapter {
     return result;
   }
 
-  async removeForm(subdomain: string, credentials: PlatformCredentials, ownerId?: string): Promise<void> {
+  async removeForm(subdomain: string, credentials: PlatformCredentials, productId?: string): Promise<void> {
     const { clientId, clientSecret } = credentials;
-    
+
     // Build shopDomain from subdomain
     const shopDomain = `${subdomain}.myshopify.com`;
-    
+
     const payload: any = {
       shopDomain,
       clientId,
       clientSecret,
-      ownerId: ownerId ? formatGid(ownerId) : null,
+      productId: productId ? String(productId) : null,
     };
 
     const response = await fetch(`${N8N_BACKEND_URL}/${WEBHOOK_ENV}/shopify/delete-config`, {
@@ -253,9 +247,28 @@ export class ShopifyAdapter implements PlatformAdapter {
     }
   }
 
+  async getAssignments(subdomain: string, credentials: PlatformCredentials): Promise<{ type: string; formId: string; productId?: string; storeId: string }[]> {
+    const { clientId, clientSecret } = credentials;
+    const shopDomain = `${subdomain}.myshopify.com`;
+
+    const response = await fetchWithTimeout(`${N8N_BACKEND_URL}/${WEBHOOK_ENV}/shopify/assignments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ shopDomain, clientId, clientSecret }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to fetch assignments');
+    }
+
+    const data = normalizeResponse(await response.json());
+    return data.assignments || [];
+  }
+
   async fetchProducts(subdomain: string, credentials: PlatformCredentials): Promise<Product[]> {
     const { clientId, clientSecret } = credentials;
-    
+
     const response = await fetch(`${N8N_BACKEND_URL}/${WEBHOOK_ENV}/shopify/get-products`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

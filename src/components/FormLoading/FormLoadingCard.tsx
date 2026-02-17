@@ -1,7 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Calendar, Copy, FileText, Globe, Pencil, Trash2 } from 'lucide-react';
+import { Calendar, Copy, FileText, Globe, Pencil, Store, Trash2 } from 'lucide-react';
 import React from 'react';
 
 export interface FormLoadingCardProps {
@@ -236,6 +236,13 @@ export const FormLoadingCard: React.FC<FormLoadingCardProps> = ({
               <Calendar size={11} />
               <span>{formatDate(form.updatedAt || form.createdAt)}</span>
             </div>
+            {storeAssignment && (
+              <div className="flex items-center gap-1.5 mt-1.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                <Store size={10} className="text-slate-400" />
+                <span className="text-[10px] text-slate-500 font-medium truncate max-w-[120px]">{storeAssignment.name}</span>
+              </div>
+            )}
           </div>
         </div>
       </div>

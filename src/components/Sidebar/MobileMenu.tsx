@@ -43,10 +43,10 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
     return (
         <div className="fixed inset-0 z-50 lg:hidden">
             <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
-            <div className="absolute inset-y-0 left-0 w-72 bg-slate-900 text-white p-5 shadow-2xl flex flex-col safe-area-inset-top safe-area-inset-bottom animate-scale-in">
+            <div className="absolute inset-y-0 left-0 w-72 bg-[#0F172A] text-white p-5 shadow-2xl flex flex-col animate-scale-in">
                 <div className="flex justify-between items-center mb-6 pb-4 border-b border-white/10">
-                    <div className="font-bold text-lg">Final Form</div>
-                    <button onClick={onClose} className="p-2.5 bg-white/10 rounded-xl hover:bg-white/20 transition-colors touch-target">
+                    <div className="font-bold text-lg tracking-tight">Final Form</div>
+                    <button onClick={onClose} className="p-2.5 bg-white/10 rounded-xl hover:bg-white/20 transition-colors">
                         <X size={18} />
                     </button>
                 </div>
@@ -56,18 +56,27 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
                             key={item.id}
                             onClick={() => handleNavClick(item.path)}
                             className={cn(
-                                "w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all touch-target",
+                                "w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all",
                                 isActive(item.path)
-                                    ? "bg-orange-600 text-white shadow-lg shadow-orange-600/30"
-                                    : "text-slate-400 hover:bg-white/10 hover:text-white"
+                                    ? "bg-white/10 text-white"
+                                    : "text-slate-400 hover:bg-white/[0.06] hover:text-white"
                             )}
                         >
-                            {item.icon} {item.label}
+                            <span className={cn(
+                                "shrink-0",
+                                isActive(item.path) && "text-orange-400"
+                            )}>
+                                {item.icon}
+                            </span>
+                            <span className="text-sm font-medium">{item.label}</span>
+                            {isActive(item.path) && (
+                                <div className="ml-auto w-1 h-1 bg-orange-400 rounded-full" />
+                            )}
                         </button>
                     ))}
                 </div>
                 <div className="mt-auto pt-6 border-t border-white/10">
-                    <button onClick={onLogout} className="flex items-center gap-3 text-red-400 font-medium px-4 py-3.5 hover:bg-red-500/10 rounded-xl w-full transition-colors touch-target">
+                    <button onClick={onLogout} className="flex items-center gap-3 text-red-400 font-medium text-sm px-4 py-3.5 hover:bg-red-500/10 rounded-xl w-full transition-colors">
                         <LogOut size={18} /> Sign Out
                     </button>
                 </div>

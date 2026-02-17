@@ -12,8 +12,8 @@ import { cn } from '@/lib/utils';
 import {
   FolderOpen,
   Menu,
-  Package,
   Plug,
+  Store,
 } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 import { HeaderActionsProvider, useHeaderActions } from '../contexts/HeaderActionsContext';
@@ -88,10 +88,10 @@ const DashboardLayoutContent = ({
       path: '/dashboard/integrations',
     },
     {
-      id: 'products',
-      label: 'Products',
-      icon: <Package size={20} />,
-      path: '/dashboard/products',
+      id: 'stores',
+      label: 'Stores',
+      icon: <Store size={20} />,
+      path: '/dashboard/stores',
     },
   ], []);
 

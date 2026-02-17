@@ -174,12 +174,13 @@ export const VariantsSection: React.FC<VariantsSectionProps> = ({
 
             <div className="space-y-4">
                 {/* Unified Rendering for both options (Shopify) and flat variants (Legacy/Preview) */}
-                {(hasOptions ? options : [{ name: '', values: variants }]).map((opt, i) =>
+                {(hasOptions ? options : [{ name: '', values: variants }]).map((opt, i) => {
                     // Use empty name if it's the fallback list to avoid displaying "Modèle" if not desired, 
                     // or pass a default label if config.translations.variants matches.
                     // The renderOptionGroup checks config.textColor which is fine.
-                    renderOptionGroup(opt.name, opt.values)
-                )}
+                    if (!opt) return null;
+                    return renderOptionGroup(opt.name || '', opt.values || []);
+                })}
             </div>
         </div>
     );

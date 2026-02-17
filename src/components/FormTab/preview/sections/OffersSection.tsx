@@ -59,7 +59,7 @@ export const OffersSection: React.FC<OffersSectionProps> = ({
     basePrice,
     marginStyle,
 }) => {
-    if (offers.length === 0 || config.enableOffersSection === false) return null;
+    if (!offers || offers.length === 0 || config.enableOffersSection === false) return null;
 
     const txt = (key: string) =>
         config.translations[key]?.[lang] || config.translations[key]?.fr || '';

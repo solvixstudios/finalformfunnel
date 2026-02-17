@@ -4,9 +4,9 @@ import { motion } from 'framer-motion';
 import {
     FolderOpen,
     LogOut,
-    Package,
     Plug,
     Settings,
+    Store,
     User,
     Zap
 } from 'lucide-react';
@@ -53,10 +53,10 @@ const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
             path: '/dashboard/integrations',
         },
         {
-            id: 'products',
-            label: 'Products',
-            icon: <Package size={20} />,
-            path: '/dashboard/products',
+            id: 'stores',
+            label: 'Stores',
+            icon: <Store size={20} />,
+            path: '/dashboard/stores',
         },
     ], []);
 

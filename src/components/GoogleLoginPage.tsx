@@ -65,8 +65,8 @@ const GoogleLoginPage = ({ onLoginSuccess }: GoogleLoginPageProps) => {
                 onClick={() => setLanguage(lang.code)}
                 title={lang.name}
                 className={`w-8 h-8 flex items-center justify-center rounded-full text-sm transition-all ${language === lang.code
-                    ? 'bg-slate-100 text-slate-900 ring-1 ring-slate-200'
-                    : 'text-slate-400 hover:bg-slate-50'
+                  ? 'bg-slate-100 text-slate-900 ring-1 ring-slate-200'
+                  : 'text-slate-400 hover:bg-slate-50'
                   }`}
               >
                 {lang.flag}
@@ -100,7 +100,7 @@ const GoogleLoginPage = ({ onLoginSuccess }: GoogleLoginPageProps) => {
           <button
             onClick={handleGoogleSignIn}
             disabled={isLoading}
-            className="w-full h-14 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300 rounded-full font-semibold text-base flex items-center justify-center gap-3 transition-all duration-200 active:scale-[0.98 shadow-sm hover:shadow-md disabled:opacity-70 disabled:cursor-not-allowed group"
+            className="w-full h-14 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300 rounded-full font-semibold text-base flex items-center justify-center gap-3 transition-all duration-200 active:scale-[0.98] shadow-sm hover:shadow-md disabled:opacity-70 disabled:cursor-not-allowed group"
           >
             {isLoading ? (
               <Loader2 size={20} className="animate-spin text-slate-400" />

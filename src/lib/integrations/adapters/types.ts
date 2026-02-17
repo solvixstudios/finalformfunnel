@@ -122,6 +122,7 @@ export interface PlatformAdapter {
   // Loader Management
   enableLoader(subdomain: string, credentials: PlatformCredentials): Promise<EnableLoaderResult>;
   disableLoader(subdomain: string, credentials: PlatformCredentials): Promise<void>;
+  disconnectStore(subdomain: string): Promise<void>;
 
   // Form Assignment
   assignForm(
@@ -130,7 +131,7 @@ export interface PlatformAdapter {
     formConfig: Record<string, any>,
     context?: AssignmentContext
   ): Promise<any>;
-  
+
   removeForm(
     subdomain: string,
     credentials: PlatformCredentials,
