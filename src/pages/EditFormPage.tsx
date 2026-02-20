@@ -413,10 +413,20 @@ const EditFormPage = ({ userId }: EditFormPageProps) => {
         if (activeAssignments.length > 0) {
           const toastId = toast.loading(`Syncing to ${activeAssignments.length} destination(s)...`);
 
+          // CRITICAL: Read fresh config from store to avoid stale useCallback closure
+          // exportDataMemoized() could capture a previous render's formConfig
+          const freshConfig = getExportData(useFormStore.getState().formConfig, waProfiles, gsSheets);
+
+          console.log('[SyncDebug] Syncing config with addons:', {
+            pixelData: freshConfig.addons?.pixelData?.length || 0,
+            tiktokPixelData: freshConfig.addons?.tiktokPixelData?.length || 0,
+            sheets: freshConfig.addons?.sheets?.length || 0,
+          });
+
           const result = await syncFormChanges({
             formId: savedFormId,
             formName: formName.trim(),
-            formConfig: exportDataMemoized(),
+            formConfig: freshConfig,
             assignments,
             stores,
           });

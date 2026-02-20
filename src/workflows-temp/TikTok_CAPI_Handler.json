@@ -13,7 +13,7 @@
         },
         {
             "parameters": {
-                "jsCode": "// Prepare CAPI Data: Split profiles if passed as array\nconst items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  const data = (item.json.orderData || item.json) as any;\n  const profiles = data.tiktokPixelProfiles || [];\n  \n  // If no specific profiles but we have legacy data (unlikely for new feature but good for robustness)\n  if (profiles.length === 0 && data.pixelId) {\n      // Backward compat or single profile logic if needed\n  }\n\n  for (const profile of profiles) {\n    results.push({\n      json: {\n        ...data,\n        ...profile\n      }\n    });\n  }\n}\n\nreturn results;"
+                "jsCode": "// Prepare CAPI Data: Split profiles if passed as array\nconst items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  const data = item.json.orderData || item.json;\n  const profiles = data['tiktokPixelProfiles'] || [];\n  \n  // If no specific profiles but we have legacy data (unlikely for new feature but good for robustness)\n  if (profiles.length === 0 && data['pixelId']) {\n      // Backward compat or single profile logic if needed\n  }\n\n  for (const profile of profiles) {\n    results.push({\n      json: {\n        ...data,\n        ...profile\n      }\n    });\n  }\n}\n\nreturn results;"
             },
             "id": "83f87066-576c-4762-a3d2-b738e829febb",
             "name": "Split Profiles",

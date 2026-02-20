@@ -13,7 +13,7 @@
         },
         {
             "parameters": {
-                "jsCode": "// Prepare CAPI Data: Split profiles if passed as array\nconst items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  const data = (item.json.orderData || item.json) as any;\n  const profiles = data.metaPixelProfiles || [];\n  \n  if (profiles.length === 0 && data.pixelId) {\n      // Backward compat: single profile\n      profiles.push({ pixelId: data.pixelId, capiToken: data.capiToken, testCode: data.testCode });\n  }\n\n  for (const profile of profiles) {\n    results.push({\n      json: {\n        ...data,\n        ...profile\n      }\n    });\n  }\n}\n\nreturn results;"
+                "jsCode": "// Prepare CAPI Data: Split profiles if passed as array\nconst items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  const data = item.json.orderData || item.json;\n  const profiles = data['metaPixelProfiles'] || [];\n  \n  if (profiles.length === 0 && data['pixelId']) {\n      // Backward compat: single profile\n      profiles.push({ pixelId: data['pixelId'], capiToken: data['capiToken'], testCode: data['testCode'] });\n  }\n\n  for (const profile of profiles) {\n    results.push({\n      json: {\n        ...data,\n        ...profile\n      }\n    });\n  }\n}\n\nreturn results;"
             },
             "id": "f3ed3c79-8eee-41db-9888-6c514910fd11",
             "name": "Split Profiles",

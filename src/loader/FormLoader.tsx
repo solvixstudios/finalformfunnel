@@ -344,34 +344,39 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
         if (tiktokData.length > 0 && !previewMode) {
             // Lazy Load TikTok Base Code
             if (!(window as any).ttq) {
-                const w = window as any;
-                const d = document;
-                const s = "https://analytics.tiktok.com/i18n/pixel/events.js";
-
-                (w as any).ttq = (w as any).ttq || [];
-                (w as any).ttq.methods = [
-                    "page", "track", "identify", "instances", "debug", "on", "off", "once", "ready", "alias", "group", "enableCookie", "disableCookie"
-                ];
-                (w as any).ttq.setAndDefer = function (t: any, e: any) {
-                    (t as any).ttq.push([e].concat(Array.prototype.slice.call(arguments, 0)))
-                };
-                (w as any).ttq.methods.forEach((method: string) => {
-                    (w as any).ttq.setAndDefer = function (t: any, e: any) {
+                // Official TikTok Pixel Base Code
+                // Reference: https://ads.tiktok.com/marketing_api/docs?id=1739584855420929
+                (function (w: any, d: any, t: string) {
+                    w.TiktokAnalyticsObject = t;
+                    var ttq = w[t] = w[t] || [];
+                    ttq.methods = ["page", "track", "identify", "instances", "debug", "on", "off", "once", "ready", "alias", "group", "enableCookie", "disableCookie", "holdConsent", "revokeConsent", "grantConsent"];
+                    ttq.setAndDefer = function (t: any, e: any) {
                         t[e] = function () {
-                            t.push([e].concat(Array.prototype.slice.call(arguments, 0)))
-                        }
+                            t.push([e].concat(Array.prototype.slice.call(arguments, 0)));
+                        };
                     };
-                    (w as any).ttq.setAndDefer((w as any).ttq, method)
-                });
-
-                (w as any).ttq.load = function (e: any, n: any) {
-                    const i = "https://analytics.tiktok.com/i18n/pixel/events.js";
-                    (w as any).ttq._i = (w as any).ttq._i || {}, (w as any).ttq._i[e] = [], (w as any).ttq._i[e]._u = i, (w as any).ttq._t = (w as any).ttq._t || {}, (w as any).ttq._t[e] = +new Date, (w as any).ttq._o = (w as any).ttq._o || {}, (w as any).ttq._o[e] = n || {};
-                    const o = document.createElement("script");
-                    o.type = "text/javascript", o.async = !0, o.src = i + "?sdkid=" + e + "&lib=" + "ttq";
-                    const a = document.getElementsByTagName("script")[0];
-                    a.parentNode!.insertBefore(o, a)
-                };
+                    for (var i = 0; i < ttq.methods.length; i++) ttq.setAndDefer(ttq, ttq.methods[i]);
+                    ttq.instance = function (t: any) {
+                        for (var e = ttq._i[t] || [], n = 0; n < ttq.methods.length; n++) ttq.setAndDefer(e, ttq.methods[n]);
+                        return e;
+                    };
+                    ttq.load = function (e: any, n: any) {
+                        var r = "https://analytics.tiktok.com/i18n/pixel/events.js";
+                        ttq._i = ttq._i || {};
+                        ttq._i[e] = [];
+                        ttq._i[e]._u = r;
+                        ttq._t = ttq._t || {};
+                        ttq._t[e] = +new Date();
+                        ttq._o = ttq._o || {};
+                        ttq._o[e] = n || {};
+                        var o = d.createElement("script");
+                        o.type = "text/javascript";
+                        o.async = true;
+                        o.src = r + "?sdkid=" + e + "&lib=" + t;
+                        var a = d.getElementsByTagName("script")[0];
+                        a.parentNode.insertBefore(o, a);
+                    };
+                })(window, document, 'ttq');
             }
 
             // Init TikTok Pixels
@@ -384,13 +389,15 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
 
             // ViewContent for TikTok
             if (product && (window as any).ttq) {
+                const productPrice = getProductPrice() || 0;
                 (window as any).ttq.track('ViewContent', {
                     content_type: 'product',
                     content_id: String(product.id),
                     content_name: product.title,
-                    price: getProductPrice() || 0,
+                    price: productPrice,
+                    value: productPrice,
                     currency: 'DZD',
-                }, { event_id: (window as any)._ff_event_id }); // Using same Event ID for consistency
+                }, { event_id: (window as any)._ff_event_id });
             }
         }
     }, [config, product]); // Run once on mount (or config change)

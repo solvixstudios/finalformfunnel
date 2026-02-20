@@ -206,6 +206,18 @@ export class ShopifyAdapter implements PlatformAdapter {
       productId: context?.productId ? String(context.productId) : null,
     };
 
+    // DEBUG: Trace final payload to N8N
+    console.log('[ShopifyAdapter] Sending payload to N8N:', {
+      shopDomain,
+      formId: payload.formId,
+      hasFormData: !!payload.formData,
+      addonData: {
+        pixels: payload.formData?.addons?.pixelData?.length || 0,
+        tiktok: payload.formData?.addons?.tiktokPixelData?.length || 0,
+        sheets: payload.formData?.addons?.sheets?.length || 0
+      }
+    });
+
     const response = await fetch(`${N8N_BACKEND_URL}/${WEBHOOK_ENV}/shopify/save-config`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

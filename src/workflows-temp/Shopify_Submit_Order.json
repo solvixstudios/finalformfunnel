@@ -77,8 +77,8 @@
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        -9952,
-        1728
+        -9304,
+        1824
       ],
       "id": "f8acbd0a-45b8-4fc2-b3a5-e4b6a8771ef3",
       "name": "Get Stores",
@@ -358,7 +358,7 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1,
       "position": [
-        -9952,
+        -9304,
         2016
       ],
       "id": "f8211da4-56ce-48c7-a07e-a2881cefd395",
@@ -373,11 +373,84 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1,
       "position": [
-        -9744,
+        -9096,
         2016
       ],
       "id": "4b5882fa-2c90-4182-9db1-32f7f59fed35",
       "name": "Trigger TikTok CAPI Workflow"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"message\": \"Order received\",\n  \"orderId\": \"={{ .first().json.body.orderId || 'pending' }}\"\n}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -9952,
+        1824
+      ],
+      "id": "respond-success-1771549292404",
+      "name": "Respond Received"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"message\": \"Order received\",\n  \"orderId\": \"={{ .first().json.body.orderId || 'pending' }}\"\n}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -9952,
+        1824
+      ],
+      "id": "respond-success-1771549300190",
+      "name": "Respond Received"
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -9952,
+        1824
+      ],
+      "id": "respond-success-1771549307600",
+      "name": "Respond Received"
     }
   ],
   "connections": {
@@ -407,17 +480,7 @@
       "main": [
         [
           {
-            "node": "Get Stores",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Trigger CAPI Workflow",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Trigger TikTok CAPI Workflow",
+            "node": "Respond Received",
             "type": "main",
             "index": 0
           }
@@ -550,6 +613,17 @@
         [
           {
             "node": "Google Sheet API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond Received": {
+      "main": [
+        [
+          {
+            "node": "Respond Received",
             "type": "main",
             "index": 0
           }

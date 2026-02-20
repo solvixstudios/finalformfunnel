@@ -5,7 +5,7 @@
  * with proper error handling and rollback support.
  */
 
-import type { ConnectedStore, FormAssignment } from '../firebase/hooks';
+import type { ConnectedStore, FormAssignment } from '../firebase/types';
 import { getAdapter } from '../integrations';
 
 // Types
@@ -64,6 +64,15 @@ export async function publishToStore(params: PublishParams): Promise<{ success: 
 
   try {
     const adapter = getAdapter(store.platform || 'shopify');
+
+    // DEBUG: Trace payload before sending to adapter
+    console.log(`[SyncDebug] publishToStore: Sending to adapter for store ${store.id}`, {
+      subdomain,
+      pixelDataCount: formConfig.addons?.pixelData?.length || 0,
+      tiktokPixelDataCount: formConfig.addons?.tiktokPixelData?.length || 0,
+      sheetsCount: formConfig.addons?.sheets?.length || 0
+    });
+
     await adapter.assignForm(
       subdomain,
       { clientId: store.clientId, clientSecret: store.clientSecret },
