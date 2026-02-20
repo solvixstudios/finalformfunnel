@@ -208,32 +208,48 @@ export default function ProductsPage({ userId }: { userId: string }) {
                 setLastSynced(Date.now());
             }
         };
-        window.addEventListener('productSyncComplete' as any, listener);
-        return () => window.removeEventListener('productSyncComplete' as any, listener);
+        window.addEventListener('productSyncComplete' as unknown, listener);
+        return () => window.removeEventListener('productSyncComplete' as unknown, listener);
     }, [selectedStoreId]);
 
     const loadFromDB = async (storeId: string) => {
         try {
             const cached = await getFromCache(storeId);
-            if (cached) { setProducts(cached.products); setLastSynced(cached.lastSynced); }
-            else { setProducts([]); setLastSynced(null); }
+            if (cached) {
+                setProducts(cached.products);
+                setLastSynced(cached.lastSynced);
+
+                // Background cache invalidation (5 minutes)
+                const CACHE_EXPIRY_MS = 5 * 60 * 1000;
+                if (Date.now() - cached.lastSynced > CACHE_EXPIRY_MS) {
+                    console.log("[ProductsPage] Cache stale, triggering background sync...");
+                    // trigger sync silently (without resetting UI/progress)
+                    syncAllProducts(true);
+                }
+            } else {
+                setProducts([]);
+                setLastSynced(null);
+            }
         } catch (e) { console.error("Failed to load cache", e); }
     };
 
-    const syncAllProducts = async () => {
+    const syncAllProducts = async (isBackground = false) => {
         if (!selectedStoreId) return;
         const store = stores.find(s => s.id === selectedStoreId);
         if (!store) return;
 
-        setSyncing(true);
-        setSyncProgress(0);
+        if (!isBackground) {
+            setSyncing(true);
+            setSyncProgress(0);
+            toast.info("Starting product sync...");
+        }
+
         const allFetchedProducts: Product[] = [];
         let nextPageInfo: string | undefined = undefined;
         let hasMore = true;
         const cleanSubdomain = store.url.replace('.myshopify.com', '').replace('https://', '').replace(/\/$/, '');
         const n8nHost = import.meta.env.VITE_N8N_BACKEND_URL;
         try {
-            toast.info("Starting product sync...");
             while (hasMore) {
                 const response = await fetch(`${n8nHost}/webhook/shopify/products`, {
                     method: 'POST',
@@ -251,24 +267,35 @@ export default function ProductsPage({ userId }: { userId: string }) {
                 let batch: Product[] = [];
                 if (data.products) {
                     batch = typeof data.products === 'string' ? JSON.parse(data.products) : data.products;
-                    if ((batch as any).products) batch = (batch as any).products;
+                    if ((batch as unknown).products) batch = (batch as unknown).products;
                 }
                 allFetchedProducts.push(...batch);
-                setSyncProgress(prev => prev + batch.length);
+                if (!isBackground) {
+                    setSyncProgress(prev => prev + batch.length);
+                }
                 if (data.next_page_info) nextPageInfo = data.next_page_info;
                 else hasMore = false;
-                if (allFetchedProducts.length > 50000) { toast.warning("Stopped at 50,000 products."); hasMore = false; }
+                if (allFetchedProducts.length > 50000) {
+                    if (!isBackground) toast.warning("Stopped at 50,000 products.");
+                    hasMore = false;
+                }
             }
             await saveToCache(selectedStoreId, allFetchedProducts);
             setProducts(allFetchedProducts);
             setLastSynced(Date.now());
-            toast.success(`Sync complete! ${allFetchedProducts.length} products loaded.`);
+            if (!isBackground) {
+                toast.success(`Sync complete! ${allFetchedProducts.length} products loaded.`);
+            }
         } catch (error) {
             console.error(error);
-            toast.error("Sync failed. Check connection or try again.");
+            if (!isBackground) {
+                toast.error("Sync failed. Check connection or try again.");
+            }
         } finally {
-            setSyncing(false);
-            setSyncProgress(0);
+            if (!isBackground) {
+                setSyncing(false);
+                setSyncProgress(0);
+            }
         }
     };
 
@@ -334,7 +361,7 @@ export default function ProductsPage({ userId }: { userId: string }) {
             <Button
                 variant={lastSynced ? "outline" : "default"}
                 size="sm"
-                onClick={syncAllProducts}
+                onClick={() => syncAllProducts(false)}
                 disabled={syncing || !selectedStoreId}
                 className={cn(
                     "h-9 rounded-full text-xs font-semibold px-4 shadow-sm transition-all relative overflow-hidden",
@@ -450,7 +477,7 @@ export default function ProductsPage({ userId }: { userId: string }) {
                                 />
                             </div>
                             <div className="h-6 w-px bg-slate-200 mx-1 hidden sm:block" />
-                            <Select value={statusFilter} onValueChange={(val: any) => setStatusFilter(val)}>
+                            <Select value={statusFilter} onValueChange={(val: 'all' | 'active' | 'draft') => setStatusFilter(val)}>
                                 <SelectTrigger className="w-[130px] h-9 bg-white border-slate-200/80 rounded-lg text-xs font-medium text-slate-600 shadow-sm">
                                     <Filter size={12} className="mr-2 text-slate-400" />
                                     <SelectValue />

@@ -7,24 +7,24 @@
  * @param maxDepth - Maximum recursion depth to prevent infinite loops (default: 10)
  * @returns Merged object with source values taking precedence
  */
-export const deepMerge = <T extends Record<string, any>>(
+export const deepMerge = <T extends Record<string, unknown>>(
   target: T,
   source: Partial<T>,
   maxDepth = 10
 ): T => {
   const merge = (
-    defaults: any,
-    imported: any,
+    defaults: unknown,
+    imported: unknown,
     currentDepth: number
-  ): any => {
+  ): unknown => {
     if (currentDepth > maxDepth) return imported; // Prevent infinite recursion
 
-    const merged = { ...defaults };
+    const merged = { ...(defaults as Record<string, unknown>) };
 
-    for (const key in imported) {
+    for (const key in imported as Record<string, unknown>) {
       if (Object.prototype.hasOwnProperty.call(imported, key)) {
-        const defaultValue = defaults[key];
-        const importedValue = imported[key];
+        const defaultValue = (defaults as Record<string, unknown>)[key];
+        const importedValue = (imported as Record<string, unknown>)[key];
 
         // If both are objects (not arrays or null), recurse
         if (
@@ -46,5 +46,5 @@ export const deepMerge = <T extends Record<string, any>>(
     return merged;
   };
 
-  return merge(target, source, 0);
+  return merge(target, source, 0) as T;
 };

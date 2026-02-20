@@ -8,35 +8,10 @@ import type { Language } from '@/types';
 import { Package } from 'lucide-react';
 import React from 'react';
 import { priceToLetters } from '../../../../lib/utils/priceToLetters';
+import type { FormConfig } from '@/types/form';
 
 interface HeaderSectionProps {
-    config: {
-        header?: {
-            enabled?: boolean;
-            style?: 'classic' | 'centered' | 'minimal' | 'banner' | 'compact' | 'hidden';
-            showLanguageSwitcher?: boolean;
-            showProductImage?: boolean;
-            showProductPrice?: boolean;
-            priceInLetters?: {
-                enabled: boolean;
-                mode: 'dinars' | 'centimes';
-            };
-        };
-        accentColor: string;
-        borderRadius?: string;
-        formBackground?: string;
-        inputBorderColor?: string;
-        textColor?: string;
-        headingColor?: string;
-        stickers?: {
-            product?: {
-                enabled: boolean;
-                color?: string;
-                text?: { fr?: string; ar?: string };
-                textColor?: string;
-            };
-        };
-    };
+    config: FormConfig;
     lang: Language;
     onLanguageToggle: () => void;
     formatCurrency: (amount: number) => string;
@@ -124,7 +99,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
                     style={{
                         backgroundColor: config.stickers.product.color || '#ef4444',
                         color: textColor,
-                        ["--tw-ring-color" as any]: config.formBackground || '#ffffff'
+                        ["--tw-ring-color" as unknown]: config.formBackground || '#ffffff'
                     }}
                 >
                     <span className="relative z-10">{config.stickers.product.text?.[lang] || config.stickers.product.text?.fr || 'Best'}</span>
@@ -150,9 +125,9 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
                     <span className="text-sm font-black block" style={{ color: config.accentColor }}>
                         {formatCurrency(basePrice)}
                     </span>
-                    {(config as any).header?.priceInLetters?.enabled && (
+                    {(config as unknown).header?.priceInLetters?.enabled && (
                         <span className="text-[10px] font-medium italic opacity-70 -mt-0.5 capitalize" style={{ color: config.textColor || '#64748b' }}>
-                            {priceToLetters(basePrice, lang, (config as any).header.priceInLetters.mode)}
+                            {priceToLetters(basePrice, lang, (config as unknown).header.priceInLetters.mode)}
                         </span>
                     )}
                 </div>
@@ -161,7 +136,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
     );
 
     // Common header wrapper styles (Enhanced)
-    const headerBaseStyles = buildHeaderStyles(config as any, headerStyle);
+    const headerBaseStyles = buildHeaderStyles(config as unknown, headerStyle);
 
     // Language Switcher Helper (Inline)
     const LangSwitcher = ({ isBanner = false }) => {
@@ -222,9 +197,9 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
                                 <span className="text-sm font-black" style={{ color: config.accentColor }}>
                                     {formatCurrency(basePrice)}
                                 </span>
-                                {(config as any).header?.priceInLetters?.enabled && (
+                                {(config as unknown).header?.priceInLetters?.enabled && (
                                     <span className="text-[10px] font-medium italic opacity-70 -mt-0.5 capitalize" style={{ color: config.textColor || '#64748b' }}>
-                                        {priceToLetters(basePrice, lang, (config as any).header.priceInLetters.mode)}
+                                        {priceToLetters(basePrice, lang, (config as unknown).header.priceInLetters.mode)}
                                     </span>
                                 )}
                             </div>
@@ -262,9 +237,9 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
                         )}
                         <LangSwitcher />
                     </div>
-                    {config.header?.showProductPrice !== false && (config as any).header?.priceInLetters?.enabled && (
+                    {config.header?.showProductPrice !== false && (config as unknown).header?.priceInLetters?.enabled && (
                         <span className="text-[10px] font-medium italic opacity-70 mr-12 capitalize" style={{ color: config.textColor || '#64748b' }}>
-                            {priceToLetters(basePrice, lang, (config as any).header.priceInLetters.mode)}
+                            {priceToLetters(basePrice, lang, (config as unknown).header.priceInLetters.mode)}
                         </span>
                     )}
                 </div>

@@ -1,6 +1,6 @@
 import type { DEFAULT_FORM_CONFIG } from '../../../lib/constants';
 
-export const syncFieldsForMode = (mode: string, currentFields: any) => {
+export const syncFieldsForMode = (mode: string, currentFields: unknown) => {
     const newFields = { ...currentFields };
 
     if (mode === 'free_text') {

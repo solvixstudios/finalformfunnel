@@ -8,7 +8,7 @@ export interface ConfigPreset {
 }
 
 // Helper to deep merge configs
-const mergeConfig = (base: any, override: any): any => {
+const mergeConfig = (base: unknown, override: unknown): unknown => {
   if (!override || typeof override !== "object") {
     return override !== undefined ? override : base;
   }

@@ -7,20 +7,10 @@ import { getUrgencyColor } from '@/lib/utils/colors';
 import type { Language } from '@/types';
 import { Clock } from 'lucide-react';
 import React from 'react';
+import type { FormConfig } from '@/types/form';
 
 interface UrgencyTimerSectionProps {
-    config: {
-        accentColor: string;
-        borderRadius: string;
-        urgencyTimer?: {
-            enabled?: boolean;
-            style?: 'digital' | 'banner' | 'minimal' | 'compact' | 'flip' | 'bar';
-            colorPreset?: string;
-            customColor?: string;
-            showLabel?: boolean;
-            customText?: { fr?: string; ar?: string };
-        };
-    };
+    config: FormConfig;
     lang: Language;
     marginStyle?: React.CSSProperties;
     countdown?: { hours: number; minutes: number; seconds: number };

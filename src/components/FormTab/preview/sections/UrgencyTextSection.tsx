@@ -7,19 +7,10 @@ import { getUrgencyColor } from '@/lib/utils/colors';
 import type { Language } from '@/types';
 import { Zap } from 'lucide-react';
 import React from 'react';
+import type { FormConfig } from '@/types/form';
 
 interface UrgencyTextSectionProps {
-    config: {
-        accentColor: string;
-        borderRadius: string;
-        urgencyText?: {
-            enabled?: boolean;
-            style?: 'banner' | 'pill' | 'glow' | 'minimal';
-            colorPreset?: string;
-            customColor?: string;
-            text?: { fr?: string; ar?: string };
-        };
-    };
+    config: FormConfig;
     lang: Language;
     marginStyle?: React.CSSProperties;
 }

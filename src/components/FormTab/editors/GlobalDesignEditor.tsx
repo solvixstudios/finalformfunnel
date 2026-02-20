@@ -382,7 +382,7 @@ export const GlobalDesignEditor = () => {
                 setFormConfig({
                   ...formConfig,
                   fontFamily: {
-                    ...(formConfig.fontFamily as any || { fr: "Inter", ar: "Cairo" }),
+                    ...(formConfig.fontFamily as unknown || { fr: "Inter", ar: "Cairo" }),
                     fr: e.target.value
                   }
                 })
@@ -409,7 +409,7 @@ export const GlobalDesignEditor = () => {
                 setFormConfig({
                   ...formConfig,
                   fontFamily: {
-                    ...(formConfig.fontFamily as any || { fr: "Inter", ar: "Cairo" }),
+                    ...(formConfig.fontFamily as unknown || { fr: "Inter", ar: "Cairo" }),
                     ar: e.target.value
                   }
                 })
@@ -436,7 +436,7 @@ export const GlobalDesignEditor = () => {
           <select
             value={formConfig.inputVariant}
             onChange={(e) =>
-              setFormConfig({ ...formConfig, inputVariant: e.target.value as any })
+              setFormConfig({ ...formConfig, inputVariant: e.target.value as unknown })
             }
             className="w-full text-xs border border-slate-200 rounded-lg p-2.5 font-bold"
           >

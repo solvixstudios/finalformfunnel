@@ -2,7 +2,7 @@ import type { DEFAULT_FORM_CONFIG } from "../../../lib/constants";
 
 export const updateField = (
   key: string,
-  fieldProps: any,
+  fieldProps: unknown,
   formConfig: typeof DEFAULT_FORM_CONFIG,
   setFormConfig: React.Dispatch<React.SetStateAction<typeof DEFAULT_FORM_CONFIG>>
 ) => {
@@ -80,7 +80,7 @@ export const updateField = (
 export const getFieldsForCurrentMode = (formConfig: typeof DEFAULT_FORM_CONFIG) => {
   const mode = formConfig.locationInputMode;
   const allFields = Object.entries(formConfig.fields).sort(
-    ([, a]: any, [, b]: any) => a.order - b.order
+    ([, a]: unknown, [, b]: unknown) => a.order - b.order
   );
 
   const filtered = allFields.filter(([key]) => {

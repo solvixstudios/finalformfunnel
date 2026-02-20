@@ -29,7 +29,7 @@ export const getExportData = (
 ): Record<string, any> => {
   const exportFields: Record<string, any> = {};
 
-  Object.entries(formConfig.fields).forEach(([key, field]: any) => {
+  Object.entries(formConfig.fields).forEach(([key, field]: [string, unknown]) => {
     // Filter fields based on location input mode
     if (formConfig.locationInputMode === "free_text") {
       if (key === "wilaya" || key === "commune") return;
@@ -40,19 +40,19 @@ export const getExportData = (
     }
 
     exportFields[key] = {
-      visible: field.visible,
-      required: field.required,
-      order: field.order,
-      placeholder: field.placeholder,
+      visible: (field as unknown).visible,
+      required: (field as unknown).required,
+      order: (field as unknown).order,
+      placeholder: (field as unknown).placeholder,
     };
   });
 
   // Convert internal offer format to export format
   const exportOffers = formConfig.offers.map(
-    ({ _idManuallyEdited, _type, ...o }: any) => ({
+    ({ _idManuallyEdited, _type, ...o }: Record<string, unknown>) => ({
       ...o,
       type: _type,
-      discount: _type === "perc" ? o.discount / 100 : o.discount,
+      discount: _type === "perc" ? (o.discount as number) / 100 : o.discount,
     }),
   );
 
@@ -62,7 +62,7 @@ export const getExportData = (
       home: shippingConfig.standard.home,
       desk: shippingConfig.standard.desk,
     },
-    exceptions: shippingConfig.exceptions.map((ex: any) => ({
+    exceptions: shippingConfig.exceptions.map((ex: Record<string, unknown>) => ({
       id: ex.id,
       home: ex.home,
       desk: ex.desk,
@@ -151,9 +151,9 @@ export const getExportData = (
         }
 
         // Fallback to legacy multi-select array if present (migration)
-        const selectedIds: string[] = (formConfig.addons as any)?.selectedWhatsappProfileIds || [];
+        const selectedIds: string[] = (formConfig.addons as unknown)?.selectedWhatsappProfileIds || [];
         if (selectedIds.length > 0 && profiles.length > 0) {
-          // Return just the first one to enforce single behavior, or all? 
+          // Return just the first one to enforce single behavior, or all?
           // Let's return the first valid one to be safe with new UI.
           const profile = profiles.find(p => p.id === selectedIds[0]);
           if (profile) return [profile.phoneNumber];
@@ -210,7 +210,7 @@ export { deepMerge as deepMergeFormConfig } from "./utils/deepMerge";
  * - Restores internal flags like _idManuallyEdited
  * - Ensures nested objects have required structure
  */
-export const normalizeImportedConfig = (config: any): any => {
+export const normalizeImportedConfig = (config: Record<string, unknown>): Record<string, unknown> => {
   if (!config || typeof config !== "object") {
     return DEFAULT_FORM_CONFIG;
   }
@@ -220,7 +220,7 @@ export const normalizeImportedConfig = (config: any): any => {
 
   // Normalize offers: convert export format to internal format
   if (normalized.offers && Array.isArray(normalized.offers)) {
-    normalized.offers = normalized.offers.map((offer: any) => {
+    normalized.offers = (normalized.offers as unknown[]).map((offer: Record<string, unknown>) => {
       // Handle type field conversion: 'type' (export) -> '_type' (internal)
       const type = offer._type || offer.type || "perc";
 
@@ -248,13 +248,13 @@ export const normalizeImportedConfig = (config: any): any => {
   // Normalize shipping: ensure exceptions have proper structure
   if (normalized.shipping) {
     if (!normalized.shipping.standard) {
-      normalized.shipping.standard = { home: 600, desk: 400 };
+      (normalized.shipping as unknown).standard = { home: 600, desk: 400 };
     }
     if (!normalized.shipping.exceptions) {
-      normalized.shipping.exceptions = [];
-    } else if (Array.isArray(normalized.shipping.exceptions)) {
-      normalized.shipping.exceptions = normalized.shipping.exceptions.map(
-        (ex: any) => ({
+      (normalized.shipping as unknown).exceptions = [];
+    } else if (Array.isArray((normalized.shipping as unknown).exceptions)) {
+      (normalized.shipping as unknown).exceptions = (normalized.shipping as unknown).exceptions.map(
+        (ex: Record<string, unknown>) => ({
           id: ex.id || "",
           home: ex.home ?? 0,
           desk: ex.desk ?? 0,
@@ -346,7 +346,7 @@ export const normalizeImportedConfig = (config: any): any => {
  * @returns Result object with success status and any errors/warnings
  */
 export const loadFormWithValidation = (
-  form: { config: any; name: string; id: string },
+  form: { config: Record<string, unknown>; name: string; id: string },
   options: {
     showWarnings?: boolean;
     showSuccessToast?: boolean;

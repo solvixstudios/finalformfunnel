@@ -11,21 +11,21 @@ interface ValidationResult {
 }
 
 interface OfferValidationResult extends ValidationResult {
-  offers?: any[];
+  offers?: Record<string, unknown>[];
 }
 
 interface FormConfigValidationResult extends ValidationResult {
-  config?: any;
+  config?: Record<string, unknown>;
 }
 
 /**
  * Validate offers JSON format
  */
-export function validateOffersJSON(json: any): OfferValidationResult {
+export function validateOffersJSON(json: unknown): OfferValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
   const suggestions: string[] = [];
-  let offers: any[] = [];
+  let offers: Record<string, unknown>[] = [];
 
   // Check if it's an array
   if (!Array.isArray(json)) {
@@ -33,12 +33,14 @@ export function validateOffersJSON(json: any): OfferValidationResult {
     return { isValid: false, errors, warnings, suggestions };
   }
 
-  if (json.length === 0) {
+  const jsonArray = json as Record<string, unknown>[];
+
+  if (jsonArray.length === 0) {
     warnings.push("No offers defined. At least one offer is recommended.");
   }
 
   // Validate each offer
-  json.forEach((offer, index) => {
+  jsonArray.forEach((offer, index) => {
     const prefix = `Offer ${index + 1}:`;
 
     if (!offer || typeof offer !== "object") {
@@ -51,7 +53,7 @@ export function validateOffersJSON(json: any): OfferValidationResult {
       errors.push(`${prefix} Missing or invalid 'id' field (must be string)`);
     }
 
-    if (typeof offer.qty !== "number" || offer.qty < 1) {
+    if (typeof offer.qty !== "number" || (offer.qty as number) < 1) {
       warnings.push(`${prefix} Invalid 'qty' (should be number >= 1)`);
     }
 
@@ -63,7 +65,7 @@ export function validateOffersJSON(json: any): OfferValidationResult {
     if (!offer.type && !offer._type) {
       warnings.push(`${prefix} Missing 'type' field - defaulting to 'perc'`);
     } else {
-      const type = (offer.type || offer._type || "").toLowerCase();
+      const type = (String(offer.type || offer._type || "")).toLowerCase();
       if (type !== "perc" && type !== "percentage" && type !== "fixed") {
         errors.push(`${prefix} Invalid 'type' (must be 'perc' or 'fixed')`);
       }
@@ -75,7 +77,8 @@ export function validateOffersJSON(json: any): OfferValidationResult {
     } else if (typeof offer.title === "string") {
       suggestions.push(`${prefix} Title should be object with 'fr' and 'ar' keys`);
     } else if (typeof offer.title === "object") {
-      if (!offer.title.fr && !offer.title.ar) {
+      const titleObj = offer.title as Record<string, unknown>;
+      if (!titleObj.fr && !titleObj.ar) {
         errors.push(`${prefix} Title must have at least 'fr' or 'ar' property`);
       }
     }
@@ -91,7 +94,7 @@ export function validateOffersJSON(json: any): OfferValidationResult {
       id: offer.id || `offer-${index}`,
       qty: offer.qty || 1,
       discount: offer.discount || 0,
-      type: (offer.type || offer._type || "perc").toLowerCase(),
+      type: (String(offer.type || offer._type || "perc")).toLowerCase(),
       title:
         typeof offer.title === "string"
           ? { fr: offer.title, ar: offer.title }
@@ -102,7 +105,7 @@ export function validateOffersJSON(json: any): OfferValidationResult {
           : offer.desc || { fr: "", ar: "" },
     };
 
-    offers.push(normalizedOffer);
+    offers.push(normalizedOffer as Record<string, unknown>);
   });
 
   return {
@@ -117,7 +120,7 @@ export function validateOffersJSON(json: any): OfferValidationResult {
 /**
  * Validate form config JSON format
  */
-export function validateFormConfigJSON(json: any): FormConfigValidationResult {
+export function validateFormConfigJSON(json: unknown): FormConfigValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
   const suggestions: string[] = [];
@@ -127,9 +130,11 @@ export function validateFormConfigJSON(json: any): FormConfigValidationResult {
     return { isValid: false, errors, warnings, suggestions };
   }
 
+  const configObj = json as Record<string, unknown>;
+
   // Validate sectionOrder
-  if (json.sectionOrder) {
-    if (!Array.isArray(json.sectionOrder)) {
+  if (configObj.sectionOrder) {
+    if (!Array.isArray(configObj.sectionOrder)) {
       errors.push("sectionOrder must be an array");
     } else {
       const validSections = [
@@ -140,7 +145,7 @@ export function validateFormConfigJSON(json: any): FormConfigValidationResult {
         "summary",
         "cta",
       ];
-      const invalidSections = json.sectionOrder.filter(
+      const invalidSections = configObj.sectionOrder.filter(
         (s: string) => !validSections.includes(s)
       );
       if (invalidSections.length > 0) {
@@ -152,18 +157,18 @@ export function validateFormConfigJSON(json: any): FormConfigValidationResult {
   }
 
   // Validate colors
-  if (json.accentColor && !/^#[0-9A-F]{6}$/i.test(json.accentColor)) {
+  if (configObj.accentColor && typeof configObj.accentColor === 'string' && !/^#[0-9A-F]{6}$/i.test(configObj.accentColor)) {
     warnings.push("accentColor should be valid hex color (e.g., #6366f1)");
   }
 
-  if (json.ctaColor && !/^#[0-9A-F]{6}$/i.test(json.ctaColor)) {
+  if (configObj.ctaColor && typeof configObj.ctaColor === 'string' && !/^#[0-9A-F]{6}$/i.test(configObj.ctaColor)) {
     warnings.push("ctaColor should be valid hex color (e.g., #6366f1)");
   }
 
   // Validate locationInputMode
-  if (json.locationInputMode) {
+  if (configObj.locationInputMode) {
     const validModes = ["double_dropdown", "single_dropdown", "free_text"];
-    if (!validModes.includes(json.locationInputMode)) {
+    if (!validModes.includes(String(configObj.locationInputMode))) {
       errors.push(
         `Invalid locationInputMode. Must be one of: ${validModes.join(", ")}`
       );
@@ -171,15 +176,16 @@ export function validateFormConfigJSON(json: any): FormConfigValidationResult {
   }
 
   // Validate fields
-  if (json.fields && typeof json.fields === "object") {
-    Object.entries(json.fields).forEach(([fieldKey, field]: any) => {
-      if (field.visible !== undefined && typeof field.visible !== "boolean") {
+  if (configObj.fields && typeof configObj.fields === "object") {
+    Object.entries(configObj.fields as Record<string, unknown>).forEach(([fieldKey, fieldVal]) => {
+      const field = fieldVal as Record<string, unknown>;
+      if (field?.visible !== undefined && typeof field.visible !== "boolean") {
         warnings.push(`Field '${fieldKey}': visible should be boolean`);
       }
-      if (field.required !== undefined && typeof field.required !== "boolean") {
+      if (field?.required !== undefined && typeof field.required !== "boolean") {
         warnings.push(`Field '${fieldKey}': required should be boolean`);
       }
-      if (field.order !== undefined && typeof field.order !== "number") {
+      if (field?.order !== undefined && typeof field.order !== "number") {
         warnings.push(`Field '${fieldKey}': order should be number`);
       }
     });
@@ -190,7 +196,7 @@ export function validateFormConfigJSON(json: any): FormConfigValidationResult {
     errors,
     warnings,
     suggestions,
-    config: json,
+    config: configObj,
   };
 }
 

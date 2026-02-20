@@ -108,7 +108,7 @@ export function WhatsAppIntegration({ userId }: WhatsAppIntegrationProps) {
                 toast.success('Profile updated!');
             }
             handleCancel();
-        } catch (e: any) {
+        } catch (e: unknown) {
             toast.error(e.message);
         }
     };
@@ -125,7 +125,7 @@ export function WhatsAppIntegration({ userId }: WhatsAppIntegrationProps) {
                 toast.success('Profile deleted');
                 handleCancel();
             }
-        } catch (e: any) {
+        } catch (e: unknown) {
             toast.error(e.message);
         }
     };

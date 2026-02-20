@@ -6,16 +6,10 @@
 import { buildCtaClasses, buildCtaStyles } from '@/lib/utils/styles';
 import type { RefObject } from 'react';
 import React from 'react';
+import type { FormConfig } from '@/types/form';
 
 interface CtaButtonProps {
-    config: {
-        ctaColor: string;
-        accentColor: string;
-        borderRadius: string;
-        ctaVariant?: 'solid' | 'outline' | 'gradient' | 'ghost';
-        ctaAnimation?: 'shake' | 'pulse' | 'bounce' | 'glow' | 'none';
-        ctaShake?: boolean; // Legacy support
-    };
+    config: FormConfig;
     text: string;
     onClick: () => void;
     ctaRef?: RefObject<HTMLDivElement>;

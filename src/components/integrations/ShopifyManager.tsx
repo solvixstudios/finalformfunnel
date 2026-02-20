@@ -55,7 +55,7 @@ export function ShopifyManager({ userId, onAddStore, showHeader = true, viewMode
     // Filter only shopify stores just in case
     const shopifyStores = stores.filter(s => s.platform === 'shopify');
 
-    const handleEnableLoader = async (store: any) => {
+    const handleEnableLoader = async (store: unknown) => {
         setProcessingStoreId(store.id);
         const loadingToast = toast.loading('Enabling loader...');
 
@@ -92,7 +92,7 @@ export function ShopifyManager({ userId, onAddStore, showHeader = true, viewMode
             } else {
                 toast.error(result.error || 'Failed to enable loader.');
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             toast.dismiss(loadingToast);
             toast.error('Failed to enable loader.');
             console.error(error);
@@ -115,7 +115,7 @@ export function ShopifyManager({ userId, onAddStore, showHeader = true, viewMode
         try {
             await deleteStore(storeToDelete);
             toast.success('Store disconnected successfully');
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error(error);
             toast.error(error.message || 'Failed to disconnect store');
         } finally {
@@ -124,7 +124,7 @@ export function ShopifyManager({ userId, onAddStore, showHeader = true, viewMode
         }
     };
 
-    const handleSyncAssignments = async (store: any) => {
+    const handleSyncAssignments = async (store: unknown) => {
         setProcessingStoreId(store.id);
         const loadingToast = toast.loading('Syncing assignments...');
 

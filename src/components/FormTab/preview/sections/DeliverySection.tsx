@@ -8,31 +8,10 @@ import type { Language } from '@/types';
 import { Check, Home, Package } from 'lucide-react';
 
 import { SectionLabel } from '../components/SectionLabel';
+import type { FormConfig } from '@/types/form';
 
 interface DeliverySectionProps {
-    config: {
-        accentColor: string;
-        textColor?: string;
-        borderRadius: string;
-        inputBorderColor?: string;
-        formBackground?: string;
-        enableHomeDelivery?: boolean;
-        enableDeskDelivery?: boolean;
-        sectionSettings?: {
-            delivery?: {
-                showTitle?: boolean;
-                layout?: 'cards' | 'list' | 'compact';
-                showPrices?: boolean;
-            };
-        };
-        translations: {
-            delivery?: { fr: string; ar: string };
-            home?: { fr: string; ar: string };
-            desk?: { fr: string; ar: string };
-            unavailable?: { fr: string; ar: string };
-            [key: string]: any;
-        };
-    };
+    config: FormConfig;
     lang: Language;
     shippingType: 'home' | 'desk';
     onSelect: (type: 'home' | 'desk') => void;
@@ -112,7 +91,7 @@ export const DeliverySection: React.FC<DeliverySectionProps> = ({
                                     : 'p-4 text-center block'
                                 } ${isDisabled ? 'opacity-60 cursor-not-allowed' : ''} ${isSelected && !isDisabled ? 'shadow-lg' : ''}`}
 
-                            style={buildOptionCardStyles(config as any, { selected: isSelected, disabled: isDisabled })}
+                            style={buildOptionCardStyles(config as unknown, { selected: isSelected, disabled: isDisabled })}
                         >
                             {/* Selection indicator */}
                             {!isDisabled && (

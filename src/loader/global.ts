@@ -59,7 +59,7 @@
     console.log("[FinalForm] Global overlay container (Shadow) initialized");
 
     // Store reference
-    (window as any).FinalFormGlobal = {
+    (window as unknown).FinalFormGlobal = {
       ready: true,
       containerId: CONTAINER_ID,
       root: portalRoot, // React components should append here

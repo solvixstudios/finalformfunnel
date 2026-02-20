@@ -32,8 +32,8 @@ async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = R
   try {
     const response = await fetch(url, { ...options, signal: controller.signal });
     return response;
-  } catch (error: any) {
-    if (error.name === 'AbortError') {
+  } catch (error: unknown) {
+    if ((error as Error).name === 'AbortError') {
       throw new Error('Request timed out. Please check your connection and try again.');
     }
     throw error;
@@ -123,8 +123,8 @@ export class ShopifyAdapter implements PlatformAdapter {
           scriptId: data.loaderScriptTagId,
         },
       };
-    } catch (error: any) {
-      return { success: false, error: error.message || 'Failed to connect to Shopify' };
+    } catch (error: unknown) {
+      return { success: false, error: (error as Error).message || 'Failed to connect to Shopify' };
     }
   }
 
@@ -180,9 +180,9 @@ export class ShopifyAdapter implements PlatformAdapter {
   async assignForm(
     subdomain: string,
     credentials: PlatformCredentials,
-    formConfig: Record<string, any>,
+    formConfig: Record<string, unknown>,
     context?: AssignmentContext
-  ): Promise<any> {
+  ): Promise<unknown> {
     const { clientId, clientSecret } = credentials;
 
     // Validate required fields
@@ -196,7 +196,7 @@ export class ShopifyAdapter implements PlatformAdapter {
     // Build shopDomain from subdomain
     const shopDomain = `${subdomain}.myshopify.com`;
 
-    const payload: any = {
+    const payload: Record<string, unknown> = {
       shopDomain,
       clientId,
       clientSecret,
@@ -212,9 +212,9 @@ export class ShopifyAdapter implements PlatformAdapter {
       formId: payload.formId,
       hasFormData: !!payload.formData,
       addonData: {
-        pixels: payload.formData?.addons?.pixelData?.length || 0,
-        tiktok: payload.formData?.addons?.tiktokPixelData?.length || 0,
-        sheets: payload.formData?.addons?.sheets?.length || 0
+        pixels: (payload.formData as { addons?: { pixelData?: unknown[] } })?.addons?.pixelData?.length || 0,
+        tiktok: (payload.formData as { addons?: { tiktokPixelData?: unknown[] } })?.addons?.tiktokPixelData?.length || 0,
+        sheets: (payload.formData as { addons?: { sheets?: unknown[] } })?.addons?.sheets?.length || 0
       }
     });
 
@@ -242,7 +242,7 @@ export class ShopifyAdapter implements PlatformAdapter {
     // Build shopDomain from subdomain
     const shopDomain = `${subdomain}.myshopify.com`;
 
-    const payload: any = {
+    const payload: Record<string, unknown> = {
       shopDomain,
       clientId,
       clientSecret,
@@ -297,7 +297,7 @@ export class ShopifyAdapter implements PlatformAdapter {
     return data.products || [];
   }
 
-  async submitOrder(orderData: OrderData): Promise<any> {
+  async submitOrder(orderData: OrderData): Promise<unknown> {
     const response = await fetch(`${N8N_BACKEND_URL}/${WEBHOOK_ENV}/submit-order`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

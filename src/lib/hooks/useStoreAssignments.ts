@@ -106,7 +106,7 @@ export function useStoreAssignments(stores: ConnectedStore[]) {
 
                     setCache(cacheKey, typed);
                     results.push(...typed);
-                } catch (e: any) {
+                } catch (e: unknown) {
                     console.warn(`[useStoreAssignments] Failed to fetch for ${subdomain}:`, e.message);
                     // Continue with other stores — don't fail all for one store
                 }
@@ -116,7 +116,7 @@ export function useStoreAssignments(stores: ConnectedStore[]) {
             if (fetchId === fetchIdRef.current) {
                 setAssignments(results);
             }
-        } catch (e: any) {
+        } catch (e: unknown) {
             if (fetchId === fetchIdRef.current) {
                 setError(e.message || 'Failed to fetch assignments');
             }

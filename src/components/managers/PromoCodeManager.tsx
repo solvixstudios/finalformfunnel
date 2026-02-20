@@ -252,7 +252,7 @@ const PromoCodeManager: React.FC<PromoCodeManagerProps> = ({
                                                     {APPLY_TO_OPTIONS.map((option) => (
                                                         <button
                                                             key={option.id}
-                                                            onClick={() => handleUpdateCode(code.id, { applyTo: option.id as any })}
+                                                            onClick={() => handleUpdateCode(code.id, { applyTo: option.id as unknown })}
                                                             className={`flex-1 py-2 px-3 rounded-lg border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${code.applyTo === option.id
                                                                 ? 'border-violet-400 bg-violet-50 text-violet-700'
                                                                 : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
@@ -274,7 +274,7 @@ const PromoCodeManager: React.FC<PromoCodeManagerProps> = ({
                                                             <button
                                                                 key={option.id}
                                                                 onClick={() => handleUpdateCode(code.id, {
-                                                                    discountMode: option.id as any,
+                                                                    discountMode: option.id as unknown,
                                                                     discountValue: option.id === 'free' ? 100 : (code.discountValue || 10)
                                                                 })}
                                                                 className={`py-1.5 px-3 rounded-md text-xs font-bold transition-all ${code.discountMode === option.id

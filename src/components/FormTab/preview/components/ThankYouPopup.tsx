@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { DEFAULT_FORM_CONFIG } from '../../../../lib/constants';
 import type { Language } from '../../types';
+import type { FormConfig, OrderFormData } from '../../../../types/form';
 // Assuming canvas-confetti might not be in package.json, I'll use a safer approach for effects or just rely on a simple css. But user asked confetti. 
 // I will blindly try to import 'canvas-confetti' as it is very common. if it fails i will fix.
 
@@ -18,18 +19,11 @@ const playSuccessSound = () => {
 };
 
 interface ThankYouPopupProps {
-    config: typeof DEFAULT_FORM_CONFIG & {
-        thankYou?: {
-            priceInLetters?: {
-                enabled: boolean;
-                mode: 'dinars' | 'centimes';
-            };
-        };
-    };
+    config: FormConfig;
     lang: Language;
     onClose: () => void;
     fixed?: boolean;
-    orderData?: any;
+    orderData?: OrderFormData;
 }
 
 export const ThankYouPopup = ({ config, lang, onClose, fixed = false, orderData }: ThankYouPopupProps) => {
@@ -43,7 +37,7 @@ export const ThankYouPopup = ({ config, lang, onClose, fixed = false, orderData 
     useEffect(() => {
         if (fixed) {
             const getOrCreateContainer = () => {
-                const globalRoot = (window as any).FinalFormGlobal?.root;
+                const globalRoot = (window as unknown).FinalFormGlobal?.root;
                 if (globalRoot) return globalRoot;
                 const overlayContainer = document.getElementById('finalform-overlay-container');
                 if (overlayContainer && overlayContainer.shadowRoot) {
@@ -84,10 +78,10 @@ export const ThankYouPopup = ({ config, lang, onClose, fixed = false, orderData 
 
     // Effects: Sound & Confetti - Run when popup is ready (portal resolved)
     useEffect(() => {
-        if ((config as any).thankYou?.enableSound) {
+        if ((config as unknown).thankYou?.enableSound) {
             playSuccessSound();
         }
-        if ((config as any).thankYou?.enableConfetti) {
+        if ((config as unknown).thankYou?.enableConfetti) {
             const canvas = internalCanvasRef.current;
             if (!canvas) return;
 
@@ -156,8 +150,8 @@ export const ThankYouPopup = ({ config, lang, onClose, fixed = false, orderData 
             message = lang === 'ar' ? 'أريد تعديل طلبي:\n' : 'Je veux modifier ma commande:\n';
         }
 
-        if (orderData) {
-            const productLine = orderData.items?.map((i: any) => `- ${i.title} (${i.variant}) x${i.quantity}`).join('\n');
+        if (orderData && Array.isArray(orderData.items)) {
+            const productLine = orderData.items.map((i: unknown) => `- ${i.title} (${i.variant}) x${i.quantity}`).join('\n');
             message += `\n${productLine}`;
             message += `\nTotal: ${orderData.totalPrice} DZD`;
             message += `\n\nNom: ${orderData.name}`;
@@ -263,7 +257,7 @@ export const ThankYouPopup = ({ config, lang, onClose, fixed = false, orderData 
                             <div className="flex-1 overflow-y-auto pr-1">
                                 <div className="rounded-2xl p-5 border w-full text-left bg-slate-50/50 mb-4" style={{ borderColor: config.inputBorderColor }}>
                                     {/* Product Highlight */}
-                                    {orderData?.items && orderData.items.length > 0 && (
+                                    {orderData?.items && Array.isArray(orderData.items) && orderData.items.length > 0 && (
                                         <div className="mb-4 pb-4 border-b border-slate-200">
                                             <span className="text-[10px] font-bold uppercase tracking-wider opacity-50 block mb-1">
                                                 {lang === 'ar' ? 'المنتج' : 'Produit'}
@@ -271,7 +265,7 @@ export const ThankYouPopup = ({ config, lang, onClose, fixed = false, orderData 
                                             <h4 className="text-base font-bold leading-tight" style={{ color: config.textColor }}>
                                                 {orderData.items[0].title}
                                             </h4>
-                                            {orderData.items.length > 1 && (
+                                            {Array.isArray(orderData.items) && orderData.items.length > 1 && (
                                                 <span className="text-xs opacity-60 mt-0.5 block">
                                                     + {orderData.items.length - 1} {lang === 'ar' ? 'autres' : 'autres'}
                                                 </span>

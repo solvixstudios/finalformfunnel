@@ -74,7 +74,7 @@ export const VariantsEditor = () => {
               <button
                 key={style.id}
                 onClick={() =>
-                  setFormConfig({ ...formConfig, variantStyle: style.id as any })
+                  setFormConfig({ ...formConfig, variantStyle: style.id as unknown })
                 }
                 className={`p-3 rounded-xl border-2 flex flex-col items-center gap-1.5 transition-all ${formConfig.variantStyle === style.id || (!formConfig.variantStyle && style.id === "cards") ? "border-indigo-500 bg-indigo-50 text-indigo-600" : "border-slate-200 bg-white text-slate-500 hover:border-slate-300"}`}
               >

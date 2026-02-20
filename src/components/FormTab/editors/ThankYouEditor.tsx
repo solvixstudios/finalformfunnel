@@ -432,14 +432,14 @@ export const ThankYouEditor = () => {
                 <p className="text-[9px] text-slate-400">Animation festive au succès</p>
               </div>
               <Switch
-                checked={(formConfig as any).thankYou?.enableConfetti !== false}
+                checked={(formConfig as unknown).thankYou?.enableConfetti !== false}
                 onCheckedChange={(checked) =>
                   setFormConfig({
                     ...formConfig,
                     thankYou: {
                       ...formConfig.thankYou,
                       enableConfetti: checked,
-                    } as any,
+                    } as unknown,
                   })
                 }
               />
@@ -451,14 +451,14 @@ export const ThankYouEditor = () => {
                 <p className="text-[9px] text-slate-400">Son de confirmation "Ding"</p>
               </div>
               <Switch
-                checked={(formConfig as any).thankYou?.enableSound !== false}
+                checked={(formConfig as unknown).thankYou?.enableSound !== false}
                 onCheckedChange={(checked) =>
                   setFormConfig({
                     ...formConfig,
                     thankYou: {
                       ...formConfig.thankYou,
                       enableSound: checked,
-                    } as any,
+                    } as unknown,
                   })
                 }
               />

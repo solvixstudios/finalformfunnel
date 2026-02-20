@@ -7,7 +7,7 @@ export interface Preset {
   name: string;
   description: string;
   type: "form" | "offers" | "shipping";
-  data: any;
+  data: Record<string, unknown>;
   createdAt: number;
   updatedAt: number;
 }
@@ -68,7 +68,7 @@ class PresetManager {
   savePreset(
     type: "form" | "offers" | "shipping",
     name: string,
-    data: any,
+    data: Record<string, unknown>,
     description: string = ""
   ): Preset | null {
     if (!name || !name.trim()) {

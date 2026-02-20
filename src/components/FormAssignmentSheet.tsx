@@ -13,7 +13,7 @@ interface FormAssignmentSheetProps {
     onOpenChange: (open: boolean) => void;
     userId: string;
     storeId: string;
-    products?: any[];
+    products?: unknown[];
     initialProductIds?: string[];
     initialFormId?: string; // Auto-select form
     scope?: 'store' | 'product'; // Optional override, otherwise inferred
@@ -152,7 +152,7 @@ export function FormAssignmentSheet({
                 toast.success(`Assigned "${form.name}" to ${newProductIds.length} products`);
             }
             onOpenChange(false);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error(error);
             toast.error(error.message || "Failed to assign form");
         } finally {

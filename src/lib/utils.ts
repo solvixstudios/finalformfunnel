@@ -20,7 +20,7 @@ export async function sha256(string: string) {
  * More reliable than JSON.stringify which can be order-sensitive
  * Handles null, undefined, primitives, arrays, and plain objects
  */
-export function deepEqual(a: any, b: any): boolean {
+export function deepEqual(a: unknown, b: unknown): boolean {
   // Identical references
   if (a === b) return true;
 

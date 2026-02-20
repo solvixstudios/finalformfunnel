@@ -217,7 +217,7 @@ const EditFormPage = ({ userId }: EditFormPageProps) => {
     return saved.toLocaleDateString();
   };
 
-  const handleLoadForm = (form: any) => {
+  const handleLoadForm = (form: { id: string; name: string; config: Record<string, unknown>;[key: string]: unknown }) => {
     // Check for unsaved changes
     if (hasUnsavedChanges()) {
       setPendingAction(() => () => {
@@ -240,7 +240,7 @@ const EditFormPage = ({ userId }: EditFormPageProps) => {
     });
   };
 
-  const handleLoadTemplate = (config: any, templateName?: string) => {
+  const handleLoadTemplate = (config: Record<string, unknown>, templateName?: string) => {
     // Check for unsaved changes ONLY if we are starting fresh or replacing entirely.
     // If we are applying to existing form, we usually just want to apply it.
     // BUT applying a template is a destructive action for the CONFIG.
@@ -323,7 +323,7 @@ const EditFormPage = ({ userId }: EditFormPageProps) => {
       if (formId === id) {
         setFormName(newName.trim());
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error("Failed to rename form");
       console.error(err);
     }
@@ -341,7 +341,7 @@ const EditFormPage = ({ userId }: EditFormPageProps) => {
         setFormId(null);
         toast.info("The loaded form was deleted. Saving will create a new form.");
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error("Failed to delete form");
       console.error(err);
     }
@@ -447,8 +447,8 @@ const EditFormPage = ({ userId }: EditFormPageProps) => {
       setShowSaveSuccess(true);
       saveSuccessAction();
       setTimeout(() => setShowSaveSuccess(false), 2000);
-    } catch (err: any) {
-      const errorMessage = err.message || 'Failed to save form';
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to save form';
       toast.error(errorMessage);
       console.error('Save error:', err);
       saveFailure(errorMessage);

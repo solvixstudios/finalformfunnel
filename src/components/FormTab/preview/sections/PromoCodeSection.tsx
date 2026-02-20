@@ -8,31 +8,10 @@ import type { Language } from '@/types';
 import { Check, X } from 'lucide-react';
 import React from 'react';
 import { SectionLabel } from '../components/SectionLabel';
+import type { FormConfig } from '@/types/form';
 
 interface PromoCodeSectionProps {
-    config: {
-        accentColor: string;
-        textColor?: string;
-        borderRadius: string;
-        inputBackground?: string;
-        inputBorderColor?: string;
-        inputTextColor?: string;
-        inputPlaceholderColor?: string;
-        promoCode?: {
-            enabled?: boolean;
-            placeholder?: { fr: string; ar: string };
-            buttonText?: { fr: string; ar: string };
-            successText?: { fr: string; ar: string };
-            errorText?: { fr: string; ar: string };
-        };
-        sectionSettings?: {
-            promoCode?: { showTitle?: boolean };
-        };
-        translations: {
-            promoCode?: { fr: string; ar: string };
-            [key: string]: any;
-        };
-    };
+    config: FormConfig;
     lang: Language;
     promoCodeInput: string;
     setPromoCodeInput: (value: string) => void;
@@ -104,7 +83,7 @@ export const PromoCodeSection: React.FC<PromoCodeSectionProps> = ({
                             className={`w-full px-4 py-3 text-sm font-semibold border-2 outline-none transition-all ${promoCodeError ? 'border-red-400 bg-red-50' : ''
                                 }`}
                             style={{
-                                ...buildInputStyles(config as any, 'filled'),
+                                ...buildInputStyles(config as unknown, 'filled'),
                                 marginBottom: 0, // Override default margin
                                 // Error state override
                                 ...(promoCodeError ? {

@@ -137,7 +137,7 @@ export function GoogleSheetsIntegration({ userId }: GoogleSheetsIntegrationProps
                 toast.success('Configuration updated!');
             }
             resetForm();
-        } catch (e: any) {
+        } catch (e: unknown) {
             toast.error(e.message);
         }
     };
@@ -148,7 +148,7 @@ export function GoogleSheetsIntegration({ userId }: GoogleSheetsIntegrationProps
                 await deleteSheet(id);
                 toast.success('Integration removed');
                 resetForm();
-            } catch (e: any) {
+            } catch (e: unknown) {
                 toast.error(e.message);
             }
         }

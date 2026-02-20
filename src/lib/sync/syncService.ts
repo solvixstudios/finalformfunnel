@@ -89,7 +89,7 @@ export async function publishToStore(params: PublishParams): Promise<{ success: 
       }
     );
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`Sync failed for store ${store.id}:`, error);
     return { success: false, error: error.message || 'Unknown error' };
   }
@@ -115,7 +115,7 @@ export async function unpublishFromStore(params: UnpublishParams): Promise<{ suc
       productId
     );
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`Unpublish failed for store ${store.id}:`, error);
     return { success: false, error: error.message || 'Unknown error' };
   }
@@ -144,8 +144,14 @@ export async function syncFormChanges(params: SyncFormChangesParams): Promise<Sy
   const errors: SyncError[] = [];
   let successCount = 0;
 
-  const results = await Promise.allSettled(
-    activeAssignments.map(async (assignment) => {
+  // Process in batches of 5 to avoid Shopify API rate limits (429)
+  const BATCH_SIZE = 5;
+  const DELAY_BETWEEN_BATCHES_MS = 1000;
+
+  for (let i = 0; i < activeAssignments.length; i += BATCH_SIZE) {
+    const batch = activeAssignments.slice(i, i + BATCH_SIZE);
+
+    const batchPromises = batch.map(async (assignment) => {
       const store = stores.find(s => s.id === assignment.storeId);
 
       if (!store) {
@@ -176,8 +182,15 @@ export async function syncFormChanges(params: SyncFormChangesParams): Promise<Sy
           message: result.error || 'Unknown error',
         });
       }
-    })
-  );
+    });
+
+    await Promise.allSettled(batchPromises);
+
+    // Add delay between batches if not the last batch
+    if (i + BATCH_SIZE < activeAssignments.length) {
+      await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES_MS));
+    }
+  }
 
   return {
     success: errors.length === 0,
@@ -201,7 +214,7 @@ export async function retrySync<T>(
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       return await operation();
-    } catch (error: any) {
+    } catch (error: unknown) {
       lastError = error;
       if (attempt < maxRetries - 1) {
         const delay = baseDelayMs * Math.pow(2, attempt);

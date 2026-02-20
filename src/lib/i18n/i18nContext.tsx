@@ -32,11 +32,11 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Translation helper with dot notation
   const t = (path: string): string => {
     const keys = path.split('.');
-    let value: any = translations[language];
+    let value: unknown = translations[language];
 
     for (const key of keys) {
       if (value && typeof value === 'object' && key in value) {
-        value = value[key];
+        value = (value as Record<string, unknown>)[key];
       } else {
         return path; // Return path if translation not found
       }

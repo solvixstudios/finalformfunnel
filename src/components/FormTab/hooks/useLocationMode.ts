@@ -11,7 +11,7 @@ export const useLocationMode = (
         if (formConfig.fields.location_block) {
             const newFields = { ...formConfig.fields };
             delete newFields.location_block;
-            setFormConfig((prev: any) => ({ ...prev, fields: newFields }));
+            setFormConfig((prev: unknown) => ({ ...prev, fields: newFields }));
         }
     }, [formConfig.fields.location_block, formConfig.fields, setFormConfig]);
 };

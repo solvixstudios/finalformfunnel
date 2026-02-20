@@ -1,9 +1,9 @@
 import { FormPreview } from './preview/FormPreview';
 
 interface BuilderPreviewProps {
-    formConfig: any;
+    formConfig: unknown;
     previewWidth: number | string;
-    containerRef?: any;
+    containerRef?: unknown;
 }
 
 export const BuilderPreview = ({

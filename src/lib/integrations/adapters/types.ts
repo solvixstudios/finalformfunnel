@@ -106,7 +106,7 @@ export interface OrderData {
     price: number;
   }>;
   // Allow additional fields
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**
@@ -130,7 +130,7 @@ export interface PlatformAdapter {
     credentials: PlatformCredentials,
     formConfig: Record<string, any>,
     context?: AssignmentContext
-  ): Promise<any>;
+  ): Promise<unknown>;
 
   removeForm(
     subdomain: string,
@@ -142,5 +142,5 @@ export interface PlatformAdapter {
   fetchProducts(subdomain: string, credentials: PlatformCredentials): Promise<Product[]>;
 
   // Orders
-  submitOrder(orderData: OrderData): Promise<any>;
+  submitOrder(orderData: OrderData): Promise<unknown>;
 }

@@ -8,7 +8,7 @@ import {
 
 interface ShippingEditorProps {
   handleLocationModeChangeWrapper: (mode: string) => void;
-  handleUpdateField: (key: string, fieldProps: any) => void;
+  handleUpdateField: (key: string, fieldProps: unknown) => void;
 }
 
 export const ShippingEditor = ({
@@ -100,7 +100,7 @@ export const ShippingEditor = ({
           </label>
           <div className="space-y-2">
             {getFieldsForCurrentMode(formConfig).map(
-              ([key, f]: any, idx: number) => {
+              ([key, f]: unknown, idx: number) => {
                 if (key === 'commune' && formConfig.locationInputMode === 'single_dropdown') return null;
 
                 if (key === "location_block") {
@@ -259,7 +259,7 @@ export const ShippingEditor = ({
           <label className="text-[10px] font-bold text-slate-500 uppercase">
             Placeholders
           </label>
-          {getLocationFieldsForPlaceholders(formConfig).map(([key, f]: any) => {
+          {getLocationFieldsForPlaceholders(formConfig).map(([key, f]: unknown) => {
             if (key === 'commune' && formConfig.locationInputMode === 'single_dropdown') return null;
             return (
               <div key={key} className="space-y-2">

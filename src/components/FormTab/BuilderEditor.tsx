@@ -21,7 +21,7 @@ import { UrgencyTimerEditor } from './editors/UrgencyTimerEditor';
 import { VariantsEditor } from './editors/VariantsEditor';
 
 // Configuration map for editors
-const EDITORS_MAP: Record<string, React.FC<any>> = {
+const EDITORS_MAP: Record<string, React.FC<unknown>> = {
     sections_list: SectionsListEditor,
     header: HeaderEditor,
     shipping: ShippingEditor, // Handled partly custom below due to props
@@ -51,7 +51,7 @@ const EditorContent = ({
     handleLocationModeChangeWrapper,
     handleUpdateField,
     onLoadClick
-}: any) => {
+}: unknown) => {
 
     // 1. Managers (Complex State Handlers)
     if (editingSection === 'packs_manager') {
@@ -59,7 +59,7 @@ const EditorContent = ({
             <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                 <PacksManager
                     offers={formConfig.offers || []}
-                    onOffersChange={(newOffers: any) => setFormConfig({ ...formConfig, offers: newOffers })}
+                    onOffersChange={(newOffers: unknown) => setFormConfig({ ...formConfig, offers: newOffers })}
                 />
             </div>
         );
@@ -70,7 +70,7 @@ const EditorContent = ({
             <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                 <ShippingManager
                     shipping={formConfig.shipping || { standard: { home: 600, desk: 400 }, exceptions: [] }}
-                    onShippingChange={(newShipping: any) => setFormConfig({ ...formConfig, shipping: newShipping })}
+                    onShippingChange={(newShipping: unknown) => setFormConfig({ ...formConfig, shipping: newShipping })}
                     enableHomeDelivery={formConfig.enableHomeDelivery !== false}
                     enableDeskDelivery={formConfig.enableDeskDelivery !== false}
                     onDeliveryTypeChange={(type: string, enabled: boolean) => {
@@ -90,7 +90,7 @@ const EditorContent = ({
             <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                 <PromoCodeManager
                     codes={formConfig.promoCode?.codes || []}
-                    onCodesChange={(newCodes: any) => setFormConfig({
+                    onCodesChange={(newCodes: unknown) => setFormConfig({
                         ...formConfig,
                         promoCode: {
                             ...formConfig.promoCode,
@@ -170,10 +170,10 @@ interface BuilderEditorProps {
     editingField: string | null;
     setEditingSection: (section: string | null) => void;
     setEditingField: (field: string | null) => void;
-    formConfig: any;
-    setFormConfig: (config: any) => void;
+    formConfig: unknown;
+    setFormConfig: (config: unknown) => void;
     handleLocationModeChangeWrapper: (mode: string) => void;
-    handleUpdateField: (key: string, fieldProps: any) => void;
+    handleUpdateField: (key: string, fieldProps: unknown) => void;
     onLoadClick?: () => void;
 }
 

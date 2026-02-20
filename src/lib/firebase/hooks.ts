@@ -79,7 +79,7 @@ export const useSavedForms = (userId: string) => {
         const docRef = await addDoc(collection(db, "forms"), newForm);
         // No manual state update - listener handles it
         return { id: docRef.id, ...newForm };
-      } catch (err: any) {
+      } catch (err: unknown) {
         setError(err.message);
         throw err;
       }
@@ -107,7 +107,7 @@ export const useSavedForms = (userId: string) => {
             await propagateFormUpdate(formId, data.name, data.config);
           }
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         setError(err.message);
         throw err;
       }
@@ -160,7 +160,7 @@ export const useSavedForms = (userId: string) => {
 
         await batch.commit();
         // No manual state update - listener handles it
-      } catch (err: any) {
+      } catch (err: unknown) {
         setError(err.message);
         throw err;
       }
@@ -280,7 +280,7 @@ export const useConnectedStores = (userId: string) => {
 
         // No need to manually update state, onSnapshot will handle it
         return savedStore;
-      } catch (err: any) {
+      } catch (err: unknown) {
         setError(err.message);
         throw err;
       }
@@ -298,7 +298,7 @@ export const useConnectedStores = (userId: string) => {
           updatedAt: new Date().toISOString(),
         });
         // No manual state update - listener handles it
-      } catch (err: any) {
+      } catch (err: unknown) {
         setError(err.message);
         throw err;
       }
@@ -409,7 +409,7 @@ export const useConnectedStores = (userId: string) => {
         }
 
         // No manual state update - listener handles it
-      } catch (err: any) {
+      } catch (err: unknown) {
         setError(err.message);
         throw err;
       }
@@ -627,7 +627,7 @@ export const useFormAssignments = (userId: string) => {
 
         // 3. Refetch to get updated data from n8n
         await refetch();
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("[useFormAssignments] deleteAssignment error:", err);
         throw err;
       }

@@ -94,7 +94,7 @@ export const FormsPage = () => {
 
     // Derived data
     const storeAssignments = useMemo(() => {
-        return allAssignments.reduce((acc: any, assignment) => {
+        return allAssignments.reduce((acc: Record<string, { id: string; name: string } | undefined>, assignment) => {
             if (assignment.isActive) {
                 acc[assignment.formId] = stores.find(s => s.id === assignment.storeId);
             }
@@ -158,14 +158,14 @@ export const FormsPage = () => {
 
     const handleCardClick = (formId: string) => navigate(`/dashboard/forms/edit/${formId}`);
 
-    const handleTemplateSelect = (config: any) => {
+    const handleTemplateSelect = (config: Record<string, unknown>) => {
         loadFormConfig(config);
         navigate('/dashboard/forms/edit/new');
         toast.success('Template loaded! Customize it to make it yours.');
         setTemplateModalOpen(false);
     };
 
-    const handleDuplicate = async (form: any) => {
+    const handleDuplicate = async (form: { id: string; name?: string; description?: string; config?: Record<string, unknown>; type?: string }) => {
         try {
             const configCopy = JSON.parse(JSON.stringify(form.config || {}));
             // Default to 'product' type internally for compatibility, or just let it handle itself
@@ -183,8 +183,8 @@ export const FormsPage = () => {
             await deleteForm(formToDelete);
             toast.success("Form deleted");
             setFormToDelete(null);
-        } catch (e: any) {
-            toast.error(e.message || "Failed to delete");
+        } catch (e: unknown) {
+            toast.error(e instanceof Error ? e.message : "Failed to delete");
         } finally {
             setIsDeleting(false);
         }
@@ -262,7 +262,7 @@ export const FormsPage = () => {
                             ].map(item => (
                                 <button
                                     key={item.key}
-                                    onClick={() => setFilter(item.key as any)}
+                                    onClick={() => setFilter(item.key as typeof filter)}
                                     className={cn(
                                         "px-3 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5",
                                         filter === item.key

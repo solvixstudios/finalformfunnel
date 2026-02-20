@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 
-interface PromoCode {
+export interface PromoCode {
   code: string;
   applyTo: "subtotal" | "shipping" | "total";
   discountMode: "free" | "percentage" | "fixed";
@@ -13,7 +13,7 @@ interface PromoCode {
   isActive: boolean;
 }
 
-interface AppliedPromoCode {
+export interface AppliedPromoCode {
   code: string;
   applyTo: "subtotal" | "shipping" | "total";
   discountMode: "free" | "percentage" | "fixed";

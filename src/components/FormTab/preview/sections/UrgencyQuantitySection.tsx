@@ -7,24 +7,10 @@ import { getUrgencyColor } from '@/lib/utils/colors';
 import type { Language } from '@/types';
 import { Flame, Package, TrendingDown } from 'lucide-react';
 import React from 'react';
+import type { FormConfig } from '@/types/form';
 
 interface UrgencyQuantitySectionProps {
-    config: {
-        accentColor: string;
-        borderRadius: string;
-        urgencyQuantity?: {
-            enabled?: boolean;
-            style?: 'badge' | 'banner' | 'pill' | 'minimal' | 'progress' | 'counter' | 'flame';
-            colorPreset?: string;
-            customColor?: string;
-            stockLeft?: number;
-            stockCount?: number;
-            text?: { fr?: string; ar?: string };
-            customText?: { fr?: string; ar?: string };
-            showIcon?: boolean;
-            animate?: boolean;
-        };
-    };
+    config: FormConfig;
     lang: Language;
     marginStyle?: React.CSSProperties;
 }

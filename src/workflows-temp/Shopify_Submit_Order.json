@@ -382,7 +382,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={\n  \"success\": true,\n  \"message\": \"Order received\",\n  \"orderId\": \"={{ .first().json.body.orderId || 'pending' }}\"\n}",
+        "responseBody": "={\n  \"success\": true,\n  \"message\": \"Order received\",\n  \"orderId\": \"={{ $('Receive Order').first().json.body.orderId || 'pending' }}\"\n}",
         "options": {
           "responseCode": 200,
           "responseHeaders": {
@@ -401,55 +401,7 @@
         -9952,
         1824
       ],
-      "id": "respond-success-1771549292404",
-      "name": "Respond Received"
-    },
-    {
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={\n  \"success\": true,\n  \"message\": \"Order received\",\n  \"orderId\": \"={{ .first().json.body.orderId || 'pending' }}\"\n}",
-        "options": {
-          "responseCode": 200,
-          "responseHeaders": {
-            "entries": [
-              {
-                "name": "Access-Control-Allow-Origin",
-                "value": "*"
-              }
-            ]
-          }
-        }
-      },
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.5,
-      "position": [
-        -9952,
-        1824
-      ],
-      "id": "respond-success-1771549300190",
-      "name": "Respond Received"
-    },
-    {
-      "parameters": {
-        "options": {
-          "responseCode": 200,
-          "responseHeaders": {
-            "entries": [
-              {
-                "name": "Access-Control-Allow-Origin",
-                "value": "*"
-              }
-            ]
-          }
-        }
-      },
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.5,
-      "position": [
-        -9952,
-        1824
-      ],
-      "id": "respond-success-1771549307600",
+      "id": "respond-received-node",
       "name": "Respond Received"
     }
   ],
@@ -623,7 +575,7 @@
       "main": [
         [
           {
-            "node": "Respond Received",
+            "node": "Get Stores",
             "type": "main",
             "index": 0
           }

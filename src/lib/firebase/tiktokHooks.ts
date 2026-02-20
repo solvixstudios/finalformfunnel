@@ -87,7 +87,7 @@ export const useTikTokPixels = (userId: string) => {
 
                 await batch.commit();
                 return { id: docRef.id, ...newPixel };
-            } catch (err: any) {
+            } catch (err: unknown) {
                 setError(err.message);
                 throw err;
             }
@@ -113,7 +113,7 @@ export const useTikTokPixels = (userId: string) => {
                 });
 
                 await batch.commit();
-            } catch (err: any) {
+            } catch (err: unknown) {
                 setError(err.message);
                 throw err;
             }
@@ -126,7 +126,7 @@ export const useTikTokPixels = (userId: string) => {
             if (!userId) throw new Error("User not authenticated");
             try {
                 await deleteDoc(doc(db, "tiktok_pixels", pixelId));
-            } catch (err: any) {
+            } catch (err: unknown) {
                 setError(err.message);
                 throw err;
             }

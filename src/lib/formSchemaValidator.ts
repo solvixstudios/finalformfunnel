@@ -11,7 +11,7 @@ export interface ValidationResult {
  * @param config - The form configuration to validate
  * @returns Validation result with errors and warnings
  */
-export function validateFormConfig(config: any): ValidationResult {
+export function validateFormConfig(config: unknown): ValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
 
@@ -21,8 +21,10 @@ export function validateFormConfig(config: any): ValidationResult {
     return { valid: false, errors, warnings };
   }
 
+  const c = config as Record<string, unknown>;
+
   // Check version
-  const configVersion = config.version;
+  const configVersion = c.version;
   if (!configVersion) {
     warnings.push('Form configuration version is missing. Assuming latest version.');
   } else if (configVersion !== FORM_CONFIG_SCHEMA_VERSION) {
@@ -43,42 +45,43 @@ export function validateFormConfig(config: any): ValidationResult {
   ];
 
   for (const field of requiredFields) {
-    if (!(field in config)) {
+    if (!(field in c)) {
       errors.push(`Required field '${field}' is missing`);
     }
   }
 
   // Validate fields structure
-  if (config.fields && typeof config.fields === 'object') {
-    const fieldKeys = Object.keys(config.fields);
+  if (c.fields && typeof c.fields === 'object') {
+    const fieldKeys = Object.keys(c.fields);
     if (fieldKeys.length === 0) {
       warnings.push('No form fields defined');
     }
-  } else if (config.fields) {
+  } else if (c.fields) {
     errors.push("Field 'fields' must be an object");
   }
 
   // Validate sectionOrder
-  if (config.sectionOrder && !Array.isArray(config.sectionOrder)) {
+  if (c.sectionOrder && !Array.isArray(c.sectionOrder)) {
     errors.push("Field 'sectionOrder' must be an array");
   }
 
   // Validate shipping structure
-  if (config.shipping) {
-    if (typeof config.shipping !== 'object') {
+  if (c.shipping) {
+    if (typeof c.shipping !== 'object') {
       errors.push("Field 'shipping' must be an object");
     } else {
-      if (!config.shipping.standard) {
+      const shippingObj = c.shipping as Record<string, unknown>;
+      if (!shippingObj.standard) {
         warnings.push("Shipping 'standard' rates are missing");
       }
-      if (!config.shipping.exceptions) {
+      if (!shippingObj.exceptions) {
         warnings.push("Shipping 'exceptions' array is missing");
       }
     }
   }
 
   // Validate offers array
-  if (config.offers && !Array.isArray(config.offers)) {
+  if (c.offers && !Array.isArray(c.offers)) {
     errors.push("Field 'offers' must be an array");
   }
 

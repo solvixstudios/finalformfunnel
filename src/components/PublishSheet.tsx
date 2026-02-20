@@ -33,7 +33,7 @@ interface PublishSheetProps {
     userId: string;
     formId: string;
     formName: string;
-    formConfig: any;
+    formConfig: unknown;
     formType?: 'store' | 'product';
     onPublishSuccess?: () => void;
 }
@@ -61,7 +61,7 @@ export function PublishSheet({
     const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
     const [productSearch, setProductSearch] = useState('');
     const [isPublishing, setIsPublishing] = useState(false);
-    const [conflictAssignment, setConflictAssignment] = useState<any>(null);
+    const [conflictAssignment, setConflictAssignment] = useState<unknown>(null);
 
     // Manage State
     const [selectedAssignmentIds, setSelectedAssignmentIds] = useState<string[]>([]);
@@ -262,7 +262,7 @@ export function PublishSheet({
             // Clear selection and move to manage view
             setSelectedProductIds([]);
             setView('manage');
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Publish failed:', error);
             toast.error('Failed to publish: ' + (error.message || 'Unknown error'));
         } finally {
@@ -367,14 +367,14 @@ export function PublishSheet({
         }
     };
 
-    const handleSingleUnpublish = async (assignment: any) => {
+    const handleSingleUnpublish = async (assignment: unknown) => {
         const loadingToast = toast.loading('Unpublishing...');
 
         try {
             // deleteAssignment handles n8n cleanup internally
             await deleteAssignment(assignment.id);
             toast.success('Unpublished successfully');
-        } catch (e: any) {
+        } catch (e: unknown) {
             console.error('Unpublish error:', e);
             toast.error('Failed to unpublish');
         } finally {

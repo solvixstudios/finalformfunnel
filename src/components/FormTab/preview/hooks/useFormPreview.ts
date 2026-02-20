@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { Language } from '../../types';
 
-export const useFormPreview = (defaultLanguage: Language, offers: any[]) => {
+export const useFormPreview = (defaultLanguage: Language, offers: unknown[]) => {
     const [lang, setLang] = useState<Language>(defaultLanguage);
     const [formData, setFormData] = useState({
         name: '',
@@ -18,7 +18,7 @@ export const useFormPreview = (defaultLanguage: Language, offers: any[]) => {
 
     // Sync offerId if current one is invalid
     useEffect(() => {
-        if (offers.length > 0 && !offers.find((o: any) => o.id === formData.offerId)) {
+        if (offers.length > 0 && !offers.find((o: unknown) => o.id === formData.offerId)) {
             setFormData(prev => ({ ...prev, offerId: offers[0].id }));
         }
     }, [offers, formData.offerId]);

@@ -15,7 +15,7 @@ const SPINNER_ID = 'finalform-spinner';
 async function fetchShopifyProduct() {
     try {
         // 1. Try getting from global objects first (fastest), BUT ensure it has key data
-        const metaProduct = (window as any).meta?.product;
+        const metaProduct = (window as unknown).meta?.product;
         if (metaProduct && metaProduct.id && metaProduct.title) {
             console.log('FinalForm: Found complete product in window.meta');
             return metaProduct;
@@ -173,9 +173,9 @@ async function initLoader() {
     // 1.5. Remove Tailwind CDN Injection (We rely on built CSS now)
 
     // 2. Identify Product Context
-    let productId = (window as any).meta?.product?.id?.toString();
-    if (!productId && (window as any).ShopifyAnalytics?.meta?.product?.id) {
-        productId = (window as any).ShopifyAnalytics.meta.product.id.toString();
+    let productId = (window as unknown).meta?.product?.id?.toString();
+    if (!productId && (window as unknown).ShopifyAnalytics?.meta?.product?.id) {
+        productId = (window as unknown).ShopifyAnalytics.meta.product.id.toString();
     }
 
     // Normalize handle
@@ -358,25 +358,26 @@ share-button {
     // 7. Initialize Global Pixels (if not on product page)
     // If we are on a product page, FormLoader handles this.
     // If we are NOT on a product page, we must do it manually here.
-    const initGlobalPixels = (config: any) => {
-        const pixelData = config.addons?.pixelData || config.pixels || [];
+    const initGlobalPixels = (config: Record<string, unknown>) => {
+        const addons = config.addons as Record<string, unknown> | undefined;
+        const pixelData = (addons?.pixelData || config.pixels || []) as { pixelId: string }[];
         if (pixelData.length > 0) {
             console.log('FinalForm: Initializing Global Pixels...', pixelData.length);
 
             // Inject Base Code if needed
-            if (!(window as any).fbq) {
-                const f = (window as any).fbq = function () {
-                    // @ts-ignore
-                    f.callMethod ? f.callMethod.apply(f, arguments) : f.queue.push(arguments)
-                };
-                if (!(window as any)._fbq) (window as any)._fbq = f;
-                // @ts-ignore
+            if (!(window as unknown as Record<string, unknown>).fbq) {
+                const f = ((window as unknown as Record<string, unknown>).fbq = function () {
+                    // eslint-disable-next-line prefer-rest-params
+                    const args = arguments;
+                    const fq = (f as unknown as { callMethod?: Function; queue: unknown[] });
+                    fq.callMethod ? fq.callMethod.apply(f, args) : fq.queue.push(args)
+                }) as unknown as Record<string, unknown>;
+
+                if (!(window as unknown as Record<string, unknown>)._fbq) (window as unknown as Record<string, unknown>)._fbq = f;
+
                 f.push = f;
-                // @ts-ignore
                 f.loaded = true;
-                // @ts-ignore
                 f.version = '2.0';
-                // @ts-ignore
                 f.queue = [];
                 const t = document.createElement('script');
                 t.async = true;
@@ -386,40 +387,66 @@ share-button {
             }
 
             // Init Pixels
-            pixelData.forEach((p: any) => {
-                (window as any).fbq('init', p.pixelId);
+            pixelData.forEach((p: { pixelId: string }) => {
+                const winObj = window as unknown as Record<string, unknown>;
+                if (winObj.fbq) {
+                    (winObj.fbq as Function)('init', p.pixelId);
+                }
             });
 
             // PageView
             const eventId = `evt-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-            (window as any).fbq('track', 'PageView', {}, { eventID: eventId });
+            const winObj = window as unknown as Record<string, unknown>;
+            if (winObj.fbq) {
+                (winObj.fbq as Function)('track', 'PageView', {}, { eventID: eventId });
+            }
         }
 
         // Initialize TikTok Pixels
-        const tiktokData = config.addons?.tiktokPixelData || [];
+        const tiktokData = (addons?.tiktokPixelData || []) as { pixelId: string }[];
         if (tiktokData.length > 0) {
             console.log('FinalForm: Initializing TikTok Global Pixels...', tiktokData.length);
 
             // Inject TikTok Base Script
-            if (!(window as any).ttq) {
-                (function (w: any, d: any, t: string) {
-                    w.TiktokAnalyticsObject = t;
-                    var ttq = w[t] = w[t] || [];
+            if (!(window as unknown as Record<string, unknown>).ttq) {
+                (function (w: Window & typeof globalThis, d: Document, t: string) {
+                    const winObj = w as unknown as Record<string, unknown>;
+                    winObj.TiktokAnalyticsObject = t;
+
+                    type TTQArray = unknown[] & {
+                        methods: string[];
+                        setAndDefer: (t: TTQArray, e: string) => void;
+                        instance: (t: string) => TTQArray;
+                        load: (e: string, n?: Record<string, unknown>) => void;
+                        page: () => void;
+                        _i: Record<string, TTQArray & { _u: string }>;
+                        _t: Record<string, number>;
+                        _o: Record<string, Record<string, unknown>>;
+                    };
+
+                    const ttq = (winObj[t] = winObj[t] || []) as TTQArray;
+
                     ttq.methods = ["page", "track", "identify", "instances", "debug", "on", "off", "once", "ready", "alias", "group", "enableCookie", "disableCookie", "holdConsent", "revokeConsent", "grantConsent"];
-                    ttq.setAndDefer = function (t: any, e: any) {
-                        t[e] = function () {
-                            t.push([e].concat(Array.prototype.slice.call(arguments, 0)));
+
+                    ttq.setAndDefer = function (objT: TTQArray, e: string) {
+                        (objT as unknown as Record<string, unknown>)[e] = function () {
+                            objT.push([e].concat(Array.prototype.slice.call(arguments, 0)));
                         };
                     };
+
                     for (var i = 0; i < ttq.methods.length; i++) ttq.setAndDefer(ttq, ttq.methods[i]);
-                    ttq.instance = function (t: any) {
-                        for (var e = ttq._i[t] || [], n = 0; n < ttq.methods.length; n++) ttq.setAndDefer(e, ttq.methods[n]);
+
+                    ttq.instance = function (instanceT: string) {
+                        for (var e = (ttq._i && ttq._i[instanceT]) || ([] as unknown as TTQArray), n = 0; n < ttq.methods.length; n++) {
+                            ttq.setAndDefer(e, ttq.methods[n]);
+                        }
                         return e;
                     };
-                    ttq.load = function (e: any, n: any) {
+
+                    ttq.load = function (e: string, n?: Record<string, unknown>) {
                         var r = "https://analytics.tiktok.com/i18n/pixel/events.js";
                         ttq._i = ttq._i || {};
-                        ttq._i[e] = [];
+                        ttq._i[e] = [] as unknown as TTQArray & { _u: string };
                         ttq._i[e]._u = r;
                         ttq._t = ttq._t || {};
                         ttq._t[e] = +new Date();
@@ -436,10 +463,13 @@ share-button {
             }
 
             // Load and Identify
-            tiktokData.forEach((p: any) => {
+            tiktokData.forEach((p: { pixelId: string }) => {
                 if (p.pixelId) {
-                    (window as any).ttq.load(p.pixelId);
-                    (window as any).ttq.page();
+                    const winObj = window as unknown as Record<string, unknown>;
+                    if (winObj.ttq) {
+                        (winObj.ttq as { load: (id: string) => void; page: () => void }).load(p.pixelId);
+                        (winObj.ttq as { load: (id: string) => void; page: () => void }).page();
+                    }
                 }
             });
         }
@@ -499,4 +529,4 @@ if (document.readyState === 'loading') {
 }
 
 // Expose manual init
-(window as any).initFinalForm = initLoader;
+(window as unknown).initFinalForm = initLoader;

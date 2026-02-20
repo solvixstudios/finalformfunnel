@@ -12,7 +12,7 @@ export interface FormLoadingCardProps {
     updatedAt?: string;
     createdAt?: string;
     status?: 'draft' | 'published';
-    config?: any;
+    config?: unknown;
   };
   isLoading?: boolean;
   isSelected?: boolean;
@@ -22,9 +22,9 @@ export interface FormLoadingCardProps {
   onDuplicate?: () => Promise<void>;
   onPublish?: (e: React.MouseEvent) => void;
   onUnpublish?: (assignmentId: string) => Promise<void>;
-  assignments?: any[];
-  productAssignments?: any[];
-  storeAssignment?: any;
+  assignments?: unknown[];
+  productAssignments?: unknown[];
+  storeAssignment?: unknown;
   actionLabel?: string;
   className?: string;
 }

@@ -63,7 +63,7 @@ export const signInWithGoogle = async (): Promise<GoogleUser> => {
 
     storeUser(user);
     return user;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Google sign-in error:', error);
     throw new Error(error.message || 'Failed to sign in with Google');
   }
@@ -73,7 +73,7 @@ export const signOutUser = async (): Promise<void> => {
   try {
     await signOut(auth);
     clearUser();
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Sign out error:', error);
     throw new Error(error.message || 'Failed to sign out');
   }

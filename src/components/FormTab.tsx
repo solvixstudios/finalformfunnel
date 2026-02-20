@@ -23,7 +23,7 @@ const FormTab = ({ onSaveClick, onLoadClick, canSave, showSaveSuccess }: FormTab
 
   const isDesktop = useMediaQuery('(min-width: 1024px)');
 
-  const handleUpdateField = (key: string, value: any) => {
+  const handleUpdateField = (key: string, value: unknown) => {
     setFormConfig({
       ...formConfig,
       fields: {
@@ -55,7 +55,7 @@ const FormTab = ({ onSaveClick, onLoadClick, canSave, showSaveSuccess }: FormTab
 
     setFormConfig({
       ...formConfig,
-      locationInputMode: mode as any,
+      locationInputMode: mode as unknown,
       fields: newFields,
     });
   };

@@ -12,7 +12,7 @@ import { getAdapter } from "../integrations";
  * Propagates form configuration changes to all n8n assignments.
  * This ensures that when a form is edited, the changes are reflected in the store webhooks immediately.
  */
-export async function propagateFormUpdate(formId: string, formName: string, config: any) {
+export async function propagateFormUpdate(formId: string, formName: string, config: { addons?: Record<string, any>;[key: string]: unknown }) {
     try {
         console.log(`[Sync] Propagating updates for form ${formId} to n8n...`);
 
@@ -21,7 +21,7 @@ export async function propagateFormUpdate(formId: string, formName: string, conf
         if (config?.addons?.selectedSheetIds?.length > 0) {
             try {
                 const sheetIds = config.addons.selectedSheetIds;
-                const sheets: any[] = [];
+                const sheets: Record<string, unknown>[] = [];
 
                 // Fetch each sheet config
                 // We use Promise.all for parallel fetching
@@ -36,7 +36,7 @@ export async function propagateFormUpdate(formId: string, formName: string, conf
                 const results = await Promise.all(sheetPromises);
 
                 // Map to the format FormLoader expects
-                results.forEach((sheet: any) => {
+                results.forEach((sheet: Record<string, unknown>) => {
                     if (sheet) {
                         sheets.push({
                             webhookUrl: sheet.webhookUrl,

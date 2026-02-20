@@ -94,7 +94,7 @@ export const useWhatsAppProfiles = (userId: string) => {
 
         await batch.commit();
         return { id: docRef.id, ...newProfile };
-      } catch (err: any) {
+      } catch (err: unknown) {
         setError(err.message);
         throw err;
       }
@@ -129,7 +129,7 @@ export const useWhatsAppProfiles = (userId: string) => {
         });
 
         await batch.commit();
-      } catch (err: any) {
+      } catch (err: unknown) {
         setError(err.message);
         throw err;
       }
@@ -152,7 +152,7 @@ export const useWhatsAppProfiles = (userId: string) => {
         // The plan said "Implement isProfileAssigned check".
 
         await deleteDoc(doc(db, "whatsapp_profiles", profileId));
-      } catch (err: any) {
+      } catch (err: unknown) {
         setError(err.message);
         throw err;
       }

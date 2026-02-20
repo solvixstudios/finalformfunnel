@@ -71,7 +71,7 @@ export const CtaEditor = () => {
             <select
               value={formConfig.ctaVariant || "solid"}
               onChange={(e) =>
-                setFormConfig({ ...formConfig, ctaVariant: e.target.value as any })
+                setFormConfig({ ...formConfig, ctaVariant: e.target.value as unknown })
               }
               className="w-full text-xs border border-slate-200 rounded-lg p-2.5 font-bold focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 outline-none"
             >
@@ -92,7 +92,7 @@ export const CtaEditor = () => {
               onChange={(e) =>
                 setFormConfig({
                   ...formConfig,
-                  ctaAnimation: e.target.value as any,
+                  ctaAnimation: e.target.value as unknown,
                   ctaShake: e.target.value === "shake"
                 })
               }
@@ -150,7 +150,7 @@ export const CtaEditor = () => {
                 <label className="text-[10px] font-bold text-slate-500 uppercase">Style du Sticky</label>
                 <div className="grid grid-cols-3 gap-2">
                   <button
-                    onClick={() => setFormConfig({ ...formConfig, ctaStickyVariant: 'simple' as any })}
+                    onClick={() => setFormConfig({ ...formConfig, ctaStickyVariant: 'simple' as unknown })}
                     className={`p-2.5 rounded-lg border text-[10px] font-bold transition-all ${(!formConfig.ctaStickyVariant || formConfig.ctaStickyVariant === 'simple')
                       ? "bg-gradient-to-br from-indigo-500 to-purple-600 border-transparent text-white shadow-md"
                       : "bg-white border-slate-200 text-slate-600 hover:border-indigo-300 hover:shadow-sm"
@@ -159,7 +159,7 @@ export const CtaEditor = () => {
                     Simple
                   </button>
                   <button
-                    onClick={() => setFormConfig({ ...formConfig, ctaStickyVariant: 'product' as any })}
+                    onClick={() => setFormConfig({ ...formConfig, ctaStickyVariant: 'product' as unknown })}
                     className={`p-2.5 rounded-lg border text-[10px] font-bold transition-all ${formConfig.ctaStickyVariant === 'product'
                       ? "bg-gradient-to-br from-indigo-500 to-purple-600 border-transparent text-white shadow-md"
                       : "bg-white border-slate-200 text-slate-600 hover:border-indigo-300 hover:shadow-sm"
@@ -168,7 +168,7 @@ export const CtaEditor = () => {
                     Produit
                   </button>
                   <button
-                    onClick={() => setFormConfig({ ...formConfig, ctaStickyVariant: 'compact' as any })}
+                    onClick={() => setFormConfig({ ...formConfig, ctaStickyVariant: 'compact' as unknown })}
                     className={`p-2.5 rounded-lg border text-[10px] font-bold transition-all ${formConfig.ctaStickyVariant === 'compact'
                       ? "bg-gradient-to-br from-indigo-500 to-purple-600 border-transparent text-white shadow-md"
                       : "bg-white border-slate-200 text-slate-600 hover:border-indigo-300 hover:shadow-sm"
@@ -180,7 +180,7 @@ export const CtaEditor = () => {
 
                 <div className="grid grid-cols-2 gap-2">
                   <button
-                    onClick={() => setFormConfig({ ...formConfig, ctaStickyVariant: 'card' as any })}
+                    onClick={() => setFormConfig({ ...formConfig, ctaStickyVariant: 'card' as unknown })}
                     className={`p-2.5 rounded-lg border text-[10px] font-bold transition-all ${formConfig.ctaStickyVariant === 'card'
                       ? "bg-gradient-to-br from-indigo-500 to-purple-600 border-transparent text-white shadow-md"
                       : "bg-white border-slate-200 text-slate-600 hover:border-indigo-300 hover:shadow-sm"
@@ -189,7 +189,7 @@ export const CtaEditor = () => {
                     Carte
                   </button>
                   <button
-                    onClick={() => setFormConfig({ ...formConfig, ctaStickyVariant: 'badge' as any })}
+                    onClick={() => setFormConfig({ ...formConfig, ctaStickyVariant: 'badge' as unknown })}
                     className={`p-2.5 rounded-lg border text-[10px] font-bold transition-all ${formConfig.ctaStickyVariant === 'badge'
                       ? "bg-gradient-to-br from-indigo-500 to-purple-600 border-transparent text-white shadow-md"
                       : "bg-white border-slate-200 text-slate-600 hover:border-indigo-300 hover:shadow-sm"

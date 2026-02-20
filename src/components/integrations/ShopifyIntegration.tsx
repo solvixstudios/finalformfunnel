@@ -295,7 +295,7 @@ export function ShopifyIntegration({ userId }: ShopifyIntegrationProps) {
 
                     setView('list');
                     setShopifyForm({ subdomain: '', clientId: '', clientSecret: '' });
-                } catch (addError: any) {
+                } catch (addError: unknown) {
                     if (addError.message === 'STORE_ALREADY_OWNED') {
                         toast.error('This store is already connected to a different account.');
                     } else if (addError.message === 'STORE_ALREADY_CONNECTED') {
@@ -307,7 +307,7 @@ export function ShopifyIntegration({ userId }: ShopifyIntegrationProps) {
             } else {
                 toast.error(result.error || 'Connection failed. Please check your credentials.');
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error(error);
             toast.error(error.message || 'An unexpected error occurred.');
         } finally {

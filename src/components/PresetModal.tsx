@@ -6,8 +6,8 @@ interface PresetModalProps {
   isOpen: boolean;
   onClose: () => void;
   activeTab: string;
-  onLoad: (data: any) => void;
-  onSave: (data: any, type: 'form' | 'offers' | 'shipping') => void;
+  onLoad: (data: unknown) => void;
+  onSave: (data: unknown, type: 'form' | 'offers' | 'shipping') => void;
 }
 
 export default function PresetModal({

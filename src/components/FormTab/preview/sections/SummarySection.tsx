@@ -9,30 +9,10 @@ import { TrendingDown } from 'lucide-react';
 import React from 'react';
 import { priceToLetters } from '../../../../lib/utils/priceToLetters';
 import { SectionLabel } from '../components/SectionLabel';
+import type { FormConfig } from '@/types/form';
 
 interface SummarySectionProps {
-    config: {
-        accentColor: string;
-        textColor?: string;
-        hideShippingInSummary?: boolean;
-        borderRadius: string;
-        sectionSettings?: {
-            summary?: {
-                showTitle?: boolean;
-                priceInLetters?: {
-                    enabled: boolean;
-                    mode: 'dinars' | 'centimes';
-                };
-            };
-        };
-        translations: {
-            subtotal?: { fr: string; ar: string };
-            shippingLabel?: { fr: string; ar: string };
-            free?: { fr: string; ar: string };
-            total?: { fr: string; ar: string };
-            [key: string]: any;
-        };
-    };
+    config: FormConfig;
     lang: Language;
     offerPrice: number;
     shippingCost: number;
@@ -77,8 +57,8 @@ export const SummarySection: React.FC<SummarySectionProps> = ({
             >
                 {/* Subtotal row */}
                 <div className="flex justify-between text-sm">
-                    <span style={buildTextStyles(config as any, 'body')}>{txt('subtotal')}</span>
-                    <span className="font-bold" style={buildTextStyles(config as any, 'heading')}>
+                    <span style={buildTextStyles(config as unknown, 'body')}>{txt('subtotal')}</span>
+                    <span className="font-bold" style={buildTextStyles(config as unknown, 'heading')}>
                         {promoDiscount.subtotalDiscount > 0 ? (
                             <>
                                 <span className="line-through text-gray-400 mr-2">
@@ -95,8 +75,8 @@ export const SummarySection: React.FC<SummarySectionProps> = ({
                 {/* Shipping row (if not hidden) */}
                 {!config.hideShippingInSummary && (
                     <div className="flex justify-between text-sm">
-                        <span style={buildTextStyles(config as any, 'body')}>{txt('shippingLabel')}</span>
-                        <span className="font-bold" style={buildTextStyles(config as any, 'heading')}>
+                        <span style={buildTextStyles(config as unknown, 'body')}>{txt('shippingLabel')}</span>
+                        <span className="font-bold" style={buildTextStyles(config as unknown, 'heading')}>
                             {promoDiscount.shippingDiscount > 0 ? (
                                 effectiveShipping <= 0 ? (
                                     <span className="text-emerald-600">{txt('free')}</span>
@@ -135,7 +115,7 @@ export const SummarySection: React.FC<SummarySectionProps> = ({
 
                 {/* Total row */}
                 <div className="flex justify-between items-center">
-                    <span className="text-lg font-black" style={buildTextStyles(config as any, 'heading')}>
+                    <span className="text-lg font-black" style={buildTextStyles(config as unknown, 'heading')}>
                         {txt('total')}
                     </span>
                     <div className="flex flex-col items-end">
@@ -145,9 +125,9 @@ export const SummarySection: React.FC<SummarySectionProps> = ({
                         >
                             {formatCurrency(displayedTotal)}
                         </span>
-                        {(config as any).sectionSettings?.summary?.priceInLetters?.enabled && (
+                        {(config as unknown).sectionSettings?.summary?.priceInLetters?.enabled && (
                             <span className="text-[10px] font-medium italic opacity-70 capitalize mt-0.5" style={{ color: config.textColor || '#64748b' }}>
-                                {priceToLetters(displayedTotal, lang, (config as any).sectionSettings.summary.priceInLetters.mode)}
+                                {priceToLetters(displayedTotal, lang, (config as unknown).sectionSettings.summary.priceInLetters.mode)}
                             </span>
                         )}
                     </div>

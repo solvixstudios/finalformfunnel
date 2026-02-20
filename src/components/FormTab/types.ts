@@ -13,8 +13,8 @@ export interface SortableItemProps {
 
 export interface FormPreviewProps {
   config: typeof DEFAULT_FORM_CONFIG;
-  offers: any[];
-  shipping: any;
+  offers: unknown[];
+  shipping: unknown;
 }
 
 export type LocationInputMode = "double_dropdown" | "single_dropdown" | "free_text";

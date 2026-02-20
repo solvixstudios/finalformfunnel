@@ -7,6 +7,7 @@ import type { Language } from '@/types';
 import { Check, Package, RotateCcw, Shield, Truck, Zap } from 'lucide-react';
 import React from 'react';
 import { SectionLabel } from '../components/SectionLabel';
+import type { FormConfig } from '@/types/form';
 
 interface TrustBadge {
     enabled: boolean;
@@ -15,26 +16,7 @@ interface TrustBadge {
 }
 
 interface TrustBadgesSectionProps {
-    config: {
-        accentColor: string;
-        textColor?: string;
-        borderRadius: string;
-        trustBadgeStyle?: 'cards' | 'pills' | 'minimal' | 'banner' | 'lines' | 'compactLines';
-        trustBadges: {
-            cod?: TrustBadge;
-            guarantee?: TrustBadge;
-            return?: TrustBadge;
-            support?: TrustBadge;
-            fastDelivery?: TrustBadge;
-        };
-        sectionSettings?: {
-            trustBadges?: { showTitle?: boolean };
-        };
-        translations: {
-            trustTitle?: { fr: string; ar: string };
-            [key: string]: any;
-        };
-    };
+    config: FormConfig;
     lang: Language;
     marginStyle?: React.CSSProperties;
 }

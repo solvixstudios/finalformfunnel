@@ -8,6 +8,7 @@ import type { Language } from '@/types';
 import { Check } from 'lucide-react';
 import React from 'react';
 import { SectionLabel } from '../components/SectionLabel';
+import type { FormConfig } from '@/types/form';
 
 interface Offer {
     id: string;
@@ -24,22 +25,7 @@ interface Offer {
 }
 
 interface OffersSectionProps {
-    config: {
-        accentColor: string;
-        textColor?: string;
-        headingColor?: string;
-        borderRadius: string;
-        inputBorderColor?: string;
-        formBackground?: string;
-        enableOffersSection?: boolean;
-        sectionSettings?: {
-            offers?: { showTitle?: boolean };
-        };
-        translations: {
-            offers?: { fr: string; ar: string };
-            [key: string]: any;
-        };
-    };
+    config: FormConfig;
     lang: Language;
     offers: Offer[];
     selectedOfferId: string;
@@ -90,7 +76,7 @@ export const OffersSection: React.FC<OffersSectionProps> = ({
                             className={`relative w-full p-4 border-2 flex items-center gap-4 transition-all duration-200 ${isSelected ? 'shadow-lg' : ''
                                 }`}
 
-                            style={buildOptionCardStyles(config as any, { selected: isSelected })}
+                            style={buildOptionCardStyles(config as unknown, { selected: isSelected })}
                         >
                             {/* Offer Sticker */}
                             {o.sticker?.enabled && (

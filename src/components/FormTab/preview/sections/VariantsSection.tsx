@@ -8,23 +8,10 @@ import type { Language } from '@/types';
 import { Check, ChevronDown } from 'lucide-react';
 import React from 'react';
 import { SectionLabel } from '../components/SectionLabel';
+import type { FormConfig } from '@/types/form';
 
 interface VariantsSectionProps {
-    config: {
-        accentColor: string;
-        textColor?: string;
-        borderRadius: string;
-        inputBorderColor?: string;
-        formBackground?: string;
-        variantStyle?: 'buttons' | 'cards' | 'pills' | 'dropdown';
-        sectionSettings?: {
-            variants?: { showTitle?: boolean };
-        };
-        translations: {
-            variants?: { fr: string; ar: string };
-            [key: string]: any;
-        };
-    };
+    config: FormConfig;
     lang: Language;
     variants?: string[]; // Legacy support (optional)
     options?: { name: string; values: string[] }[];
@@ -75,7 +62,7 @@ export const VariantsSection: React.FC<VariantsSectionProps> = ({
                                     borderRadius: config.borderRadius,
                                     borderColor: isSelected ? undefined : config.inputBorderColor || '#e2e8f0', // Default border color when not selected
                                     backgroundColor: isSelected ? undefined : config.formBackground || '#ffffff',
-                                    ...buildOptionCardStyles(config as any, { selected: isSelected })
+                                    ...buildOptionCardStyles(config as unknown, { selected: isSelected })
                                 }}
                             >
                                 {/* Selection radio */}
@@ -139,7 +126,7 @@ export const VariantsSection: React.FC<VariantsSectionProps> = ({
                                 onClick={() => onOptionSelect?.(optionName, val)}
                                 className={`flex-shrink-0 p-3 text-xs font-bold transition-all duration-200 border-2 text-center flex items-center justify-center gap-2 ${isSelected ? 'text-white shadow-md' : ''}`}
                                 style={{
-                                    ...buildOptionCardStyles(config as any, { selected: isSelected }),
+                                    ...buildOptionCardStyles(config as unknown, { selected: isSelected }),
                                     borderRadius: config.borderRadius,
                                 }}
                             >

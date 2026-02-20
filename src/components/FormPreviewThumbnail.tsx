@@ -2,7 +2,7 @@ import { FileText } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 
 interface FormPreviewThumbnailProps {
-    config: any;
+    config: unknown;
     width?: number;
     height?: number;
     className?: string;

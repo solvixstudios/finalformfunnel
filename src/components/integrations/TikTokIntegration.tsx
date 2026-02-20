@@ -126,7 +126,7 @@ export function TikTokIntegration({ userId }: TikTokIntegrationProps) {
         setPixelList(newList);
     };
 
-    const updatePixelRow = (index: number, field: keyof PixelData, value: any) => {
+    const updatePixelRow = (index: number, field: keyof PixelData, value: unknown) => {
         const newList = [...pixelList];
         newList[index] = { ...newList[index], [field]: value };
         setPixelList(newList);
@@ -169,7 +169,7 @@ export function TikTokIntegration({ userId }: TikTokIntegrationProps) {
                 toast.success('TikTok Pixel Profile updated!');
             }
             handleCancel();
-        } catch (e: any) {
+        } catch (e: unknown) {
             toast.error(e.message);
         }
     };
@@ -180,7 +180,7 @@ export function TikTokIntegration({ userId }: TikTokIntegrationProps) {
                 await deletePixel(id);
                 toast.success('Profile deleted');
                 handleCancel();
-            } catch (e: any) {
+            } catch (e: unknown) {
                 toast.error(e.message);
             }
         }

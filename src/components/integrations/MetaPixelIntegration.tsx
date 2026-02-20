@@ -104,12 +104,12 @@ export function MetaPixelIntegration({ userId }: MetaPixelIntegrationProps) {
         }));
 
         // Handle legacy data case if necessary (optional)
-        if (mappedPixels.length === 0 && (profile as any).pixelId) {
+        if (mappedPixels.length === 0 && (profile as unknown).pixelId) {
             mappedPixels.push({
-                pixelId: (profile as any).pixelId,
-                capiToken: (profile as any).capiToken || '',
-                testCode: (profile as any).testCode || '',
-                showAdvanced: !!((profile as any).capiToken || (profile as any).testCode)
+                pixelId: (profile as unknown).pixelId,
+                capiToken: (profile as unknown).capiToken || '',
+                testCode: (profile as unknown).testCode || '',
+                showAdvanced: !!((profile as unknown).capiToken || (profile as unknown).testCode)
             });
         }
 
@@ -138,7 +138,7 @@ export function MetaPixelIntegration({ userId }: MetaPixelIntegrationProps) {
         setPixelList(newList);
     };
 
-    const updatePixelRow = (index: number, field: keyof PixelData, value: any) => {
+    const updatePixelRow = (index: number, field: keyof PixelData, value: unknown) => {
         const newList = [...pixelList];
         newList[index] = { ...newList[index], [field]: value };
         setPixelList(newList);
@@ -180,7 +180,7 @@ export function MetaPixelIntegration({ userId }: MetaPixelIntegrationProps) {
                 toast.success('Meta Pixel Profile updated!');
             }
             handleCancel();
-        } catch (e: any) {
+        } catch (e: unknown) {
             toast.error(e.message);
         }
     };
@@ -191,7 +191,7 @@ export function MetaPixelIntegration({ userId }: MetaPixelIntegrationProps) {
                 await deletePixel(id);
                 toast.success('Profile deleted');
                 handleCancel();
-            } catch (e: any) {
+            } catch (e: unknown) {
                 toast.error(e.message);
             }
         }

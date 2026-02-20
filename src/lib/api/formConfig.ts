@@ -16,6 +16,7 @@ import {
   where,
 } from "firebase/firestore";
 import { db } from "../firebase";
+import type { FormConfig, MetaPixelProfile } from "../../types/form";
 
 export interface FormConfigResponse {
   formId: string;
@@ -34,8 +35,8 @@ export interface FormConfigResponse {
     domain: string;
     platform: string;
   };
-  config: Record<string, any>;
-  pixels?: any[]; // Meta Pixel profiles
+  config: FormConfig;
+  pixels?: MetaPixelProfile[]; // Meta Pixel profiles
 }
 
 export interface FormConfigError {
@@ -154,11 +155,11 @@ export async function getFormConfig(
     }
 
     const formData = formSnap.data();
-    const config = formData.config || {};
+    const config = (formData.config || {}) as FormConfig;
 
     // Fetch Meta Pixels if configured
-    let pixels: any[] = [];
-    if (config.addons?.metaPixelIds?.length > 0) {
+    let pixels: MetaPixelProfile[] = [];
+    if (config.addons?.metaPixelIds?.length && config.addons.metaPixelIds.length > 0) {
       try {
         const pixelIds = config.addons.metaPixelIds;
         // Firestore 'in' query is limited to 10 items.
@@ -183,7 +184,8 @@ export async function getFormConfig(
 
         pixels = pixelSnaps
           .filter(snap => snap.exists())
-          .map(snap => ({ id: snap.id, ...snap.data() }));
+          // @ts-ignore - The database stores the pixel ID under some field, assuming 'pixelId'
+          .map(snap => ({ id: snap.id, pixelId: snap.data()?.pixelId || snap.id, ...snap.data() } as MetaPixelProfile));
 
       } catch (e) {
         console.warn("Error fetching meta pixels:", e);
@@ -213,9 +215,9 @@ export async function getFormConfig(
       config: formData.config,
       pixels,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching form config:", error);
-    return { error: error.message || "Failed to fetch form config" };
+    return { error: error instanceof Error ? error.message : "Failed to fetch form config" };
   }
 }
 

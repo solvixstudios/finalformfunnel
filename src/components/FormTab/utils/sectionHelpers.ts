@@ -26,7 +26,7 @@ export const moveField = (
     visualList.splice(to, 0, itemMoved);
 
     // Reassign orders based on new visual list
-    const newFields: any = { ...formConfig.fields };
+    const newFields: unknown = { ...formConfig.fields };
     visualList.forEach((k, index) => {
         const key = k as string;
         if (key === 'location_block') {

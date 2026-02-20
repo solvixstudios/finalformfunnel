@@ -33,7 +33,7 @@ export class WooCommerceAdapter implements PlatformAdapter {
     _credentials: PlatformCredentials,
     _formConfig: Record<string, any>,
     _context?: AssignmentContext
-  ): Promise<any> {
+  ): Promise<unknown> {
     throw new Error('WooCommerce integration not implemented yet');
   }
 
@@ -45,7 +45,7 @@ export class WooCommerceAdapter implements PlatformAdapter {
     throw new Error('WooCommerce integration not implemented yet');
   }
 
-  async submitOrder(_orderData: OrderData): Promise<any> {
+  async submitOrder(_orderData: OrderData): Promise<unknown> {
     throw new Error('WooCommerce integration not implemented yet');
   }
 }

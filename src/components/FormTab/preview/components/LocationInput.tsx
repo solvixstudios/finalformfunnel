@@ -12,7 +12,7 @@ interface LocationInputProps {
         commune: string;
         address: string;
     };
-    setFormData: React.Dispatch<React.SetStateAction<any>>;
+    setFormData: React.Dispatch<React.SetStateAction<unknown>>;
     getFieldTxt: (key: string) => string;
     inputSpacing: number;
     svxInputClass: string;

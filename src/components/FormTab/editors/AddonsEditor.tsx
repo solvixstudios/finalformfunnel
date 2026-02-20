@@ -150,12 +150,12 @@ export const AddonsEditor = () => {
                 }));
 
                 // If legacy profile has no pixels array but has pixelId (handled in types but just in case)
-                if (profilePixels.length === 0 && (profile as any).pixelId) {
+                if (profilePixels.length === 0 && (profile as unknown).pixelId) {
                     profilePixels.push({
                         id: profile.id,
-                        pixelId: (profile as any).pixelId,
-                        capiToken: (profile as any).capiToken,
-                        testCode: (profile as any).testCode,
+                        pixelId: (profile as unknown).pixelId,
+                        capiToken: (profile as unknown).capiToken,
+                        testCode: (profile as unknown).testCode,
                         name: profile.name
                     });
                 }
@@ -206,12 +206,12 @@ export const AddonsEditor = () => {
                 }));
 
                 // Fallback for legacy structure (no pixels array)
-                if (profilePixels.length === 0 && (profile as any).pixelId) {
+                if (profilePixels.length === 0 && (profile as unknown).pixelId) {
                     profilePixels.push({
                         id: profile.id,
-                        pixelId: (profile as any).pixelId,
-                        accessToken: (profile as any).accessToken,
-                        testCode: (profile as any).testCode,
+                        pixelId: (profile as unknown).pixelId,
+                        accessToken: (profile as unknown).accessToken,
+                        testCode: (profile as unknown).testCode,
                         name: profile.name
                     });
                 }
@@ -404,7 +404,7 @@ export const AddonsEditor = () => {
                                     sublabel={
                                         (pixel.pixels && pixel.pixels.length > 0)
                                             ? `${pixel.pixels.length} Pixel${pixel.pixels.length !== 1 ? 's' : ''}`
-                                            : `ID: ${(pixel as any).pixelId || 'N/A'}`
+                                            : `ID: ${(pixel as unknown).pixelId || 'N/A'}`
                                     }
                                     icon={Zap}
                                     iconColor="text-blue-600"

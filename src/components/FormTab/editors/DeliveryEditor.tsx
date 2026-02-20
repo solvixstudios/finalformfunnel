@@ -42,7 +42,7 @@ export const DeliveryEditor = () => {
                     ...formConfig.sectionSettings?.delivery,
                     showTitle: !formConfig.sectionSettings?.delivery?.showTitle,
                   },
-                } as any,
+                } as unknown,
               })
             }
             className={`w-12 h-6 rounded-full relative transition-colors ${formConfig.sectionSettings?.delivery?.showTitle !== false ? "bg-indigo-600" : "bg-slate-200"}`}
@@ -71,7 +71,7 @@ export const DeliveryEditor = () => {
                   ...formConfig,
                   sectionSettings: {
                     ...formConfig.sectionSettings,
-                    delivery: { ...formConfig.sectionSettings?.delivery, layout: style as any, showTitle: formConfig.sectionSettings?.delivery?.showTitle ?? true }
+                    delivery: { ...formConfig.sectionSettings?.delivery, layout: style as unknown, showTitle: formConfig.sectionSettings?.delivery?.showTitle ?? true }
                   }
                 })}
                 className={`p-2 rounded-lg border text-xs font-bold transition-all ${(formConfig.sectionSettings?.delivery?.layout || 'cards') === style

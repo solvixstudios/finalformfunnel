@@ -386,10 +386,10 @@ export const DEFAULT_FORM_CONFIG = {
     enableSheets: false,
     selectedSheetIds: [] as string[], // IDs of selected Google Sheet configs (multi-select)
     metaPixelIds: [] as string[], // IDs of selected Meta Pixel profiles (multi-select)
-    pixelData: [] as any[], // Embedded Pixel Data (ID, Token, etc.) for loader
+    pixelData: [] as unknown[], // Embedded Pixel Data (ID, Token, etc.) for loader
     selectedWhatsappProfileId: null as string | null, // ID of selected WhatsApp profile (single-select)
     tiktokPixelIds: [] as string[], // IDs of selected TikTok Pixel profiles (multi-select)
-    tiktokPixelData: [] as any[], // Embedded TikTok Pixel Data
+    tiktokPixelData: [] as unknown[], // Embedded TikTok Pixel Data
     // Ordered columns for Google Sheets
     sheetColumns: [
       { id: 'date', label: 'Date', enabled: true },

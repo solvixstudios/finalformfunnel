@@ -30,7 +30,7 @@ export interface Commune {
  */
 export async function fetchWilayas(): Promise<Wilaya[]> {
   // Map existing WILAYAS to the interface expected by components
-  return WILAYAS.map((w: any) => ({
+  return WILAYAS.map((w: { id: string; name: string; rawName: string }) => ({
     id: w.id,
     code: w.id,
     name: w.name,

@@ -26,7 +26,7 @@ const GoogleLoginPage = ({ onLoginSuccess }: GoogleLoginPageProps) => {
     try {
       const user = await signInWithGoogle();
       onLoginSuccess(user);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.message || t('auth.failedToSignIn'));
     } finally {
       setIsLoading(false);

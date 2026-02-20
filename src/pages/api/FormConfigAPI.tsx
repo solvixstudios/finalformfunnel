@@ -13,7 +13,7 @@ import { useSearchParams } from 'react-router-dom';
 
 export default function FormConfigAPI() {
     const [searchParams] = useSearchParams();
-    const [response, setResponse] = useState<any>(null);
+    const [response, setResponse] = useState<unknown>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {

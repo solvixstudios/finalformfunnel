@@ -46,7 +46,7 @@ export const useRealtimeSavedForms = (
         fetchedForms.push({ id: doc.id, ...doc.data() } as SavedForm);
       });
       setForms(fetchedForms);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.message || "Failed to fetch forms");
       console.error("Failed to fetch forms:", err);
     } finally {
@@ -75,7 +75,7 @@ export const useRealtimeSavedForms = (
             setForms(fetchedForms);
             setLoading(false);
           })
-          .catch((err: any) => {
+          .catch((err: Error) => {
             setError(err.message || "Failed to fetch forms");
             console.error("Failed to fetch forms:", err);
             setLoading(false);
@@ -93,7 +93,7 @@ export const useRealtimeSavedForms = (
             setLoading(false);
             setError(null);
           },
-          (err: any) => {
+          (err: Error) => {
             setError(err.message || "Failed to listen to forms");
             console.error("Failed to listen to forms:", err);
             setLoading(false);
@@ -108,7 +108,7 @@ export const useRealtimeSavedForms = (
           }
         };
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.message || "Failed to setup forms listener");
       console.error("Failed to setup forms listener:", err);
       setLoading(false);
@@ -167,7 +167,7 @@ export const useRealtimeForm = (formId: string) => {
           }
           setLoading(false);
         },
-        (err: any) => {
+        (err: Error) => {
           setError(err.message || "Failed to listen to form");
           console.error("Failed to listen to form:", err);
           setLoading(false);
@@ -181,7 +181,7 @@ export const useRealtimeForm = (formId: string) => {
           unsubscribeRef.current();
         }
       };
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.message || "Failed to setup form listener");
       console.error("Failed to setup form listener:", err);
       setLoading(false);
