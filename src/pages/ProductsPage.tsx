@@ -208,8 +208,8 @@ export default function ProductsPage({ userId }: { userId: string }) {
                 setLastSynced(Date.now());
             }
         };
-        window.addEventListener('productSyncComplete' as unknown, listener);
-        return () => window.removeEventListener('productSyncComplete' as unknown, listener);
+        window.addEventListener('productSyncComplete' as any, listener);
+        return () => window.removeEventListener('productSyncComplete' as any, listener);
     }, [selectedStoreId]);
 
     const loadFromDB = async (storeId: string) => {
@@ -267,7 +267,7 @@ export default function ProductsPage({ userId }: { userId: string }) {
                 let batch: Product[] = [];
                 if (data.products) {
                     batch = typeof data.products === 'string' ? JSON.parse(data.products) : data.products;
-                    if ((batch as unknown).products) batch = (batch as unknown).products;
+                    if ((batch as any).products) batch = (batch as any).products;
                 }
                 allFetchedProducts.push(...batch);
                 if (!isBackground) {

@@ -138,7 +138,7 @@ export const syncProductsFromShopify = async (
         typeof data.products === "string"
           ? JSON.parse(data.products)
           : data.products;
-      if ((batch as unknown).products) batch = (batch as unknown).products;
+      if ((batch as any).products) batch = (batch as any).products;
     }
 
     allProducts.push(...batch);

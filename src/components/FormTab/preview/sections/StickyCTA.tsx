@@ -56,7 +56,7 @@ export const StickyCTA: React.FC<StickyCTAProps> = ({
             // Helper to find or create container
             const getOrCreateContainer = () => {
                 // 1. Try Global Object (Ideal path)
-                const globalRoot = (window as unknown).FinalFormGlobal?.root;
+                const globalRoot = (window as any).FinalFormGlobal?.root;
                 if (globalRoot) return globalRoot;
 
                 // 2. Try finding the overlay container (Top Level Shadow DOM)

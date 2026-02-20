@@ -72,8 +72,8 @@ export const FormLoadingCard: React.FC<FormLoadingCardProps> = ({
 
   if (!form) return null;
 
-  const isPublished = (productAssignments?.some(a => a.isActive) ?? false) || !!storeAssignment;
-  const formConfig = form.config || {};
+  const isPublished = (productAssignments?.some((a: any) => a.isActive) ?? false) || !!storeAssignment;
+  const formConfig = (form.config as any) || {};
 
   // Extract theme colors for visual preview
   const accentColor = formConfig.accentColor || '#6366f1';
@@ -240,7 +240,7 @@ export const FormLoadingCard: React.FC<FormLoadingCardProps> = ({
               <div className="flex items-center gap-1.5 mt-1.5">
                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
                 <Store size={10} className="text-slate-400" />
-                <span className="text-[10px] text-slate-500 font-medium truncate max-w-[120px]">{storeAssignment.name}</span>
+                <span className="text-[10px] text-slate-500 font-medium truncate max-w-[120px]">{(storeAssignment as any).name}</span>
               </div>
             )}
           </div>

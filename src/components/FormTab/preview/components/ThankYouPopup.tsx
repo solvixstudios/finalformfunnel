@@ -37,7 +37,7 @@ export const ThankYouPopup = ({ config, lang, onClose, fixed = false, orderData 
     useEffect(() => {
         if (fixed) {
             const getOrCreateContainer = () => {
-                const globalRoot = (window as unknown).FinalFormGlobal?.root;
+                const globalRoot = (window as any).FinalFormGlobal?.root;
                 if (globalRoot) return globalRoot;
                 const overlayContainer = document.getElementById('finalform-overlay-container');
                 if (overlayContainer && overlayContainer.shadowRoot) {
@@ -78,10 +78,10 @@ export const ThankYouPopup = ({ config, lang, onClose, fixed = false, orderData 
 
     // Effects: Sound & Confetti - Run when popup is ready (portal resolved)
     useEffect(() => {
-        if ((config as unknown).thankYou?.enableSound) {
+        if (config.thankYou?.enableSound) {
             playSuccessSound();
         }
-        if ((config as unknown).thankYou?.enableConfetti) {
+        if (config.thankYou?.enableConfetti) {
             const canvas = internalCanvasRef.current;
             if (!canvas) return;
 
@@ -151,7 +151,7 @@ export const ThankYouPopup = ({ config, lang, onClose, fixed = false, orderData 
         }
 
         if (orderData && Array.isArray(orderData.items)) {
-            const productLine = orderData.items.map((i: unknown) => `- ${i.title} (${i.variant}) x${i.quantity}`).join('\n');
+            const productLine = orderData.items.map((i: any) => `- ${i.title} (${i.variant}) x${i.quantity}`).join('\n');
             message += `\n${productLine}`;
             message += `\nTotal: ${orderData.totalPrice} DZD`;
             message += `\n\nNom: ${orderData.name}`;

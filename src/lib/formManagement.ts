@@ -29,7 +29,7 @@ export const getExportData = (
 ): Record<string, any> => {
   const exportFields: Record<string, any> = {};
 
-  Object.entries(formConfig.fields).forEach(([key, field]: [string, unknown]) => {
+  Object.entries(formConfig.fields || {}).forEach(([key, field]: [string, any]) => {
     // Filter fields based on location input mode
     if (formConfig.locationInputMode === "free_text") {
       if (key === "wilaya" || key === "commune") return;
@@ -40,10 +40,10 @@ export const getExportData = (
     }
 
     exportFields[key] = {
-      visible: (field as unknown).visible,
-      required: (field as unknown).required,
-      order: (field as unknown).order,
-      placeholder: (field as unknown).placeholder,
+      visible: field.visible,
+      required: field.required,
+      order: field.order,
+      placeholder: field.placeholder,
     };
   });
 
@@ -62,7 +62,7 @@ export const getExportData = (
       home: shippingConfig.standard.home,
       desk: shippingConfig.standard.desk,
     },
-    exceptions: shippingConfig.exceptions.map((ex: Record<string, unknown>) => ({
+    exceptions: shippingConfig.exceptions.map((ex: any) => ({
       id: ex.id,
       home: ex.home,
       desk: ex.desk,
@@ -151,7 +151,7 @@ export const getExportData = (
         }
 
         // Fallback to legacy multi-select array if present (migration)
-        const selectedIds: string[] = (formConfig.addons as unknown)?.selectedWhatsappProfileIds || [];
+        const selectedIds: string[] = (formConfig.addons as any)?.selectedWhatsappProfileIds || [];
         if (selectedIds.length > 0 && profiles.length > 0) {
           // Return just the first one to enforce single behavior, or all?
           // Let's return the first valid one to be safe with new UI.
@@ -247,14 +247,14 @@ export const normalizeImportedConfig = (config: Record<string, unknown>): Record
 
   // Normalize shipping: ensure exceptions have proper structure
   if (normalized.shipping) {
-    if (!normalized.shipping.standard) {
-      (normalized.shipping as unknown).standard = { home: 600, desk: 400 };
+    if (!(normalized.shipping as any).standard) {
+      (normalized.shipping as any).standard = { home: 600, desk: 400 };
     }
-    if (!normalized.shipping.exceptions) {
-      (normalized.shipping as unknown).exceptions = [];
-    } else if (Array.isArray((normalized.shipping as unknown).exceptions)) {
-      (normalized.shipping as unknown).exceptions = (normalized.shipping as unknown).exceptions.map(
-        (ex: Record<string, unknown>) => ({
+    if (!(normalized.shipping as any).exceptions) {
+      (normalized.shipping as any).exceptions = [];
+    } else if (Array.isArray((normalized.shipping as any).exceptions)) {
+      (normalized.shipping as any).exceptions = (normalized.shipping as any).exceptions.map(
+        (ex: any) => ({
           id: ex.id || "",
           home: ex.home ?? 0,
           desk: ex.desk ?? 0,
@@ -280,30 +280,30 @@ export const normalizeImportedConfig = (config: Record<string, unknown>): Record
 
   // Normalize promoCode
   if (normalized.promoCode) {
-    if (!normalized.promoCode.codes) {
-      normalized.promoCode.codes = [];
+    if (!(normalized.promoCode as any).codes) {
+      (normalized.promoCode as any).codes = [];
     }
-    normalized.promoCode.placeholder = normalized.promoCode.placeholder || {
+    (normalized.promoCode as any).placeholder = (normalized.promoCode as any).placeholder || {
       fr: "Code promo",
       ar: "كود الخصم",
     };
-    normalized.promoCode.buttonText = normalized.promoCode.buttonText || {
+    (normalized.promoCode as any).buttonText = (normalized.promoCode as any).buttonText || {
       fr: "Appliquer",
       ar: "تطبيق",
     };
-    normalized.promoCode.enabled = normalized.promoCode.enabled ?? false;
-    normalized.promoCode.required = normalized.promoCode.required ?? false;
+    (normalized.promoCode as any).enabled = (normalized.promoCode as any).enabled ?? false;
+    (normalized.promoCode as any).required = (normalized.promoCode as any).required ?? false;
   }
 
   // Normalize header
   if (normalized.header) {
     normalized.header = {
-      enabled: normalized.header.enabled ?? true,
-      style: normalized.header.style || "classic",
-      showLanguageSwitcher: normalized.header.showLanguageSwitcher ?? true,
-      defaultLanguage: normalized.header.defaultLanguage || "fr",
-      showProductImage: normalized.header.showProductImage ?? true,
-      showProductPrice: normalized.header.showProductPrice ?? true,
+      enabled: (normalized.header as any).enabled ?? true,
+      style: (normalized.header as any).style || "classic",
+      showLanguageSwitcher: (normalized.header as any).showLanguageSwitcher ?? true,
+      defaultLanguage: (normalized.header as any).defaultLanguage || "fr",
+      showProductImage: (normalized.header as any).showProductImage ?? true,
+      showProductPrice: (normalized.header as any).showProductPrice ?? true,
     };
   }
 

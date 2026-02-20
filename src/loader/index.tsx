@@ -15,7 +15,7 @@ const SPINNER_ID = 'finalform-spinner';
 async function fetchShopifyProduct() {
     try {
         // 1. Try getting from global objects first (fastest), BUT ensure it has key data
-        const metaProduct = (window as unknown).meta?.product;
+        const metaProduct = (window as any).meta?.product;
         if (metaProduct && metaProduct.id && metaProduct.title) {
             console.log('FinalForm: Found complete product in window.meta');
             return metaProduct;
@@ -173,9 +173,9 @@ async function initLoader() {
     // 1.5. Remove Tailwind CDN Injection (We rely on built CSS now)
 
     // 2. Identify Product Context
-    let productId = (window as unknown).meta?.product?.id?.toString();
-    if (!productId && (window as unknown).ShopifyAnalytics?.meta?.product?.id) {
-        productId = (window as unknown).ShopifyAnalytics.meta.product.id.toString();
+    let productId = (window as any).meta?.product?.id?.toString();
+    if (!productId && (window as any).ShopifyAnalytics?.meta?.product?.id) {
+        productId = (window as any).ShopifyAnalytics.meta.product.id.toString();
     }
 
     // Normalize handle
@@ -365,15 +365,15 @@ share-button {
             console.log('FinalForm: Initializing Global Pixels...', pixelData.length);
 
             // Inject Base Code if needed
-            if (!(window as unknown as Record<string, unknown>).fbq) {
-                const f = ((window as unknown as Record<string, unknown>).fbq = function () {
+            if (!(window as any).fbq) {
+                const f = ((window as any).fbq = function () {
                     // eslint-disable-next-line prefer-rest-params
                     const args = arguments;
                     const fq = (f as unknown as { callMethod?: Function; queue: unknown[] });
                     fq.callMethod ? fq.callMethod.apply(f, args) : fq.queue.push(args)
                 }) as unknown as Record<string, unknown>;
 
-                if (!(window as unknown as Record<string, unknown>)._fbq) (window as unknown as Record<string, unknown>)._fbq = f;
+                if (!(window as any)._fbq) (window as any)._fbq = f;
 
                 f.push = f;
                 f.loaded = true;
@@ -408,7 +408,7 @@ share-button {
             console.log('FinalForm: Initializing TikTok Global Pixels...', tiktokData.length);
 
             // Inject TikTok Base Script
-            if (!(window as unknown as Record<string, unknown>).ttq) {
+            if (!(window as any).ttq) {
                 (function (w: Window & typeof globalThis, d: Document, t: string) {
                     const winObj = w as unknown as Record<string, unknown>;
                     winObj.TiktokAnalyticsObject = t;
@@ -529,4 +529,4 @@ if (document.readyState === 'loading') {
 }
 
 // Expose manual init
-(window as unknown).initFinalForm = initLoader;
+(window as any).initFinalForm = initLoader;

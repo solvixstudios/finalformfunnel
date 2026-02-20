@@ -124,9 +124,9 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
     usePixelTracking({ config, product, previewMode, formData, basePrice });
 
     const calculations = usePreviewCalculations({
-        offers: offers as unknown as unknown[],
+        offers: offers as any,
         selectedOfferId: formData.offerId,
-        shipping: shipping as unknown as unknown,
+        shipping: shipping as any,
         selectedWilaya: formData.wilaya,
         shippingType: formData.shippingType,
         appliedPromoCode,
@@ -151,7 +151,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
 
     const translations = config.translations || {};
     // Revert to strict fields from config
-    const fields = config.fields as Record<string, unknown> || ({} as Record<string, unknown>);
+    const fields = config.fields as Record<string, any> || ({} as Record<string, any>);
     const sectionSettings = config.sectionSettings || {};
 
     const txt = (key: string) => translations[key]?.[lang] || translations[key]?.fr || '';
@@ -159,12 +159,12 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
     const formatCurrency = (amount: number) => formatCurrencyUtil(amount, lang);
     const fontFamily = getFontFamilyCSS(config.fontFamily?.[lang] || (lang === 'fr' ? 'Inter' : 'Cairo'));
 
-    const getSectionMarginStyle = (isFirst: boolean = false) => buildSectionMargin(config as unknown as FormConfig, isFirst);
+    const getSectionMarginStyle = (isFirst: boolean = false) => buildSectionMargin(config as any, isFirst);
 
     // Input styling
     const inputSpacing = config.inputSpacing || 12;
     const svxInputClass = `custom-input w-full px-4 py-3.5 text-[13px] font-semibold outline-none transition-all duration-300 border-2 focus:ring-4`;
-    const inputStyle = buildInputStyles(config as unknown as FormConfig, config.inputVariant || 'filled');
+    const inputStyle = buildInputStyles(config as any, config.inputVariant || 'filled');
 
     // Validation Schema
     const schema = z.object({
@@ -183,7 +183,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
             .filter(([key, field]) => (field as { visible?: boolean })?.visible && key !== 'location_block')
             .sort(([, a], [, b]) => ((a as { order?: number })?.order || 0) - ((b as { order?: number })?.order || 0));
 
-        const result: [string, unknown][] = [];
+        const result: [string, any][] = [];
         let locationRendered = false;
 
         for (const [key, field] of entries) {
@@ -281,7 +281,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
         <div
             className="ff-root w-full font-sans relative flex flex-col shadow-2xl select-none rounded-2xl overflow-hidden border border-slate-200/50"
             dir={lang === 'ar' ? 'rtl' : 'ltr'}
-            style={buildRootStyles(config as unknown, lang)}
+            style={buildRootStyles(config as any, lang)}
         >
             <style>{`
                 .custom-input::placeholder {
@@ -380,7 +380,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                                     config={config}
                                     lang={lang}
                                     variants={variants}
-                                    options={(product?.options || []).filter((o: unknown) => o && o.name)}
+                                    options={(product?.options || []).filter((o: any) => o && o.name)}
                                     selectedOptions={selectedOptions}
                                     onOptionSelect={(optName, val) => {
                                         setSelectedOptions(prev => ({
@@ -390,7 +390,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                                     }}
                                     selectedVariant={formData.variant}
                                     onSelect={(v) => {
-                                        const varObj = product.variants?.find((pv: unknown) => pv.title === v);
+                                        const varObj = product.variants?.find((pv: any) => pv.title === v);
                                         if (varObj) {
                                             setSelectedVariantId(varObj.id);
                                             setFormData({ ...formData, variant: v });
@@ -459,7 +459,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                                 <OffersSection
                                     config={config}
                                     lang={lang}
-                                    offers={offers as unknown}
+                                    offers={offers as any}
                                     selectedOfferId={formData.offerId}
                                     onSelect={(id) => setFormData({ ...formData, offerId: id })}
                                     formatCurrency={formatCurrency}
@@ -578,7 +578,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
 
             {/* Sticky CTA */}
             <StickyCTA
-                variant={config.ctaStickyVariant as unknown}
+                variant={config.ctaStickyVariant as any}
                 visible={showStickyCTA}
                 text={txt('stickyLabel') || txt('cta')}
                 onClick={() => ctaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}

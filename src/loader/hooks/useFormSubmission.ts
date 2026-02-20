@@ -41,7 +41,7 @@ export function useFormSubmission({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submissionError, setSubmissionError] = useState<string | null>(null);
     const [showThankYou, setShowThankYou] = useState(false);
-    const [finalOrderData, setFinalOrderData] = useState<unknown>(null);
+    const [finalOrderData, setFinalOrderData] = useState<any>(null);
     const [abandonedSent, setAbandonedSent] = useState(false);
 
     const [formSessionId] = useState(() => `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`);
@@ -81,7 +81,7 @@ export function useFormSubmission({
             offerQty: selectedOffer?.qty || formData.quantity,
             currency: 'DZD',
             productId: product.id,
-            productHandle: (product as unknown).handle || '',
+            productHandle: (product as any).handle || '',
             productTitle: product.title,
             shopName: config.storeName || window.location.hostname,
             shopDomain: config.shopifyDomain || window.location.hostname,
@@ -97,7 +97,7 @@ export function useFormSubmission({
                 price: basePrice,
             }],
             metaPixelProfiles: config.addons?.pixelData || config.pixels || [],
-            event_id: (window as unknown)._ff_event_id,
+            event_id: (window as any)._ff_event_id,
             fbp: getCookie('_fbp'),
             fbc: getCookie('_fbc'),
             tiktokPixelProfiles: config.addons?.tiktokPixelData || [],
@@ -236,25 +236,25 @@ export function useFormSubmission({
         if (!previewMode) {
             try {
                 const pixelData = config.addons?.pixelData || config.pixels || [];
-                if (pixelData.length > 0 && (window as unknown).fbq) {
+                if (pixelData.length > 0 && (window as any).fbq) {
                     try {
-                        (window as unknown).fbq('track', 'Purchase', {
+                        (window as any).fbq('track', 'Purchase', {
                             content_type: 'product',
                             content_ids: [product.id],
                             content_name: product.title,
                             currency: 'DZD',
                             value: calculations.displayedTotal,
                             num_items: formData.quantity,
-                        }, { eventID: (window as unknown)._ff_event_id });
+                        }, { eventID: (window as any)._ff_event_id });
                     } catch (e) {
                         console.warn('FinalForm: Meta Pixel Error', e);
                     }
                 }
 
                 const tiktokData = config.addons?.tiktokPixelData || [];
-                if (tiktokData.length > 0 && (window as unknown).ttq) {
+                if (tiktokData.length > 0 && (window as any).ttq) {
                     try {
-                        (window as unknown).ttq.track('CompletePayment', {
+                        (window as any).ttq.track('CompletePayment', {
                             content_type: 'product',
                             content_id: String(product.id),
                             content_name: product.title,
@@ -262,7 +262,7 @@ export function useFormSubmission({
                             price: calculations.offerPrice || basePrice,
                             value: calculations.displayedTotal,
                             currency: 'DZD',
-                        }, { event_id: (window as unknown)._ff_event_id });
+                        }, { event_id: (window as any)._ff_event_id });
                     } catch (e) {
                         console.warn('FinalForm: TikTok Pixel Error', e);
                     }
