@@ -12,7 +12,7 @@ import { getAdapter } from "../integrations";
  * Propagates form configuration changes to all n8n assignments.
  * This ensures that when a form is edited, the changes are reflected in the store webhooks immediately.
  */
-export async function propagateFormUpdate(formId: string, formName: string, config: { addons?: Record<string, any>;[key: string]: unknown }) {
+export async function propagateFormUpdate(userId: string, formId: string, formName: string, config: { addons?: Record<string, any>;[key: string]: unknown }) {
     try {
         console.log(`[Sync] Propagating updates for form ${formId} to n8n...`);
 
@@ -26,7 +26,7 @@ export async function propagateFormUpdate(formId: string, formName: string, conf
                 // Fetch each sheet config
                 // We use Promise.all for parallel fetching
                 const sheetPromises = sheetIds.map(async (id: string) => {
-                    const docSnap = await getDoc(doc(db, "google_sheets", id));
+                    const docSnap = await getDoc(doc(db, "users", userId, "google_sheets", id));
                     if (docSnap.exists()) {
                         return { id: docSnap.id, ...docSnap.data() };
                     }
@@ -62,7 +62,7 @@ export async function propagateFormUpdate(formId: string, formName: string, conf
 
         // 1. Find all active assignments for this form
         const assignmentsQuery = query(
-            collection(db, "assignments"),
+            collection(db, "users", userId, "assignments"),
             where("formId", "==", formId)
         );
         const assignmentsSnap = await getDocs(assignmentsQuery);
@@ -82,7 +82,7 @@ export async function propagateFormUpdate(formId: string, formName: string, conf
             if (!storeId) return;
 
             // Fetch store credentials
-            const storeRef = doc(db, "stores", storeId);
+            const storeRef = doc(db, "users", userId, "stores", storeId);
             const storeSnap = await getDoc(storeRef);
 
             if (!storeSnap.exists()) {

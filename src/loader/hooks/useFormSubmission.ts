@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { z } from 'zod';
+import { collection, addDoc } from 'firebase/firestore/lite';
+import { db } from '../firebase';
 import { getCookie } from '@/lib/utils/cookies';
 import { getAdapter } from '@/lib/integrations';
 import type { Product } from '../FormLoader';
@@ -108,7 +110,9 @@ export function useFormSubmission({
                 scriptUrl: activeSheet.webhookUrl,
                 sheetName: activeSheet.sheetName || 'Orders',
                 abandonedSheetName: activeSheet.abandonedSheetName || 'Abandoned'
-            } : undefined
+            } : undefined,
+            userId: (config as any).userId || null,
+            createdAt: new Date().toISOString()
         };
 
         if (activeSheet && activeSheet.webhookUrl) {
@@ -147,7 +151,8 @@ export function useFormSubmission({
                 sheetName,
                 orderStatus: status,
                 submittedAt: new Date().toISOString(),
-                orderId: data.orderId || formSessionId
+                orderId: data.orderId || formSessionId,
+                phone: data.phone ? "'" + data.phone : '' // Google sheets fix for leading zero
             };
             Object.keys(raw).forEach(k => {
                 if (typeof raw[k] === 'object' && raw[k] !== null) {
@@ -167,7 +172,7 @@ export function useFormSubmission({
                 case 'date': value = new Date().toLocaleString(lang); break;
                 case 'status': value = status === 'completed' ? 'Nouvelle commande' : 'Panier abandonné'; break;
                 case 'name': value = data.name; break;
-                case 'phone': value = data.phone || ''; break;
+                case 'phone': value = data.phone ? "'" + data.phone : ''; break; // Prevent Google Sheets from dropping leading 0
                 case 'wilaya': value = data.wilaya; break;
                 case 'commune': value = data.commune; break;
                 case 'address': value = data.address; break;
@@ -275,6 +280,20 @@ export function useFormSubmission({
                     console.log("Order submitted successfully to n8n");
                 }
 
+                // Direct write to Firebase Orders collection
+                try {
+                    if (payload.userId) {
+                        await addDoc(collection(db, 'users', payload.userId as string, 'orders'), payload);
+                    } else {
+                        await addDoc(collection(db, 'orders'), payload);
+                    }
+                    if (import.meta.env.DEV) {
+                        console.log("Order saved to Firebase");
+                    }
+                } catch (fbErr) {
+                    console.warn("Failed to save order to Firebase:", fbErr);
+                }
+
                 setShowThankYou(true);
             } catch (err: unknown) {
                 if (import.meta.env.DEV) {
@@ -311,6 +330,17 @@ export function useFormSubmission({
 
             const adapter = getAdapter('shopify');
             adapter.submitOrder(payload as unknown as Parameters<typeof adapter.submitOrder>[0]).catch(err => console.error("Abandoned log failed", err));
+
+            // Direct write abandoned to Firebase Orders collection
+            try {
+                if (payload.userId) {
+                    await addDoc(collection(db, 'users', payload.userId as string, 'orders'), payload);
+                } else {
+                    await addDoc(collection(db, 'orders'), payload);
+                }
+            } catch (fbErr) {
+                console.warn("Failed to save abandoned order to Firebase:", fbErr);
+            }
 
             setAbandonedSent(true);
 

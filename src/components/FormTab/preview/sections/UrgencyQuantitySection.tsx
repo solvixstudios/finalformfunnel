@@ -1,11 +1,11 @@
 /**
  * Urgency Quantity Section Component
- * Displays stock urgency with "X left in stock" indicator
+ * Premium stock-urgency indicators with modern visual styles.
  */
 
 import { getUrgencyColor } from '@/lib/utils/colors';
 import type { Language } from '@/types';
-import { Flame, Package, TrendingDown } from 'lucide-react';
+import { Flame, Package, TrendingDown, Target, ShoppingBag } from 'lucide-react';
 import React from 'react';
 import type { FormConfig } from '@/types/form';
 
@@ -15,11 +15,10 @@ interface UrgencyQuantitySectionProps {
     marginStyle?: React.CSSProperties;
 }
 
-// Dynamic color based on stock level
 const getDynamicColor = (stock: number): string => {
-    if (stock >= 8) return '#10b981'; // Green
-    if (stock >= 4) return '#f59e0b'; // Amber
-    return '#ef4444'; // Red
+    if (stock >= 8) return '#10b981';
+    if (stock >= 4) return '#f59e0b';
+    return '#ef4444';
 };
 
 export const UrgencyQuantitySection: React.FC<UrgencyQuantitySectionProps> = ({
@@ -29,256 +28,226 @@ export const UrgencyQuantitySection: React.FC<UrgencyQuantitySectionProps> = ({
 }) => {
     if (!config.urgencyQuantity?.enabled) return null;
 
-    const style = config.urgencyQuantity?.style || 'badge';
-    const stockLeft = config.urgencyQuantity?.stockLeft ?? config.urgencyQuantity?.stockCount ?? 7;
-    const showIcon = config.urgencyQuantity?.showIcon !== false;
-    const animate = config.urgencyQuantity?.animate !== false;
+    const uq = config.urgencyQuantity as any;
+    const style = uq.style || 'badge';
+    const stockLeft = Number(uq.stockLeft ?? uq.stockCount ?? 7);
+    const showIcon = uq.showIcon !== false;
+    const animate = uq.animate !== false;
 
-    // Handle dynamic color preset
-    const isDynamic = config.urgencyQuantity?.colorPreset === 'dynamic';
+    const isDynamic = uq.colorPreset === 'dynamic';
     const color = isDynamic
         ? getDynamicColor(stockLeft)
         : getUrgencyColor(
-            config.urgencyQuantity?.colorPreset || 'default',
-            config.urgencyQuantity?.customColor || '#ef4444',
+            uq.colorPreset || 'default',
+            uq.customColor || '#ef4444',
             undefined,
             config.accentColor
         );
 
-    // Custom text or default
-    const customText = config.urgencyQuantity?.customText?.[lang] ||
-        config.urgencyQuantity?.customText?.fr ||
-        config.urgencyQuantity?.text?.[lang] ||
-        config.urgencyQuantity?.text?.fr;
-    const defaultText = lang === 'fr' ? `${stockLeft} restant en stock` : `${stockLeft} متبقي في المخزون`;
+    const isRTL = lang === 'ar';
+    const customText = uq.customText?.[lang] || uq.customText?.fr || uq.text?.[lang] || uq.text?.fr;
+    const defaultText = isRTL ? `${stockLeft} متبقي في المخزون` : `${stockLeft} restant en stock`;
     const text = customText || defaultText;
 
-    // Progress calculation (max 20 items)
     const maxStock = 20;
     const progressPercent = Math.min((stockLeft / maxStock) * 100, 100);
+    const borderRadius = config.borderRadius || '8px';
 
     return (
-        <div style={marginStyle}>
-            {/* Badge Style */}
-            {style === 'badge' && (
-                <div className="flex justify-center">
-                    <div
-                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs ${animate ? 'animate-pulse' : ''}`}
-                        style={{
-                            backgroundColor: `${color}15`,
-                            border: `2px solid ${color}`,
-                            color,
-                        }}
-                    >
-                        {showIcon && <Package size={14} />}
-                        {text}
-                    </div>
-                </div>
-            )}
+        <div style={marginStyle} className={isRTL ? 'rtl flex justify-center w-full' : 'ltr flex justify-center w-full'}>
 
-            {/* Banner Style */}
-            {style === 'banner' && (
+            {/* ── Badge: Compact chip with dot indicator ── */}
+            {style === 'badge' && (
                 <div
-                    className="relative overflow-hidden py-3 px-4"
+                    className="inline-flex items-center gap-2.5 px-4 py-2.5 border transition-all duration-300 hover:scale-[1.02]"
                     style={{
-                        borderRadius: config.borderRadius,
-                        background: `linear-gradient(135deg, ${color}20 0%, ${color}05 100%)`,
-                        border: `1px solid ${color}40`,
+                        borderRadius,
+                        background: `linear-gradient(135deg, ${color}05 0%, ${color}10 100%)`,
+                        borderColor: `${color}25`,
                     }}
                 >
-                    <div
-                        className="absolute inset-0 opacity-20"
-                        style={{
-                            background: `repeating-linear-gradient(
-                                45deg,
-                                transparent,
-                                transparent 10px,
-                                ${color}10 10px,
-                                ${color}10 20px
-                            )`,
-                        }}
-                    />
-                    <p
-                        className="relative text-center text-xs font-bold flex items-center justify-center gap-2"
-                        style={{ color }}
-                    >
-                        {showIcon && <Package size={14} className={animate ? 'animate-pulse' : ''} />}
-                        {text}
-                    </p>
-                </div>
-            )}
-
-            {/* Pill Style */}
-            {style === 'pill' && (
-                <div className="flex justify-center">
-                    <div
-                        className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-full text-[11px] font-bold"
-                        style={{
-                            backgroundColor: `${color}20`,
-                            border: `1px solid ${color}50`,
-                            color,
-                        }}
-                    >
-                        {showIcon && (
-                            <div
-                                className={`w-2 h-2 rounded-full ${animate ? 'animate-pulse' : ''}`}
-                                style={{ backgroundColor: color }}
-                            />
-                        )}
-                        {text}
-                    </div>
-                </div>
-            )}
-
-            {/* Minimal Style */}
-            {style === 'minimal' && (
-                <div className="flex items-center justify-center gap-2">
                     {showIcon && (
                         <div
-                            className={`w-2 h-2 rounded-full ${animate ? 'animate-pulse' : ''}`}
-                            style={{ backgroundColor: color }}
-                        />
+                            className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
+                            style={{ backgroundColor: `${color}15` }}
+                        >
+                            <Target size={13} style={{ color }} />
+                        </div>
                     )}
-                    <span className="text-xs font-semibold" style={{ color }}>
+                    <span className="text-sm font-bold tracking-wide" style={{ color }}>
+                        {text}
+                    </span>
+                    {animate && (
+                        <div className="w-2 h-2 rounded-full animate-pulse ml-0.5" style={{ backgroundColor: color }} />
+                    )}
+                </div>
+            )}
+
+            {/* ── Banner: Full-width soft-tinted block ── */}
+            {style === 'banner' && (
+                <div
+                    className="w-full flex items-center justify-center gap-3 py-3.5 px-5 border transition-all duration-300"
+                    style={{
+                        borderRadius,
+                        background: `linear-gradient(135deg, ${color}08 0%, ${color}14 100%)`,
+                        borderColor: `${color}20`,
+                    }}
+                >
+                    {showIcon && (
+                        <div
+                            className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                            style={{ backgroundColor: `${color}18` }}
+                        >
+                            <Package size={15} style={{ color }} />
+                        </div>
+                    )}
+                    <span className="text-sm font-extrabold tracking-wide" style={{ color }}>
                         {text}
                     </span>
                 </div>
             )}
 
-            {/* Progress Style - Visual stock bar */}
-            {style === 'progress' && (
+            {/* ── Pill: Rounded inline element ── */}
+            {style === 'pill' && (
                 <div
-                    className="relative overflow-hidden py-3 px-4"
+                    className="inline-flex items-center gap-2.5 py-2.5 px-5 rounded-full border transition-all duration-300 hover:scale-[1.02]"
                     style={{
-                        borderRadius: config.borderRadius,
-                        background: `${color}08`,
-                        border: `1px solid ${color}30`,
+                        backgroundColor: `${color}08`,
+                        borderColor: `${color}22`,
+                        boxShadow: `0 0 16px ${color}10`,
                     }}
                 >
-                    <div className="flex items-center justify-between mb-2">
+                    {showIcon && <Package size={15} style={{ color }} />}
+                    <span className="text-sm font-bold tracking-wide" style={{ color }}>
+                        {text}
+                    </span>
+                    {animate && (
+                        <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: color }} />
+                    )}
+                </div>
+            )}
+
+            {/* ── Minimal: Typography focused with accent line ── */}
+            {style === 'minimal' && (
+                <div className="flex items-center justify-center gap-3 py-2 w-full">
+                    <div className="h-px flex-1 max-w-[30px] opacity-30" style={{ backgroundColor: color }} />
+                    <div className="flex items-center gap-2">
+                        {showIcon && (
+                            <TrendingDown size={16} style={{ color }} className={animate ? 'animate-bounce' : ''} />
+                        )}
+                        <span className="text-sm font-bold tracking-wide" style={{ color }}>
+                            {text}
+                        </span>
+                    </div>
+                    <div className="h-px flex-1 max-w-[30px] opacity-30" style={{ backgroundColor: color }} />
+                </div>
+            )}
+
+            {/* ── Progress: Animated bar with fraction ── */}
+            {style === 'progress' && (
+                <div
+                    className="w-full p-4 border transition-all duration-300"
+                    style={{
+                        borderRadius,
+                        borderColor: `${color}18`,
+                        background: `linear-gradient(135deg, ${color}04 0%, ${color}08 100%)`,
+                    }}
+                >
+                    <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
-                            {showIcon && <TrendingDown size={14} style={{ color }} className={animate ? 'animate-pulse' : ''} />}
-                            <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color }}>
-                                {lang === 'fr' ? 'Stock restant' : 'المخزون المتبقي'}
+                            {showIcon && <TrendingDown size={14} style={{ color }} />}
+                            <span className="text-[10px] font-black text-gray-600 uppercase tracking-widest">
+                                {isRTL ? 'الكمية المتبقية' : 'Stock restant'}
                             </span>
                         </div>
-                        <span className="text-xs font-mono font-bold" style={{ color }}>
+                        <span dir="ltr" className="text-xs font-mono font-bold" style={{ color }}>
                             {stockLeft}/{maxStock}
                         </span>
                     </div>
-                    <div
-                        className="h-3 rounded-full overflow-hidden"
-                        style={{ backgroundColor: `${color}20` }}
-                    >
+                    <div className="h-2 w-full rounded-full overflow-hidden bg-gray-100">
                         <div
-                            className={`h-full rounded-full transition-all duration-500 relative overflow-hidden ${animate ? 'animate-pulse' : ''}`}
+                            className="h-full rounded-full transition-all duration-1000 ease-out relative"
                             style={{
                                 width: `${progressPercent}%`,
-                                background: `linear-gradient(90deg, ${color} 0%, ${color}cc 100%)`,
+                                background: `linear-gradient(90deg, ${color}, ${color}cc)`,
                             }}
-                        />
+                        >
+                            <div className="absolute inset-0 bg-white/25 animate-[pulse_2s_infinite]" />
+                        </div>
                     </div>
-                    <p className="text-center text-[10px] font-semibold mt-2" style={{ color: `${color}cc` }}>
+                    <p className="text-center text-[11px] font-medium mt-2.5 text-gray-500">
                         {text}
                     </p>
                 </div>
             )}
 
-            {/* Counter Style - Large animated number */}
+            {/* ── Counter: Big number in a box ── */}
             {style === 'counter' && (
                 <div
-                    className="relative overflow-hidden py-4 px-4 text-center"
+                    className="w-full flex items-center justify-center gap-4 p-4 border transition-all duration-300"
                     style={{
-                        borderRadius: config.borderRadius,
-                        background: `linear-gradient(135deg, ${color}15 0%, ${color}05 100%)`,
-                        border: `2px solid ${color}40`,
+                        borderRadius,
+                        background: `linear-gradient(135deg, ${color}04 0%, ${color}08 100%)`,
+                        borderColor: `${color}18`,
                     }}
                 >
                     <div
-                        className={`absolute inset-0 opacity-20 ${animate ? 'animate-pulse' : ''}`}
-                        style={{
-                            background: `radial-gradient(circle at center, ${color}30 0%, transparent 70%)`,
-                        }}
-                    />
-                    <div className="relative">
-                        <div
-                            className={`text-4xl font-black font-mono ${animate ? 'animate-bounce' : ''}`}
-                            style={{
-                                color,
-                                textShadow: `0 0 20px ${color}50`,
-                                animationDuration: '2s',
-                            }}
-                        >
+                        className="flex items-center justify-center w-12 h-12 rounded-xl bg-white border-2 shadow-sm"
+                        style={{ borderColor: `${color}30` }}
+                    >
+                        <span className="text-2xl font-black font-mono" style={{ color }}>
                             {stockLeft}
-                        </div>
-                        <p className="text-[10px] font-bold uppercase tracking-wide mt-1" style={{ color }}>
-                            {lang === 'fr' ? 'articles restants' : 'عناصر متبقية'}
-                        </p>
+                        </span>
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-sm font-bold tracking-wide" style={{ color }}>
+                            {isRTL ? 'عناصر متبقية' : 'Articles restants'}
+                        </span>
+                        <span className="text-[11px] text-gray-400 font-medium mt-0.5">
+                            {isRTL ? 'سارع قبل نفاد الكمية!' : 'Dépêchez-vous!'}
+                        </span>
                     </div>
                 </div>
             )}
 
-            {/* Flame Style - Burning/fire effect */}
+            {/* ── Flame: Hot-demand alert widget ── */}
             {style === 'flame' && (
                 <div
-                    className="relative overflow-hidden py-3 px-4"
+                    className="w-full flex items-center justify-between gap-3 p-3.5 border transition-all duration-300"
                     style={{
-                        borderRadius: config.borderRadius,
-                        background: `linear-gradient(135deg, #1a1a2e 0%, #0f0f1a 100%)`,
-                        border: `1px solid ${color}40`,
+                        borderRadius,
+                        background: `linear-gradient(135deg, ${color}06 0%, ${color}12 100%)`,
+                        borderColor: `${color}20`,
                     }}
                 >
-                    {/* Animated fire background */}
-                    <div
-                        className={`absolute bottom-0 left-0 right-0 h-1/2 opacity-30 ${animate ? 'animate-pulse' : ''}`}
-                        style={{
-                            background: `linear-gradient(0deg, ${color} 0%, ${color}80 30%, transparent 100%)`,
-                            filter: 'blur(8px)',
-                        }}
-                    />
-                    <div className="relative flex items-center justify-center gap-3">
+                    <div className="flex items-center gap-2.5">
                         {showIcon && (
-                            <div className="relative">
-                                <Flame
-                                    size={24}
-                                    className={animate ? 'animate-pulse' : ''}
-                                    style={{
-                                        color,
-                                        filter: `drop-shadow(0 0 8px ${color})`,
-                                    }}
-                                />
-                            </div>
-                        )}
-                        <div className="text-center">
                             <div
-                                className="text-2xl font-black font-mono"
-                                style={{
-                                    color,
-                                    textShadow: `0 0 15px ${color}`,
-                                }}
+                                className="p-2 rounded-lg bg-white shadow-sm border border-gray-100"
                             >
-                                {stockLeft}
-                            </div>
-                            <p className="text-[10px] font-bold uppercase tracking-wide text-white/70">
-                                {lang === 'fr' ? 'en stock' : 'في المخزون'}
-                            </p>
-                        </div>
-                        {showIcon && (
-                            <div className="relative">
                                 <Flame
-                                    size={24}
+                                    size={16}
+                                    style={{ color }}
                                     className={animate ? 'animate-pulse' : ''}
-                                    style={{
-                                        color,
-                                        filter: `drop-shadow(0 0 8px ${color})`,
-                                        transform: 'scaleX(-1)',
-                                    }}
                                 />
                             </div>
                         )}
+                        <span className="text-xs sm:text-sm font-bold text-gray-700">
+                            {isRTL ? 'طلب مرتفع! بقى' : 'Forte demande! Reste'}
+                        </span>
+                    </div>
+                    <div
+                        className="px-3 py-1.5 rounded-lg font-black font-mono text-lg"
+                        style={{
+                            color,
+                            backgroundColor: `${color}10`,
+                        }}
+                    >
+                        {stockLeft}
                     </div>
                 </div>
             )}
+
         </div>
     );
 };

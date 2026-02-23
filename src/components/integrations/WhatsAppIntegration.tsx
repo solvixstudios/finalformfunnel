@@ -20,14 +20,16 @@ import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { WhatsAppProfile } from '../../lib/firebase/types';
 import { useWhatsAppProfiles } from '../../lib/firebase/whatsappHooks';
+import { useFormStore } from '../../stores';
 
 // ... Main Component ...
 
 interface WhatsAppIntegrationProps {
     userId: string;
+    hideTrigger?: boolean;
 }
 
-export function WhatsAppIntegration({ userId }: WhatsAppIntegrationProps) {
+export function WhatsAppIntegration({ userId, hideTrigger }: WhatsAppIntegrationProps) {
     const {
         profiles: waProfiles,
         addProfile: addWaProfile,
@@ -37,13 +39,16 @@ export function WhatsAppIntegration({ userId }: WhatsAppIntegrationProps) {
     } = useWhatsAppProfiles(userId);
 
     const [openSheet, setOpenSheet] = useState(false);
-    const [activeTab, setActiveTab] = useState<'manage' | 'guide'>('manage');
-    const [view, setView] = useState<'list' | 'add' | 'edit'>('list');
+    const [sheetMode, setSheetMode] = useState<'add' | 'manage'>('manage');
+    const [addTab, setAddTab] = useState<'setup' | 'guide'>('setup');
+    const [view, setView] = useState<'list' | 'edit'>('list');
 
     const [editingWaProfile, setEditingWaProfile] = useState<WhatsAppProfile | null>(null);
     const [waForm, setWaForm] = useState({ name: '', phoneNumber: '+213', isDefault: false });
 
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const formConfig = useFormStore(state => state.formConfig);
+    const setFormConfig = useFormStore(state => state.setFormConfig);
 
     // Deep Linking Logic
     useEffect(() => {
@@ -54,31 +59,52 @@ export function WhatsAppIntegration({ userId }: WhatsAppIntegrationProps) {
         if (integrationParam === 'whatsapp' || openParam === 'whatsapp') {
             setOpenSheet(true);
 
+            if (waProfiles.length === 0) {
+                setSheetMode('add');
+                setAddTab('setup');
+                startAddProfile();
+            } else {
+                setSheetMode('manage');
+                setView('list');
+            }
+
             if (profileIdParam && waProfiles.length > 0) {
                 const targetProfile = waProfiles.find(p => p.id === profileIdParam);
                 if (targetProfile) {
+                    setSheetMode('manage');
                     startEditProfile(targetProfile);
                 } else if (profileIdParam === 'new') {
+                    setSheetMode('add');
+                    setAddTab('setup');
                     startAddProfile();
                 }
             }
         }
     }, [searchParams, waProfiles]);
 
-    // Reset view when opening/closing
     const handleOpenChange = (open: boolean) => {
         setOpenSheet(open);
         if (!open) {
+            setSheetMode('manage');
+            setAddTab('setup');
             setView('list');
             setEditingWaProfile(null);
             setWaForm({ name: '', phoneNumber: '+213', isDefault: false });
+
+            // Clean up URL parameters so it re-opens correctly next time
+            const params = new URLSearchParams(searchParams);
+            if (params.has('open') || params.has('integration') || params.has('profileId')) {
+                params.delete('open');
+                params.delete('integration');
+                params.delete('profileId');
+                setSearchParams(params, { replace: true });
+            }
         }
     };
 
     const startAddProfile = () => {
         setEditingWaProfile(null);
         setWaForm({ name: '', phoneNumber: '+213', isDefault: waProfiles.length === 0 });
-        setView('add');
     };
 
     const startEditProfile = (profile: WhatsAppProfile) => {
@@ -100,15 +126,27 @@ export function WhatsAppIntegration({ userId }: WhatsAppIntegrationProps) {
         }
 
         try {
-            if (view === 'add') {
-                await addWaProfile(waForm);
+            if (sheetMode === 'add') {
+                const newProfile = await addWaProfile(waForm);
                 toast.success('Profile created!');
-            } else if (view === 'edit' && editingWaProfile) {
+
+                setFormConfig({
+                    ...formConfig,
+                    addons: {
+                        ...formConfig.addons,
+                        selectedWhatsappProfileId: newProfile.id,
+                    },
+                });
+
+                setSheetMode('manage');
+                setView('list');
+            } else if (sheetMode === 'manage' && view === 'edit' && editingWaProfile) {
                 await updateWaProfile(editingWaProfile.id, waForm);
                 toast.success('Profile updated!');
+                setView('list');
             }
             handleCancel();
-        } catch (e: unknown) {
+        } catch (e: any) {
             toast.error(e.message);
         }
     };
@@ -125,35 +163,37 @@ export function WhatsAppIntegration({ userId }: WhatsAppIntegrationProps) {
                 toast.success('Profile deleted');
                 handleCancel();
             }
-        } catch (e: unknown) {
+        } catch (e: any) {
             toast.error(e.message);
         }
     };
 
     return (
-        <div className="md:col-span-1 md:row-span-1">
+        <div className={hideTrigger ? "" : "md:col-span-1 md:row-span-1"}>
             <Sheet open={openSheet} onOpenChange={handleOpenChange}>
-                <SheetTrigger asChild>
-                    <Card className="bg-white border border-slate-200 shadow-sm rounded-2xl sm:rounded-3xl overflow-hidden hover:ring-2 hover:ring-green-100 hover:shadow-xl transition-all duration-300 group relative h-full flex flex-col p-4 sm:p-6 min-h-[140px] sm:min-h-[180px] cursor-pointer active:scale-[0.99]">
-                        <div className="absolute inset-0 bg-gradient-to-br from-green-50/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                        <div className="flex flex-col h-full justify-between relative z-10">
-                            <div className="flex justify-between items-start">
-                                <div className="w-14 h-14 rounded-2xl bg-green-50 border border-green-100 flex items-center justify-center text-3xl text-white shadow-sm group-hover:scale-110 group-hover:rotate-3 transition-transform mb-4">
-                                    💬
+                {!hideTrigger && (
+                    <SheetTrigger asChild>
+                        <Card className="bg-white border border-slate-200 shadow-sm rounded-2xl sm:rounded-3xl overflow-hidden hover:ring-2 hover:ring-green-100 hover:shadow-xl transition-all duration-300 group relative h-full flex flex-col p-4 sm:p-6 min-h-[140px] sm:min-h-[180px] cursor-pointer active:scale-[0.99]">
+                            <div className="absolute inset-0 bg-gradient-to-br from-green-50/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                            <div className="flex flex-col h-full justify-between relative z-10">
+                                <div className="flex justify-between items-start">
+                                    <div className="w-14 h-14 rounded-2xl bg-green-50 border border-green-100 flex items-center justify-center text-3xl text-white shadow-sm group-hover:scale-110 group-hover:rotate-3 transition-transform mb-4">
+                                        💬
+                                    </div>
+                                    {waProfiles.length > 0 && (
+                                        <Badge variant="secondary" className="bg-green-50 text-green-700 hover:bg-green-100 border-green-100">
+                                            Connected
+                                        </Badge>
+                                    )}
                                 </div>
-                                {waProfiles.length > 0 && (
-                                    <Badge variant="secondary" className="bg-green-50 text-green-700 hover:bg-green-100 border-green-100">
-                                        Connected
-                                    </Badge>
-                                )}
+                                <div>
+                                    <h4 className="text-xl font-bold text-slate-900 tracking-tight">WhatsApp</h4>
+                                    <p className="text-sm text-slate-500 mt-2 font-medium leading-normal">Order recovery & confirms</p>
+                                </div>
                             </div>
-                            <div>
-                                <h4 className="text-xl font-bold text-slate-900 tracking-tight">WhatsApp</h4>
-                                <p className="text-sm text-slate-500 mt-2 font-medium leading-normal">Order recovery & confirms</p>
-                            </div>
-                        </div>
-                    </Card>
-                </SheetTrigger>
+                        </Card>
+                    </SheetTrigger>
+                )}
 
                 <SheetContent hideClose className="sm:max-w-md w-full flex flex-col h-full p-0 gap-0 bg-white overflow-hidden sm:border-l sm:shadow-2xl">
                     <SheetHeader className="px-6 py-5 border-b border-slate-100 shrink-0 bg-white">
@@ -161,9 +201,9 @@ export function WhatsAppIntegration({ userId }: WhatsAppIntegrationProps) {
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-xl bg-green-50 border border-green-100 flex items-center justify-center text-xl shrink-0">💬</div>
                                 <div className="flex flex-col">
-                                    {view === 'add' ? (
+                                    {sheetMode === 'add' ? (
                                         <>
-                                            <SheetTitle className="text-slate-900 leading-tight">New Profile</SheetTitle>
+                                            <SheetTitle className="text-slate-900 leading-tight">Add New Profile</SheetTitle>
                                             <SheetDescription className="text-xs mt-0.5">Add WhatsApp number</SheetDescription>
                                         </>
                                     ) : view === 'edit' ? (
@@ -173,7 +213,7 @@ export function WhatsAppIntegration({ userId }: WhatsAppIntegrationProps) {
                                         </>
                                     ) : (
                                         <>
-                                            <SheetTitle className="text-slate-900 leading-tight">WhatsApp</SheetTitle>
+                                            <SheetTitle className="text-slate-900 leading-tight">Manage Connections</SheetTitle>
                                             <SheetDescription className="text-xs mt-0.5">Order recovery & confirms</SheetDescription>
                                         </>
                                     )}
@@ -181,31 +221,20 @@ export function WhatsAppIntegration({ userId }: WhatsAppIntegrationProps) {
                             </div>
 
                             <div className="flex items-center gap-2">
-                                {activeTab === 'manage' && (
-                                    view === 'list' ? (
-                                        <Button
-                                            size="sm"
-                                            className="bg-[#25D366] hover:bg-[#20bd5a] text-white h-8 text-xs gap-1.5 shadow-sm px-3 rounded-full"
-                                            onClick={() => {
-                                                startAddProfile();
-                                                setActiveTab('manage');
-                                            }}
-                                        >
-                                            <Plus size={14} className="stroke-[2.5]" /> Add Profile
-                                        </Button>
-                                    ) : (
-                                        <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="h-8 text-slate-500 hover:text-slate-900 hover:bg-slate-100 text-xs gap-1.5 px-3 rounded-full"
-                                            onClick={handleCancel}
-                                        >
-                                            Cancel
-                                        </Button>
-                                    )
+                                {sheetMode === 'manage' && view === 'edit' && (
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-8 text-slate-500 hover:text-slate-900 hover:bg-slate-100 text-xs gap-1.5 px-3 rounded-full"
+                                        onClick={handleCancel}
+                                    >
+                                        Cancel
+                                    </Button>
                                 )}
 
-                                <div className="h-6 w-px bg-slate-200 mx-1" />
+                                {sheetMode === 'manage' && view === 'edit' && (
+                                    <div className="h-6 w-px bg-slate-200 mx-1" />
+                                )}
 
                                 <Button
                                     size="icon"
@@ -219,15 +248,89 @@ export function WhatsAppIntegration({ userId }: WhatsAppIntegrationProps) {
                         </div>
                     </SheetHeader>
 
-                    <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'manage' | 'guide')} className="flex-1 flex flex-col min-h-0">
-                        <TabsList className="grid w-full grid-cols-2 bg-slate-50 p-1 rounded-none shrink-0 border-b border-slate-100">
-                            <TabsTrigger value="manage" className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-green-600 text-xs font-medium text-slate-500">Manage</TabsTrigger>
-                            <TabsTrigger value="guide" className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-green-600 text-xs font-medium text-slate-500">Setup Guide</TabsTrigger>
-                        </TabsList>
+                    {sheetMode === 'add' ? (
+                        <Tabs value={addTab} onValueChange={(v) => setAddTab(v as 'setup' | 'guide')} className="flex-1 flex flex-col min-h-0">
+                            <TabsList className="grid w-full grid-cols-2 bg-slate-50 p-1 rounded-none shrink-0 border-b border-slate-100">
+                                <TabsTrigger value="setup" className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-green-600 text-xs font-medium text-slate-500">Setup</TabsTrigger>
+                                <TabsTrigger value="guide" className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-green-600 text-xs font-medium text-slate-500">Guide</TabsTrigger>
+                            </TabsList>
 
+                            <ScrollArea className="flex-1 bg-slate-50/50 [&>div>div]:!block">
+                                <TabsContent value="setup" className="mt-0 p-6 space-y-6">
+                                    {/* Add Form View */}
+                                    <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-5 animate-in slide-in-from-right-8 fade-in duration-300">
+                                        <div className="space-y-4">
+                                            <div className="space-y-2">
+                                                <Label className="text-xs font-semibold text-slate-700">Profile Name</Label>
+                                                <Input
+                                                    placeholder="e.g. Sales Team"
+                                                    className="bg-white h-10 border-slate-200"
+                                                    value={waForm.name}
+                                                    onChange={(e) => setWaForm({ ...waForm, name: e.target.value })}
+                                                />
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <Label className="text-xs font-semibold text-slate-700">WhatsApp Number</Label>
+                                                <div className="flex shadow-sm rounded-lg overflow-hidden border border-slate-200 focus-within:ring-2 focus-within:ring-green-100 focus-within:border-green-300 transition-all">
+                                                    <div className="bg-slate-50 px-3 py-2 text-sm text-slate-600 font-mono flex items-center border-r border-slate-100 bg-white">+213</div>
+                                                    <Input
+                                                        placeholder="555123456"
+                                                        className="bg-white font-mono rounded-none border-0 focus-visible:ring-0 h-10"
+                                                        dir="ltr"
+                                                        value={waForm.phoneNumber.replace(/^\+213/, '')}
+                                                        onChange={(e) => {
+                                                            const digits = e.target.value.replace(/\D/g, '');
+                                                            setWaForm({ ...waForm, phoneNumber: '+213' + digits });
+                                                        }}
+                                                    />
+                                                </div>
+                                                <p className="text-[10px] text-slate-400 pl-1">Enter number without country code (e.g. 555123456)</p>
+                                            </div>
+
+                                            <div className="flex items-center gap-3 py-2 px-3 bg-slate-50 rounded-lg border border-slate-100">
+                                                <Switch
+                                                    id="wa-default-add"
+                                                    checked={waForm.isDefault}
+                                                    onCheckedChange={(checked) => setWaForm({ ...waForm, isDefault: checked })}
+                                                    className="data-[state=checked]:bg-green-500"
+                                                />
+                                                <Label htmlFor="wa-default-add" className="text-xs font-medium text-slate-700 cursor-pointer flex-1">
+                                                    Set as default profile for notifications
+                                                </Label>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex flex-col gap-3 pt-2">
+                                            <Button
+                                                className="w-full bg-gradient-to-r from-[#25D366] to-[#128C7E] hover:from-[#128C7E] hover:to-[#075E54] text-white shadow-lg shadow-green-100 transition-all duration-200 h-11 text-sm font-medium rounded-xl mt-2"
+                                                onClick={handleSaveWaProfile}
+                                            >
+                                                Create Profile
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </TabsContent>
+
+                                <TabsContent value="guide" className="mt-0 p-6">
+                                    <div className="space-y-4 text-sm text-slate-600">
+                                        <h4 className="font-semibold text-slate-900">Getting Started with WhatsApp</h4>
+                                        <ol className="list-decimal list-inside space-y-2 marker:text-green-600 marker:font-bold">
+                                            <li>Create a WhatsApp profile with your business number</li>
+                                            <li>Set your default profile for order confirmations</li>
+                                            <li>Customers will receive order updates via WhatsApp automatically</li>
+                                        </ol>
+                                        <div className="bg-green-50 border border-green-100 rounded-lg p-3 text-xs text-green-700 flex gap-2 items-start">
+                                            <span className="mt-0.5">💡</span>
+                                            <span>Use the international format for your phone number to ensure message delivery.</span>
+                                        </div>
+                                    </div>
+                                </TabsContent>
+                            </ScrollArea>
+                        </Tabs>
+                    ) : (
                         <ScrollArea className="flex-1 bg-slate-50/50 [&>div>div]:!block">
-                            <TabsContent value="manage" className="mt-0 p-6 space-y-4">
-
+                            <div className="p-6 space-y-4">
                                 {view === 'list' ? (
                                     <div className="animate-in fade-in duration-300 space-y-4">
                                         {/* Profiles list */}
@@ -240,7 +343,11 @@ export function WhatsAppIntegration({ userId }: WhatsAppIntegrationProps) {
                                                 <p className="text-xs text-slate-500 mt-1 max-w-[200px]">Connect your WhatsApp number to start sending messages.</p>
                                                 <Button
                                                     className="mt-4 bg-gradient-to-r from-[#25D366] to-[#128C7E] hover:from-[#128C7E] hover:to-[#075E54] text-white shadow-lg shadow-green-100 h-9 text-xs rounded-full px-4 font-medium transition-all hover:scale-105"
-                                                    onClick={startAddProfile}
+                                                    onClick={() => {
+                                                        setSheetMode('add');
+                                                        setAddTab('setup');
+                                                        startAddProfile();
+                                                    }}
                                                 >
                                                     Connect First Profile
                                                 </Button>
@@ -283,13 +390,13 @@ export function WhatsAppIntegration({ userId }: WhatsAppIntegrationProps) {
                                         {waProfiles.length > 0 && (
                                             <div className="text-center pt-4">
                                                 <p className="text-xs text-slate-400">
-                                                    Need another number? Click <span className="font-medium text-slate-600">Add Profile</span> above.
+                                                    Need another number? Click <span className="font-medium text-slate-600 cursor-pointer hover:text-slate-900" onClick={() => { setSheetMode('add'); setAddTab('setup'); startAddProfile(); }}>Add Profile</span>.
                                                 </p>
                                             </div>
                                         )}
                                     </div>
                                 ) : (
-                                    /* Add/Edit Form View */
+                                    /* Edit Form View */
                                     <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-5 animate-in slide-in-from-right-8 fade-in duration-300">
                                         <div className="space-y-4">
                                             <div className="space-y-2">
@@ -322,12 +429,12 @@ export function WhatsAppIntegration({ userId }: WhatsAppIntegrationProps) {
 
                                             <div className="flex items-center gap-3 py-2 px-3 bg-slate-50 rounded-lg border border-slate-100">
                                                 <Switch
-                                                    id="wa-default"
+                                                    id="wa-default-edit"
                                                     checked={waForm.isDefault}
                                                     onCheckedChange={(checked) => setWaForm({ ...waForm, isDefault: checked })}
                                                     className="data-[state=checked]:bg-green-500"
                                                 />
-                                                <Label htmlFor="wa-default" className="text-xs font-medium text-slate-700 cursor-pointer flex-1">
+                                                <Label htmlFor="wa-default-edit" className="text-xs font-medium text-slate-700 cursor-pointer flex-1">
                                                     Set as default profile for notifications
                                                 </Label>
                                             </div>
@@ -338,10 +445,10 @@ export function WhatsAppIntegration({ userId }: WhatsAppIntegrationProps) {
                                                 className="w-full bg-gradient-to-r from-[#25D366] to-[#128C7E] hover:from-[#128C7E] hover:to-[#075E54] text-white shadow-lg shadow-green-100 transition-all duration-200 h-11 text-sm font-medium rounded-xl mt-2"
                                                 onClick={handleSaveWaProfile}
                                             >
-                                                {view === 'add' ? 'Create Profile' : 'Save Changes'}
+                                                Save Changes
                                             </Button>
 
-                                            {view === 'edit' && editingWaProfile && (
+                                            {editingWaProfile && (
                                                 <Button
                                                     variant="ghost"
                                                     className="w-full text-red-500 hover:text-red-700 hover:bg-red-50 h-10 text-xs font-medium rounded-xl"
@@ -353,25 +460,9 @@ export function WhatsAppIntegration({ userId }: WhatsAppIntegrationProps) {
                                         </div>
                                     </div>
                                 )}
-
-                            </TabsContent>
-
-                            <TabsContent value="guide" className="mt-0 p-6">
-                                <div className="space-y-4 text-sm text-slate-600">
-                                    <h4 className="font-semibold text-slate-900">Getting Started with WhatsApp</h4>
-                                    <ol className="list-decimal list-inside space-y-2 marker:text-green-600 marker:font-bold">
-                                        <li>Create a WhatsApp profile with your business number</li>
-                                        <li>Set your default profile for order confirmations</li>
-                                        <li>Customers will receive order updates via WhatsApp automatically</li>
-                                    </ol>
-                                    <div className="bg-green-50 border border-green-100 rounded-lg p-3 text-xs text-green-700 flex gap-2 items-start">
-                                        <span className="mt-0.5">💡</span>
-                                        <span>Use the international format for your phone number to ensure message delivery.</span>
-                                    </div>
-                                </div>
-                            </TabsContent>
+                            </div>
                         </ScrollArea>
-                    </Tabs>
+                    )}
                 </SheetContent>
             </Sheet>
         </div>

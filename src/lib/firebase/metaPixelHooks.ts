@@ -24,7 +24,7 @@ export const useMetaPixels = (userId: string) => {
         setLoading(true);
 
         const q = query(
-            collection(db, "meta_pixels"),
+            collection(db, "users", userId, "meta_pixels"),
             where("userId", "==", userId),
         );
 
@@ -81,7 +81,7 @@ export const useMetaPixels = (userId: string) => {
                     updatedAt: new Date().toISOString(),
                 };
 
-                const docRef = doc(collection(db, "meta_pixels"));
+                const docRef = doc(collection(db, "users", userId, "meta_pixels"));
                 batch.set(docRef, newPixel);
 
                 await batch.commit();
@@ -104,7 +104,7 @@ export const useMetaPixels = (userId: string) => {
 
             try {
                 const batch = writeBatch(db);
-                const pixelRef = doc(db, "meta_pixels", pixelId);
+                const pixelRef = doc(db, "users", userId, "meta_pixels", pixelId);
 
                 batch.update(pixelRef, {
                     ...updates,
@@ -124,7 +124,7 @@ export const useMetaPixels = (userId: string) => {
         async (pixelId: string) => {
             if (!userId) throw new Error("User not authenticated");
             try {
-                await deleteDoc(doc(db, "meta_pixels", pixelId));
+                await deleteDoc(doc(db, "users", userId, "meta_pixels", pixelId));
             } catch (err: unknown) {
                 setError(err.message);
                 throw err;

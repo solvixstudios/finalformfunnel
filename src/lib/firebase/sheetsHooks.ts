@@ -37,7 +37,7 @@ export const useGoogleSheets = (userId: string) => {
         setLoading(true);
 
         const q = query(
-            collection(db, "google_sheets"),
+            collection(db, "users", userId, "google_sheets"),
             where("userId", "==", userId),
         );
 
@@ -76,13 +76,13 @@ export const useGoogleSheets = (userId: string) => {
             if (!userId) throw new Error("User not authenticated");
 
             const batch = writeBatch(db);
-            const newDocRef = doc(collection(db, "google_sheets"));
+            const newDocRef = doc(collection(db, "users", userId, "google_sheets"));
 
             // If this is being set as default, unset others
             if (sheetData.isDefault) {
                 sheets.forEach((s) => {
                     if (s.isDefault) {
-                        batch.update(doc(db, "google_sheets", s.id), { isDefault: false });
+                        batch.update(doc(db, "users", userId, "google_sheets", s.id), { isDefault: false });
                     }
                 });
             }
@@ -112,12 +112,12 @@ export const useGoogleSheets = (userId: string) => {
             if (updates.isDefault) {
                 sheets.forEach((s) => {
                     if (s.id !== sheetId && s.isDefault) {
-                        batch.update(doc(db, "google_sheets", s.id), { isDefault: false });
+                        batch.update(doc(db, "users", userId, "google_sheets", s.id), { isDefault: false });
                     }
                 });
             }
 
-            batch.update(doc(db, "google_sheets", sheetId), {
+            batch.update(doc(db, "users", userId, "google_sheets", sheetId), {
                 ...updates,
                 updatedAt: new Date().toISOString(),
             });
@@ -128,7 +128,7 @@ export const useGoogleSheets = (userId: string) => {
     );
 
     const deleteSheet = useCallback(async (sheetId: string) => {
-        await deleteDoc(doc(db, "google_sheets", sheetId));
+        await deleteDoc(doc(db, "users", userId, "google_sheets", sheetId));
     }, []);
 
     return {

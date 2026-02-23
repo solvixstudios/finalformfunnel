@@ -1,11 +1,11 @@
 /**
  * Urgency Timer Section Component
- * Displays countdown timer urgency indicator
+ * Compact, elegant, and theme-consistent countdown timers
  */
 
 import { getUrgencyColor } from '@/lib/utils/colors';
 import type { Language } from '@/types';
-import { Clock } from 'lucide-react';
+import { Clock, Hourglass, Zap } from 'lucide-react';
 import React from 'react';
 import type { FormConfig } from '@/types/form';
 
@@ -33,161 +33,158 @@ export const UrgencyTimerSection: React.FC<UrgencyTimerSectionProps> = ({
     );
     const showLabel = config.urgencyTimer?.showLabel !== false;
 
-    // Safely access countdown with fallback
     const safeCountdown = countdown || { hours: 2, minutes: 30, seconds: 0 };
     const formatTime = (num: number) => String(num).padStart(2, '0');
+
     const timeDisplay = `${formatTime(safeCountdown.hours)}:${formatTime(safeCountdown.minutes)}:${formatTime(safeCountdown.seconds)}`;
 
-    // Use custom text or default
-    const defaultLabel = lang === 'fr' ? 'Offre expire dans' : 'ينتهي العرض في';
+    const isRTL = lang === 'ar';
+    const defaultLabel = isRTL ? 'ينتهي العرض في' : 'Offre expire dans';
     const urgencyLabel = config.urgencyTimer?.customText?.[lang] || config.urgencyTimer?.customText?.fr || defaultLabel;
 
-    // Calculate total seconds for progress bar
     const totalSeconds = safeCountdown.hours * 3600 + safeCountdown.minutes * 60 + safeCountdown.seconds;
-    const maxSeconds = 24 * 3600; // 24 hours max
+    const maxSeconds = 24 * 3600;
     const progressPercent = Math.min((totalSeconds / maxSeconds) * 100, 100);
+    const borderRadius = config.borderRadius || '8px';
 
     return (
-        <div style={marginStyle}>
-            {/* Digital Style */}
+        <div style={marginStyle} className={isRTL ? 'rtl flex justify-center w-full' : 'ltr flex justify-center w-full'}>
+
+            {/* 1. Digital Style: Clean, boxed digits */}
             {style === 'digital' && (
                 <div
-                    className="relative overflow-hidden py-4 px-4"
+                    className="w-full flex flex-col items-center justify-center p-4 border shadow-sm transition-colors"
                     style={{
-                        borderRadius: config.borderRadius,
-                        background: `linear-gradient(135deg, ${color}15 0%, ${color}08 100%)`,
-                        border: `2px solid ${color}40`,
+                        borderRadius,
+                        backgroundColor: `${color}05`,
+                        borderColor: `${color}20`,
                     }}
                 >
+                    {showLabel && (
+                        <div className="flex items-center justify-center gap-2 mb-3 w-full">
+                            <Zap size={16} style={{ color }} className="animate-pulse" />
+                            <span className="text-sm font-extrabold uppercase tracking-wide text-slate-800">
+                                {urgencyLabel}
+                            </span>
+                        </div>
+                    )}
                     <div
-                        className="absolute inset-0 animate-pulse opacity-20"
-                        style={{
-                            background: `radial-gradient(circle at center, ${color}30 0%, transparent 70%)`,
-                        }}
-                    />
-                    <div className="relative flex flex-col items-center gap-2">
-                        {showLabel && (
-                            <div className="flex items-center gap-2">
-                                <Clock size={16} style={{ color }} className="animate-pulse" />
-                                <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color }}>
-                                    {urgencyLabel}
-                                </span>
-                            </div>
+                        dir="ltr"
+                        className="flex items-center gap-1.5"
+                    >
+                        {safeCountdown.hours > 0 && (
+                            <>
+                                <div className="flex items-center justify-center w-10 h-11 sm:w-12 sm:h-12 rounded-lg border bg-white shadow-sm" style={{ borderColor: `${color}30` }}>
+                                    <span className="text-xl font-bold font-mono tracking-wider tabular-nums" style={{ color }}>
+                                        {formatTime(safeCountdown.hours)}
+                                    </span>
+                                </div>
+                                <span className="text-xl font-bold text-slate-400 mx-0.5 animate-pulse">:</span>
+                            </>
                         )}
-                        <div
-                            className="text-2xl font-black tracking-wider font-mono"
-                            style={{ color, textShadow: `0 0 10px ${color}40` }}
-                        >
-                            {timeDisplay}
+                        <div className="flex items-center justify-center w-10 h-11 sm:w-12 sm:h-12 rounded-lg border bg-white shadow-sm" style={{ borderColor: `${color}30` }}>
+                            <span className="text-xl font-bold font-mono tracking-wider tabular-nums" style={{ color }}>
+                                {formatTime(safeCountdown.minutes)}
+                            </span>
+                        </div>
+                        <span className="text-xl font-bold text-slate-400 mx-0.5 animate-pulse">:</span>
+                        <div className="flex items-center justify-center w-10 h-11 sm:w-12 sm:h-12 rounded-lg border bg-white shadow-sm" style={{ borderColor: `${color}30` }}>
+                            <span className="text-xl font-bold font-mono tracking-wider tabular-nums" style={{ color }}>
+                                {formatTime(safeCountdown.seconds)}
+                            </span>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Banner Style */}
+            {/* 2. Banner Style: Full-width soft block with timer inline */}
             {style === 'banner' && (
                 <div
-                    className="relative overflow-hidden py-3 px-4"
+                    className="w-full flex items-center justify-center flex-wrap gap-2.5 py-2.5 px-4 shadow-sm border"
                     style={{
-                        borderRadius: config.borderRadius,
-                        background: `linear-gradient(90deg, ${color}20 0%, ${color}10 50%, ${color}20 100%)`,
-                        border: `1px solid ${color}40`,
+                        borderRadius,
+                        backgroundColor: `${color}10`,
+                        borderColor: `${color}20`,
                     }}
                 >
-                    <p
-                        className="text-center text-xs font-bold flex items-center justify-center gap-2"
-                        style={{ color }}
+                    <div className="flex items-center gap-2">
+                        <Clock size={16} style={{ color }} className="animate-pulse" />
+                        {showLabel && (
+                            <span className="text-xs sm:text-sm font-bold tracking-wide text-gray-800">
+                                {urgencyLabel}
+                            </span>
+                        )}
+                    </div>
+                    <div
+                        dir="ltr"
+                        className="bg-white text-gray-800 font-mono text-sm font-bold px-2 py-0.5 rounded shadow-sm border"
+                        style={{ borderColor: `${color}20`, color: color }}
                     >
-                        <Clock size={14} className="animate-pulse" />
-                        {showLabel && <span>{urgencyLabel}:</span>}
-                        <span className="font-mono text-sm">{timeDisplay}</span>
-                    </p>
+                        {timeDisplay}
+                    </div>
                 </div>
             )}
 
-            {/* Minimal Style */}
-            {style === 'minimal' && (
-                <div className="flex items-center justify-center gap-2">
-                    <Clock size={14} style={{ color }} className="animate-pulse" />
-                    {showLabel && (
-                        <span className="text-xs font-semibold" style={{ color }}>
-                            {urgencyLabel}:{' '}
-                        </span>
-                    )}
-                    <span className="text-xs font-mono font-bold" style={{ color }}>
+            {/* 3. Compact Style: Pill-shaped elegant timer */}
+            {style === 'compact' && (
+                <div
+                    className="inline-flex items-center justify-center gap-3 px-6 py-2.5 rounded-full border shadow-sm transition-transform hover:scale-[1.02] w-full max-w-sm mx-auto"
+                    style={{
+                        backgroundColor: `${color}10`,
+                        borderColor: `${color}30`,
+                    }}
+                >
+                    <Hourglass size={18} style={{ color }} className="animate-pulse" />
+                    <span
+                        dir="ltr"
+                        className="text-sm sm:text-base font-mono font-bold tracking-wider"
+                        style={{ color }}
+                    >
                         {timeDisplay}
                     </span>
                 </div>
             )}
 
-            {/* Compact Style */}
-            {style === 'compact' && (
-                <div className="flex justify-center">
-                    <div
-                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full"
-                        style={{
-                            backgroundColor: `${color}15`,
-                            border: `1px solid ${color}40`,
-                        }}
-                    >
-                        <Clock size={12} style={{ color }} />
-                        <span className="text-[11px] font-mono font-bold" style={{ color }}>
-                            {timeDisplay}
-                        </span>
-                    </div>
-                </div>
-            )}
-
-            {/* Flip Style - Premium flip clock */}
+            {/* 4. Flip Style: Modern, compact flip cards */}
             {style === 'flip' && (
                 <div
-                    className="relative overflow-hidden py-4 px-4"
+                    className="w-full flex flex-col items-center p-4 border shadow-sm"
                     style={{
-                        borderRadius: config.borderRadius,
-                        background: 'linear-gradient(180deg, #1a1a2e 0%, #16213e 100%)',
-                        boxShadow: '0 10px 30px -10px rgba(0,0,0,0.5)',
+                        borderRadius,
+                        backgroundColor: '#f8fafc',
+                        borderColor: `${color}20`,
                     }}
                 >
                     {showLabel && (
-                        <div className="flex items-center justify-center gap-2 mb-3">
-                            <Clock size={14} className="text-white/60" />
-                            <span className="text-[10px] font-bold uppercase tracking-wide text-white/60">
+                        <div className="flex items-center gap-1.5 mb-3">
+                            <Clock size={14} style={{ color }} />
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
                                 {urgencyLabel}
                             </span>
                         </div>
                     )}
-                    <div className="flex items-center justify-center gap-1">
+
+                    <div className="flex items-center gap-1.5" dir="ltr">
                         {[safeCountdown.hours, safeCountdown.minutes, safeCountdown.seconds].map((val, idx) => (
                             <React.Fragment key={idx}>
                                 <div className="flex gap-0.5">
                                     {formatTime(val).split('').map((digit, dIdx) => (
                                         <div
                                             key={dIdx}
-                                            className="relative w-8 h-12 rounded-lg overflow-hidden"
-                                            style={{
-                                                background: 'linear-gradient(180deg, #2d2d44 0%, #1a1a2e 50%, #2d2d44 100%)',
-                                                boxShadow: `inset 0 1px 0 rgba(255,255,255,0.1), 0 2px 4px rgba(0,0,0,0.3), 0 0 20px ${color}30`,
-                                            }}
+                                            className="relative flex items-center justify-center w-6 h-9 sm:w-8 sm:h-11 rounded bg-slate-800 border-b-2 shadow-sm"
+                                            style={{ borderColor: '#0f172a' }}
                                         >
-                                            <div className="absolute inset-0 flex items-center justify-center">
-                                                <span
-                                                    className="text-xl font-black font-mono"
-                                                    style={{ color, textShadow: `0 0 10px ${color}` }}
-                                                >
-                                                    {digit}
-                                                </span>
-                                            </div>
-                                            <div
-                                                className="absolute left-0 right-0 h-px top-1/2"
-                                                style={{ background: 'rgba(0,0,0,0.4)' }}
-                                            />
+                                            <span className="text-lg sm:text-xl font-bold font-mono text-white tracking-tighter">
+                                                {digit}
+                                            </span>
+                                            <div className="absolute inset-0 h-[1px] w-full bg-black/30 top-1/2 -translate-y-1/2 z-10" />
                                         </div>
                                     ))}
                                 </div>
                                 {idx < 2 && (
-                                    <div className="flex flex-col gap-1.5 px-1">
-                                        <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: color }} />
-                                        <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: color }} />
+                                    <div className="flex flex-col gap-1.5 px-0.5 justify-center">
+                                        <div className="w-1 h-1 rounded-full bg-slate-400 animate-pulse" />
+                                        <div className="w-1 h-1 rounded-full bg-slate-400 animate-pulse" />
                                     </div>
                                 )}
                             </React.Fragment>
@@ -196,50 +193,69 @@ export const UrgencyTimerSection: React.FC<UrgencyTimerSectionProps> = ({
                 </div>
             )}
 
-            {/* Bar Style - Progress bar countdown */}
+            {/* 5. Bar Style: Compact progress-integrated layout */}
             {style === 'bar' && (
                 <div
-                    className="relative overflow-hidden py-3 px-4"
+                    className="w-full p-3 border shadow-sm transition-colors"
                     style={{
-                        borderRadius: config.borderRadius,
-                        background: `${color}08`,
-                        border: `1px solid ${color}30`,
+                        borderRadius,
+                        backgroundColor: `${color}05`,
+                        borderColor: `${color}20`,
                     }}
                 >
                     <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
-                            <Clock size={14} style={{ color }} className="animate-pulse" />
+                            <Clock size={14} style={{ color }} />
                             {showLabel && (
-                                <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color }}>
+                                <span className="text-xs font-semibold uppercase tracking-wide text-gray-700">
                                     {urgencyLabel}
                                 </span>
                             )}
                         </div>
-                        <span className="text-xs font-mono font-bold" style={{ color }}>
+                        <span
+                            dir="ltr"
+                            className="text-xs font-mono font-bold tracking-wider px-2 rounded-sm"
+                            style={{ color }}
+                        >
                             {timeDisplay}
                         </span>
                     </div>
-                    <div
-                        className="h-2 rounded-full overflow-hidden"
-                        style={{ backgroundColor: `${color}20` }}
-                    >
+                    <div className="h-1.5 w-full rounded-full overflow-hidden bg-gray-200/50">
                         <div
-                            className="h-full rounded-full transition-all duration-1000 ease-linear relative overflow-hidden"
+                            className="h-full rounded-full transition-all duration-1000 ease-linear"
                             style={{
                                 width: `${progressPercent}%`,
-                                background: `linear-gradient(90deg, ${color} 0%, ${color}cc 100%)`,
+                                backgroundColor: color,
+                                right: isRTL ? 0 : 'auto',
+                                left: isRTL ? 'auto' : 0,
+                                position: 'relative'
                             }}
                         >
-                            <div
-                                className="absolute inset-0 animate-pulse"
-                                style={{
-                                    background: `linear-gradient(90deg, transparent 0%, ${color}50 50%, transparent 100%)`,
-                                }}
-                            />
+                            <div className="absolute inset-0 bg-white/20 animate-pulse" />
                         </div>
                     </div>
                 </div>
             )}
+
+            {/* 6. Minimal Style: Typography only */}
+            {style === 'minimal' && (
+                <div className="flex items-center justify-center gap-2 w-full py-1.5">
+                    <Hourglass size={14} style={{ color }} className="animate-pulse opacity-80" />
+                    {showLabel && (
+                        <span className="text-xs sm:text-sm font-semibold tracking-wide text-gray-700">
+                            {urgencyLabel}
+                        </span>
+                    )}
+                    <span
+                        dir="ltr"
+                        className="text-xs sm:text-sm font-mono font-bold tracking-wider"
+                        style={{ color }}
+                    >
+                        {timeDisplay}
+                    </span>
+                </div>
+            )}
+
         </div>
     );
 };

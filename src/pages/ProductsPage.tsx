@@ -321,6 +321,51 @@ export default function ProductsPage({ userId }: { userId: string }) {
         setShowAssignDialog(true);
     };
 
+    const handleBulkUnlink = async () => {
+        const toastId = toast.loading("Reverting selected products to global form...");
+        let successCount = 0;
+        let failCount = 0;
+
+        try {
+            // Find all assignments for the selected products
+            const assignmentsToRemove = productAssignments.filter(a =>
+                a.productId && selectedProductIds.includes(String(a.productId))
+            );
+
+            if (assignmentsToRemove.length === 0) {
+                toast.dismiss(toastId);
+                toast.info("No specialized assignments to remove for the selected products.");
+                return;
+            }
+
+            // Execute deletions sequentially to avoid rate limits/overload
+            // N8N sync could be batched later if needed
+            for (const assignment of assignmentsToRemove) {
+                try {
+                    await deleteAssignment(assignment.id);
+                    successCount++;
+                } catch (e) {
+                    failCount++;
+                    console.error("Failed to delete assignment:", assignment.id, e);
+                }
+            }
+
+            toast.dismiss(toastId);
+            if (failCount === 0) {
+                toast.success(`Successfully reverted ${successCount} product(s) to the global form.`);
+                setSelectedProductIds([]); // Clear selection on success
+            } else if (successCount > 0) {
+                toast.warning(`Reverted ${successCount} product(s) to global form, but ${failCount} failed.`);
+            } else {
+                toast.error(`Failed to revert ${failCount} product(s) to global form.`);
+            }
+        } catch (error) {
+            toast.dismiss(toastId);
+            toast.error("An error occurred during bulk operation.");
+            console.error(error);
+        }
+    };
+
     const filteredProducts = useMemo(() => {
         let filtered = products;
 
@@ -660,6 +705,29 @@ export default function ProductsPage({ userId }: { userId: string }) {
 
                         {/* Divider */}
                         <div className="h-5 w-px bg-white/15" />
+
+                        {/* Assign Form button */}
+                        <Button
+                            size="sm"
+                            className="bg-white text-slate-900 hover:bg-slate-100 font-bold h-9 rounded-xl px-5 shadow-sm transition-all hover:shadow-md"
+                            onClick={handleBulkAssign}
+                        >
+                            <LayoutTemplate size={14} className="mr-1.5" />
+                            Assign Form
+                        </Button>
+
+                        {/* Revert to Global button - Only show if at least one selected product has a specific assignment */}
+                        {selectedProductIds.some(id => productAssignments.some(a => String(a.productId) === id)) && (
+                            <Button
+                                size="sm"
+                                variant="destructive"
+                                className="bg-red-500/10 hover:bg-red-500/20 text-red-400 font-bold h-9 rounded-xl px-4 transition-all"
+                                onClick={handleBulkUnlink}
+                            >
+                                <Trash2 size={14} className="mr-1.5" />
+                                Revert to Global
+                            </Button>
+                        )}
 
                         {/* Assign Form button */}
                         <Button

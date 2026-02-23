@@ -35,7 +35,7 @@ export const useSavedForms = (userId: string) => {
     if (!userId) return;
     setLoading(true);
 
-    const q = query(collection(db, "forms"), where("userId", "==", userId));
+    const q = query(collection(db, "users", userId, "forms"), where("userId", "==", userId));
 
     const unsubscribe = onSnapshot(
       q,
@@ -76,7 +76,7 @@ export const useSavedForms = (userId: string) => {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
-        const docRef = await addDoc(collection(db, "forms"), newForm);
+        const docRef = await addDoc(collection(db, "users", userId, "forms"), newForm);
         // No manual state update - listener handles it
         return { id: docRef.id, ...newForm };
       } catch (err: unknown) {
@@ -91,7 +91,7 @@ export const useSavedForms = (userId: string) => {
     async (formId: string, updates: Partial<SavedForm>) => {
       if (!userId) throw new Error("User not authenticated");
       try {
-        const formRef = doc(db, "forms", formId);
+        const formRef = doc(db, "users", userId, "forms", formId);
 
         await updateDoc(formRef, {
           ...updates,
@@ -104,7 +104,7 @@ export const useSavedForms = (userId: string) => {
           const snap = await getDoc(formRef);
           if (snap.exists()) {
             const data = snap.data();
-            await propagateFormUpdate(formId, data.name, data.config);
+            await propagateFormUpdate(userId, formId, data.name, data.config);
           }
         }
       } catch (err: unknown) {
@@ -123,11 +123,11 @@ export const useSavedForms = (userId: string) => {
         const batch = writeBatch(db);
 
         // 1. Delete the form
-        const formRef = doc(db, "forms", formId);
+        const formRef = doc(db, "users", userId, "forms", formId);
         batch.delete(formRef);
 
         // 2. Find and delete all assignments for this form
-        const assignmentsQuery = query(collection(db, "assignments"), where("formId", "==", formId));
+        const assignmentsQuery = query(collection(db, "users", userId, "assignments"), where("formId", "==", formId));
         const assignmentsSnapshot = await getDocs(assignmentsQuery);
 
         // 2.5 Clean up n8n store_configs for each assignment (fire-and-forget)
@@ -135,7 +135,7 @@ export const useSavedForms = (userId: string) => {
           const assignment = assignDoc.data();
           if (assignment.storeId) {
             try {
-              const storeSnap = await getDoc(doc(db, "stores", assignment.storeId));
+              const storeSnap = await getDoc(doc(db, "users", userId, "stores", assignment.storeId));
               if (storeSnap.exists()) {
                 const storeData = storeSnap.data();
                 if (storeData.clientId && storeData.clientSecret) {
@@ -191,7 +191,7 @@ export const useConnectedStores = (userId: string) => {
     if (!userId) return;
     setLoading(true);
 
-    const q = query(collection(db, "stores"), where("userId", "==", userId));
+    const q = query(collection(db, "users", userId, "stores"), where("userId", "==", userId));
 
     const unsubscribe = onSnapshot(
       q,
@@ -272,7 +272,7 @@ export const useConnectedStores = (userId: string) => {
             loaderInstalledAt: storeData.loaderInstalledAt,
           }),
         };
-        const docRef = await addDoc(collection(db, "stores"), newStore);
+        const docRef = await addDoc(collection(db, "users", userId, "stores"), newStore);
         const savedStore: ConnectedStore = { id: docRef.id, ...newStore };
 
         // Claim ownership of this store
@@ -292,7 +292,7 @@ export const useConnectedStores = (userId: string) => {
     async (storeId: string, updates: Partial<ConnectedStore>) => {
       if (!userId) throw new Error("User not authenticated");
       try {
-        const storeRef = doc(db, "stores", storeId);
+        const storeRef = doc(db, "users", userId, "stores", storeId);
         await updateDoc(storeRef, {
           ...updates,
           updatedAt: new Date().toISOString(),
@@ -347,7 +347,7 @@ export const useConnectedStores = (userId: string) => {
         if (storeToDelete?.clientId && storeToDelete?.clientSecret) {
           try {
             const configAssignmentsQuery = query(
-              collection(db, "assignments"),
+              collection(db, "users", userId, "assignments"),
               where("storeId", "==", storeId)
             );
             const configSnap = await getDocs(configAssignmentsQuery);
@@ -391,11 +391,11 @@ export const useConnectedStores = (userId: string) => {
         const batch = writeBatch(db);
 
         // 1. Delete the Store Document
-        const storeRef = doc(db, "stores", storeId);
+        const storeRef = doc(db, "users", userId, "stores", storeId);
         batch.delete(storeRef);
 
         // 2. Delete all Assignments associated with this store
-        const assignmentsQuery = query(collection(db, "assignments"), where("storeId", "==", storeId));
+        const assignmentsQuery = query(collection(db, "users", userId, "assignments"), where("storeId", "==", storeId));
         const assignmentsSnapshot = await getDocs(assignmentsQuery);
         assignmentsSnapshot.forEach(doc => {
           batch.delete(doc.ref);
@@ -483,7 +483,7 @@ export const useFormAssignments = (userId: string) => {
       let formConfig: Record<string, any> = assignmentData.formConfig || { formId };
       if (!assignmentData.formConfig) {
         try {
-          const formDoc = await getDoc(doc(db, "forms", formId));
+          const formDoc = await getDoc(doc(db, "users", userId, "forms", formId));
           if (formDoc.exists()) {
             formConfig = { formId, name: formDoc.data().name, ...formDoc.data().config };
           }
@@ -511,7 +511,7 @@ export const useFormAssignments = (userId: string) => {
       // Check for existing assignment to avoid duplicates
       try {
         const q = query(
-          collection(db, "assignments"),
+          collection(db, "users", userId, "assignments"),
           where("storeId", "==", storeId),
           where("assignmentType", "==", type),
           ...(type === 'product' && productId ? [where("productId", "==", productId)] : [])
@@ -539,7 +539,7 @@ export const useFormAssignments = (userId: string) => {
           shopifyDomain: subdomain,
         };
 
-        const newDocRef = doc(collection(db, "assignments"));
+        const newDocRef = doc(collection(db, "users", userId, "assignments"));
         batch.set(newDocRef, newAssignmentDoc);
 
         await batch.commit();
@@ -603,7 +603,7 @@ export const useFormAssignments = (userId: string) => {
         // 2. Remove from Firestore assignments collection (to keep sync logic working)
         // Since we identify by synthetic ID, we must query by properties
         const q = query(
-          collection(db, "assignments"),
+          collection(db, "users", userId, "assignments"),
           where("storeId", "==", assignment.storeId),
           where("formId", "==", assignment.formId),
           where("assignmentType", "==", assignment.assignmentType)

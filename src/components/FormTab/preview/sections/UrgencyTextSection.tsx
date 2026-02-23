@@ -1,11 +1,11 @@
 /**
  * Urgency Text Section Component
- * Displays urgency message with multiple style variants
+ * Premium, theme-consistent urgency messaging with modern visual styles.
  */
 
 import { getUrgencyColor } from '@/lib/utils/colors';
 import type { Language } from '@/types';
-import { Zap } from 'lucide-react';
+import { Zap, AlertCircle, Info, Sparkles, Flame } from 'lucide-react';
 import React from 'react';
 import type { FormConfig } from '@/types/form';
 
@@ -29,85 +29,115 @@ export const UrgencyTextSection: React.FC<UrgencyTextSectionProps> = ({
         undefined,
         config.accentColor
     );
-    // Use configured text or smart default
-    const defaultText = lang === 'fr' ? '⚡ Offre limitée!' : '⚡ عرض محدود!';
+
+    const isRTL = lang === 'ar';
+    const defaultText = isRTL ? '⚡ عرض محدود!' : '⚡ Offre limitée!';
     const text = config.urgencyText?.text?.[lang] || config.urgencyText?.text?.fr || defaultText;
 
+    const borderRadius = config.borderRadius || '8px';
+
     return (
-        <div style={marginStyle}>
-            {/* Banner Style */}
+        <div style={marginStyle} className={isRTL ? 'rtl flex justify-center' : 'ltr flex justify-center'}>
+
+            {/* ── Banner: Gradient-tinted full-width block ── */}
             {style === 'banner' && (
                 <div
-                    className="relative overflow-hidden py-3 px-4"
+                    className="w-full flex items-center justify-center gap-3 py-3.5 px-5 border transition-all duration-300"
                     style={{
-                        borderRadius: config.borderRadius,
-                        background: `linear-gradient(135deg, ${color}15 0%, ${color}05 100%)`,
-                        border: `1px solid ${color}30`,
+                        borderRadius,
+                        background: `linear-gradient(135deg, ${color}08 0%, ${color}15 100%)`,
+                        borderColor: `${color}25`,
                     }}
                 >
                     <div
-                        className="absolute inset-0 animate-pulse opacity-30"
-                        style={{
-                            background: `radial-gradient(circle at center, ${color}20 0%, transparent 70%)`,
-                        }}
-                    />
-                    <p
-                        className="relative text-center text-xs font-bold flex items-center justify-center gap-2"
+                        className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: `${color}18` }}
+                    >
+                        <Zap size={15} style={{ color }} className="animate-pulse" />
+                    </div>
+                    <span
+                        className="text-sm font-extrabold tracking-wide"
                         style={{ color }}
                     >
-                        <Zap size={14} className="animate-pulse" />
                         {text}
-                        <Zap size={14} className="animate-pulse" />
-                    </p>
+                    </span>
                 </div>
             )}
 
-            {/* Pill Style */}
+            {/* ── Pill: Compact rounded inline element with subtle glow ── */}
             {style === 'pill' && (
-                <div className="flex justify-center">
-                    <div
-                        className="inline-flex items-center gap-2 py-2 px-4 rounded-full animate-bounce"
-                        style={{ backgroundColor: `${color}15`, border: `1px solid ${color}40` }}
+                <div
+                    className="inline-flex items-center gap-2.5 py-2.5 px-5 rounded-full border transition-all duration-300 hover:scale-[1.02]"
+                    style={{
+                        backgroundColor: `${color}08`,
+                        borderColor: `${color}22`,
+                        boxShadow: `0 0 20px ${color}12`,
+                    }}
+                >
+                    <Sparkles size={15} style={{ color }} className="animate-pulse" />
+                    <span
+                        className="text-sm font-bold tracking-wide"
+                        style={{ color }}
                     >
-                        <Zap size={12} style={{ color }} />
-                        <span className="text-[11px] font-bold" style={{ color }}>
+                        {text}
+                    </span>
+                    <div
+                        className="w-1.5 h-1.5 rounded-full animate-pulse"
+                        style={{ backgroundColor: color }}
+                    />
+                </div>
+            )}
+
+            {/* ── Glow: Soft neon background blur ── */}
+            {style === 'glow' && (
+                <div className="w-full relative flex items-center justify-center py-4 overflow-hidden">
+                    {/* Blur glow layer */}
+                    <div
+                        className="absolute inset-0 blur-2xl opacity-15 pointer-events-none"
+                        style={{ backgroundColor: color }}
+                    />
+                    <div
+                        className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-px opacity-20"
+                        style={{ backgroundColor: color }}
+                    />
+                    <div className="relative flex items-center gap-2.5 z-10">
+                        <Flame size={18} style={{ color }} className="animate-pulse" />
+                        <span
+                            className="text-sm sm:text-base font-extrabold tracking-wider uppercase"
+                            style={{
+                                color,
+                                textShadow: `0 0 12px ${color}40, 0 0 24px ${color}20`,
+                            }}
+                        >
                             {text}
                         </span>
                     </div>
                 </div>
             )}
 
-            {/* Glow Style */}
-            {style === 'glow' && (
-                <div
-                    className="relative py-3 px-4 text-center"
-                    style={{ borderRadius: config.borderRadius }}
-                >
+            {/* ── Minimal: Clean typography with thin accent line ── */}
+            {style === 'minimal' && (
+                <div className="flex items-center justify-center gap-3 w-full py-2.5">
                     <div
-                        className="absolute inset-0 animate-pulse rounded-xl blur-md"
-                        style={{ background: `${color}30`, borderRadius: config.borderRadius }}
+                        className="h-px flex-1 max-w-[40px] opacity-40"
+                        style={{ backgroundColor: color }}
                     />
-                    <p
-                        className="relative text-xs font-black tracking-wide flex items-center justify-center gap-2"
-                        style={{ color, textShadow: `0 0 20px ${color}80` }}
-                    >
-                        <Zap size={14} className="animate-pulse" />
-                        {text}
-                        <Zap size={14} className="animate-pulse" />
-                    </p>
+                    <div className="flex items-center gap-2">
+                        <Info size={14} style={{ color, opacity: 0.7 }} />
+                        <span
+                            className="text-sm font-bold tracking-wide"
+                            style={{ color }}
+                        >
+                            {text}
+                        </span>
+                    </div>
+                    <div
+                        className="h-px flex-1 max-w-[40px] opacity-40"
+                        style={{ backgroundColor: color }}
+                    />
                 </div>
             )}
 
-            {/* Minimal Style */}
-            {style === 'minimal' && (
-                <p
-                    className="text-center text-xs font-bold animate-pulse flex items-center justify-center gap-1.5"
-                    style={{ color }}
-                >
-                    <span style={{ fontSize: '10px' }}>⚡</span>
-                    {text}
-                </p>
-            )}
         </div>
     );
 };

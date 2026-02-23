@@ -7,6 +7,7 @@
 
 import {
   collection,
+  collectionGroup,
   doc,
   getDoc,
   getDocs,
@@ -21,6 +22,7 @@ import type { FormConfig, MetaPixelProfile } from "../../types/form";
 export interface FormConfigResponse {
   formId: string;
   formName: string;
+  userId?: string;
   assignment: {
     id: string;
     type: "store" | "product";
@@ -68,7 +70,7 @@ export async function getFormConfig(
 
     // Try exact match first
     const storesQuery = query(
-      collection(db, "stores"),
+      collectionGroup(db, "stores"),
       where("status", "==", "connected"),
       limit(50) // Get all connected stores and filter client-side
     );
@@ -102,7 +104,7 @@ export async function getFormConfig(
 
     if (productId || productHandle) {
       const productAssignmentsQuery = query(
-        collection(db, "assignments"),
+        collection(db, "users", storeDoc.userId, "assignments"),
         where("storeId", "==", storeDoc.id),
         where("assignmentType", "==", "product"),
         where("isActive", "==", true),
@@ -126,7 +128,7 @@ export async function getFormConfig(
     // Fall back to store-level assignment
     if (!assignment) {
       const storeAssignmentsQuery = query(
-        collection(db, "assignments"),
+        collection(db, "users", storeDoc.userId, "assignments"),
         where("storeId", "==", storeDoc.id),
         where("assignmentType", "==", "store"),
         where("isActive", "==", true),
@@ -147,7 +149,7 @@ export async function getFormConfig(
     }
 
     // Get the form config
-    const formRef = doc(db, "forms", assignment.formId);
+    const formRef = doc(db, "users", storeDoc.userId, "forms", assignment.formId);
     const formSnap = await getDoc(formRef);
 
     if (!formSnap.exists()) {
@@ -179,7 +181,7 @@ export async function getFormConfig(
         // We can't query by ID list easily without 'in' and 10 limit.
         // Let's use individual getDoc calls, it's robust.
 
-        const pixelPromises = pixelIds.map((id: string) => getDoc(doc(db, "meta_pixels", id)));
+        const pixelPromises = pixelIds.map((id: string) => getDoc(doc(db, "users", storeDoc.userId, "meta_pixels", id)));
         const pixelSnaps = await Promise.all(pixelPromises);
 
         pixels = pixelSnaps
@@ -198,6 +200,7 @@ export async function getFormConfig(
     return {
       formId: assignment.formId,
       formName: formData.name,
+      userId: storeDoc.userId,
       assignment: {
         id: assignment.id,
         type: assignment.assignmentType,

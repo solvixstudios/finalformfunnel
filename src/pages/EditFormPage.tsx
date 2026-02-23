@@ -25,6 +25,7 @@ import { useConnectedStores, useFormAssignments, useSavedForms } from '../lib/fi
 import { getExportData, loadFormWithValidation, normalizeImportedConfig, validateFormConfig } from '../lib/formManagement';
 import { useI18n } from '../lib/i18n/i18nContext';
 import { useFormStore } from '../stores';
+import { BuilderProvider } from '../components/FormTab/contexts/BuilderContext';
 
 interface EditFormPageProps {
   userId: string;
@@ -36,7 +37,7 @@ const EditFormPage = ({ userId }: EditFormPageProps) => {
   const navigate = useNavigate();
   const { t, dir } = useI18n();
   const { saveForm, updateForm, deleteForm, forms, loading: formsLoading } = useSavedForms(userId);
-  const { assignments } = useFormAssignments(userId);
+  const { assignments, assignForm, deleteAssignment } = useFormAssignments(userId);
   const { stores } = useConnectedStores(userId);
   const { profiles: waProfiles } = useWhatsAppProfiles(userId);
   const { sheets: gsSheets } = useGoogleSheets(userId);
@@ -75,18 +76,18 @@ const EditFormPage = ({ userId }: EditFormPageProps) => {
   // State to prevent flashing of previous context
   const [isContextReady, setIsContextReady] = useState(false);
 
+  // Track the previous route form ID to prevent resetting the editor state on save
+  const prevRouteFormIdRef = useRef<string | null>(null);
+
   // Handle route based loading and context reset
   useEffect(() => {
-    // Reset context immediately on mount/route change to prevent flash
-    // We do this before any other logic
-    if (routeFormId && routeFormId !== 'new') {
+    // Reset context immediately on route change to prevent flash,
+    // but ONLY if the routeFormId has actually changed.
+    if (routeFormId !== prevRouteFormIdRef.current) {
       useFormStore.getState().setEditingSection(null);
       setIsContextReady(true);
-    } else if (routeFormId === 'new') {
-      useFormStore.getState().setEditingSection(null);
-      setIsContextReady(true);
+      prevRouteFormIdRef.current = routeFormId || null;
     } else {
-      useFormStore.getState().setEditingSection(null);
       setIsContextReady(true);
     }
 
@@ -406,6 +407,46 @@ const EditFormPage = ({ userId }: EditFormPageProps) => {
         navigate(`/dashboard/forms/edit/${savedForm.id}`, { replace: true });
       }
 
+      // SHOPIFY STORE LINKS: Sync local link selections to real assignments
+      if (savedFormId) {
+        const freshFormConfig = useFormStore.getState().formConfig;
+        const desiredLinks: { storeId: string; type: 'store' | 'product' }[] = freshFormConfig.addons?.shopifyStoreLinks || [];
+        const currentAssignments = assignments.filter(a => a.formId === savedFormId);
+
+        // Create new assignments for links that don't exist yet
+        for (const link of desiredLinks) {
+          const exists = currentAssignments.some(a =>
+            a.storeId === link.storeId && a.assignmentType === link.type
+          );
+          if (!exists) {
+            try {
+              await assignForm({
+                formId: savedFormId,
+                storeId: link.storeId,
+                type: link.type,
+                formName: formName.trim(),
+                formConfig: { formId: savedFormId, name: formName.trim(), ...freshFormConfig },
+                skipRefetch: true,
+              });
+            } catch (e) {
+              console.error('[ShopifySync] Failed to create assignment:', e);
+            }
+          }
+        }
+
+        // Remove stale assignments (linked stores that are no longer in desiredLinks)
+        const desiredStoreIds = new Set(desiredLinks.map(l => l.storeId));
+        for (const a of currentAssignments) {
+          if (!desiredStoreIds.has(a.storeId)) {
+            try {
+              await deleteAssignment(a.id!);
+            } catch (e) {
+              console.error('[ShopifySync] Failed to remove assignment:', e);
+            }
+          }
+        }
+      }
+
       // AUTO-SYNC: Sync changes to active Shopify assignments via centralized service
       if (savedFormId) {
         const activeAssignments = assignments.filter(a => a.formId === savedFormId && a.isActive);
@@ -453,7 +494,7 @@ const EditFormPage = ({ userId }: EditFormPageProps) => {
       console.error('Save error:', err);
       saveFailure(errorMessage);
     }
-  }, [formName, formDescription, formId, updateForm, saveForm, exportDataMemoized, setFormName, setFormId, markClean, isNameDuplicate, t, navigate, isSaving, startSaving, saveSuccessAction, saveFailure, assignments, stores]);
+  }, [formName, formDescription, formId, updateForm, saveForm, exportDataMemoized, setFormName, setFormId, markClean, isNameDuplicate, t, navigate, isSaving, startSaving, saveSuccessAction, saveFailure, assignments, stores, assignForm, deleteAssignment]);
 
 
 
@@ -532,6 +573,29 @@ const EditFormPage = ({ userId }: EditFormPageProps) => {
 
         </div>
       )}
+      {/* Publish Toggle */}
+      <div className="flex items-center gap-2 mr-2">
+        <button
+          onClick={() => {
+            const newStatus = formStatus === 'published' ? 'draft' : 'published';
+            setFormStatus(newStatus);
+            if (formId) {
+              updateForm(formId, { status: newStatus }).then(() => {
+                toast.success(newStatus === 'published' ? '✓ Form published' : 'Form set to draft');
+              });
+            }
+          }}
+          disabled={!formId}
+          className={`relative flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${formStatus === 'published'
+            ? 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100'
+            : 'bg-slate-100 text-slate-500 border border-slate-200 hover:bg-slate-200'
+            } ${!formId ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+          title={formId ? (formStatus === 'published' ? 'Click to unpublish' : 'Click to publish') : 'Save form first'}
+        >
+          <div className={`w-2 h-2 rounded-full ${formStatus === 'published' ? 'bg-green-500 animate-pulse' : 'bg-slate-400'}`} />
+          {formStatus === 'published' ? 'Live' : 'Draft'}
+        </button>
+      </div>
     </div>
   );
 
@@ -574,6 +638,14 @@ const EditFormPage = ({ userId }: EditFormPageProps) => {
     urgencyQuantity: "Urgence - Stock",
     urgencyTimer: "Urgence - Timer",
     trustBadges: "Badges de Confiance",
+
+    // Integration Editors
+    whatsapp: "WhatsApp Integration",
+    google_sheets: "Google Sheets",
+    meta_pixel: "Meta Pixel",
+    tiktok_pixel: "TikTok Pixel",
+    shopify: "Shopify",
+    woocommerce: "WooCommerce",
   };
 
   const editingSection = useFormStore((state) => state.editingSection);
@@ -657,12 +729,14 @@ const EditFormPage = ({ userId }: EditFormPageProps) => {
         <BuilderSkeleton />
       ) : (
         <div className="flex-1 overflow-hidden relative">
-          <FormTab
-            onSaveClick={handleSaveForm}
-            onLoadClick={() => setShowLoadModal(true)}
-            canSave={canSave}
-            showSaveSuccess={showSaveSuccess}
-          />
+          <BuilderProvider userId={userId}>
+            <FormTab
+              onSaveClick={handleSaveForm}
+              onLoadClick={() => setShowLoadModal(true)}
+              canSave={canSave}
+              showSaveSuccess={showSaveSuccess}
+            />
+          </BuilderProvider>
         </div>
       )}
 

@@ -369,7 +369,7 @@ const PacksManager: React.FC<PacksManagerProps> = ({ offers, onOffersChange }) =
             _type: 'perc',
             _idManuallyEdited: false,
             _internalId: `internal-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            title: { fr: '', ar: '' },
+            title: { fr: 'Nouveau Pack', ar: 'باقة جديدة' },
             desc: { fr: '', ar: '' },
             sticker: { enabled: false, text: { fr: '', ar: '' }, color: '#ef4444' }
         };

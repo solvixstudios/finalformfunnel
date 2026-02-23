@@ -35,6 +35,7 @@ interface PublishSheetProps {
     formName: string;
     formConfig: unknown;
     formType?: 'store' | 'product';
+    initialStoreId?: string;
     onPublishSuccess?: () => void;
 }
 
@@ -46,6 +47,7 @@ export function PublishSheet({
     formName,
     formConfig,
     formType = 'product',
+    initialStoreId,
     onPublishSuccess,
 }: PublishSheetProps) {
     const { stores, loading: storesLoading } = useConnectedStores(userId);
@@ -126,22 +128,22 @@ export function PublishSheet({
     // Reset when sheet opens
     useEffect(() => {
         if (open) {
-            setStep(1);
-            setSelectedStoreId('');
+            setStep(initialStoreId ? 2 : 1);
+            setSelectedStoreId(initialStoreId || '');
             setAssignmentType(formType);
             setSelectedProductIds([]);
             setProductSearch('');
             setIsPublishing(false);
             setSelectedAssignmentIds([]);
 
-            if (currentFormAssignments.length > 0) {
+            if (!initialStoreId && currentFormAssignments.length > 0) {
                 setView('manage');
             } else {
                 setView('publish');
             }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [open]);
+    }, [open, initialStoreId]);
 
     // Load products when store changes
     useEffect(() => {
@@ -262,7 +264,7 @@ export function PublishSheet({
             // Clear selection and move to manage view
             setSelectedProductIds([]);
             setView('manage');
-        } catch (error: unknown) {
+        } catch (error: any) {
             console.error('Publish failed:', error);
             toast.error('Failed to publish: ' + (error.message || 'Unknown error'));
         } finally {
@@ -367,14 +369,14 @@ export function PublishSheet({
         }
     };
 
-    const handleSingleUnpublish = async (assignment: unknown) => {
+    const handleSingleUnpublish = async (assignment: any) => {
         const loadingToast = toast.loading('Unpublishing...');
 
         try {
             // deleteAssignment handles n8n cleanup internally
             await deleteAssignment(assignment.id);
             toast.success('Unpublished successfully');
-        } catch (e: unknown) {
+        } catch (e: any) {
             console.error('Unpublish error:', e);
             toast.error('Failed to unpublish');
         } finally {
@@ -402,12 +404,12 @@ export function PublishSheet({
                     </div>
 
                     {/* Action Buttons in Header */}
-                    {view === 'manage' && (
+                    {view === 'manage' && !initialStoreId && (
                         <Button size="sm" onClick={() => setView('publish')} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm">
                             <Plus className="mr-2" size={16} /> Publish New
                         </Button>
                     )}
-                    {view === 'publish' && currentFormAssignments.length > 0 && (
+                    {view === 'publish' && currentFormAssignments.length > 0 && !initialStoreId && (
                         <Button size="sm" variant="ghost" onClick={() => setView('manage')}>
                             Back to Active
                         </Button>
@@ -470,7 +472,9 @@ export function PublishSheet({
                                                 <p className="text-[10px] text-slate-500">Target Store</p>
                                             </div>
                                         </div>
-                                        <Button variant="ghost" size="sm" onClick={() => setStep(1)} className="text-xs h-7 hover:bg-slate-50">Change</Button>
+                                        {!initialStoreId && (
+                                            <Button variant="ghost" size="sm" onClick={() => setStep(1)} className="text-xs h-7 hover:bg-slate-50">Change</Button>
+                                        )}
                                     </div>
 
                                     {/* Scope indicator - auto-set from form type */}

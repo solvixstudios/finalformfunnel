@@ -31,10 +31,12 @@ import {
     Loader2,
     MoreVertical,
     Plus,
+    RotateCw,
     Trash2
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { notifyProductSyncComplete, syncProductsFromShopify } from '@/lib/products';
 
 const CURRENT_LOADER_VERSION = LOADER_VERSION;
 
@@ -55,7 +57,7 @@ export function ShopifyManager({ userId, onAddStore, showHeader = true, viewMode
     // Filter only shopify stores just in case
     const shopifyStores = stores.filter(s => s.platform === 'shopify');
 
-    const handleEnableLoader = async (store: unknown) => {
+    const handleEnableLoader = async (store: any) => {
         setProcessingStoreId(store.id);
         const loadingToast = toast.loading('Enabling loader...');
 
@@ -92,7 +94,7 @@ export function ShopifyManager({ userId, onAddStore, showHeader = true, viewMode
             } else {
                 toast.error(result.error || 'Failed to enable loader.');
             }
-        } catch (error: unknown) {
+        } catch (error: any) {
             toast.dismiss(loadingToast);
             toast.error('Failed to enable loader.');
             console.error(error);
@@ -115,7 +117,7 @@ export function ShopifyManager({ userId, onAddStore, showHeader = true, viewMode
         try {
             await deleteStore(storeToDelete);
             toast.success('Store disconnected successfully');
-        } catch (error: unknown) {
+        } catch (error: any) {
             console.error(error);
             toast.error(error.message || 'Failed to disconnect store');
         } finally {
@@ -124,7 +126,7 @@ export function ShopifyManager({ userId, onAddStore, showHeader = true, viewMode
         }
     };
 
-    const handleSyncAssignments = async (store: unknown) => {
+    const handleSyncAssignments = async (store: any) => {
         setProcessingStoreId(store.id);
         const loadingToast = toast.loading('Syncing assignments...');
 
@@ -174,6 +176,23 @@ export function ShopifyManager({ userId, onAddStore, showHeader = true, viewMode
             setProcessingStoreId(null);
         }
     }
+
+    const handleRefreshProducts = async (store: any) => {
+        setProcessingStoreId(store.id);
+        const loadingToast = toast.loading('Refreshing products...');
+
+        try {
+            const syncedProducts = await syncProductsFromShopify(store);
+            notifyProductSyncComplete(store.id, syncedProducts);
+            toast.success(`Successfully refreshed ${syncedProducts.length} products`);
+        } catch (error: any) {
+            console.error("Refresh failed:", error);
+            toast.error(error.message || 'Failed to refresh products');
+        } finally {
+            toast.dismiss(loadingToast);
+            setProcessingStoreId(null);
+        }
+    };
 
     if (loading) {
         return (
@@ -249,6 +268,9 @@ export function ShopifyManager({ userId, onAddStore, showHeader = true, viewMode
                                                     <ExternalLink size={14} className="mr-2" /> Visit Store
                                                 </DropdownMenuItem>
 
+                                                <DropdownMenuItem onClick={() => handleRefreshProducts(store)}>
+                                                    <RotateCw size={14} className="mr-2" /> Refresh Products
+                                                </DropdownMenuItem>
                                                 <DropdownMenuItem onClick={() => handleSyncAssignments(store)}>
                                                     <Activity size={14} className="mr-2" /> Sync Assignments
                                                 </DropdownMenuItem>
@@ -346,6 +368,9 @@ export function ShopifyManager({ userId, onAddStore, showHeader = true, viewMode
                                         <DropdownMenuContent align="end" className="w-48 rounded-xl border-slate-200 shadow-xl p-1">
                                             <DropdownMenuItem className="rounded-lg text-xs font-medium" onClick={() => window.open(`https://${store.url}`, '_blank')}>
                                                 <ExternalLink size={14} className="mr-2" /> Visit Store
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem className="rounded-lg text-xs font-medium" onClick={() => handleRefreshProducts(store)}>
+                                                <RotateCw size={14} className="mr-2" /> Refresh Products
                                             </DropdownMenuItem>
                                             <DropdownMenuItem className="rounded-lg text-xs font-medium" onClick={() => handleSyncAssignments(store)}>
                                                 <Activity size={14} className="mr-2" /> Sync Assignments

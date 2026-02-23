@@ -1,10 +1,10 @@
 {
   "name": "vite_react_shadcn_ts",
   "private": true,
-  "version": "1.2.115",
+  "version": "1.2.129",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"npm run server\" \"vite\"",
+    "dev": "node scripts/init-n8n-tables.js && vite",
     "server": "cd server && npm run dev",
     "build": "vite build && npm run build:loader",
     "build:loader": "node scripts/bump-version.js && vite build --config vite.loader.config.ts && vite build --config vite.global.config.ts && node scripts/build-loader.js",
@@ -20,6 +20,10 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@fontsource/plus-jakarta-sans": "^5.2.8",
+    "@fortawesome/fontawesome-svg-core": "^7.2.0",
+    "@fortawesome/free-brands-svg-icons": "^7.2.0",
+    "@fortawesome/free-solid-svg-icons": "^7.2.0",
+    "@fortawesome/react-fontawesome": "^3.2.0",
     "@gsap/react": "^2.1.2",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-accordion": "^1.2.11",

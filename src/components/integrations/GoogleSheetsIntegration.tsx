@@ -20,12 +20,14 @@ import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useGoogleSheets, GoogleSheetConfig } from '../../lib/firebase/sheetsHooks';
 import { DEFAULT_FORM_CONFIG } from '../../config/defaults';
+import { useFormStore } from '../../stores';
 
 interface GoogleSheetsIntegrationProps {
     userId: string;
+    hideTrigger?: boolean;
 }
 
-export function GoogleSheetsIntegration({ userId }: GoogleSheetsIntegrationProps) {
+export function GoogleSheetsIntegration({ userId, hideTrigger }: GoogleSheetsIntegrationProps) {
     const {
         sheets,
         addSheet,
@@ -35,8 +37,9 @@ export function GoogleSheetsIntegration({ userId }: GoogleSheetsIntegrationProps
     } = useGoogleSheets(userId);
 
     const [openSheet, setOpenSheet] = useState(false);
-    const [activeTab, setActiveTab] = useState<'manage' | 'guide'>('manage');
-    const [view, setView] = useState<'list' | 'add' | 'edit'>('list');
+    const [sheetMode, setSheetMode] = useState<'add' | 'manage'>('manage');
+    const [addTab, setAddTab] = useState<'setup' | 'guide'>('setup');
+    const [view, setView] = useState<'list' | 'edit'>('list');
 
     const [editingSheet, setEditingSheet] = useState<GoogleSheetConfig | null>(null);
     const defaultColumns = DEFAULT_FORM_CONFIG.addons.sheetColumns;
@@ -50,7 +53,9 @@ export function GoogleSheetsIntegration({ userId }: GoogleSheetsIntegrationProps
         pinnedCount: defaultPinnedCount,
     });
 
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const formConfig = useFormStore(state => state.formConfig);
+    const setFormConfig = useFormStore(state => state.setFormConfig);
 
     // Deep Linking Logic
     useEffect(() => {
@@ -62,11 +67,23 @@ export function GoogleSheetsIntegration({ userId }: GoogleSheetsIntegrationProps
             // Delay slightly to ensure data is loaded or just set open
             setOpenSheet(true);
 
+            if (sheets.length === 0) {
+                setSheetMode('add');
+                setAddTab('setup');
+                startAddSheet();
+            } else {
+                setSheetMode('manage');
+                setView('list');
+            }
+
             if (sheetIdParam && sheets.length > 0) {
                 const targetSheet = sheets.find(s => s.id === sheetIdParam);
                 if (targetSheet) {
+                    setSheetMode('manage');
                     startEditSheet(targetSheet);
                 } else if (sheetIdParam === 'new') {
+                    setSheetMode('add');
+                    setAddTab('setup');
                     startAddSheet();
                 }
             }
@@ -77,9 +94,17 @@ export function GoogleSheetsIntegration({ userId }: GoogleSheetsIntegrationProps
     const handleOpenChange = (open: boolean) => {
         setOpenSheet(open);
         if (!open) {
-            // Remove params from URL when closing to clean up state
-            // This requires navigation, but for now we just reset local state
+            setSheetMode('manage');
+            setAddTab('setup');
             resetForm();
+            // Clean up URL parameters
+            const params = new URLSearchParams(searchParams);
+            if (params.has('open') || params.has('integration') || params.has('sheetId')) {
+                params.delete('open');
+                params.delete('integration');
+                params.delete('sheetId');
+                setSearchParams(params, { replace: true });
+            }
         }
     };
 
@@ -88,7 +113,7 @@ export function GoogleSheetsIntegration({ userId }: GoogleSheetsIntegrationProps
         setEditingSheet(null);
         setForm({
             name: '',
-            webhookUrl: '',
+            webhookUrl: 'https://script.google.com/macros/s/AKfycbybwobgDvyHVx0za1xZy5oPO0BgD8A9_MTfn2nVRdkrPwaf-x9kUqUDWhTrq0ERSd_B/exec',
             sheetName: 'Orders',
             isDefault: false,
             columns: [...defaultColumns],
@@ -100,13 +125,12 @@ export function GoogleSheetsIntegration({ userId }: GoogleSheetsIntegrationProps
         setEditingSheet(null);
         setForm({
             name: '',
-            webhookUrl: '',
+            webhookUrl: 'https://script.google.com/macros/s/AKfycbybwobgDvyHVx0za1xZy5oPO0BgD8A9_MTfn2nVRdkrPwaf-x9kUqUDWhTrq0ERSd_B/exec',
             sheetName: 'Orders',
             isDefault: sheets.length === 0,
             columns: [...defaultColumns],
             pinnedCount: defaultPinnedCount,
         });
-        setView('add');
     };
 
     const startEditSheet = (sheet: GoogleSheetConfig) => {
@@ -129,16 +153,32 @@ export function GoogleSheetsIntegration({ userId }: GoogleSheetsIntegrationProps
         }
 
         try {
-            if (view === 'add') {
-                await addSheet(form);
+            if (sheetMode === 'add') {
+                const newId = await addSheet(form);
                 toast.success('Google Sheet connected!');
-            } else if (view === 'edit' && editingSheet) {
+
+                const currentIds = formConfig.addons?.selectedSheetIds || [];
+
+                // Preselect newly created sheet
+                setFormConfig({
+                    ...formConfig,
+                    addons: {
+                        ...formConfig.addons,
+                        selectedSheetIds: [...currentIds, newId],
+                    },
+                });
+
+                setSheetMode('manage');
+                setView('list');
+            } else if (sheetMode === 'manage' && view === 'edit' && editingSheet) {
                 await updateSheet(editingSheet.id, form);
                 toast.success('Configuration updated!');
+                setView('list');
             }
+            // keep form if needed but reset is better
             resetForm();
-        } catch (e: unknown) {
-            toast.error(e.message);
+        } catch (e: any) {
+            toast.error(e.message || 'An error occurred');
         }
     };
 
@@ -148,8 +188,8 @@ export function GoogleSheetsIntegration({ userId }: GoogleSheetsIntegrationProps
                 await deleteSheet(id);
                 toast.success('Integration removed');
                 resetForm();
-            } catch (e: unknown) {
-                toast.error(e.message);
+            } catch (e: any) {
+                toast.error(e.message || 'An error occurred');
             }
         }
     };
@@ -498,29 +538,31 @@ function onEdit(e) {
     );
 
     return (
-        <div className="md:col-span-1 md:row-span-1">
+        <div className={hideTrigger ? "" : "md:col-span-1 md:row-span-1"}>
             <Sheet open={openSheet} onOpenChange={handleOpenChange}>
-                <SheetTrigger asChild>
-                    <Card className="bg-white border border-slate-200 shadow-sm rounded-2xl sm:rounded-3xl overflow-hidden hover:ring-2 hover:ring-emerald-100 hover:shadow-xl transition-all duration-300 group relative h-full flex flex-col p-4 sm:p-6 min-h-[140px] sm:min-h-[180px] cursor-pointer active:scale-[0.99]">
-                        <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                        <div className="flex flex-col h-full justify-between relative z-10">
-                            <div className="flex justify-between items-start">
-                                <div className="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-3xl text-emerald-600 shadow-sm group-hover:scale-110 group-hover:rotate-3 transition-transform mb-4">
-                                    <FileSpreadsheet size={28} />
+                {!hideTrigger && (
+                    <SheetTrigger asChild>
+                        <Card className="bg-white border border-slate-200 shadow-sm rounded-2xl sm:rounded-3xl overflow-hidden hover:ring-2 hover:ring-emerald-100 hover:shadow-xl transition-all duration-300 group relative h-full flex flex-col p-4 sm:p-6 min-h-[140px] sm:min-h-[180px] cursor-pointer active:scale-[0.99]">
+                            <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                            <div className="flex flex-col h-full justify-between relative z-10">
+                                <div className="flex justify-between items-start">
+                                    <div className="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-3xl text-emerald-600 shadow-sm group-hover:scale-110 group-hover:rotate-3 transition-transform mb-4">
+                                        <FileSpreadsheet size={28} />
+                                    </div>
+                                    {sheets.length > 0 && (
+                                        <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-100">
+                                            Connected
+                                        </Badge>
+                                    )}
                                 </div>
-                                {sheets.length > 0 && (
-                                    <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-100">
-                                        Connected
-                                    </Badge>
-                                )}
+                                <div>
+                                    <h4 className="text-xl font-bold text-slate-900 tracking-tight">Google Sheets</h4>
+                                    <p className="text-sm text-slate-500 mt-2 font-medium leading-normal">Sync orders to spreadsheets</p>
+                                </div>
                             </div>
-                            <div>
-                                <h4 className="text-xl font-bold text-slate-900 tracking-tight">Google Sheets</h4>
-                                <p className="text-sm text-slate-500 mt-2 font-medium leading-normal">Sync orders to spreadsheets</p>
-                            </div>
-                        </div>
-                    </Card>
-                </SheetTrigger>
+                        </Card>
+                    </SheetTrigger>
+                )}
 
                 <SheetContent hideClose className="sm:max-w-md w-full flex flex-col h-full p-0 gap-0 bg-white overflow-hidden sm:border-l sm:shadow-2xl">
                     <SheetHeader className="px-6 py-5 border-b border-slate-100 shrink-0 bg-white">
@@ -530,7 +572,7 @@ function onEdit(e) {
                                     <FileSpreadsheet size={20} />
                                 </div>
                                 <div className="flex flex-col">
-                                    {view === 'add' ? (
+                                    {sheetMode === 'add' ? (
                                         <>
                                             <SheetTitle className="text-slate-900 leading-tight">Connect Sheet</SheetTitle>
                                             <SheetDescription className="text-xs mt-0.5">Add logic & webhook</SheetDescription>
@@ -550,31 +592,20 @@ function onEdit(e) {
                             </div>
 
                             <div className="flex items-center gap-2">
-                                {activeTab === 'manage' && (
-                                    view === 'list' ? (
-                                        <Button
-                                            size="sm"
-                                            className="bg-[#0F9D58] hover:bg-[#0B8548] text-white h-8 text-xs gap-1.5 shadow-sm px-3 rounded-full"
-                                            onClick={() => {
-                                                startAddSheet();
-                                                setActiveTab('manage');
-                                            }}
-                                        >
-                                            <Plus size={14} className="stroke-[2.5]" /> Add Sheet
-                                        </Button>
-                                    ) : (
-                                        <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="h-8 text-slate-500 hover:text-slate-900 hover:bg-slate-100 text-xs gap-1.5 px-3 rounded-full"
-                                            onClick={resetForm}
-                                        >
-                                            Cancel
-                                        </Button>
-                                    )
+                                {sheetMode === 'manage' && view === 'edit' && (
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-8 text-slate-500 hover:text-slate-900 hover:bg-slate-100 text-xs gap-1.5 px-3 rounded-full"
+                                        onClick={resetForm}
+                                    >
+                                        Cancel
+                                    </Button>
                                 )}
 
-                                <div className="h-6 w-px bg-slate-200 mx-1" />
+                                {sheetMode === 'manage' && view === 'edit' && (
+                                    <div className="h-6 w-px bg-slate-200 mx-1" />
+                                )}
 
                                 <Button
                                     size="icon"
@@ -588,14 +619,112 @@ function onEdit(e) {
                         </div>
                     </SheetHeader>
 
-                    <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'manage' | 'guide')} className="flex-1 flex flex-col min-h-0">
-                        <TabsList className="grid w-full grid-cols-2 bg-slate-50 p-1 rounded-none shrink-0 border-b border-slate-100">
-                            <TabsTrigger value="manage" className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 text-xs font-medium text-slate-500">Manage</TabsTrigger>
-                            <TabsTrigger value="guide" className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 text-xs font-medium text-slate-500">Setup Guide</TabsTrigger>
-                        </TabsList>
+                    {sheetMode === 'add' ? (
+                        <Tabs value={addTab} onValueChange={(v) => setAddTab(v as 'setup' | 'guide')} className="flex-1 flex flex-col min-h-0">
+                            <TabsList className="grid w-full grid-cols-2 bg-slate-50 p-1 rounded-none shrink-0 border-b border-slate-100">
+                                <TabsTrigger value="setup" className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 text-xs font-medium text-slate-500">Setup</TabsTrigger>
+                                <TabsTrigger value="guide" className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 text-xs font-medium text-slate-500">Guide</TabsTrigger>
+                            </TabsList>
 
+                            <ScrollArea className="flex-1 bg-slate-50/50 [&>div>div]:!block">
+                                <TabsContent value="setup" className="mt-0 p-6 space-y-6">
+                                    {/* Add Form View */}
+                                    <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-5 animate-in slide-in-from-right-8 fade-in duration-300">
+                                        <div className="space-y-4">
+                                            <div className="space-y-2">
+                                                <Label className="text-xs font-semibold text-slate-700">Internal Name</Label>
+                                                <Input
+                                                    placeholder="e.g. Master Orders Sheet"
+                                                    className="bg-white h-10 border-slate-200"
+                                                    value={form.name}
+                                                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                                                />
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <Label className="text-xs font-semibold text-slate-700">Apps Script Web App URL</Label>
+                                                <Input
+                                                    placeholder="https://script.google.com/macros/s/..."
+                                                    className="bg-white font-mono text-xs h-10 border-slate-200"
+                                                    value={form.webhookUrl}
+                                                    onChange={(e) => setForm({ ...form, webhookUrl: e.target.value })}
+                                                />
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <Label className="text-xs font-semibold text-slate-700">Tab Name</Label>
+                                                <Input
+                                                    placeholder="Orders"
+                                                    className="bg-white h-10 border-slate-200"
+                                                    value={form.sheetName}
+                                                    onChange={(e) => setForm({ ...form, sheetName: e.target.value })}
+                                                />
+                                                <p className="text-[10px] text-slate-400">
+                                                    Tab name must match your Google Sheet. Orders & abandoned orders go to the same tab.
+                                                </p>
+                                            </div>
+
+                                            <div className="flex items-center gap-3 py-2 px-3 bg-slate-50 rounded-lg border border-slate-100">
+                                                <Switch
+                                                    id="sheet-default-add"
+                                                    checked={form.isDefault}
+                                                    onCheckedChange={(checked) => setForm({ ...form, isDefault: checked })}
+                                                    className="data-[state=checked]:bg-emerald-500"
+                                                />
+                                                <Label htmlFor="sheet-default-add" className="text-xs font-medium text-slate-700 cursor-pointer flex-1">
+                                                    Use as default sheet for all forms
+                                                </Label>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex flex-col gap-3 pt-2">
+                                            <Button
+                                                className="w-full bg-gradient-to-r from-[#0F9D58] to-[#0B8548] hover:from-[#0B8548] hover:to-[#086637] text-white shadow-lg shadow-emerald-100 h-11 text-sm font-medium rounded-xl mt-2"
+                                                onClick={handleSave}
+                                            >
+                                                Connect Sheet
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </TabsContent>
+
+                                <TabsContent value="guide" className="mt-0 p-6">
+                                    {/* Setup Guide */}
+                                    <div className="space-y-4 text-sm text-slate-600 bg-emerald-50/50 p-5 rounded-xl border border-emerald-100">
+                                        <div className="space-y-6">
+                                            <Step num={1} title="Create Script">
+                                                <p>Open your Google Sheet, go to <span className="font-semibold text-slate-900">Extensions {'>'} Apps Script</span>.</p>
+                                                <div className="relative group mt-2">
+                                                    <div className="bg-slate-900 text-slate-50 p-2.5 rounded-lg text-[10px] font-mono border border-slate-800 h-32 overflow-auto custom-scroll max-w-full">
+                                                        <pre className="whitespace-pre-wrap break-all">{appScriptCode}</pre>
+                                                    </div>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="secondary"
+                                                        className="absolute top-2 right-2 h-6 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity bg-slate-700 text-slate-200 hover:bg-slate-600 border border-slate-600"
+                                                        onClick={() => copyToClipboard(appScriptCode)}
+                                                    >
+                                                        <Copy size={10} className="mr-1" /> Copy Code
+                                                    </Button>
+                                                </div>
+                                            </Step>
+
+                                            <Step num={2} title="Deploy Web App">
+                                                <ul className="list-disc list-outside ml-3 space-y-1 pl-1 marker:text-emerald-400">
+                                                    <li>Click <span className="font-semibold text-blue-600">Deploy</span> {'>'} <span className="font-semibold">New Deployment</span></li>
+                                                    <li>Select type: <span className="font-semibold">Web App</span></li>
+                                                    <li>Who has access: <span className="font-semibold text-emerald-600 bg-emerald-50 px-1 rounded">Anyone</span> (Critical!)</li>
+                                                    <li>Click <span className="font-semibold">Deploy</span> and copy the URL.</li>
+                                                </ul>
+                                            </Step>
+                                        </div>
+                                    </div>
+                                </TabsContent>
+                            </ScrollArea>
+                        </Tabs>
+                    ) : (
                         <ScrollArea className="flex-1 bg-slate-50/50 [&>div>div]:!block">
-                            <TabsContent value="manage" className="mt-0 p-6 space-y-4">
+                            <div className="p-6 space-y-4">
                                 {view === 'list' ? (
                                     <div className="animate-in fade-in duration-300 space-y-4">
                                         {sheets.length === 0 && (
@@ -607,7 +736,11 @@ function onEdit(e) {
                                                 <p className="text-xs text-slate-500 mt-1 max-w-[200px]">Connect a Google Sheet to automatically log new orders.</p>
                                                 <Button
                                                     className="mt-4 bg-gradient-to-r from-[#0F9D58] to-[#0B8548] hover:from-[#0B8548] hover:to-[#086637] text-white shadow-lg shadow-emerald-100 h-9 text-xs rounded-full px-4 font-medium transition-all hover:scale-105"
-                                                    onClick={startAddSheet}
+                                                    onClick={() => {
+                                                        setSheetMode('add');
+                                                        setAddTab('setup');
+                                                        startAddSheet();
+                                                    }}
                                                 >
                                                     Connect First Sheet
                                                 </Button>
@@ -649,8 +782,8 @@ function onEdit(e) {
                                             ))}
                                         </div>
                                     </div>
-                                ) : (
-                                    /* Add/Edit Form View */
+                                ) : view === 'edit' && editingSheet ? (
+                                    /* Edit Form View (Inside Manage Tab) */
                                     <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-5 animate-in slide-in-from-right-8 fade-in duration-300">
                                         <div className="space-y-4">
                                             <div className="space-y-2">
@@ -666,9 +799,6 @@ function onEdit(e) {
                                             <div className="space-y-2">
                                                 <div className="flex items-center justify-between">
                                                     <Label className="text-xs font-semibold text-slate-700">Apps Script Web App URL</Label>
-                                                    <Button variant="link" className="h-auto p-0 text-[10px] text-emerald-600" onClick={() => setActiveTab('guide')}>
-                                                        Get URL Guide
-                                                    </Button>
                                                 </div>
                                                 <Input
                                                     placeholder="https://script.google.com/macros/s/..."
@@ -801,10 +931,10 @@ function onEdit(e) {
                                                 className="w-full bg-gradient-to-r from-[#0F9D58] to-[#0B8548] hover:from-[#0B8548] hover:to-[#086637] text-white shadow-lg shadow-emerald-100 h-11 text-sm font-medium rounded-xl mt-2"
                                                 onClick={handleSave}
                                             >
-                                                {view === 'add' ? 'Connect Sheet' : 'Save Changes'}
+                                                Save Changes
                                             </Button>
 
-                                            {view === 'edit' && editingSheet && (
+                                            {editingSheet && (
                                                 <Button
                                                     variant="ghost"
                                                     className="w-full text-red-500 hover:text-red-700 hover:bg-red-50 h-10 text-xs font-medium rounded-xl"
@@ -815,40 +945,10 @@ function onEdit(e) {
                                             )}
                                         </div>
                                     </div>
-                                )}
-                            </TabsContent>
-
-                            <TabsContent value="guide" className="mt-0 p-6">
-                                <div className="space-y-6">
-                                    <Step num={1} title="Create Script">
-                                        <p>Open your Google Sheet, go to <span className="font-semibold text-slate-900">Extensions {'>'} Apps Script</span>.</p>
-                                        <div className="relative group mt-2">
-                                            <div className="bg-slate-900 text-slate-50 p-2.5 rounded-lg text-[10px] font-mono border border-slate-800 h-32 overflow-auto custom-scroll max-w-full">
-                                                <pre className="whitespace-pre-wrap break-all">{appScriptCode}</pre>
-                                            </div>
-                                            <Button
-                                                size="sm"
-                                                variant="secondary"
-                                                className="absolute top-2 right-2 h-6 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity bg-slate-700 text-slate-200 hover:bg-slate-600 border border-slate-600"
-                                                onClick={() => copyToClipboard(appScriptCode)}
-                                            >
-                                                <Copy size={10} className="mr-1" /> Copy Code
-                                            </Button>
-                                        </div>
-                                    </Step>
-
-                                    <Step num={2} title="Deploy Web App">
-                                        <ul className="list-disc list-outside ml-3 space-y-1 pl-1 marker:text-emerald-400">
-                                            <li>Click <span className="font-semibold text-blue-600">Deploy</span> {'>'} <span className="font-semibold">New Deployment</span></li>
-                                            <li>Select type: <span className="font-semibold">Web App</span></li>
-                                            <li>Who has access: <span className="font-semibold text-emerald-600 bg-emerald-50 px-1 rounded">Anyone</span> (Critical!)</li>
-                                            <li>Click <span className="font-semibold">Deploy</span> and copy the URL.</li>
-                                        </ul>
-                                    </Step>
-                                </div>
-                            </TabsContent>
+                                ) : null}
+                            </div>
                         </ScrollArea>
-                    </Tabs>
+                    )}
                 </SheetContent>
             </Sheet>
         </div>

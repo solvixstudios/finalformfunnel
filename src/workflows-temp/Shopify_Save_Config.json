@@ -12,10 +12,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -17120,
-        2544
+        -1680,
+        208
       ],
-      "id": "3c96ed0a-52f8-4695-a9c2-b65f3e132af1",
+      "id": "47d6c10d-db83-48c4-a037-4a9e86ab137f",
       "name": "Webhook",
       "webhookId": "save-config-webhook"
     },
@@ -26,10 +26,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -16880,
-        2544
+        -1440,
+        208
       ],
-      "id": "061e265d-e462-4510-9dcb-90ccc8e4acb9",
+      "id": "47a04c4b-2c42-445e-b9e2-eb103e9c503f",
       "name": "Parse Request"
     },
     {
@@ -58,10 +58,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -16640,
-        2544
+        -1200,
+        208
       ],
-      "id": "1eb8ddee-20c7-496f-8cfa-57adbabea507",
+      "id": "eaa65864-0e19-412e-a03b-c089e98937b6",
       "name": "If Valid"
     },
     {
@@ -76,10 +76,10 @@
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        -16400,
-        2448
+        -960,
+        112
       ],
-      "id": "46eecd77-a123-4b6b-8566-30c5c16a0839",
+      "id": "2d0c5573-840d-466e-8c38-727356623c9d",
       "name": "Get Stores",
       "alwaysOutputData": true
     },
@@ -90,10 +90,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -16160,
-        2448
+        -720,
+        112
       ],
-      "id": "9ef0169c-b062-40f5-8d42-ef212974b329",
+      "id": "d9b0c72d-c610-4fa7-b66b-3e98622cd10e",
       "name": "Verify Store"
     },
     {
@@ -122,10 +122,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -15920,
-        2448
+        -480,
+        112
       ],
-      "id": "a084a74a-9d74-490b-b460-7ccfb9e2d1da",
+      "id": "37cf14f0-588f-42c2-8373-065df65d212b",
       "name": "If Store Found"
     },
     {
@@ -154,10 +154,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -15680,
-        2448
+        -240,
+        112
       ],
-      "id": "de2d5ab9-79ad-4654-8c67-eb218879f1d1",
+      "id": "adba5d06-f51a-4b35-8280-6103fa598cb8",
       "name": "Is Product Level?"
     },
     {
@@ -171,10 +171,12 @@
         "filters": {
           "conditions": [
             {
-              "keyName": "storeId"
+              "keyName": "storeId",
+              "keyValue": "={{ $('If Store Found').item.json.storeId }}"
             },
             {
-              "keyName": "productId"
+              "keyName": "productId",
+              "keyValue": "={{ $('If Store Found').item.json.productId }}"
             }
           ]
         },
@@ -240,10 +242,10 @@
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        -15440,
-        2336
+        0,
+        0
       ],
-      "id": "c713b3ff-89a9-4910-8e0e-c2e918a4b528",
+      "id": "911cb785-aa89-45a0-b9a8-e2644d95bcaf",
       "name": "Save Product Config"
     },
     {
@@ -257,7 +259,8 @@
         "filters": {
           "conditions": [
             {
-              "keyName": "storeId"
+              "keyName": "storeId",
+              "keyValue": "={{ $('If Store Found').item.json.storeId }}"
             }
           ]
         },
@@ -311,10 +314,10 @@
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        -15440,
-        2560
+        0,
+        224
       ],
-      "id": "df6daac7-6af6-4359-a7d3-20631d77f1dc",
+      "id": "213fef94-fc38-43e1-9a6c-ae18e5ac073f",
       "name": "Save Global Config"
     },
     {
@@ -347,10 +350,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -15200,
-        2448
+        240,
+        112
       ],
-      "id": "039ca647-1d38-4afe-a4af-0e441ab652f7",
+      "id": "72bf26e7-569e-44bd-b4e8-2ac087b99a8e",
       "name": "Respond Success"
     },
     {
@@ -380,10 +383,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -15984,
-        2800
+        -544,
+        464
       ],
-      "id": "fd6331af-ad6f-4ce4-ad22-d85353f575ed",
+      "id": "bc2139e3-f4f2-4795-acbd-818fb021c7b4",
       "name": "Respond Error"
     }
   ],
@@ -511,6 +514,6 @@
   },
   "pinData": {},
   "meta": {
-    "instanceId": "b55b8c5b490d75637e4db729caf7c75486c3398f3275794ad40beef7f9800920"
+    "instanceId": "5abaacc51fd49f740a51b8d27dfa0de49a1e96c8b5ab7af0a2bc1c5c024948d3"
   }
 }

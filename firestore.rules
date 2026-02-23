@@ -7,74 +7,99 @@ service cloud.firestore {
       return request.auth != null;
     }
     
-    // Helper function to check if user owns the document
+    // Helper function to check if user owns the document/path
     function isOwner(userId) {
       return request.auth.uid == userId;
     }
+
+    // New structure: collections nested under users/{userId}
+    match /users/{userId} {
+      // Allow read/write to the user document itself
+      allow read, write: if isOwner(userId);
+      
+      // Forms collection - public read for loader
+      match /forms/{formId} {
+        allow read: if true;
+        allow create, update, delete: if isOwner(userId);
+      }
+      
+      // Stores collection
+      match /stores/{storeId} {
+        allow read, write: if isOwner(userId);
+      }
+      
+      // Assignments collection - public read for loader
+      match /assignments/{assignmentId} {
+        allow read: if true;
+        allow write: if isOwner(userId);
+      }
+      
+      // Orders collection - allow public create for loader submissions!
+      match /orders/{orderId} {
+        allow create: if true;
+        allow read, update, delete: if isOwner(userId);
+      }
+
+      // Products collection
+      match /products/{productId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Integration Profiles
+      match /whatsapp_profiles/{profileId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /google_sheets/{sheetId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /meta_pixels/{pixelId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /tiktok_pixels/{pixelId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
     
-    // Forms collection - users can only access their own forms, public read allowed for loader
+    // Support for collectionGroup queries used in the loader
+    match /{path=**}/forms/{formId} {
+      allow read: if true;
+    }
+    match /{path=**}/assignments/{assignmentId} {
+      allow read: if true;
+    }
+
+    // Store owners root collection
+    match /storeOwners/{domain} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && request.auth.uid == resource.data.userId;
+    }
+
+    // Backward compatibility for root collections (in case loader/sync still uses them)
     match /forms/{formId} {
       allow read: if true;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if isAuthenticated() && isOwner(resource.data.userId);
     }
     
-    // Stores collection - users can only access their own stores (Keep restricted)
     match /stores/{storeId} {
       allow read: if isAuthenticated() && isOwner(resource.data.userId);
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if isAuthenticated() && isOwner(resource.data.userId);
     }
     
-    // Assignments collection - users can only access their own assignments, public read allowed for loader
     match /assignments/{assignmentId} {
       allow read: if true;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if isAuthenticated() && isOwner(resource.data.userId);
     }
     
-    // Store owners collection - tracks which user owns which Shopify domain
-    // Anyone authenticated can read to check ownership
-    // Only the owner can modify their own ownership records
-    match /storeOwners/{domain} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() && isOwner(resource.data.userId);
-    }
-    
-    // Products collection - users can only access products for their stores
-    match /products/{productId} {
-      allow read: if isAuthenticated() && isOwner(resource.data.userId);
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() && isOwner(resource.data.userId);
-    }
-
-    // WhatsApp Profiles - users can only access their own profiles
-    match /whatsapp_profiles/{profileId} {
-      allow read: if isAuthenticated() && isOwner(resource.data.userId);
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() && isOwner(resource.data.userId);
-    }
-
-    // Google Sheets - users can only access their own sheets
-    match /google_sheets/{sheetId} {
-      allow read: if isAuthenticated() && isOwner(resource.data.userId);
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() && isOwner(resource.data.userId);
-    }
-
-    // Meta Pixels - users can only access their own pixels
-    match /meta_pixels/{pixelId} {
-      allow read: if isAuthenticated() && isOwner(resource.data.userId);
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() && isOwner(resource.data.userId);
-    }
-
-    // TikTok Pixels - users can only access their own pixels
-    match /tiktok_pixels/{pixelId} {
-      allow read: if isAuthenticated() && isOwner(resource.data.userId);
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() && isOwner(resource.data.userId);
+    match /orders/{orderId} {
+      allow create: if true;
+      allow read, update, delete: if isAuthenticated() && isOwner(resource.data.userId);
     }
   }
 }

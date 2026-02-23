@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { CollapsibleSection } from "../components/CollapsibleSection";
+
 
 // Multi-select checkbox item
 const CheckboxItem = ({
@@ -150,12 +150,12 @@ export const AddonsEditor = () => {
                 }));
 
                 // If legacy profile has no pixels array but has pixelId (handled in types but just in case)
-                if (profilePixels.length === 0 && (profile as unknown).pixelId) {
+                if (profilePixels.length === 0 && (profile as any).pixelId) {
                     profilePixels.push({
                         id: profile.id,
-                        pixelId: (profile as unknown).pixelId,
-                        capiToken: (profile as unknown).capiToken,
-                        testCode: (profile as unknown).testCode,
+                        pixelId: (profile as any).pixelId,
+                        capiToken: (profile as any).capiToken,
+                        testCode: (profile as any).testCode,
                         name: profile.name
                     });
                 }
@@ -206,12 +206,12 @@ export const AddonsEditor = () => {
                 }));
 
                 // Fallback for legacy structure (no pixels array)
-                if (profilePixels.length === 0 && (profile as unknown).pixelId) {
+                if (profilePixels.length === 0 && (profile as any).pixelId) {
                     profilePixels.push({
                         id: profile.id,
-                        pixelId: (profile as unknown).pixelId,
-                        accessToken: (profile as unknown).accessToken,
-                        testCode: (profile as unknown).testCode,
+                        pixelId: (profile as any).pixelId,
+                        accessToken: (profile as any).accessToken,
+                        testCode: (profile as any).testCode,
                         name: profile.name
                     });
                 }
@@ -240,7 +240,11 @@ export const AddonsEditor = () => {
             </h3>
 
             {/* WhatsApp Integration */}
-            <CollapsibleSection title="WhatsApp Integration" icon={MessageCircle} defaultOpen={true}>
+            <div className="bg-white border border-slate-200 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-3">
+                    <MessageCircle className="text-slate-400" size={16} />
+                    <span className="text-xs font-bold text-slate-700">WhatsApp Integration</span>
+                </div>
                 <div className="space-y-3">
                     <div className="flex justify-between items-center">
                         <label className="text-[10px] font-bold text-slate-500 uppercase">
@@ -307,10 +311,14 @@ export const AddonsEditor = () => {
                         </div>
                     )}
                 </div>
-            </CollapsibleSection>
+            </div>
 
             {/* Google Sheets Integration */}
-            <CollapsibleSection title="Google Sheets" icon={FileSpreadsheet} badge="NEW">
+            <div className="bg-white border border-slate-200 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-3">
+                    <FileSpreadsheet className="text-slate-400" size={16} />
+                    <span className="text-xs font-bold text-slate-700 flex items-center gap-2">Google Sheets <Badge variant="secondary" className="text-[9px] bg-slate-100 text-slate-600">NEW</Badge></span>
+                </div>
                 <div className="space-y-3">
                     <div className="flex justify-between items-center">
                         <label className="text-[10px] font-bold text-slate-500 uppercase">
@@ -362,10 +370,14 @@ export const AddonsEditor = () => {
                         </div>
                     )}
                 </div>
-            </CollapsibleSection>
+            </div>
 
             {/* Meta Pixel Integration */}
-            <CollapsibleSection title="Meta Pixel" icon={Zap} badge="NEW">
+            <div className="bg-white border border-slate-200 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-3">
+                    <Zap className="text-slate-400" size={16} />
+                    <span className="text-xs font-bold text-slate-700 flex items-center gap-2">Meta Pixel <Badge variant="secondary" className="text-[9px] bg-slate-100 text-slate-600">NEW</Badge></span>
+                </div>
                 <div className="space-y-3">
                     <div className="flex justify-between items-center">
                         <label className="text-[10px] font-bold text-slate-500 uppercase">
@@ -421,10 +433,14 @@ export const AddonsEditor = () => {
                         </div>
                     )}
                 </div>
-            </CollapsibleSection>
+            </div>
 
             {/* TikTok Pixel Integration */}
-            <CollapsibleSection title="TikTok Pixel" icon={MessageCircle} badge="NEW">
+            <div className="bg-white border border-slate-200 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-3">
+                    <MessageCircle className="text-slate-400" size={16} />
+                    <span className="text-xs font-bold text-slate-700 flex items-center gap-2">TikTok Pixel <Badge variant="secondary" className="text-[9px] bg-slate-100 text-slate-600">NEW</Badge></span>
+                </div>
                 <div className="space-y-3">
                     <div className="flex justify-between items-center">
                         <label className="text-[10px] font-bold text-slate-500 uppercase">
@@ -480,7 +496,7 @@ export const AddonsEditor = () => {
                         </div>
                     )}
                 </div>
-            </CollapsibleSection>
+            </div>
         </div>
     );
 };

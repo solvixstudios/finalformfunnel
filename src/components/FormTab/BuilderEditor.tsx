@@ -3,7 +3,12 @@ import { MainMenu } from './editors/MainMenu';
 import PacksManager from '../managers/PacksManager';
 import PromoCodeManager from '../managers/PromoCodeManager';
 import ShippingManager from '../managers/ShippingManager';
-import { AddonsEditor } from './editors/AddonsEditor';
+
+import { WhatsAppEditor } from './editors/WhatsAppEditor';
+import { GoogleSheetsEditor } from './editors/GoogleSheetsEditor';
+import { MetaPixelEditor } from './editors/MetaPixelEditor';
+import { TikTokPixelEditor } from './editors/TikTokPixelEditor';
+
 import { CtaEditor } from './editors/CtaEditor';
 import { DeliveryEditor } from './editors/DeliveryEditor';
 import { GlobalDesignEditor } from './editors/GlobalDesignEditor';
@@ -19,6 +24,8 @@ import { UrgencyQuantityEditor } from './editors/UrgencyQuantityEditor';
 import { UrgencyTextEditor } from './editors/UrgencyTextEditor';
 import { UrgencyTimerEditor } from './editors/UrgencyTimerEditor';
 import { VariantsEditor } from './editors/VariantsEditor';
+import { ShopifyEditor } from './editors/ShopifyEditor';
+import { ComingSoonEditor } from './editors/ComingSoonEditor';
 
 // Configuration map for editors
 const EDITORS_MAP: Record<string, React.FC<unknown>> = {
@@ -33,11 +40,22 @@ const EDITORS_MAP: Record<string, React.FC<unknown>> = {
     delivery: DeliveryEditor,
     cta: CtaEditor,
     urgencyText: UrgencyTextEditor,
-    urgencyQuantity: UrgencyQuantityEditor,
     urgencyTimer: UrgencyTimerEditor,
     trustBadges: TrustBadgesEditor,
     thank_you: ThankYouEditor,
-    addons: AddonsEditor,
+    whatsapp: WhatsAppEditor,
+    google_sheets: GoogleSheetsEditor,
+    meta_pixel: MetaPixelEditor,
+    tiktok_pixel: TikTokPixelEditor,
+    urgencyQuantity: UrgencyQuantityEditor,
+    shopify: ShopifyEditor,
+    woocommerce: ComingSoonEditor,
+    webhook: ComingSoonEditor,
+    maystro: ComingSoonEditor,
+    zr_delivery: ComingSoonEditor,
+    yalidine: ComingSoonEditor,
+    anderson: ComingSoonEditor,
+    ecommanager: ComingSoonEditor,
 };
 
 // Shared editor content component
@@ -51,7 +69,7 @@ const EditorContent = ({
     handleLocationModeChangeWrapper,
     handleUpdateField,
     onLoadClick
-}: unknown) => {
+}: any) => {
 
     // 1. Managers (Complex State Handlers)
     if (editingSection === 'packs_manager') {
@@ -170,10 +188,10 @@ interface BuilderEditorProps {
     editingField: string | null;
     setEditingSection: (section: string | null) => void;
     setEditingField: (field: string | null) => void;
-    formConfig: unknown;
-    setFormConfig: (config: unknown) => void;
+    formConfig: any;
+    setFormConfig: (config: any) => void;
     handleLocationModeChangeWrapper: (mode: string) => void;
-    handleUpdateField: (key: string, fieldProps: unknown) => void;
+    handleUpdateField: (key: string, fieldProps: any) => void;
     onLoadClick?: () => void;
 }
 

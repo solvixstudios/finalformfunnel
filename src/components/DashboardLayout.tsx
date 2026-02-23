@@ -13,7 +13,7 @@ import {
   FolderOpen,
   Menu,
   Plug,
-  Store,
+  ShoppingCart,
 } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 import { HeaderActionsProvider, useHeaderActions } from '../contexts/HeaderActionsContext';
@@ -88,10 +88,10 @@ const DashboardLayoutContent = ({
       path: '/dashboard/integrations',
     },
     {
-      id: 'stores',
-      label: 'Stores',
-      icon: <Store size={20} />,
-      path: '/dashboard/stores',
+      id: 'orders',
+      label: 'Orders',
+      icon: <ShoppingCart size={20} />,
+      path: '/dashboard/orders',
     },
   ], []);
 

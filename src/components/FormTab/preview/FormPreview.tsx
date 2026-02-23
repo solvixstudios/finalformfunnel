@@ -91,11 +91,11 @@ export const FormPreview = ({ config, offers, shipping }: FormPreviewProps) => {
                 id: 1, // Mock ID
                 title: 'Produit de démonstration', // Mock Title
                 images: [], // Mock Images
-                options: [{ name: 'Option', values: offers.map((o: unknown) => o.title?.fr || o.title || 'Option') }],
-                variants: offers.length > 0 ? offers.map((o: unknown, index: number) => ({
+                options: [{ name: 'Option', values: offers.map((o: any) => o.title?.fr || 'Option') }],
+                variants: offers.length > 0 ? offers.map((o: any, index: number) => ({
                     id: index + 1,
-                    title: o.title?.fr || o.title || `Option ${index + 1}`,
-                    option1: o.title?.fr || o.title || null,
+                    title: o.title?.fr || `Option ${index + 1}`,
+                    option1: o.title?.fr || null,
                     option2: null,
                     option3: null,
                     price: o.price || 0

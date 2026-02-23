@@ -17,8 +17,7 @@ import { AssignmentsProvider } from "./contexts/AssignmentsContext";
 const Landing = lazy(() => import("./pages/Landing"));
 const EditFormPage = lazy(() => import("./pages/EditFormPage"));
 const FormsPage = lazy(() => import("./pages/FormsPage"));
-const IntegrationsPage = lazy(() => import("./pages/IntegrationsPage"));
-const ProductsPage = lazy(() => import("./pages/ProductsPage"));
+const OrdersPage = lazy(() => import("./pages/OrdersPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -146,12 +145,12 @@ const AppContent = () => {
                       />
                       <Route
                         path="integrations"
-                        element={<IntegrationsPage userId={user.id} />}
+                        element={<Navigate to="/dashboard/forms" replace />}
                       />
 
                       <Route
-                        path="stores"
-                        element={<ProductsPage userId={user.id} />}
+                        path="orders"
+                        element={<OrdersPage userId={user.id} />}
                       />
                       <Route path="profile" element={<ProfilePage user={user} />} />
                       <Route path="settings" element={<SettingsPage user={user} />} />

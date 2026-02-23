@@ -39,14 +39,14 @@ export const useRealtimeSavedForms = (
     setLoading(true);
     setError(null);
     try {
-      const q = query(collection(db, "forms"), where("userId", "==", userId));
+      const q = query(collection(db, "users", userId, "forms"));
       const querySnapshot = await getDocs(q);
       const fetchedForms: SavedForm[] = [];
       querySnapshot.forEach((doc) => {
         fetchedForms.push({ id: doc.id, ...doc.data() } as SavedForm);
       });
       setForms(fetchedForms);
-    } catch (err: unknown) {
+    } catch (err: any) {
       setError(err.message || "Failed to fetch forms");
       console.error("Failed to fetch forms:", err);
     } finally {
@@ -62,7 +62,7 @@ export const useRealtimeSavedForms = (
     setError(null);
 
     try {
-      const q = query(collection(db, "forms"), where("userId", "==", userId));
+      const q = query(collection(db, "users", userId, "forms"));
 
       if (onlyInitialLoad) {
         // One-time fetch using getDocs
@@ -108,7 +108,7 @@ export const useRealtimeSavedForms = (
           }
         };
       }
-    } catch (err: unknown) {
+    } catch (err: any) {
       setError(err.message || "Failed to setup forms listener");
       console.error("Failed to setup forms listener:", err);
       setLoading(false);
@@ -138,20 +138,20 @@ export const useRealtimeSavedForms = (
  * @param formId - The form's unique identifier
  * @returns Form data and metadata
  */
-export const useRealtimeForm = (formId: string) => {
+export const useRealtimeForm = (userId: string, formId: string) => {
   const [form, setForm] = useState<SavedForm | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const unsubscribeRef = useRef<Unsubscribe | null>(null);
 
   useEffect(() => {
-    if (!formId) return;
+    if (!formId || !userId) return;
 
     setLoading(true);
     setError(null);
 
     try {
-      const docRef = doc(db, "forms", formId);
+      const docRef = doc(db, "users", userId, "forms", formId);
       const unsubscribe = onSnapshot(
         docRef,
         (docSnapshot) => {
@@ -181,7 +181,7 @@ export const useRealtimeForm = (formId: string) => {
           unsubscribeRef.current();
         }
       };
-    } catch (err: unknown) {
+    } catch (err: any) {
       setError(err.message || "Failed to setup form listener");
       console.error("Failed to setup form listener:", err);
       setLoading(false);

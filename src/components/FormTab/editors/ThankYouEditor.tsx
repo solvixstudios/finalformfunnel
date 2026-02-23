@@ -7,7 +7,7 @@ import {
   Settings,
 } from "lucide-react";
 import { useFormStore } from "../../../stores";
-import { CollapsibleSection } from "../components/CollapsibleSection";
+
 
 export const ThankYouEditor = () => {
   const formConfig = useFormStore((state) => state.formConfig);
@@ -16,11 +16,11 @@ export const ThankYouEditor = () => {
 
     <div className="space-y-4">
       {/* Contenu Principal */}
-      <CollapsibleSection
-        title="Contenu du Message"
-        icon={MessageSquare}
-        defaultOpen={true}
-      >
+      <div className="bg-white border border-slate-200 rounded-xl p-4">
+        <div className="flex items-center gap-2 mb-4">
+          <MessageSquare className="text-slate-400" size={16} />
+          <span className="text-xs font-bold text-slate-700">Contenu du Message</span>
+        </div>
         <div className="space-y-4">
           <div className="space-y-1">
             <label className="text-[9px] font-bold text-slate-400 uppercase">
@@ -155,14 +155,14 @@ export const ThankYouEditor = () => {
             </div>
           </div>
         </div>
-      </CollapsibleSection>
+      </div>
 
       {/* Actions & Boutons */}
-      <CollapsibleSection
-        title="Actions & Boutons"
-        icon={MousePointerClick}
-        defaultOpen={true}
-      >
+      <div className="bg-white border border-slate-200 rounded-xl p-4">
+        <div className="flex items-center gap-2 mb-4">
+          <MousePointerClick className="text-slate-400" size={16} />
+          <span className="text-xs font-bold text-slate-700">Actions & Boutons</span>
+        </div>
         <div className="space-y-4">
           <div className="space-y-1">
             <label className="text-[9px] font-bold text-slate-400 uppercase">
@@ -341,14 +341,14 @@ export const ThankYouEditor = () => {
             </div>
           </div>
         </div>
-      </CollapsibleSection>
+      </div>
 
       {/* Paramètres & Effets */}
-      <CollapsibleSection
-        title="Paramètres & Effets"
-        icon={Settings}
-        defaultOpen={true}
-      >
+      <div className="bg-white border border-slate-200 rounded-xl p-4">
+        <div className="flex items-center gap-2 mb-4">
+          <Settings className="text-slate-400" size={16} />
+          <span className="text-xs font-bold text-slate-700">Paramètres & Effets</span>
+        </div>
         <div className="space-y-4">
           {/* Price Formatting Section */}
           <div>
@@ -432,14 +432,14 @@ export const ThankYouEditor = () => {
                 <p className="text-[9px] text-slate-400">Animation festive au succès</p>
               </div>
               <Switch
-                checked={(formConfig as unknown).thankYou?.enableConfetti !== false}
+                checked={(formConfig.thankYou as any)?.enableConfetti !== false}
                 onCheckedChange={(checked) =>
                   setFormConfig({
                     ...formConfig,
                     thankYou: {
                       ...formConfig.thankYou,
                       enableConfetti: checked,
-                    } as unknown,
+                    } as any,
                   })
                 }
               />
@@ -451,21 +451,21 @@ export const ThankYouEditor = () => {
                 <p className="text-[9px] text-slate-400">Son de confirmation "Ding"</p>
               </div>
               <Switch
-                checked={(formConfig as unknown).thankYou?.enableSound !== false}
+                checked={(formConfig.thankYou as any)?.enableSound !== false}
                 onCheckedChange={(checked) =>
                   setFormConfig({
                     ...formConfig,
                     thankYou: {
                       ...formConfig.thankYou,
                       enableSound: checked,
-                    } as unknown,
+                    } as any,
                   })
                 }
               />
             </div>
           </div>
         </div>
-      </CollapsibleSection>
+      </div>
     </div>
   );
 };

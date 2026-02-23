@@ -12,10 +12,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -10624,
-        1824
+        -4080,
+        608
       ],
-      "id": "5cde461c-a258-43cd-989e-0ab344881578",
+      "id": "510bbd3c-9362-4081-adbd-a814ca5b140c",
       "name": "Receive Order",
       "webhookId": "order-submit-webhook"
     },
@@ -26,10 +26,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -10400,
-        1824
+        -3856,
+        608
       ],
-      "id": "360e4f77-8981-4520-8484-c9fc4763bb10",
+      "id": "c016d79d-a6d7-431d-8844-4c3d8e5883c4",
       "name": "Validate Input"
     },
     {
@@ -58,10 +58,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -10176,
-        1824
+        -3632,
+        608
       ],
-      "id": "8af71ce3-64bb-4f8f-857a-18b98f2d3c25",
+      "id": "18afeae4-4e6e-4557-92ec-8b1c7e19af5d",
       "name": "Is Valid?"
     },
     {
@@ -77,10 +77,10 @@
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        -9304,
-        1824
+        -2768,
+        608
       ],
-      "id": "f8acbd0a-45b8-4fc2-b3a5-e4b6a8771ef3",
+      "id": "cfd11687-f740-4ff3-a902-1dfb8eecc090",
       "name": "Get Stores",
       "alwaysOutputData": true
     },
@@ -91,10 +91,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -9744,
-        1728
+        -3200,
+        512
       ],
-      "id": "7c68b07b-56fd-4e48-a659-5da37825d8b8",
+      "id": "5dda9cee-e489-45c6-967f-2da3a741d1ae",
       "name": "Find Store Credentials"
     },
     {
@@ -123,10 +123,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -9520,
-        1728
+        -2976,
+        512
       ],
-      "id": "ebf92993-1773-4224-a92a-c22f55217974",
+      "id": "74478159-33c6-42c2-a566-11290e79d088",
       "name": "Store Found?"
     },
     {
@@ -155,10 +155,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -9328,
-        1728
+        -2784,
+        512
       ],
-      "id": "f10672eb-dda7-421f-9a73-84399463d0e9",
+      "id": "a80ee2dd-fb8a-4485-8670-9128861f4691",
       "name": "Check Status"
     },
     {
@@ -168,10 +168,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -9120,
-        1648
+        -2576,
+        432
       ],
-      "id": "ef0cb26b-35c9-4167-a5e1-b8254e4704b5",
+      "id": "e8ffdda9-e873-4293-916a-12b0a2e87911",
       "name": "Build Mutation"
     },
     {
@@ -199,10 +199,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        -8928,
-        1648
+        -2384,
+        432
       ],
-      "id": "9a99b322-af16-4718-b21c-9846a8fda338",
+      "id": "7b31152f-fbe8-4e42-b103-17c29306e3db",
       "name": "Shopify API",
       "onError": "continueErrorOutput"
     },
@@ -213,10 +213,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -8720,
-        1648
+        -2176,
+        432
       ],
-      "id": "435f78eb-0348-4df8-b6d2-ae9857ca9811",
+      "id": "5ab801c0-711f-4465-b446-c5fc1529ffc8",
       "name": "Parse Response"
     },
     {
@@ -245,10 +245,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -8528,
-        1648
+        -1984,
+        432
       ],
-      "id": "f73d42c2-55ed-414b-b0d7-660a422c6f98",
+      "id": "19b59f36-ad56-4aee-b746-111d27ddd39a",
       "name": "If Success"
     },
     {
@@ -267,10 +267,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -8320,
-        1648
+        -1776,
+        432
       ],
-      "id": "0f98be9c-bad1-4f60-bb84-58d1724ad47a",
+      "id": "e9085125-c0c5-4e74-90f0-da4b4e60eab9",
       "name": "Respond Success"
     },
     {
@@ -299,10 +299,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -8320,
-        1424
+        -1776,
+        208
       ],
-      "id": "12deee54-b094-4f5e-8b24-df22c69e7240",
+      "id": "a753a2d1-a321-4550-8763-fdc3aa117883",
       "name": "Check Google Sheet"
     },
     {
@@ -317,10 +317,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        -8096,
-        1424
+        -1552,
+        208
       ],
-      "id": "6b5046c4-6f8f-45ff-b7a3-358bf27cb68e",
+      "id": "6393242a-318b-4cda-b81f-3e40c3e4530f",
       "name": "Google Sheet API",
       "onError": "continueErrorOutput"
     },
@@ -343,40 +343,40 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -8528,
-        2016
+        -1984,
+        800
       ],
-      "id": "c456a797-5261-48e8-83fd-2fb6ff2f80bf",
+      "id": "0198101e-1eb6-42a6-a27c-ad69a50c55d3",
       "name": "Respond Error"
     },
     {
       "parameters": {
-        "workflowId": "tQGZLn60N0E_a0OkBkRb_",
+        "workflowId": "dDDCJBvwziV4ESuO",
         "mode": "each",
         "options": {}
       },
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1,
       "position": [
-        -9304,
-        2016
+        -2768,
+        800
       ],
-      "id": "f8211da4-56ce-48c7-a07e-a2881cefd395",
+      "id": "654d918a-0d0b-4a4f-8f9d-97d584fa7275",
       "name": "Trigger CAPI Workflow"
     },
     {
       "parameters": {
-        "workflowId": "iUfbE1mb04UPBL_S1OKDq",
+        "workflowId": "ifF1DXPVAVfrCHHc",
         "mode": "each",
         "options": {}
       },
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1,
       "position": [
-        -9096,
-        2016
+        -2560,
+        800
       ],
-      "id": "4b5882fa-2c90-4182-9db1-32f7f59fed35",
+      "id": "3fa58c24-067d-4b05-8b8f-4e2648c89391",
       "name": "Trigger TikTok CAPI Workflow"
     },
     {
@@ -398,10 +398,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -9952,
-        1824
+        -3408,
+        608
       ],
-      "id": "respond-received-node",
+      "id": "224f0bc5-75b1-4728-8e1b-f56a6dcd2004",
       "name": "Respond Received"
     }
   ],
@@ -432,7 +432,7 @@
       "main": [
         [
           {
-            "node": "Respond Received",
+            "node": "Get Stores",
             "type": "main",
             "index": 0
           }
@@ -570,21 +570,10 @@
           }
         ]
       ]
-    },
-    "Respond Received": {
-      "main": [
-        [
-          {
-            "node": "Get Stores",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
     }
   },
   "pinData": {},
   "meta": {
-    "instanceId": "b55b8c5b490d75637e4db729caf7c75486c3398f3275794ad40beef7f9800920"
+    "instanceId": "5abaacc51fd49f740a51b8d27dfa0de49a1e96c8b5ab7af0a2bc1c5c024948d3"
   }
 }

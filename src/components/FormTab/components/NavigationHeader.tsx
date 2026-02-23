@@ -3,6 +3,56 @@ import { ArrowLeft, ChevronLeft } from 'lucide-react';
 import { SECTION_LABELS } from '../../../lib/constants';
 import { useI18n } from '../../../lib/i18n/i18nContext';
 
+/**
+ * Sections that are opened directly from the Main Menu.
+ * Back button → null (main menu).
+ */
+const MENU_LEVEL_SECTIONS = new Set([
+    'global_design',
+    'sections_list',
+    'thank_you',
+    'packs_manager',
+    'shipping_manager',
+    'promo_code_manager',
+    'whatsapp',
+    'google_sheets',
+    'meta_pixel',
+    'tiktok_pixel',
+    'shopify',
+]);
+
+/**
+ * Known editor titles that don't come from SECTION_LABELS or need a custom label.
+ * This is the ONLY place you need to add a title for a new editor.
+ */
+const EDITOR_TITLES: Record<string, string> = {
+    global_design: 'Design Global',
+    sections_list: 'Sections du Formulaire',
+    thank_you: 'Page de Remerciement',
+    packs_manager: 'Packs & Offres',
+    shipping_manager: 'Tarifs de Livraison',
+    promo_code_manager: 'Codes Promo',
+    whatsapp: 'WhatsApp',
+    google_sheets: 'Google Sheets',
+    meta_pixel: 'Meta Pixel',
+    tiktok_pixel: 'TikTok Pixel',
+    shopify: 'Shopify',
+    urgencyText: 'Urgence — Texte',
+    urgencyQuantity: 'Urgence — Stock',
+    urgencyTimer: 'Urgence — Timer',
+};
+
+/**
+ * Auto-format a section key into a human-readable title.
+ * Handles camelCase, snake_case, and PascalCase.
+ */
+const formatSectionKey = (key: string): string =>
+    key
+        .replace(/([A-Z])/g, ' $1')   // camelCase → "camel Case"
+        .replace(/_/g, ' ')            // snake_case → "snake case"
+        .replace(/^./, s => s.toUpperCase())
+        .trim();
+
 interface NavigationHeaderProps {
     editingSection: string | null;
     editingField: string | null;
@@ -18,22 +68,22 @@ export const NavigationHeader = ({
 }: NavigationHeaderProps) => {
     const { t } = useI18n();
 
+    /** Resolve a title for any section key, generically. */
     const getSectionTitle = (section: string): string => {
-        switch (section) {
-            case 'global_design':
-                return 'Design Global';
-            case 'sections_list':
-                return 'Sections du Formulaire';
-            case 'thank_you':
-                return 'Page de Remerciement';
-            case 'packs_manager':
-                return t('editor.managePacksTitle');
-            case 'shipping_manager':
-                return t('editor.shippingRates');
-            case 'header':
-                return t('editor.headerTitle');
-            default:
-                return `Editer: ${SECTION_LABELS[section]?.fr || 'Section'}`;
+        // 1. Explicit editor title
+        if (EDITOR_TITLES[section]) return EDITOR_TITLES[section];
+        // 2. From i18n-aware constants
+        if (SECTION_LABELS[section]?.fr) return SECTION_LABELS[section].fr;
+        // 3. Auto-format fallback
+        return formatSectionKey(section);
+    };
+
+    /** Navigate back: menu-level → main menu, everything else → sections_list */
+    const handleBack = () => {
+        if (MENU_LEVEL_SECTIONS.has(editingSection!)) {
+            setEditingSection(null);
+        } else {
+            setEditingSection('sections_list');
         }
     };
 
@@ -55,13 +105,7 @@ export const NavigationHeader = ({
                     ) : (
                         <>
                             <button
-                                onClick={() => {
-                                    if (['sections_list', 'global_design', 'thank_you', 'packs_manager', 'shipping_manager'].includes(editingSection!)) {
-                                        setEditingSection(null);
-                                    } else {
-                                        setEditingSection('sections_list');
-                                    }
-                                }}
+                                onClick={handleBack}
                                 className="p-2 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-slate-600 transition-all active:scale-95"
                                 aria-label="Back"
                             >

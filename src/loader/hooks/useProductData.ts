@@ -33,11 +33,11 @@ export function useProductData(product: Product, onVariantChange?: (variantName:
             });
         });
 
-        if (match) {
+        if (match && match.id !== selectedVariantId) {
             setSelectedVariantId(match.id);
             if (onVariantChange) onVariantChange(match.title);
         }
-    }, [selectedOptions, product, onVariantChange]);
+    }, [selectedOptions, product, onVariantChange, selectedVariantId]);
 
     const getProductPrice = useCallback(() => {
         if (!product) return 2500;

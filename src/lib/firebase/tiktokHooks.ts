@@ -24,7 +24,7 @@ export const useTikTokPixels = (userId: string) => {
         setLoading(true);
 
         const q = query(
-            collection(db, "tiktok_pixels"),
+            collection(db, "users", userId, "tiktok_pixels"),
             where("userId", "==", userId),
         );
 
@@ -82,7 +82,7 @@ export const useTikTokPixels = (userId: string) => {
                     updatedAt: new Date().toISOString(),
                 };
 
-                const docRef = doc(collection(db, "tiktok_pixels"));
+                const docRef = doc(collection(db, "users", userId, "tiktok_pixels"));
                 batch.set(docRef, newPixel);
 
                 await batch.commit();
@@ -105,7 +105,7 @@ export const useTikTokPixels = (userId: string) => {
 
             try {
                 const batch = writeBatch(db);
-                const pixelRef = doc(db, "tiktok_pixels", pixelId);
+                const pixelRef = doc(db, "users", userId, "tiktok_pixels", pixelId);
 
                 batch.update(pixelRef, {
                     ...updates,
@@ -125,7 +125,7 @@ export const useTikTokPixels = (userId: string) => {
         async (pixelId: string) => {
             if (!userId) throw new Error("User not authenticated");
             try {
-                await deleteDoc(doc(db, "tiktok_pixels", pixelId));
+                await deleteDoc(doc(db, "users", userId, "tiktok_pixels", pixelId));
             } catch (err: unknown) {
                 setError(err.message);
                 throw err;

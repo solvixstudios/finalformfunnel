@@ -25,7 +25,7 @@ export const useWhatsAppProfiles = (userId: string) => {
     setLoading(true);
 
     const q = query(
-      collection(db, "whatsapp_profiles"),
+      collection(db, "users", userId, "whatsapp_profiles"),
       where("userId", "==", userId),
     );
 
@@ -69,7 +69,7 @@ export const useWhatsAppProfiles = (userId: string) => {
         if (profileData.isDefault) {
           const existingDefaults = profiles.filter((p) => p.isDefault);
           existingDefaults.forEach((p) => {
-            const ref = doc(db, "whatsapp_profiles", p.id);
+            const ref = doc(db, "users", userId, "whatsapp_profiles", p.id);
             batch.update(ref, {
               isDefault: false,
               updatedAt: new Date().toISOString(),
@@ -89,7 +89,7 @@ export const useWhatsAppProfiles = (userId: string) => {
           updatedAt: new Date().toISOString(),
         };
 
-        const docRef = doc(collection(db, "whatsapp_profiles"));
+        const docRef = doc(collection(db, "users", userId, "whatsapp_profiles"));
         batch.set(docRef, newProfile);
 
         await batch.commit();
@@ -114,7 +114,7 @@ export const useWhatsAppProfiles = (userId: string) => {
             (p) => p.isDefault && p.id !== profileId,
           );
           existingDefaults.forEach((p) => {
-            const ref = doc(db, "whatsapp_profiles", p.id);
+            const ref = doc(db, "users", userId, "whatsapp_profiles", p.id);
             batch.update(ref, {
               isDefault: false,
               updatedAt: new Date().toISOString(),
@@ -122,7 +122,7 @@ export const useWhatsAppProfiles = (userId: string) => {
           });
         }
 
-        const profileRef = doc(db, "whatsapp_profiles", profileId);
+        const profileRef = doc(db, "users", userId, "whatsapp_profiles", profileId);
         batch.update(profileRef, {
           ...updates,
           updatedAt: new Date().toISOString(),
@@ -151,7 +151,7 @@ export const useWhatsAppProfiles = (userId: string) => {
         // We'll rely on the caller to check safety or just allow it and show warning that forms will break.
         // The plan said "Implement isProfileAssigned check".
 
-        await deleteDoc(doc(db, "whatsapp_profiles", profileId));
+        await deleteDoc(doc(db, "users", userId, "whatsapp_profiles", profileId));
       } catch (err: unknown) {
         setError(err.message);
         throw err;
@@ -168,7 +168,7 @@ export const useWhatsAppProfiles = (userId: string) => {
 
       // Check new single-select addon field
       const singleQuery = query(
-        collection(db, "forms"),
+        collection(db, "users", userId, "forms"),
         where("config.addons.selectedWhatsappProfileId", "==", profileId),
       );
       const singleSnapshot = await getDocs(singleQuery);
@@ -176,7 +176,7 @@ export const useWhatsAppProfiles = (userId: string) => {
 
       // Check legacy multi-select addons field (for backward compat)
       const addonsQuery = query(
-        collection(db, "forms"),
+        collection(db, "users", userId, "forms"),
         where("config.addons.selectedWhatsappProfileIds", "array-contains", profileId),
       );
       const addonsSnapshot = await getDocs(addonsQuery);
@@ -184,7 +184,7 @@ export const useWhatsAppProfiles = (userId: string) => {
 
       // Fallback: check legacy single-select field
       const legacyQuery = query(
-        collection(db, "forms"),
+        collection(db, "users", userId, "forms"),
         where("config.thankYou.selectedWhatsappProfileId", "==", profileId),
       );
       const legacySnapshot = await getDocs(legacyQuery);

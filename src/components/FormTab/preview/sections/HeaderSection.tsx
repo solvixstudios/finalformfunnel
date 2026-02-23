@@ -99,7 +99,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
                     style={{
                         backgroundColor: config.stickers.product.color || '#ef4444',
                         color: textColor,
-                        ["--tw-ring-color" as unknown]: config.formBackground || '#ffffff'
+                        ["--tw-ring-color" as any]: config.formBackground || '#ffffff'
                     }}
                 >
                     <span className="relative z-10">{config.stickers.product.text?.[lang] || config.stickers.product.text?.fr || 'Best'}</span>
@@ -125,9 +125,9 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
                     <span className="text-sm font-black block" style={{ color: config.accentColor }}>
                         {formatCurrency(basePrice)}
                     </span>
-                    {(config as unknown).header?.priceInLetters?.enabled && (
+                    {(config as any).header?.priceInLetters?.enabled && (
                         <span className="text-[10px] font-medium italic opacity-70 -mt-0.5 capitalize" style={{ color: config.textColor || '#64748b' }}>
-                            {priceToLetters(basePrice, lang, (config as unknown).header.priceInLetters.mode)}
+                            {priceToLetters(basePrice, lang, (config as any).header.priceInLetters.mode)}
                         </span>
                     )}
                 </div>
@@ -136,14 +136,15 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
     );
 
     // Common header wrapper styles (Enhanced)
-    const headerBaseStyles = buildHeaderStyles(config as unknown, headerStyle);
+    const headerBaseStyles = buildHeaderStyles(config as any, headerStyle);
 
     // Language Switcher Helper (Inline)
-    const LangSwitcher = ({ isBanner = false }) => {
+    const renderLangSwitcher = (isBanner = false) => {
         if (config.header?.showLanguageSwitcher === false) return null;
         return (
             <button
-                onClick={onLanguageToggle}
+                type="button"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onLanguageToggle(); }}
                 className={`w-9 h-9 text-[11px] font-black border-2 transition-all flex items-center justify-center hover:opacity-80 shadow-sm shrink-0 ${isBanner ? 'rounded-lg border-white/30 text-white/90 hover:bg-white/10' : 'rounded-lg'
                     }`}
                 style={!isBanner ? {
@@ -168,7 +169,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
                     {productImage}
                     {productInfo}
                 </div>
-                <LangSwitcher />
+                {renderLangSwitcher(false)}
                 {renderBadge()}
             </div>
         );
@@ -179,7 +180,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
         return (
             <div className="relative z-20 p-6 border-b shadow-sm" style={headerBaseStyles}>
                 <div className="absolute top-4 right-4 z-30">
-                    <LangSwitcher />
+                    {renderLangSwitcher(false)}
                 </div>
                 <div className="flex flex-col items-center text-center gap-3 px-8">
                     {productImage}
@@ -197,9 +198,9 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
                                 <span className="text-sm font-black" style={{ color: config.accentColor }}>
                                     {formatCurrency(basePrice)}
                                 </span>
-                                {(config as unknown).header?.priceInLetters?.enabled && (
+                                {(config as any).header?.priceInLetters?.enabled && (
                                     <span className="text-[10px] font-medium italic opacity-70 -mt-0.5 capitalize" style={{ color: config.textColor || '#64748b' }}>
-                                        {priceToLetters(basePrice, lang, (config as unknown).header.priceInLetters.mode)}
+                                        {priceToLetters(basePrice, lang, (config as any).header.priceInLetters.mode)}
                                     </span>
                                 )}
                             </div>
@@ -235,11 +236,11 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
                                 {formatCurrency(basePrice)}
                             </span>
                         )}
-                        <LangSwitcher />
+                        {renderLangSwitcher(false)}
                     </div>
-                    {config.header?.showProductPrice !== false && (config as unknown).header?.priceInLetters?.enabled && (
+                    {config.header?.showProductPrice !== false && (config as any).header?.priceInLetters?.enabled && (
                         <span className="text-[10px] font-medium italic opacity-70 mr-12 capitalize" style={{ color: config.textColor || '#64748b' }}>
-                            {priceToLetters(basePrice, lang, (config as unknown).header.priceInLetters.mode)}
+                            {priceToLetters(basePrice, lang, (config as any).header.priceInLetters.mode)}
                         </span>
                     )}
                 </div>
@@ -260,7 +261,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
                 }}
             >
                 <div className="absolute top-4 right-4 z-30">
-                    <LangSwitcher isBanner={true} />
+                    {renderLangSwitcher(true)}
                 </div>
 
                 <div className="flex items-center gap-4 pr-10">
@@ -323,7 +324,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
                             {formatCurrency(basePrice)}
                         </span>
                     )}
-                    <LangSwitcher />
+                    {renderLangSwitcher(false)}
                 </div>
                 {renderBadge()}
             </div>
@@ -335,7 +336,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
         return (
             <div className="relative w-full h-0 z-[60] pointer-events-none">
                 <div className="absolute top-4 right-4 z-[60] pointer-events-auto">
-                    <LangSwitcher />
+                    {renderLangSwitcher(false)}
                 </div>
             </div>
         );
@@ -351,7 +352,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
                 {productImage}
                 {productInfo}
             </div>
-            <LangSwitcher />
+            {renderLangSwitcher(false)}
             {renderBadge()}
         </div>
     );

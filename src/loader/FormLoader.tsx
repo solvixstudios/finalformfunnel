@@ -141,6 +141,20 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
         }
     }, [offers, formData.offerId]);
 
+    // Dynamically inject Google Font for typography
+    useEffect(() => {
+        const fontName = config.fontFamily?.[lang] || (lang === 'fr' ? 'Inter' : 'Cairo');
+        const fontId = `ff-font-${fontName.toLowerCase().replace(/\s+/g, '-')}`;
+
+        if (!document.getElementById(fontId)) {
+            const link = document.createElement('link');
+            link.id = fontId;
+            link.rel = 'stylesheet';
+            link.href = `https://fonts.googleapis.com/css2?family=${fontName.replace(/\s+/g, '+')}:wght@400;500;600;700;800;900&display=swap`;
+            document.head.appendChild(link);
+        }
+    }, [config.fontFamily, lang]);
+
 
 
     // --- HELPERS ---
@@ -361,7 +375,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                     return headerContent;
                 })()}
 
-                <div className="p-5">
+                <div className="p-6 sm:p-7">
                     {(config.sectionOrder || []).map((sectionId: string, index: number) => {
                         // Variants
                         if (sectionId === 'variants') {

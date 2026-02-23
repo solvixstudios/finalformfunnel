@@ -4,9 +4,8 @@ import { motion } from 'framer-motion';
 import {
     FolderOpen,
     LogOut,
-    Plug,
     Settings,
-    Store,
+    ShoppingCart,
     User,
     Zap
 } from 'lucide-react';
@@ -47,16 +46,10 @@ const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
             path: '/dashboard/forms',
         },
         {
-            id: 'integrations',
-            label: 'Integrations',
-            icon: <Plug size={20} />,
-            path: '/dashboard/integrations',
-        },
-        {
-            id: 'stores',
-            label: 'Stores',
-            icon: <Store size={20} />,
-            path: '/dashboard/stores',
+            id: 'orders',
+            label: 'Orders',
+            icon: <ShoppingCart size={20} />,
+            path: '/dashboard/orders',
         },
     ], []);
 
