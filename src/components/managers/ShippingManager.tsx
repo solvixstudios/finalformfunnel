@@ -29,6 +29,10 @@ export interface ShippingConfig {
         desk: number;
     };
     exceptions: ShippingException[];
+    freeShipping?: {
+        enabled: boolean;
+        threshold: number;
+    };
 }
 
 interface ShippingManagerProps {

@@ -59,7 +59,7 @@ export interface Product {
 
 import type { Offer } from '../types/offers';
 import type { FormShipping } from '../types/form';
-export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, previewMode = false }: { config: FormConfig, product: Product, offers: Offer[], shipping: FormShipping, sectionWrapper?: (props: { sectionId: string, children: React.ReactNode, style?: React.CSSProperties, elementRef?: React.RefObject<HTMLDivElement> }) => React.ReactNode, previewMode?: boolean }) => {
+export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, previewMode = false, forceShowThankYou = false }: { config: FormConfig, product: Product, offers: Offer[], shipping: FormShipping, sectionWrapper?: (props: { sectionId: string, children: React.ReactNode, style?: React.CSSProperties, elementRef?: React.RefObject<HTMLDivElement> }) => React.ReactNode, previewMode?: boolean, forceShowThankYou?: boolean }) => {
     // --- STATE ---
     const [lang, setLang] = useState<'fr' | 'ar'>(config.header?.defaultLanguage || 'fr');
 
@@ -308,7 +308,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                 }
             `}</style>
 
-            {showThankYou && (
+            {(showThankYou || forceShowThankYou) && (
                 <ThankYouPopup
                     config={config}
                     lang={lang}

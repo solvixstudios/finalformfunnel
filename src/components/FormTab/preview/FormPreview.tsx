@@ -11,6 +11,7 @@ import { PreviewSectionWrapper } from './components/PreviewSectionWrapper';
 
 export const FormPreview = ({ config, offers, shipping }: FormPreviewProps) => {
     const setEditingSection = useFormStore((state) => state.setEditingSection);
+    const editingSection = useFormStore((state) => state.editingSection);
 
     const getActions = (sectionId: string) => {
         switch (sectionId) {
@@ -52,7 +53,7 @@ export const FormPreview = ({ config, offers, shipping }: FormPreviewProps) => {
         }
     };
 
-    const sectionWrapper = ({ sectionId, children, style, elementRef }: unknown) => {
+    const sectionWrapper = ({ sectionId, children, style, elementRef }: { sectionId: string, children: React.ReactNode, style?: React.CSSProperties, elementRef?: React.RefObject<HTMLDivElement> }) => {
         return (
             <PreviewSectionWrapper
                 sectionId={sectionId}
@@ -83,16 +84,16 @@ export const FormPreview = ({ config, offers, shipping }: FormPreviewProps) => {
 
     return (
         <FormLoader
-            config={config}
-            offers={offers}
-            shipping={shipping}
+            config={config as any}
+            offers={offers as any}
+            shipping={shipping as any}
             // Mock product based on first offer or whatever FormLoader needs
             product={{
                 id: 1, // Mock ID
                 title: 'Produit de démonstration', // Mock Title
                 images: [], // Mock Images
-                options: [{ name: 'Option', values: offers.map((o: any) => o.title?.fr || 'Option') }],
-                variants: offers.length > 0 ? offers.map((o: any, index: number) => ({
+                options: [{ name: 'Option', values: Array.isArray(offers) ? offers.map((o: any) => o.title?.fr || 'Option') : [] }],
+                variants: Array.isArray(offers) && offers.length > 0 ? offers.map((o: any, index: number) => ({
                     id: index + 1,
                     title: o.title?.fr || `Option ${index + 1}`,
                     option1: o.title?.fr || null,
@@ -103,6 +104,7 @@ export const FormPreview = ({ config, offers, shipping }: FormPreviewProps) => {
             }}
             sectionWrapper={sectionWrapper}
             previewMode={true}
+            forceShowThankYou={editingSection === 'thank_you'}
         />
     );
 };

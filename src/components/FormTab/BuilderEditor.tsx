@@ -1,8 +1,8 @@
 
 import { MainMenu } from './editors/MainMenu';
-import PacksManager from '../managers/PacksManager';
-import PromoCodeManager from '../managers/PromoCodeManager';
-import ShippingManager from '../managers/ShippingManager';
+import { PacksSelector } from './editors/PacksSelector';
+import { PromoCodeSelector } from './editors/PromoCodeSelector';
+import { ShippingSelector } from './editors/ShippingSelector';
 
 import { WhatsAppEditor } from './editors/WhatsAppEditor';
 import { GoogleSheetsEditor } from './editors/GoogleSheetsEditor';
@@ -71,14 +71,11 @@ const EditorContent = ({
     onLoadClick
 }: any) => {
 
-    // 1. Managers (Complex State Handlers)
+    // 1. Managers (Global Rules Selectors)
     if (editingSection === 'packs_manager') {
         return (
             <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                <PacksManager
-                    offers={formConfig.offers || []}
-                    onOffersChange={(newOffers: unknown) => setFormConfig({ ...formConfig, offers: newOffers })}
-                />
+                <PacksSelector formConfig={formConfig} setFormConfig={setFormConfig} />
             </div>
         );
     }
@@ -86,19 +83,7 @@ const EditorContent = ({
     if (editingSection === 'shipping_manager') {
         return (
             <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                <ShippingManager
-                    shipping={formConfig.shipping || { standard: { home: 600, desk: 400 }, exceptions: [] }}
-                    onShippingChange={(newShipping: unknown) => setFormConfig({ ...formConfig, shipping: newShipping })}
-                    enableHomeDelivery={formConfig.enableHomeDelivery !== false}
-                    enableDeskDelivery={formConfig.enableDeskDelivery !== false}
-                    onDeliveryTypeChange={(type: string, enabled: boolean) => {
-                        if (type === 'home') {
-                            setFormConfig({ ...formConfig, enableHomeDelivery: enabled });
-                        } else {
-                            setFormConfig({ ...formConfig, enableDeskDelivery: enabled });
-                        }
-                    }}
-                />
+                <ShippingSelector formConfig={formConfig} setFormConfig={setFormConfig} />
             </div>
         );
     }
@@ -106,32 +91,7 @@ const EditorContent = ({
     if (editingSection === 'promo_code_manager') {
         return (
             <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                <PromoCodeManager
-                    codes={formConfig.promoCode?.codes || []}
-                    onCodesChange={(newCodes: unknown) => setFormConfig({
-                        ...formConfig,
-                        promoCode: {
-                            ...formConfig.promoCode,
-                            codes: newCodes,
-                        }
-                    })}
-                    enabled={formConfig.promoCode?.enabled || false}
-                    required={formConfig.promoCode?.required || false}
-                    onEnabledChange={(enabled: boolean) => setFormConfig({
-                        ...formConfig,
-                        promoCode: {
-                            ...formConfig.promoCode,
-                            enabled,
-                        }
-                    })}
-                    onRequiredChange={(required: boolean) => setFormConfig({
-                        ...formConfig,
-                        promoCode: {
-                            ...formConfig.promoCode,
-                            required,
-                        }
-                    })}
-                />
+                <PromoCodeSelector formConfig={formConfig} setFormConfig={setFormConfig} />
             </div>
         );
     }

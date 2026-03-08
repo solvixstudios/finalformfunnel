@@ -282,6 +282,14 @@ export interface FormConfig {
   // Included relational data
   offers?: Record<string, unknown>[];
   shipping?: FormShipping;
+  offerRuleId?: string | null;
+  shippingRuleId?: string | null;
+  couponRuleId?: string | null;
+  // Legacy fields (kept for backwards compatibility during migration)
+  selectedGlobalOffers?: string[];
+  selectedGlobalCoupons?: string[];
+  _offersInitialized?: boolean;
+  _couponsInitialized?: boolean;
 }
 
 // Runtime Form State

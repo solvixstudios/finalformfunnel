@@ -16,7 +16,7 @@ import {
 import React, { useState } from 'react';
 import { CollapsibleSection } from '../FormTab/components/CollapsibleSection';
 
-interface PromoCode {
+export interface PromoCode {
     id: string;
     code: string;
     applyTo: 'subtotal' | 'shipping' | 'total';
@@ -37,6 +37,9 @@ interface PromoCodeManagerProps {
     required: boolean;
     onEnabledChange: (enabled: boolean) => void;
     onRequiredChange: (required: boolean) => void;
+    /** When true, hides the "Paramètres Généraux" section (enabled/required toggles).
+     *  Used in Rules pages where these settings belong in the builder. */
+    hideSettings?: boolean;
 }
 
 const APPLY_TO_OPTIONS = [
@@ -58,6 +61,7 @@ const PromoCodeManager: React.FC<PromoCodeManagerProps> = ({
     required,
     onEnabledChange,
     onRequiredChange,
+    hideSettings = false,
 }) => {
     const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -123,39 +127,41 @@ const PromoCodeManager: React.FC<PromoCodeManagerProps> = ({
                 </button>
             </div>
 
-            {/* General Settings */}
-            <CollapsibleSection title="Paramètres Généraux" icon={Settings} defaultOpen={true}>
-                <div className="space-y-3">
-                    <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <span className="text-xs font-bold text-slate-700 block">Activer le champ code promo</span>
-                                <span className="text-[10px] text-slate-400">Affiche le champ dans le formulaire</span>
-                            </div>
-                            <button
-                                onClick={() => onEnabledChange(!enabled)}
-                                className={`w-12 h-6 rounded-full relative transition-colors ${enabled ? 'bg-violet-600' : 'bg-slate-200'}`}
-                            >
-                                <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform shadow ${enabled ? 'translate-x-6' : ''}`} />
-                            </button>
-                        </div>
-                        {enabled && (
-                            <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+            {/* General Settings — hidden in Rules context */}
+            {!hideSettings && (
+                <CollapsibleSection title="Paramètres Généraux" icon={Settings} defaultOpen={true}>
+                    <div className="space-y-3">
+                        <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3">
+                            <div className="flex items-center justify-between">
                                 <div>
-                                    <span className="text-xs font-bold text-slate-700 block">Champ obligatoire</span>
-                                    <span className="text-[10px] text-slate-400">Le client doit entrer un code</span>
+                                    <span className="text-xs font-bold text-slate-700 block">Activer le champ code promo</span>
+                                    <span className="text-[10px] text-slate-400">Affiche le champ dans le formulaire</span>
                                 </div>
                                 <button
-                                    onClick={() => onRequiredChange(!required)}
-                                    className={`w-12 h-6 rounded-full relative transition-colors ${required ? 'bg-amber-500' : 'bg-slate-200'}`}
+                                    onClick={() => onEnabledChange(!enabled)}
+                                    className={`w-12 h-6 rounded-full relative transition-colors ${enabled ? 'bg-violet-600' : 'bg-slate-200'}`}
                                 >
-                                    <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform shadow ${required ? 'translate-x-6' : ''}`} />
+                                    <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform shadow ${enabled ? 'translate-x-6' : ''}`} />
                                 </button>
                             </div>
-                        )}
+                            {enabled && (
+                                <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                                    <div>
+                                        <span className="text-xs font-bold text-slate-700 block">Champ obligatoire</span>
+                                        <span className="text-[10px] text-slate-400">Le client doit entrer un code</span>
+                                    </div>
+                                    <button
+                                        onClick={() => onRequiredChange(!required)}
+                                        className={`w-12 h-6 rounded-full relative transition-colors ${required ? 'bg-amber-500' : 'bg-slate-200'}`}
+                                    >
+                                        <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform shadow ${required ? 'translate-x-6' : ''}`} />
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     </div>
-                </div>
-            </CollapsibleSection>
+                </CollapsibleSection>
+            )}
 
             {/* Codes List */}
             <CollapsibleSection

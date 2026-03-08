@@ -61,6 +61,19 @@ service cloud.firestore {
       match /tiktok_pixels/{pixelId} {
         allow read, write: if isOwner(userId);
       }
+
+      // Rule Profiles (Offers, Shipping, Coupons)
+      match /offerRules/{ruleId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /shippingRules/{ruleId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /couponRules/{ruleId} {
+        allow read, write: if isOwner(userId);
+      }
     }
     
     // Support for collectionGroup queries used in the loader
