@@ -102,19 +102,19 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
                                                         <span className="truncate max-w-[150px] sm:max-w-[300px]">{crumb.label}</span>
                                                     </BreadcrumbLink>
                                                 ) : crumb.editable && crumb.onEdit ? (
-                                                    <BreadcrumbPage className={cn("flex items-center gap-2", isLast && "font-semibold text-slate-900")}>
+                                                    <BreadcrumbPage className={cn("flex items-center gap-2", isLast && "font-bold tracking-tight text-slate-900")}>
                                                         {showIcon && <Icon size={16} className="text-slate-500" />}
                                                         <EditableText
                                                             value={typeof crumb.label === 'string' ? crumb.label : ''}
                                                             onChange={crumb.onEdit}
                                                             onBlur={crumb.onBlur}
                                                             doubleClickToEdit={crumb.doubleClickToEdit}
-                                                            className={cn(isLast && "font-semibold text-slate-900")}
+                                                            className={cn(isLast && "font-black tracking-tight text-slate-900")}
                                                         />
                                                     </BreadcrumbPage>
                                                 ) : (
-                                                    <BreadcrumbPage className={cn("flex items-center gap-2", isLast && "font-semibold text-slate-900")}>
-                                                        {showIcon && <Icon size={16} className="text-slate-500" />}
+                                                    <BreadcrumbPage className={cn("flex items-center gap-2", isLast && "font-black tracking-tight text-slate-900")}>
+                                                        {showIcon && <Icon size={18} className="text-slate-700" />}
                                                         <span className="truncate max-w-[150px] sm:max-w-[300px]">{crumb.label}</span>
                                                         {isSingleBreadcrumb && count !== undefined && (
                                                             <span className="ml-1 inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200 min-w-[20px]">

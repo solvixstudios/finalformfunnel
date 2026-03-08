@@ -29,9 +29,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
     if (!isOpen) return null;
 
     const isActive = (path: string) => {
-        if (path === '/dashboard/forms') {
-            return currentPage.startsWith('/dashboard/forms');
-        }
+        if (path === '/dashboard/forms') return currentPage.startsWith('/dashboard/forms');
         return currentPage === path;
     };
 
@@ -42,41 +40,38 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
 
     return (
         <div className="fixed inset-0 z-50 lg:hidden">
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
-            <div className="absolute inset-y-0 left-0 w-72 bg-[#0F172A] text-white p-5 shadow-2xl flex flex-col animate-scale-in">
-                <div className="flex justify-between items-center mb-6 pb-4 border-b border-white/10">
-                    <div className="font-bold text-lg tracking-tight">Final Form</div>
-                    <button onClick={onClose} className="p-2.5 bg-white/10 rounded-xl hover:bg-white/20 transition-colors">
+            <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={onClose} />
+            <div className="absolute inset-y-0 left-0 w-64 bg-white p-4 shadow-xl flex flex-col animate-scale-in">
+                <div className="flex justify-between items-center mb-6 pb-3 border-b border-slate-100">
+                    <span className="font-bold text-sm text-slate-900">Final Form</span>
+                    <button onClick={onClose} className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors">
                         <X size={18} />
                     </button>
                 </div>
-                <div className="space-y-1.5">
+                <div className="space-y-0.5 flex-1">
                     {navItems.map(item => (
                         <button
                             key={item.id}
                             onClick={() => handleNavClick(item.path)}
                             className={cn(
-                                "w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all",
+                                "w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-colors relative",
                                 isActive(item.path)
-                                    ? "bg-white/10 text-white"
-                                    : "text-slate-400 hover:bg-white/[0.06] hover:text-white"
+                                    ? "bg-slate-100 text-slate-900 font-semibold"
+                                    : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
                             )}
                         >
-                            <span className={cn(
-                                "shrink-0",
-                                isActive(item.path) && "text-orange-400"
-                            )}>
+                            {isActive(item.path) && (
+                                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-4 bg-slate-900 rounded-r" />
+                            )}
+                            <span className={cn("shrink-0", isActive(item.path) && "text-slate-900")}>
                                 {item.icon}
                             </span>
-                            <span className="text-sm font-medium">{item.label}</span>
-                            {isActive(item.path) && (
-                                <div className="ml-auto w-1 h-1 bg-orange-400 rounded-full" />
-                            )}
+                            {item.label}
                         </button>
                     ))}
                 </div>
-                <div className="mt-auto pt-6 border-t border-white/10">
-                    <button onClick={onLogout} className="flex items-center gap-3 text-red-400 font-medium text-sm px-4 py-3.5 hover:bg-red-500/10 rounded-xl w-full transition-colors">
+                <div className="pt-3 border-t border-slate-100">
+                    <button onClick={onLogout} className="flex items-center gap-2.5 text-slate-500 font-medium text-[13px] px-3 py-2.5 hover:text-red-500 hover:bg-red-50 rounded-lg w-full transition-colors">
                         <LogOut size={18} /> Sign Out
                     </button>
                 </div>

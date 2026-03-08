@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { HoverSpotlightCard } from '@/components/ui/HoverSpotlightCard';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -21,6 +21,8 @@ import { toast } from 'sonner';
 import { WhatsAppProfile } from '../../lib/firebase/types';
 import { useWhatsAppProfiles } from '../../lib/firebase/whatsappHooks';
 import { useFormStore } from '../../stores';
+// @ts-ignore
+import feedData from '../../../feed.json';
 
 // ... Main Component ...
 
@@ -44,7 +46,7 @@ export function WhatsAppIntegration({ userId, hideTrigger }: WhatsAppIntegration
     const [view, setView] = useState<'list' | 'edit'>('list');
 
     const [editingWaProfile, setEditingWaProfile] = useState<WhatsAppProfile | null>(null);
-    const [waForm, setWaForm] = useState({ name: '', phoneNumber: '+213', isDefault: false });
+    const [waForm, setWaForm] = useState({ name: feedData.whatsapp.name || '', phoneNumber: '+' + feedData.whatsapp.phone || '+213', isDefault: false });
 
     const [searchParams, setSearchParams] = useSearchParams();
     const formConfig = useFormStore(state => state.formConfig);
@@ -89,7 +91,7 @@ export function WhatsAppIntegration({ userId, hideTrigger }: WhatsAppIntegration
             setAddTab('setup');
             setView('list');
             setEditingWaProfile(null);
-            setWaForm({ name: '', phoneNumber: '+213', isDefault: false });
+            setWaForm({ name: feedData.whatsapp.name || '', phoneNumber: '+' + feedData.whatsapp.phone || '+213', isDefault: false });
 
             // Clean up URL parameters so it re-opens correctly next time
             const params = new URLSearchParams(searchParams);
@@ -104,7 +106,7 @@ export function WhatsAppIntegration({ userId, hideTrigger }: WhatsAppIntegration
 
     const startAddProfile = () => {
         setEditingWaProfile(null);
-        setWaForm({ name: '', phoneNumber: '+213', isDefault: waProfiles.length === 0 });
+        setWaForm({ name: feedData.whatsapp.name || '', phoneNumber: '+' + feedData.whatsapp.phone || '+213', isDefault: waProfiles.length === 0 });
     };
 
     const startEditProfile = (profile: WhatsAppProfile) => {
@@ -116,7 +118,7 @@ export function WhatsAppIntegration({ userId, hideTrigger }: WhatsAppIntegration
     const handleCancel = () => {
         setView('list');
         setEditingWaProfile(null);
-        setWaForm({ name: '', phoneNumber: '+213', isDefault: false });
+        setWaForm({ name: feedData.whatsapp.name || '', phoneNumber: '+' + feedData.whatsapp.phone || '+213', isDefault: false });
     };
 
     const handleSaveWaProfile = async () => {
@@ -173,7 +175,7 @@ export function WhatsAppIntegration({ userId, hideTrigger }: WhatsAppIntegration
             <Sheet open={openSheet} onOpenChange={handleOpenChange}>
                 {!hideTrigger && (
                     <SheetTrigger asChild>
-                        <Card className="bg-white border border-slate-200 shadow-sm rounded-2xl sm:rounded-3xl overflow-hidden hover:ring-2 hover:ring-green-100 hover:shadow-xl transition-all duration-300 group relative h-full flex flex-col p-4 sm:p-6 min-h-[140px] sm:min-h-[180px] cursor-pointer active:scale-[0.99]">
+                        <HoverSpotlightCard spotlightColor="rgba(34, 197, 94, 0.15)" className="rounded-2xl sm:rounded-3xl hover:ring-2 hover:ring-green-100 hover:shadow-xl group flex flex-col p-4 sm:p-6 min-h-[140px] sm:min-h-[180px] h-full">
                             <div className="absolute inset-0 bg-gradient-to-br from-green-50/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                             <div className="flex flex-col h-full justify-between relative z-10">
                                 <div className="flex justify-between items-start">
@@ -191,7 +193,7 @@ export function WhatsAppIntegration({ userId, hideTrigger }: WhatsAppIntegration
                                     <p className="text-sm text-slate-500 mt-2 font-medium leading-normal">Order recovery & confirms</p>
                                 </div>
                             </div>
-                        </Card>
+                        </HoverSpotlightCard>
                     </SheetTrigger>
                 )}
 
@@ -250,10 +252,12 @@ export function WhatsAppIntegration({ userId, hideTrigger }: WhatsAppIntegration
 
                     {sheetMode === 'add' ? (
                         <Tabs value={addTab} onValueChange={(v) => setAddTab(v as 'setup' | 'guide')} className="flex-1 flex flex-col min-h-0">
-                            <TabsList className="grid w-full grid-cols-2 bg-slate-50 p-1 rounded-none shrink-0 border-b border-slate-100">
-                                <TabsTrigger value="setup" className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-green-600 text-xs font-medium text-slate-500">Setup</TabsTrigger>
-                                <TabsTrigger value="guide" className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-green-600 text-xs font-medium text-slate-500">Guide</TabsTrigger>
-                            </TabsList>
+                            <div className="flex justify-center py-4 bg-white shrink-0 border-b border-slate-100">
+                                <TabsList className="inline-flex h-9 items-center justify-center rounded-full bg-slate-100/80 p-1 text-slate-500 shadow-inner">
+                                    <TabsTrigger value="setup" className="rounded-full px-6 py-1.5 text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-green-600 data-[state=active]:shadow-sm transition-all duration-300">Setup</TabsTrigger>
+                                    <TabsTrigger value="guide" className="rounded-full px-6 py-1.5 text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-green-600 data-[state=active]:shadow-sm transition-all duration-300">Guide</TabsTrigger>
+                                </TabsList>
+                            </div>
 
                             <ScrollArea className="flex-1 bg-slate-50/50 [&>div>div]:!block">
                                 <TabsContent value="setup" className="mt-0 p-6 space-y-6">

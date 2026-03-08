@@ -17,6 +17,7 @@ import { AssignmentsProvider } from "./contexts/AssignmentsContext";
 const Landing = lazy(() => import("./pages/Landing"));
 const EditFormPage = lazy(() => import("./pages/EditFormPage"));
 const FormsPage = lazy(() => import("./pages/FormsPage"));
+const HomePage = lazy(() => import("./pages/HomePage"));
 const OrdersPage = lazy(() => import("./pages/OrdersPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
@@ -24,11 +25,14 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const DashboardLayout = lazy(() => import("./components/DashboardLayout"));
 const GoogleLoginPage = lazy(() => import("./components/GoogleLoginPage"));
 const FormConfigAPI = lazy(() => import("./pages/api/FormConfigAPI"));
+const OffersPage = lazy(() => import("./pages/rules/OffersPage"));
+const ShippingPage = lazy(() => import("./pages/rules/ShippingPage"));
+const CouponsPage = lazy(() => import("./pages/rules/CouponsPage"));
 
 // Loading component
 const LoadingSpinner = () => (
-  <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 flex items-center justify-center">
-    <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+  <div className="min-h-screen bg-[#F8F7F5] flex items-center justify-center">
+    <div className="w-8 h-8 border-4 border-violet-600 border-t-transparent rounded-full animate-spin" />
   </div>
 );
 
@@ -132,6 +136,10 @@ const AppContent = () => {
                   <Suspense fallback={<LoadingSpinner />}>
                     <Routes>
                       <Route
+                        path="home"
+                        element={<HomePage userId={user.id} />}
+                      />
+                      <Route
                         path="forms"
                         element={<FormsPage />}
                       />
@@ -152,9 +160,13 @@ const AppContent = () => {
                         path="orders"
                         element={<OrdersPage userId={user.id} />}
                       />
+                      <Route path="rules/offers" element={<OffersPage userId={user.id} />} />
+                      <Route path="rules/shipping" element={<ShippingPage userId={user.id} />} />
+                      <Route path="rules/coupons" element={<CouponsPage userId={user.id} />} />
                       <Route path="profile" element={<ProfilePage user={user} />} />
                       <Route path="settings" element={<SettingsPage user={user} />} />
-                      <Route path="*" element={<Navigate to="/dashboard/forms" replace />} />
+                      <Route path="" element={<Navigate to="/dashboard/home" replace />} />
+                      <Route path="*" element={<Navigate to="/dashboard/home" replace />} />
                     </Routes>
                   </Suspense>
                 </AssignmentsProvider>

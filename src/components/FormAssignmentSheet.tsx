@@ -13,7 +13,7 @@ interface FormAssignmentSheetProps {
     onOpenChange: (open: boolean) => void;
     userId: string;
     storeId: string;
-    products?: unknown[];
+    products?: any[];
     initialProductIds?: string[];
     initialFormId?: string; // Auto-select form
     scope?: 'store' | 'product'; // Optional override, otherwise inferred
@@ -88,7 +88,7 @@ export function FormAssignmentSheet({
                     await deleteAssignment(existing.id!);
                 }
 
-                // assignForm handles: adapter push to n8n + refetch for UI sync
+                // assignForm handles: adapter push to backend + refetch for UI sync
                 await assignForm({
                     formId: selectedFormId,
                     storeId,
@@ -112,7 +112,7 @@ export function FormAssignmentSheet({
                     a.productId &&
                     initialProductIds.includes(a.productId)
                 );
-                // Delete old assignments (n8n cleanup happens inside deleteAssignment)
+                // Delete old assignments (backend cleanup happens inside deleteAssignment)
                 await Promise.all(
                     existingProductAssignments
                         .filter(a => a.formId !== selectedFormId)
@@ -133,7 +133,7 @@ export function FormAssignmentSheet({
                     return;
                 }
 
-                // assignForm handles: adapter push to n8n + refetch for UI sync
+                // assignForm handles: adapter push to backend + refetch for UI sync
                 for (const productId of newProductIds) {
                     await assignForm({
                         formId: selectedFormId,
@@ -154,7 +154,7 @@ export function FormAssignmentSheet({
             onOpenChange(false);
         } catch (error: unknown) {
             console.error(error);
-            toast.error(error.message || "Failed to assign form");
+            toast.error((error as Error).message || "Failed to assign form");
         } finally {
             setIsSubmitting(false);
         }

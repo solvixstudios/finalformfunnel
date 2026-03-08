@@ -9,6 +9,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { DashboardHeader } from '@/components/DashboardHeader';
 import { PageHeader } from '@/components/GlobalHeader/PageHeader';
 import {
     Select,
@@ -23,17 +24,20 @@ import {
     ChevronRight,
     Copy,
     ExternalLink,
+    FileCheck2,
     FileText,
     FolderOpen,
+    Globe2,
     LayoutGrid,
     Loader2,
     MoreHorizontal,
     PenLine,
+    Pencil,
     Plus,
     Search,
     Trash2,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -57,6 +61,7 @@ import { getStoredUser } from '../lib/authGoogle';
 import { useConnectedStores, useFormAssignments, useSavedForms } from '../lib/firebase/hooks';
 import { useFormStore } from '../stores';
 import { Skeleton } from '@/components/ui/skeleton';
+import { TableSkeleton } from '@/components/ui/table-skeleton';
 
 const ITEMS_PER_PAGE = 15;
 
@@ -211,7 +216,7 @@ export const FormsPage = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => setTemplateModalOpen(true)}
-                className="h-8 rounded-full text-xs font-semibold px-4 border-slate-200/80"
+                className="h-8 rounded-lg text-xs font-medium px-4 border-slate-200 text-slate-700 bg-white hover:bg-slate-50"
             >
                 <LayoutGrid size={13} className="mr-1.5 text-slate-500" />
                 Templates
@@ -219,7 +224,7 @@ export const FormsPage = () => {
             <Button
                 size="sm"
                 onClick={handleCreateNew}
-                className="h-8 rounded-full text-xs font-semibold px-4 bg-slate-900 hover:bg-slate-800 text-white shadow-sm"
+                className="h-8 rounded-lg text-xs font-bold px-4 bg-[#FF5A1F] hover:bg-[#FF5A1F]/90 text-white shadow-sm"
                 disabled={isCreating}
             >
                 {isCreating ? <Loader2 size={13} className="mr-1.5 animate-spin" /> : <Plus size={13} className="mr-1.5" />}
@@ -230,7 +235,7 @@ export const FormsPage = () => {
 
     return (
         <>
-            <div className="max-w-[1600px] mx-auto w-full space-y-5 h-full flex flex-col pt-2">
+            <div className="max-w-[1600px] mx-auto w-full space-y-5 h-full flex flex-col pt-2 md:pt-4">
                 <PageHeader
                     title="Forms"
                     breadcrumbs={[{ label: 'Forms' }]}
@@ -243,9 +248,9 @@ export const FormsPage = () => {
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shrink-0">
                     {/* Search */}
                     <div className="relative group flex-1 max-w-md">
-                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-slate-500 transition-colors" size={15} />
+                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-violet-500 transition-colors" size={16} />
                         <Input
-                            className="pl-10 h-10 bg-white border-slate-200/80 rounded-xl text-sm shadow-sm focus:ring-2 focus:ring-slate-900/5 focus:border-slate-300 placeholder:text-slate-400"
+                            className="pl-9 h-10 bg-white border-slate-200 rounded-lg text-sm shadow-sm focus:ring-1 focus:ring-slate-900/5 focus:border-slate-300 placeholder:text-slate-400 font-medium"
                             placeholder="Search forms..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
@@ -254,7 +259,7 @@ export const FormsPage = () => {
 
                     <div className="flex items-center gap-2">
                         {/* Filter Pills */}
-                        <div className="flex bg-slate-100 p-1 rounded-full border border-slate-200/60">
+                        <div className="flex bg-slate-50 p-1 rounded-lg border border-slate-200">
                             {[
                                 { key: 'all', label: 'All', count: stats.total },
                                 { key: 'published', label: 'Live', count: stats.live },
@@ -264,16 +269,16 @@ export const FormsPage = () => {
                                     key={item.key}
                                     onClick={() => setFilter(item.key as typeof filter)}
                                     className={cn(
-                                        "px-3 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5",
+                                        "px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5",
                                         filter === item.key
                                             ? "bg-white text-slate-900 shadow-sm"
-                                            : "text-slate-500 hover:text-slate-700"
+                                            : "text-slate-500 hover:text-slate-900"
                                     )}
                                 >
                                     {item.key === 'published' && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />}
                                     {item.label}
                                     <span className={cn(
-                                        "text-[10px] font-bold",
+                                        "text-[10px] font-semibold",
                                         filter === item.key ? "text-slate-500" : "text-slate-400"
                                     )}>
                                         {item.count}
@@ -284,8 +289,8 @@ export const FormsPage = () => {
 
                         {/* Sort */}
                         <Select value={sortBy} onValueChange={setSortBy}>
-                            <SelectTrigger className="w-[140px] h-9 bg-white border-slate-200/80 rounded-full text-xs font-medium text-slate-600 shadow-sm">
-                                <ArrowUpDown size={11} className="mr-1.5 text-slate-400" />
+                            <SelectTrigger className="w-[140px] h-10 bg-white border-slate-200 rounded-lg text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50 transition-colors">
+                                <ArrowUpDown size={14} className="mr-1.5 text-slate-400" />
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent align="end">
@@ -301,34 +306,23 @@ export const FormsPage = () => {
                 {/* Table Content */}
                 <div className="flex-1 pb-16 overflow-y-auto pr-1">
                     {isLoading ? (
-                        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-                            <div className="space-y-0">
-                                {[1, 2, 3, 4, 5, 6].map(i => (
-                                    <div key={i} className="flex items-center gap-4 px-5 py-4 border-b border-slate-100 last:border-b-0">
-                                        <Skeleton className="w-9 h-9 rounded-xl" />
-                                        <div className="flex-1 space-y-2">
-                                            <Skeleton className="h-3.5 w-40" />
-                                            <Skeleton className="h-2.5 w-24" />
-                                        </div>
-                                        <Skeleton className="h-5 w-14 rounded-full" />
-                                        <Skeleton className="h-5 w-16 rounded-full" />
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
+                        <TableSkeleton columns={5} rows={6} className="bg-white rounded-xl border border-slate-200 shadow-sm" />
                     ) : paginatedForms.length === 0 ? (
-                        <FormLoadingEmptyState hasSearchQuery={!!searchQuery} />
+                        <FormLoadingEmptyState hasSearchQuery={!!searchQuery} onClear={() => {
+                            setSearchQuery('');
+                            setFilter('all');
+                        }} />
                     ) : (
-                        <div className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-sm animate-in fade-in duration-300">
+                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden animate-in fade-in duration-300">
                             <Table>
                                 <TableHeader>
-                                    <TableRow className="bg-slate-50/80 hover:bg-slate-50/80 border-b border-slate-100">
-                                        <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-wider py-3 pl-5 w-[45%]">Form</TableHead>
+                                    <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-b border-slate-200">
+                                        <TableHead className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider py-3 pl-5 w-[45%]">Form Name</TableHead>
 
-                                        <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-wider py-3">Status</TableHead>
-                                        <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-wider py-3">Store</TableHead>
-                                        <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-wider py-3">Updated</TableHead>
-                                        <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-wider py-3 pr-5 w-[50px]"></TableHead>
+                                        <TableHead className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider py-3">Status</TableHead>
+                                        <TableHead className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider py-3">Store</TableHead>
+                                        <TableHead className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider py-3">Last Updated</TableHead>
+                                        <TableHead className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider py-3 pr-5 w-[60px]"></TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -336,7 +330,7 @@ export const FormsPage = () => {
                                         const isPublished = allAssignments.some(a => a.formId === form.id && a.isActive);
                                         const store = storeAssignments[form.id];
                                         const formConfig = form.config || {};
-                                        const accentColor = formConfig.accentColor || '#6366f1';
+                                        const accentColor = formConfig.accentColor || '#7C3AED';
 
                                         const updatedStr = form.updatedAt
                                             ? new Date(form.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
@@ -345,17 +339,17 @@ export const FormsPage = () => {
                                         return (
                                             <TableRow
                                                 key={form.id}
-                                                className="group cursor-pointer hover:bg-slate-50/50 transition-colors border-b border-slate-100/80 last:border-b-0"
+                                                className="group cursor-pointer hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-b-0"
                                                 onClick={() => handleCardClick(form.id)}
                                             >
                                                 {/* Form Name + Icon */}
-                                                <TableCell className="py-3.5 pl-5">
+                                                <TableCell className="py-3 pl-5">
                                                     <div className="flex items-center gap-3">
                                                         <div
-                                                            className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ring-1 ring-black/[0.04]"
+                                                            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ring-1 ring-black/[0.04]"
                                                             style={{ background: `linear-gradient(135deg, ${accentColor}12, ${accentColor}22)` }}
                                                         >
-                                                            <FileText size={15} style={{ color: accentColor }} />
+                                                            <FileText size={14} style={{ color: accentColor }} />
                                                         </div>
                                                         <div className="min-w-0">
                                                             <h3 className="text-sm font-semibold text-slate-900 truncate leading-snug">
@@ -369,14 +363,14 @@ export const FormsPage = () => {
                                                 </TableCell>
 
                                                 {/* Status */}
-                                                <TableCell className="py-3.5">
+                                                <TableCell className="py-3">
                                                     {isPublished ? (
-                                                        <Badge className="h-5 px-2 text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200/60 font-bold uppercase tracking-wider shadow-none hover:bg-emerald-50 rounded-full">
-                                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1" />
+                                                        <Badge className="h-5 px-2 text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200/60 font-semibold uppercase tracking-wider shadow-none hover:bg-emerald-50 rounded-md">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5" />
                                                             Live
                                                         </Badge>
                                                     ) : (
-                                                        <Badge variant="secondary" className="h-5 px-2 text-[10px] font-bold uppercase tracking-wider shadow-none rounded-full">
+                                                        <Badge variant="secondary" className="h-5 px-2 text-[10px] font-semibold uppercase tracking-wider shadow-none rounded-md">
                                                             Draft
                                                         </Badge>
                                                     )}
@@ -397,16 +391,16 @@ export const FormsPage = () => {
                                                 </TableCell>
 
                                                 {/* Actions */}
-                                                <TableCell className="py-3.5 pr-5">
+                                                <TableCell className="py-3 pr-5 text-right">
                                                     <DropdownMenu>
                                                         <DropdownMenuTrigger asChild>
                                                             <Button
                                                                 variant="ghost"
                                                                 size="icon"
-                                                                className="h-8 w-8 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-slate-600"
+                                                                className="h-8 w-8 rounded-md opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-slate-900 hover:bg-slate-100"
                                                                 onClick={(e) => e.stopPropagation()}
                                                             >
-                                                                <MoreHorizontal size={15} />
+                                                                <MoreHorizontal size={16} />
                                                             </Button>
                                                         </DropdownMenuTrigger>
                                                         <DropdownMenuContent align="end" className="w-44">
@@ -486,18 +480,18 @@ export const FormsPage = () => {
 
             {/* Delete Dialog */}
             <AlertDialog open={!!formToDelete} onOpenChange={(open) => !open && setFormToDelete(null)}>
-                <AlertDialogContent className="rounded-2xl">
+                <AlertDialogContent className="rounded-xl p-6">
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Delete this form?</AlertDialogTitle>
+                        <AlertDialogTitle className="text-lg font-bold">Delete this form?</AlertDialogTitle>
                         <AlertDialogDescription>
                             This will permanently remove the form and all its store connections. This action cannot be undone.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel disabled={isDeleting} className="rounded-full">Cancel</AlertDialogCancel>
+                    <AlertDialogFooter className="mt-4">
+                        <AlertDialogCancel disabled={isDeleting} className="rounded-lg font-semibold">Cancel</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={(e) => { e.preventDefault(); confirmDelete(); }}
-                            className="bg-red-600 hover:bg-red-700 text-white rounded-full"
+                            className="bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold"
                             disabled={isDeleting}
                         >
                             {isDeleting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting…</> : 'Delete Form'}
@@ -508,25 +502,25 @@ export const FormsPage = () => {
 
             {/* Rename Dialog */}
             <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
-                <DialogContent className="sm:max-w-[400px] rounded-2xl">
+                <DialogContent className="sm:max-w-[400px] rounded-xl p-6">
                     <DialogHeader>
-                        <DialogTitle>Rename Form</DialogTitle>
+                        <DialogTitle className="text-lg font-bold">Rename Form</DialogTitle>
                         <DialogDescription>Enter a new name for this form.</DialogDescription>
                     </DialogHeader>
-                    <div className="py-3">
+                    <div className="py-4">
                         <Input
                             value={renameValue}
                             onChange={(e) => setRenameValue(e.target.value)}
                             placeholder="Form name"
                             autoFocus
-                            className="rounded-xl"
+                            className="rounded-lg h-10 px-3 font-medium text-sm border-slate-200"
                             onKeyDown={(e) => { if (e.key === 'Enter') handleRenameForm(); }}
                         />
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setRenameDialogOpen(false)} className="rounded-full">Cancel</Button>
-                        <Button className="bg-slate-900 hover:bg-slate-800 text-white rounded-full" onClick={handleRenameForm} disabled={!renameValue.trim()}>
-                            Save
+                        <Button variant="outline" onClick={() => setRenameDialogOpen(false)} className="rounded-lg font-semibold border-slate-200">Cancel</Button>
+                        <Button className="bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-semibold px-5 shadow-sm" onClick={handleRenameForm} disabled={!renameValue.trim()}>
+                            Save Changes
                         </Button>
                     </DialogFooter>
                 </DialogContent>

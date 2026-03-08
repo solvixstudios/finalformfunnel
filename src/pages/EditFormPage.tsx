@@ -539,15 +539,14 @@ const EditFormPage = ({ userId }: EditFormPageProps) => {
           <Button
             onClick={handleSaveForm}
             size="sm"
-            variant="brand"
-            className="gap-2 transition-all hover:shadow-md active:scale-95"
+            className="gap-2 transition-all hover:shadow-md active:scale-95 bg-[#FF5A1F] hover:bg-[#E04D1A] text-white border-0"
           >
             {isSaving ? (
               <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             ) : (
               <Save size={14} />
             )}
-            <span className="font-semibold text-xs tracking-wide">Save</span>
+            <span className="font-bold text-xs tracking-wide">Save</span>
           </Button>
         </div>
       ) : (
@@ -586,13 +585,13 @@ const EditFormPage = ({ userId }: EditFormPageProps) => {
             }
           }}
           disabled={!formId}
-          className={`relative flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${formStatus === 'published'
-            ? 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100'
-            : 'bg-slate-100 text-slate-500 border border-slate-200 hover:bg-slate-200'
+          className={`relative flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm ${formStatus === 'published'
+            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
+            : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50'
             } ${!formId ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
           title={formId ? (formStatus === 'published' ? 'Click to unpublish' : 'Click to publish') : 'Save form first'}
         >
-          <div className={`w-2 h-2 rounded-full ${formStatus === 'published' ? 'bg-green-500 animate-pulse' : 'bg-slate-400'}`} />
+          <div className={`w-2 h-2 rounded-full ${formStatus === 'published' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
           {formStatus === 'published' ? 'Live' : 'Draft'}
         </button>
       </div>

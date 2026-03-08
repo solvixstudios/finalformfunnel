@@ -21,7 +21,7 @@ import {
   releaseStoreOwnership,
 } from "./storeOwnership";
 import { ConnectedStore, FormAssignment, SavedForm } from "./types";
-import { propagateFormUpdate } from "./n8nSync";
+import { propagateFormUpdate } from "./backendSync";
 
 // ===== FORMS HOOKS =====
 
@@ -80,7 +80,7 @@ export const useSavedForms = (userId: string) => {
         // No manual state update - listener handles it
         return { id: docRef.id, ...newForm };
       } catch (err: unknown) {
-        setError(err.message);
+        setError((err as Error).message);
         throw err;
       }
     },
@@ -98,8 +98,7 @@ export const useSavedForms = (userId: string) => {
           updatedAt: new Date().toISOString(),
         });
 
-        // Trigger background sync to n8n if config or name changed
-        // Trigger background sync to n8n if config or name changed
+        // Trigger background sync to backend if config or name changed
         if (updates.config || updates.name) {
           const snap = await getDoc(formRef);
           if (snap.exists()) {
@@ -108,7 +107,7 @@ export const useSavedForms = (userId: string) => {
           }
         }
       } catch (err: unknown) {
-        setError(err.message);
+        setError((err as Error).message);
         throw err;
       }
     },
@@ -130,7 +129,7 @@ export const useSavedForms = (userId: string) => {
         const assignmentsQuery = query(collection(db, "users", userId, "assignments"), where("formId", "==", formId));
         const assignmentsSnapshot = await getDocs(assignmentsQuery);
 
-        // 2.5 Clean up n8n store_configs for each assignment (fire-and-forget)
+        // 2.5 Clean up backend store_configs for each assignment (fire-and-forget)
         for (const assignDoc of assignmentsSnapshot.docs) {
           const assignment = assignDoc.data();
           if (assignment.storeId) {
@@ -149,7 +148,7 @@ export const useSavedForms = (userId: string) => {
                 }
               }
             } catch (e) {
-              console.warn("Failed to clean n8n config for assignment:", e);
+              console.warn("Failed to clean backend config for assignment:", e);
             }
           }
         }
@@ -161,7 +160,7 @@ export const useSavedForms = (userId: string) => {
         await batch.commit();
         // No manual state update - listener handles it
       } catch (err: unknown) {
-        setError(err.message);
+        setError((err as Error).message);
         throw err;
       }
     },
@@ -281,7 +280,7 @@ export const useConnectedStores = (userId: string) => {
         // No need to manually update state, onSnapshot will handle it
         return savedStore;
       } catch (err: unknown) {
-        setError(err.message);
+        setError((err as Error).message);
         throw err;
       }
     },
@@ -299,7 +298,7 @@ export const useConnectedStores = (userId: string) => {
         });
         // No manual state update - listener handles it
       } catch (err: unknown) {
-        setError(err.message);
+        setError((err as Error).message);
         throw err;
       }
     },
@@ -340,9 +339,9 @@ export const useConnectedStores = (userId: string) => {
           }
         }
 
-        // 0.5 Clean up n8n store_configs for all assignments of this store
+        // 0.5 Clean up backend store_configs for all assignments of this store
         // IMPORTANT: This must happen BEFORE disconnectStore, because removeForm
-        // needs the store row to still exist in n8n's stores table.
+        // needs the store row to still exist in backend's stores table.
         const subdomain = storeToDelete?.url?.replace('.myshopify.com', '').replace(/https?:\/\//, '') || '';
         if (storeToDelete?.clientId && storeToDelete?.clientSecret) {
           try {
@@ -354,7 +353,7 @@ export const useConnectedStores = (userId: string) => {
             const { getAdapter } = await import("../integrations");
             const adapter = getAdapter(storeToDelete.platform || 'shopify');
 
-            // Delete each config from n8n (don't block disconnect)
+            // Delete each config from backend (don't block disconnect)
             const cleanupPromises = configSnap.docs.map(d => {
               const data = d.data();
               return adapter.removeForm(subdomain, {
@@ -371,11 +370,11 @@ export const useConnectedStores = (userId: string) => {
             );
             await Promise.allSettled(cleanupPromises);
           } catch (err) {
-            console.warn("Failed to clean up n8n configs during disconnect:", err);
+            console.warn("Failed to clean up backend configs during disconnect:", err);
           }
         }
 
-        // 0.9 NOW disconnect store from n8n (removes the stores row)
+        // 0.9 NOW disconnect store from backend (removes the stores row)
         // This is AFTER config cleanup so removeForm can still find the store.
         if (subdomain) {
           try {
@@ -383,7 +382,7 @@ export const useConnectedStores = (userId: string) => {
             const adapter = getAdapter(storeToDelete?.platform || 'shopify');
             await adapter.disconnectStore(subdomain);
           } catch (err) {
-            console.warn("Failed to disconnect store from n8n:", err);
+            console.warn("Failed to disconnect store from backend:", err);
           }
         }
 
@@ -410,7 +409,7 @@ export const useConnectedStores = (userId: string) => {
 
         // No manual state update - listener handles it
       } catch (err: unknown) {
-        setError(err.message);
+        setError((err as Error).message);
         throw err;
       }
     },
@@ -433,13 +432,13 @@ export const useConnectedStores = (userId: string) => {
 import { useAssignmentsContext } from "../../contexts/AssignmentsContext";
 
 export const useFormAssignments = (userId: string) => {
-  // Bridge: data from n8n via AssignmentsContext (global state), mutations via adapter
-  const { stores, assignments: n8nAssignments, loading, error, refetch } = useAssignmentsContext();
+  // Bridge: data from backend via AssignmentsContext (global state), mutations via adapter
+  const { stores, assignments: backendAssignments, loading, error, refetch } = useAssignmentsContext();
 
-  // Map n8n assignments to FormAssignment shape for consumer compatibility
+  // Map backend assignments to FormAssignment shape for consumer compatibility
   const assignments: FormAssignment[] = useMemo(() =>
-    n8nAssignments.map((a, idx) => ({
-      id: `n8n-${a.storeId}-${a.type}-${a.productId || 'global'}-${idx}`,
+    backendAssignments.map((a, idx) => ({
+      id: `backend-${a.storeId}-${a.type}-${a.productId || 'global'}-${idx}`,
       userId,
       formId: a.formId,
       storeId: a.storeId,
@@ -452,7 +451,7 @@ export const useFormAssignments = (userId: string) => {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     })),
-    [n8nAssignments, userId]
+    [backendAssignments, userId]
   );
 
   const assignForm = useCallback(
@@ -492,7 +491,7 @@ export const useFormAssignments = (userId: string) => {
         }
       }
 
-      // Push to n8n via adapter (single source of truth)
+      // Push to backend via adapter (single source of truth)
       const { getAdapter } = await import("../integrations");
       const adapter = getAdapter(store.platform || 'shopify');
       await adapter.assignForm(subdomain, {
@@ -545,17 +544,17 @@ export const useFormAssignments = (userId: string) => {
         await batch.commit();
       } catch (e) {
         console.error("[assignForm] Failed to persist to Firestore:", e);
-        // Don't throw - n8n sync succeeded, that's what matters most
+        // Don't throw - backend sync succeeded, that's what matters most
       }
 
-      // Refetch from n8n to sync UI state (unless skipped for batch ops)
+      // Refetch from backend to sync UI state (unless skipped for batch ops)
       if (!assignmentData.skipRefetch) {
         await refetch();
       }
 
       // Return a FormAssignment shape for compatibility
       const newAssignment: FormAssignment = {
-        id: `n8n-${storeId}-${type}-${productId || 'global'}-new`,
+        id: `backend-${storeId}-${type}-${productId || 'global'}-new`,
         userId,
         formId,
         storeId,
@@ -578,7 +577,7 @@ export const useFormAssignments = (userId: string) => {
       if (!userId) throw new Error("User not authenticated");
       try {
         // Parse the synthetic assignment ID to find the assignment
-        // Format: n8n-{storeId}-{type}-{productId|global}-{idx|new}
+        // Format: backend-{storeId}-{type}-{productId|global}-{idx|new}
         const assignment = assignments.find(a => a.id === assignmentId);
         if (!assignment) {
           console.warn("Assignment not found for deletion:", assignmentId);
@@ -592,7 +591,7 @@ export const useFormAssignments = (userId: string) => {
 
         const subdomain = (store.shopifyDomain || store.url || '').replace(/https?:\/\//, '').replace('.myshopify.com', '');
 
-        // 1. Call adapter to remove from n8n
+        // 1. Call adapter to remove from backend
         const { getAdapter } = await import("../integrations");
         const adapter = getAdapter(store.platform || 'shopify');
         await adapter.removeForm(subdomain, {
@@ -625,7 +624,7 @@ export const useFormAssignments = (userId: string) => {
 
         await batch.commit();
 
-        // 3. Refetch to get updated data from n8n
+        // 3. Refetch to get updated data from backend
         await refetch();
       } catch (err: unknown) {
         console.error("[useFormAssignments] deleteAssignment error:", err);

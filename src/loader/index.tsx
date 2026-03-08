@@ -40,23 +40,22 @@ async function fetchShopifyProduct() {
 }
 
 /**
- * Fetch config from n8n Data Table Webhook (Source of Truth)
+ * Fetch config from backend webhook (Source of Truth)
  */
-async function fetchConfigFromN8N(shop: string, productId?: string, productHandle?: string) {
+async function fetchConfigFromBackend(shop: string, productId?: string, productHandle?: string) {
     if (!shop) return null;
-    console.log('FinalForm: Fetching config from n8n...');
+    console.log('FinalForm: Fetching config from backend...');
 
     try {
-        // Construct URL for n8n webhook
-        // Construct URL for n8n webhook
-        const N8N_BACKEND_URL = import.meta.env.VITE_N8N_BACKEND_URL;
-        if (!N8N_BACKEND_URL) {
-            console.error('FinalForm: VITE_N8N_BACKEND_URL is not defined');
+        // Construct URL for backend webhook
+        const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+        if (!BACKEND_URL) {
+            console.error('FinalForm: VITE_BACKEND_URL is not defined');
             return null;
         }
-        const N8N_WEBHOOK_URL = `${N8N_BACKEND_URL}/webhook/shopify/config`;
+        const WEBHOOK_URL = `${BACKEND_URL}/webhook/shopify/config`;
 
-        const url = new URL(N8N_WEBHOOK_URL);
+        const url = new URL(WEBHOOK_URL);
         url.searchParams.append('shop', shop);
         if (productId) url.searchParams.append('productId', productId);
         if (productHandle) url.searchParams.append('productHandle', productHandle);
@@ -189,9 +188,9 @@ async function initLoader() {
 
     console.log('FinalForm: Context', { shop, productId, productHandle });
 
-    // 3. Resolve Config (n8n)
+    // 3. Resolve Config (backend)
     // We pass shop, productId, productHandle to find the right assignment
-    const config = await fetchConfigFromN8N(shop, productId, productHandle);
+    const config = await fetchConfigFromBackend(shop, productId, productHandle);
 
     if (!config) {
         console.warn('FinalForm: Config load failed or no assignment found. Aborting.');

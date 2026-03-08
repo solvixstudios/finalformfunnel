@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { AlertCircle, CheckCircle2, Loader2, Quote, Star } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Loader2, Sparkles, Star, Zap } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { GoogleUser, signInWithGoogle } from '../lib/authGoogle';
 import { useI18n } from '../lib/i18n/i18nContext';
@@ -26,7 +26,7 @@ const GoogleLoginPage = ({ onLoginSuccess }: GoogleLoginPageProps) => {
     try {
       const user = await signInWithGoogle();
       onLoginSuccess(user);
-    } catch (err: unknown) {
+    } catch (err: any) {
       setError(err.message || t('auth.failedToSignIn'));
     } finally {
       setIsLoading(false);
@@ -42,31 +42,29 @@ const GoogleLoginPage = ({ onLoginSuccess }: GoogleLoginPageProps) => {
   if (!isMounting) return null;
 
   return (
-    <div className="min-h-screen w-full flex bg-[#FAFAFA] font-sans" dir={dir}>
+    <div className="min-h-screen w-full flex bg-[#F8F7F5] font-sans" dir={dir}>
 
-      {/* --- Left Panel: Auth Form (50%) --- */}
+      {/* ─── Left Panel: Auth Form ─── */}
       <div className="w-full lg:w-1/2 flex flex-col p-6 sm:p-12 lg:p-20 justify-between bg-white relative z-10">
 
         {/* Header / Language */}
         <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center">
-              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 bg-gradient-to-br from-violet-600 to-violet-400 rounded-lg flex items-center justify-center shadow-brand-sm">
+              <Zap size={15} className="text-white fill-white" />
             </div>
-            <span className="font-bold text-slate-900 tracking-tight">Final Form</span>
+            <span className="font-bold text-[#1A1D26] tracking-tight">Final Form</span>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex gap-1.5">
             {languages.map((lang) => (
               <button
                 key={lang.code}
                 onClick={() => setLanguage(lang.code)}
                 title={lang.name}
                 className={`w-8 h-8 flex items-center justify-center rounded-full text-sm transition-all ${language === lang.code
-                  ? 'bg-slate-100 text-slate-900 ring-1 ring-slate-200'
-                  : 'text-slate-400 hover:bg-slate-50'
+                    ? 'bg-violet-50 text-violet-700 ring-1 ring-violet-200'
+                    : 'text-[#9BA0AD] hover:bg-[#F4F3F1]'
                   }`}
               >
                 {lang.flag}
@@ -78,10 +76,10 @@ const GoogleLoginPage = ({ onLoginSuccess }: GoogleLoginPageProps) => {
         {/* Main Content */}
         <div className="max-w-sm w-full mx-auto space-y-8">
           <div className="text-center sm:text-left">
-            <h1 className="text-3xl font-extrabold text-slate-900 mb-3 tracking-tight">
+            <h1 className="text-3xl font-extrabold text-[#1A1D26] mb-3 tracking-[-0.03em]">
               {t('auth.welcomeBack')}
             </h1>
-            <p className="text-slate-500 text-lg">
+            <p className="text-[#6B7080] text-lg">
               {t('auth.signInDescription')}
             </p>
           </div>
@@ -100,10 +98,10 @@ const GoogleLoginPage = ({ onLoginSuccess }: GoogleLoginPageProps) => {
           <button
             onClick={handleGoogleSignIn}
             disabled={isLoading}
-            className="w-full h-14 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300 rounded-full font-semibold text-base flex items-center justify-center gap-3 transition-all duration-200 active:scale-[0.98] shadow-sm hover:shadow-md disabled:opacity-70 disabled:cursor-not-allowed group"
+            className="w-full h-14 bg-white border border-[#E4E5E9] text-[#1A1D26] hover:bg-[#F8F7F5] hover:border-violet-200 rounded-full font-semibold text-base flex items-center justify-center gap-3 transition-all duration-200 active:scale-[0.98] shadow-card hover:shadow-brand-sm disabled:opacity-70 disabled:cursor-not-allowed group"
           >
             {isLoading ? (
-              <Loader2 size={20} className="animate-spin text-slate-400" />
+              <Loader2 size={20} className="animate-spin text-violet-500" />
             ) : (
               <div className="flex items-center gap-3">
                 {/* Google Logo */}
@@ -118,35 +116,46 @@ const GoogleLoginPage = ({ onLoginSuccess }: GoogleLoginPageProps) => {
             )}
           </button>
 
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-100" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase tracking-wide">
-              <span className="px-4 bg-white text-slate-400 font-medium">Trusted by teams at</span>
-            </div>
-          </div>
-
-          <div className="flex justify-center gap-6 opacity-40 grayscale">
-            {/* Dummy logos for social proof */}
-            <div className="h-6 w-20 bg-slate-900 rounded" />
-            <div className="h-6 w-20 bg-slate-900 rounded" />
-            <div className="h-6 w-20 bg-slate-900 rounded" />
+          {/* Feature Highlights */}
+          <div className="space-y-3 pt-2">
+            {[
+              'Visual form builder with drag & drop',
+              'Real-time order tracking & analytics',
+              'Multi-platform integrations',
+            ].map((feature, idx) => (
+              <div key={idx} className="flex items-center gap-2.5 text-sm text-[#6B7080]">
+                <CheckCircle2 size={15} className="text-violet-500 shrink-0" />
+                <span>{feature}</span>
+              </div>
+            ))}
           </div>
         </div>
 
         {/* Footer */}
-        <div className="text-center sm:text-left text-sm text-slate-400">
-          © 2024 Final Form. All rights reserved.
+        <div className="text-center sm:text-left text-sm text-[#9BA0AD]">
+          © {new Date().getFullYear()} Solvix Studios. All rights reserved.
         </div>
       </div>
 
-      {/* --- Right Panel: Art Direction (50%) --- */}
-      <div className="hidden lg:flex w-1/2 bg-[#FFF4ED] relative items-center justify-center p-20 overflow-hidden">
-
-        {/* Abstract Shapes */}
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-br from-orange-300/20 to-amber-300/20 rounded-full blur-[100px] pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-white/60 rounded-full blur-[80px] pointer-events-none" />
+      {/* ─── Right Panel: Art Direction ─── */}
+      <div className="hidden lg:flex w-1/2 bg-[#0A0A0F] relative items-center justify-center p-20 overflow-hidden">
+        {/* Animated Gradient Mesh */}
+        <motion.div
+          animate={{ x: [0, 50, 0], y: [0, -50, 0] }}
+          transition={{ repeat: Infinity, duration: 15, ease: 'easeInOut' }}
+          className="absolute top-[-10%] right-[-10%] w-[700px] h-[700px] bg-violet-600/25 rounded-full blur-[140px] pointer-events-none"
+        />
+        <motion.div
+          animate={{ x: [0, -40, 0], y: [0, 40, 0] }}
+          transition={{ repeat: Infinity, duration: 20, ease: 'easeInOut' }}
+          className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-600/15 rounded-full blur-[100px] pointer-events-none"
+        />
+        <motion.div
+          animate={{ scale: [1, 1.1, 1] }}
+          transition={{ repeat: Infinity, duration: 10, ease: 'easeInOut' }}
+          className="absolute top-[30%] left-[30%] w-[300px] h-[300px] bg-violet-400/10 rounded-full blur-[80px] pointer-events-none"
+        />
+        <div className="absolute inset-0 bg-noise pointer-events-none" />
 
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
@@ -155,26 +164,24 @@ const GoogleLoginPage = ({ onLoginSuccess }: GoogleLoginPageProps) => {
           className="relative z-10 max-w-md"
         >
           {/* Testimonial Card */}
-          <div className="bg-white p-10 rounded-[2.5rem] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.05)] border border-slate-100/50 relative">
-            <Quote className="absolute top-10 left-8 text-orange-100 fill-orange-50 w-16 h-16 -z-10 transform -translate-x-2 -translate-y-2" />
-
-            <div className="mb-6 flex gap-1">
+          <div className="bg-white/[0.05] backdrop-blur-xl p-10 rounded-[2.5rem] border border-white/[0.08] relative shadow-2xl shadow-violet-500/5">
+            <div className="mb-5 flex gap-1">
               {[1, 2, 3, 4, 5].map(i => (
-                <Star key={i} size={16} className="text-amber-400 fill-amber-400" />
+                <Star key={i} size={16} className="text-violet-400 fill-violet-400" />
               ))}
             </div>
 
-            <p className="text-xl font-medium text-slate-900 leading-relaxed mb-8">
+            <p className="text-xl font-medium text-white/90 leading-relaxed mb-8">
               "Final Form transformed how we collect leads. The designs are stunning and conversion rates doubled overnight."
             </p>
 
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-slate-100 overflow-hidden">
-                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="User" />
+              <div className="w-12 h-12 rounded-full bg-violet-500/20 border border-violet-500/20 overflow-hidden flex items-center justify-center">
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="User" className="w-full h-full object-cover" />
               </div>
               <div>
-                <div className="font-bold text-slate-900">Sarah Jenkins</div>
-                <div className="text-sm text-slate-500">Product Designer @ Solvix</div>
+                <div className="font-bold text-white">Sarah Jenkins</div>
+                <div className="text-sm text-white/40">Product Designer @ Solvix</div>
               </div>
             </div>
           </div>
@@ -182,15 +189,13 @@ const GoogleLoginPage = ({ onLoginSuccess }: GoogleLoginPageProps) => {
           {/* Floating decoration */}
           <motion.div
             animate={{ y: [0, -10, 0] }}
-            transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-            className="absolute -right-12 -top-12 bg-orange-500 text-white p-4 rounded-2xl shadow-lg shadow-orange-500/20 rotate-12"
+            transition={{ repeat: Infinity, duration: 4, ease: 'easeInOut' }}
+            className="absolute -right-10 -top-10 bg-gradient-to-br from-violet-600 to-violet-400 text-white p-4 rounded-2xl shadow-brand-lg rotate-12"
           >
-            <CheckCircle2 size={32} />
+            <Sparkles size={28} />
           </motion.div>
-
         </motion.div>
       </div>
-
     </div>
   );
 };

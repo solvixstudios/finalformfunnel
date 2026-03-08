@@ -10,10 +10,14 @@ import {
 } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import {
+  FileText,
   FolderOpen,
+  LayoutGrid,
   Menu,
-  Plug,
   ShoppingCart,
+  Tag,
+  Ticket,
+  Truck
 } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 import { HeaderActionsProvider, useHeaderActions } from '../contexts/HeaderActionsContext';
@@ -76,16 +80,16 @@ const DashboardLayoutContent = ({
 
   const navItems: NavItem[] = useMemo(() => [
     {
+      id: 'home',
+      label: 'Home',
+      icon: <LayoutGrid size={20} />,
+      path: '/dashboard/home',
+    },
+    {
       id: 'forms',
       label: 'Forms',
       icon: <FolderOpen size={20} />,
       path: '/dashboard/forms',
-    },
-    {
-      id: 'integrations',
-      label: 'Integrations',
-      icon: <Plug size={20} />,
-      path: '/dashboard/integrations',
     },
     {
       id: 'orders',
@@ -93,10 +97,28 @@ const DashboardLayoutContent = ({
       icon: <ShoppingCart size={20} />,
       path: '/dashboard/orders',
     },
+    {
+      id: 'offers',
+      label: 'Offers',
+      icon: <Tag size={20} />,
+      path: '/dashboard/rules/offers',
+    },
+    {
+      id: 'shipping',
+      label: 'Shipping',
+      icon: <Truck size={20} />,
+      path: '/dashboard/rules/shipping',
+    },
+    {
+      id: 'coupons',
+      label: 'Coupons',
+      icon: <Ticket size={20} />,
+      path: '/dashboard/rules/coupons',
+    },
   ], []);
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-[#FAFAFA] flex font-sans" dir={dir}>
+    <div className="h-screen w-screen overflow-hidden bg-white flex font-sans" dir={dir}>
 
       {/* Desktop Sidebar - Extracted Component */}
       <DesktopSidebar
@@ -106,37 +128,32 @@ const DashboardLayoutContent = ({
         onLogout={onLogout}
       />
 
-      {/* --- Main Content Area --- */}
-      <div className={cn(
-        "flex-1 flex flex-col bg-white shadow-2xl overflow-hidden border border-slate-200/60 relative transition-all duration-300",
-        "h-screen lg:h-[calc(100vh-2rem)] lg:m-4 lg:ml-0 lg:rounded-[2rem]",
-        "rounded-none m-0"
-      )}>
+      <div className="flex-1 flex flex-col overflow-hidden relative">
 
         {/* Mobile Header */}
-        <header className="lg:hidden h-14 glass border-b border-slate-200/60 flex items-center justify-between px-3 z-40 sticky top-0 safe-area-inset-top">
+        <header className="lg:hidden h-14 bg-white/95 backdrop-blur-sm border-b border-[#E2DCCF] flex items-center justify-between px-4 z-40 sticky top-0 safe-area-inset-top shadow-sm">
           <div className="flex items-center gap-2">
-            <button onClick={() => setMobileMenuOpen(true)} className="p-2.5 -ml-1 text-slate-600 touch-target rounded-xl hover:bg-slate-100 active:bg-slate-200 transition-colors">
-              <Menu size={22} />
+            <button onClick={() => setMobileMenuOpen(true)} className="p-2 -ml-1 text-slate-600 rounded-lg hover:bg-slate-100 active:bg-slate-200 transition-colors">
+              <Menu size={20} />
             </button>
             <span className="font-bold text-slate-900 text-sm">Final Form</span>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             {actions}
           </div>
         </header>
 
-        {/* Desktop Header (Actions Only) - Compact */}
-        <header className="hidden lg:flex h-12 items-center justify-between px-5 z-40 shrink-0 gap-3 border-b border-slate-100">
+        {/* Desktop Header */}
+        <header className="hidden lg:flex h-14 items-center justify-between px-6 lg:px-8 z-40 shrink-0 gap-4 border-b border-[#E2DCCF] bg-white/95 backdrop-blur-sm shadow-[0_1px_2px_0_rgba(0,0,0,0.02)]">
           {/* Left Side: Breadcrumbs */}
-          <div className="flex items-center gap-3 flex-1">
-            <div className="flex-1">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className="flex-1 min-w-0 truncate">
               {centerContent}
             </div>
           </div>
 
           {/* Right Actions */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 shrink-0">
             {actions}
           </div>
         </header>
@@ -153,8 +170,8 @@ const DashboardLayoutContent = ({
 
         {/* Page Content */}
         <main className={cn(
-          "flex-1 relative custom-scroll-thin",
-          isBuilderPage ? "overflow-hidden" : "overflow-y-auto p-3 sm:p-5 lg:p-8"
+          "flex-1 relative custom-scroll-thin bg-[#F8F5F1]",
+          isBuilderPage ? "overflow-hidden" : "overflow-y-auto px-4 py-6 sm:px-6 lg:px-8 lg:py-8"
         )}>
           <div className={cn("animate-fade-up", isBuilderPage && "h-full")}>
             {children}

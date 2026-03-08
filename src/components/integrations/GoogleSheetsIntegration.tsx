@@ -1,6 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { HoverSpotlightCard } from '@/components/ui/HoverSpotlightCard';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -19,6 +20,10 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useGoogleSheets, GoogleSheetConfig } from '../../lib/firebase/sheetsHooks';
+import { useConnectedStores } from '../../lib/firebase/hooks';
+// @ts-ignore
+import feedData from '../../../feed.json';
+import { getAdapter, LOADER_VERSION } from '../../lib/integrations';
 import { DEFAULT_FORM_CONFIG } from '../../config/defaults';
 import { useFormStore } from '../../stores';
 
@@ -542,7 +547,7 @@ function onEdit(e) {
             <Sheet open={openSheet} onOpenChange={handleOpenChange}>
                 {!hideTrigger && (
                     <SheetTrigger asChild>
-                        <Card className="bg-white border border-slate-200 shadow-sm rounded-2xl sm:rounded-3xl overflow-hidden hover:ring-2 hover:ring-emerald-100 hover:shadow-xl transition-all duration-300 group relative h-full flex flex-col p-4 sm:p-6 min-h-[140px] sm:min-h-[180px] cursor-pointer active:scale-[0.99]">
+                        <HoverSpotlightCard spotlightColor="rgba(16, 185, 129, 0.15)" className="rounded-2xl sm:rounded-3xl hover:ring-2 hover:ring-emerald-100 hover:shadow-xl group flex flex-col p-4 sm:p-6 min-h-[140px] sm:min-h-[180px] h-full">
                             <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                             <div className="flex flex-col h-full justify-between relative z-10">
                                 <div className="flex justify-between items-start">
@@ -560,7 +565,7 @@ function onEdit(e) {
                                     <p className="text-sm text-slate-500 mt-2 font-medium leading-normal">Sync orders to spreadsheets</p>
                                 </div>
                             </div>
-                        </Card>
+                        </HoverSpotlightCard>
                     </SheetTrigger>
                 )}
 
@@ -621,10 +626,12 @@ function onEdit(e) {
 
                     {sheetMode === 'add' ? (
                         <Tabs value={addTab} onValueChange={(v) => setAddTab(v as 'setup' | 'guide')} className="flex-1 flex flex-col min-h-0">
-                            <TabsList className="grid w-full grid-cols-2 bg-slate-50 p-1 rounded-none shrink-0 border-b border-slate-100">
-                                <TabsTrigger value="setup" className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 text-xs font-medium text-slate-500">Setup</TabsTrigger>
-                                <TabsTrigger value="guide" className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-emerald-600 text-xs font-medium text-slate-500">Guide</TabsTrigger>
-                            </TabsList>
+                            <div className="flex justify-center py-4 bg-white shrink-0 border-b border-slate-100">
+                                <TabsList className="inline-flex h-9 items-center justify-center rounded-full bg-slate-100/80 p-1 text-slate-500 shadow-inner">
+                                    <TabsTrigger value="setup" className="rounded-full px-6 py-1.5 text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-emerald-600 data-[state=active]:shadow-sm transition-all duration-300">Setup</TabsTrigger>
+                                    <TabsTrigger value="guide" className="rounded-full px-6 py-1.5 text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-emerald-600 data-[state=active]:shadow-sm transition-all duration-300">Guide</TabsTrigger>
+                                </TabsList>
+                            </div>
 
                             <ScrollArea className="flex-1 bg-slate-50/50 [&>div>div]:!block">
                                 <TabsContent value="setup" className="mt-0 p-6 space-y-6">

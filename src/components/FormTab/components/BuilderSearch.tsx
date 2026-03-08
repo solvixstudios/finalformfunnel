@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faSearch,
@@ -18,19 +18,7 @@ import {
     faHandPointer,
     faReceipt,
     faGears,
-    faFont,
-    faSliders,
-    faBorderAll,
-    faCode,
-    faImage,
-    faGlobe,
-    faToggleOn,
-    faTextHeight,
-    faPencil,
     faStar,
-    faWandMagicSparkles,
-    faFire,
-    faCrosshairs,
 } from '@fortawesome/free-solid-svg-icons';
 import {
     faWhatsapp,
@@ -47,18 +35,19 @@ import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
  *  Users can search "couleur accent", "police arabe", etc.
  * ───────────────────────────────────────────── */
 
-interface SearchableItem {
+export interface SearchableItem {
     id: string;
     label: string;
     icon: IconDefinition;
     accentClass: string;
     description: string;
     aliases: string[];
-    /** Sub-properties that live inside this editor */
     subProperties: string[];
+    score?: number;
+    subMatches?: string[];
 }
 
-const SEARCHABLE_ITEMS: SearchableItem[] = [
+export const SEARCHABLE_ITEMS: SearchableItem[] = [
     {
         id: 'global_design',
         label: 'Design Global',
@@ -281,19 +270,8 @@ const SEARCHABLE_ITEMS: SearchableItem[] = [
     },
 ];
 
-interface BuilderSearchProps {
-    onNavigate: (sectionId: string) => void;
-}
-
-export const BuilderSearch = ({ onNavigate }: BuilderSearchProps) => {
-    const [query, setQuery] = useState('');
-    const [isFocused, setIsFocused] = useState(false);
-    const [selectedIndex, setSelectedIndex] = useState(0);
-    const inputRef = useRef<HTMLInputElement>(null);
-    const listRef = useRef<HTMLDivElement>(null);
-
-    /** Deep search: matches label, aliases, description, AND sub-properties */
-    const results = useMemo(() => {
+export const useBuilderSearch = (query: string): SearchableItem[] => {
+    return useMemo(() => {
         if (!query.trim()) return [];
         const q = query.toLowerCase().trim();
         const words = q.split(/\s+/);
@@ -328,118 +306,44 @@ export const BuilderSearch = ({ onNavigate }: BuilderSearchProps) => {
                 return { ...item, score, subMatches };
             })
             .filter((item) => item.score > 0)
-            .sort((a, b) => b.score - a.score);
+            .sort((a, b) => (b.score || 0) - (a.score || 0));
     }, [query]);
+};
 
-    const showResults = isFocused && query.trim().length > 0;
+interface BuilderSearchInputProps {
+    query: string;
+    onChange: (val: string) => void;
+}
 
-    useEffect(() => {
-        setSelectedIndex(0);
-    }, [results.length]);
-
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (!showResults || results.length === 0) return;
-
-        if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            setSelectedIndex((prev) => Math.min(prev + 1, results.length - 1));
-        } else if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            setSelectedIndex((prev) => Math.max(prev - 1, 0));
-        } else if (e.key === 'Enter') {
-            e.preventDefault();
-            onNavigate(results[selectedIndex].id);
-            setQuery('');
-            inputRef.current?.blur();
-        } else if (e.key === 'Escape') {
-            setQuery('');
-            inputRef.current?.blur();
-        }
-    };
+export const BuilderSearchInput = ({ query, onChange }: BuilderSearchInputProps) => {
+    const inputRef = useRef<HTMLInputElement>(null);
 
     return (
-        <div className="relative mb-4">
-            {/* Search Input */}
-            <div className="relative">
-                <FontAwesomeIcon
-                    icon={faSearch}
-                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
-                    style={{ fontSize: 13 }}
-                />
-                <input
-                    ref={inputRef}
-                    type="text"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    onFocus={() => setIsFocused(true)}
-                    onBlur={() => setTimeout(() => setIsFocused(false), 200)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Rechercher un paramètre..."
-                    className="w-full pl-10 pr-9 py-2.5 text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-xl
-                     outline-none transition-all duration-200
-                     focus:bg-white focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 focus:shadow-sm
-                     placeholder:text-slate-400"
-                />
-                {query && (
-                    <button
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => { setQuery(''); inputRef.current?.focus(); }}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-                    >
-                        <FontAwesomeIcon icon={faTimes} style={{ fontSize: 13 }} />
-                    </button>
-                )}
-            </div>
-
-            {/* Results Dropdown */}
-            {showResults && (
-                <div
-                    ref={listRef}
-                    className="absolute z-50 top-full mt-1.5 left-0 right-0 bg-white border border-slate-200 rounded-xl shadow-xl max-h-[320px] overflow-y-auto custom-scroll animate-in fade-in slide-in-from-top-2 duration-150"
+        <div className="relative w-full">
+            <FontAwesomeIcon
+                icon={faSearch}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                style={{ fontSize: 14 }}
+            />
+            <input
+                ref={inputRef}
+                type="text"
+                value={query}
+                onChange={(e) => onChange(e.target.value)}
+                placeholder="Rechercher un paramètre..."
+                className="w-full pl-11 pr-10 py-3.5 text-[14px] font-semibold text-slate-800 bg-white border border-slate-200/80 rounded-2xl
+                 outline-none transition-all duration-300 shadow-sm leading-tight
+                 focus:bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/10 focus:shadow-md
+                 placeholder:text-slate-400 placeholder:font-medium"
+            />
+            {query && (
+                <button
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => { onChange(''); inputRef.current?.focus(); }}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors bg-slate-100 hover:bg-slate-200 w-7 h-7 rounded-full flex items-center justify-center cursor-pointer"
                 >
-                    {results.length === 0 ? (
-                        <div className="p-4 text-center text-xs text-slate-400 font-medium">
-                            Aucun résultat pour "{query}"
-                        </div>
-                    ) : (
-                        <div className="p-1.5">
-                            {results.map((item, idx) => (
-                                <button
-                                    key={item.id}
-                                    onMouseDown={(e) => e.preventDefault()}
-                                    onClick={() => {
-                                        onNavigate(item.id);
-                                        setQuery('');
-                                    }}
-                                    className={`w-full flex items-center gap-3 p-2.5 rounded-lg transition-all text-left ${idx === selectedIndex
-                                        ? 'bg-indigo-50 text-indigo-700'
-                                        : 'hover:bg-slate-50 text-slate-700'
-                                        }`}
-                                >
-                                    <div
-                                        className={`w-7 h-7 rounded-lg bg-gradient-to-br ${item.accentClass} flex items-center justify-center text-white shrink-0`}
-                                    >
-                                        <FontAwesomeIcon icon={item.icon} style={{ fontSize: 12 }} />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <span className="block text-[12px] font-bold leading-tight truncate">
-                                            {item.label}
-                                        </span>
-                                        <span className="block text-[10px] text-slate-400 font-medium leading-tight truncate">
-                                            {item.description}
-                                        </span>
-                                        {/* Show matching sub-properties for context */}
-                                        {item.subMatches && item.subMatches.length > 0 && (
-                                            <span className="block text-[9px] text-indigo-400 font-medium mt-0.5 truncate">
-                                                → {item.subMatches.slice(0, 3).join(', ')}
-                                            </span>
-                                        )}
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
-                    )}
-                </div>
+                    <FontAwesomeIcon icon={faTimes} style={{ fontSize: 13 }} />
+                </button>
             )}
         </div>
     );

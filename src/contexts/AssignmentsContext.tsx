@@ -1,11 +1,11 @@
 import { createContext, useContext, ReactNode } from 'react';
 import { useConnectedStores } from '@/lib/firebase/hooks';
-import { useStoreAssignments, N8nAssignment } from '@/lib/hooks/useStoreAssignments';
+import { useStoreAssignments, BackendAssignment } from '@/lib/hooks/useStoreAssignments';
 import { ConnectedStore } from '@/lib/firebase/types';
 
 interface AssignmentsContextType {
     stores: ConnectedStore[];
-    assignments: N8nAssignment[];
+    assignments: BackendAssignment[];
     loading: boolean;
     error: string | null;
     refetch: () => Promise<void>;

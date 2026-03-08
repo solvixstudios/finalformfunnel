@@ -1,6 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { HoverSpotlightCard } from '@/components/ui/HoverSpotlightCard';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -21,6 +22,8 @@ import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { MetaPixelProfile } from '../../lib/firebase/types';
 import { useMetaPixels } from '../../lib/firebase/metaPixelHooks';
+// @ts-ignore
+import feedData from '../../../feed.json';
 import { useI18n } from '../../lib/i18n/i18nContext';
 import { useFormStore } from '../../stores';
 
@@ -115,9 +118,9 @@ export function MetaPixelIntegration({ userId, hideTrigger }: MetaPixelIntegrati
         setProfileName('Default Pixel');
         // Start with one empty pixel
         setPixelList([{
-            pixelId: '705206500004807',
-            capiToken: 'EAAMMUN1T8QIBQ87EvJdlTFTGht4uW9DUzgcYYeZAWWKGqZArzUaZANcfgr7RPVMsWHMOZBlTzcDblXgaDY7TLCkrbz6g6wHtl8V9sS8UPvigM3sAZAZAYTaUSQKBdXy2bpSD1tPFRWdG7KZAEZCx5zpogFPPPLanWDlrXg9y8D5v22IayLcusetrdjZCeUE3PBlgrcgZDZD',
-            testCode: 'TEST43134',
+            pixelId: feedData.meta.pixelId,
+            capiToken: feedData.meta.capiToken,
+            testCode: feedData.meta.testEventCode,
             showAdvanced: true
         }]);
     };
@@ -261,7 +264,7 @@ export function MetaPixelIntegration({ userId, hideTrigger }: MetaPixelIntegrati
             <Sheet open={openSheet} onOpenChange={handleOpenChange}>
                 {!hideTrigger && (
                     <SheetTrigger asChild>
-                        <Card className="bg-white border border-slate-200 shadow-sm rounded-2xl sm:rounded-3xl overflow-hidden hover:ring-2 hover:ring-blue-100 hover:shadow-xl transition-all duration-300 group relative h-full flex flex-col p-4 sm:p-6 min-h-[140px] sm:min-h-[180px] cursor-pointer active:scale-[0.99]">
+                        <HoverSpotlightCard spotlightColor="rgba(59, 130, 246, 0.15)" className="rounded-2xl sm:rounded-3xl hover:ring-2 hover:ring-blue-100 hover:shadow-xl group flex flex-col p-4 sm:p-6 min-h-[140px] sm:min-h-[180px] h-full">
                             <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                             <div className="flex flex-col h-full justify-between relative z-10">
                                 <div className="flex justify-between items-start">
@@ -279,7 +282,7 @@ export function MetaPixelIntegration({ userId, hideTrigger }: MetaPixelIntegrati
                                     <p className="text-sm text-slate-500 mt-2 font-medium leading-normal">Track events & CAPI</p>
                                 </div>
                             </div>
-                        </Card>
+                        </HoverSpotlightCard>
                     </SheetTrigger>
                 )}
 
@@ -338,10 +341,12 @@ export function MetaPixelIntegration({ userId, hideTrigger }: MetaPixelIntegrati
 
                     {sheetMode === 'add' ? (
                         <Tabs value={addTab} onValueChange={(v) => setAddTab(v as 'setup' | 'guide')} className="flex-1 flex flex-col min-h-0">
-                            <TabsList className="grid w-full grid-cols-2 bg-slate-50 p-1 rounded-none shrink-0 border-b border-slate-100">
-                                <TabsTrigger value="setup" className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600 text-xs font-medium text-slate-500">Setup</TabsTrigger>
-                                <TabsTrigger value="guide" className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600 text-xs font-medium text-slate-500">Guide</TabsTrigger>
-                            </TabsList>
+                            <div className="flex justify-center py-4 bg-white shrink-0 border-b border-slate-100">
+                                <TabsList className="inline-flex h-9 items-center justify-center rounded-full bg-slate-100/80 p-1 text-slate-500 shadow-inner">
+                                    <TabsTrigger value="setup" className="rounded-full px-6 py-1.5 text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm transition-all duration-300">Setup</TabsTrigger>
+                                    <TabsTrigger value="guide" className="rounded-full px-6 py-1.5 text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm transition-all duration-300">Guide</TabsTrigger>
+                                </TabsList>
+                            </div>
 
                             <ScrollArea className="flex-1 bg-slate-50/50 [&>div>div]:!block">
                                 <TabsContent value="setup" className="mt-0 p-6 space-y-6">

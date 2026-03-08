@@ -2,9 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* ============================================
+   MIDNIGHT EDGE DESIGN SYSTEM
+   Final Form — Brand Identity & Design Tokens
+   All colors MUST be HSL.
+   ============================================ */
 
 @layer base {
   :root {
@@ -13,73 +15,99 @@ All colors MUST be HSL.
     --sidebar-width-expanded: 16rem;
     --sidebar-width-collapsed: 5rem;
 
-    --background: 0 0% 100%;
-    --foreground: 222.2 47.4% 11.2%;
+    /* Brand */
+    --brand: 263 70% 58%;
+    --brand-foreground: 0 0% 100%;
+    --brand-light: 263 85% 75%;
+    --brand-dark: 263 70% 45%;
+
+    /* Surfaces */
+    --background: 40 20% 98%;
+    --foreground: 220 25% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 47.4% 11.2%;
+    --card-foreground: 220 25% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 47.4% 11.2%;
+    --popover-foreground: 220 25% 12%;
 
-    --primary: 222.2 47.4% 11.2%;
+    /* Primary Actions */
+    --primary: 263 70% 58%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 220 25% 12%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 10% 46%;
 
-    --accent: 217.2 32.6% 17.5%;
+    --accent: 263 70% 58%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 85%;
-    --input: 214.3 31.8% 85%;
-    --ring: 217.2 32.6% 17.5%;
+    /* Semantic Colors */
+    --success: 152 69% 42%;
+    --success-foreground: 0 0% 100%;
 
-    --radius: 8px;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 0%;
 
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 222.2 47.4% 11.2%;
-    --sidebar-primary: 222.2 47.4% 11.2%;
+    --info: 217 91% 60%;
+    --info-foreground: 0 0% 100%;
+
+    --danger: 0 84% 60%;
+    --danger-foreground: 0 0% 100%;
+
+    /* Borders & Rings */
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 263 70% 58%;
+
+    --radius: 12px;
+
+    /* Platform Colors */
+    --shopify: 85 51% 51%;
+    --shopify-foreground: 0 0% 100%;
+
+    /* Sidebar */
+    --sidebar-background: 240 15% 8%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 263 70% 58%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 40% 96.1%;
-    --sidebar-accent-foreground: 222.2 47.4% 11.2%;
-    --sidebar-border: 214.3 31.8% 85%;
-    --sidebar-ring: 217.2 32.6% 17.5%;
+    --sidebar-accent: 263 70% 58%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 240 10% 14%;
+    --sidebar-ring: 263 70% 58%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 240 10% 5%;
+    --foreground: 220 14% 96%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 240 10% 8%;
+    --card-foreground: 220 14% 96%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 240 10% 8%;
+    --popover-foreground: 220 14% 96%;
 
-    --primary: 238.7 83.5% 66.7%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 263 85% 75%;
+    --primary-foreground: 240 10% 5%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 240 10% 14%;
+    --secondary-foreground: 220 14% 96%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 240 10% 14%;
+    --muted-foreground: 220 10% 65%;
 
-    --accent: 160 84% 39%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 263 85% 75%;
+    --accent-foreground: 240 10% 5%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 220 14% 96%;
 
-    /* Semantic colors - Dark mode */
-    --success: 142 71% 45%;
+    --success: 152 69% 42%;
     --success-foreground: 0 0% 100%;
 
     --warning: 38 92% 50%;
@@ -88,29 +116,36 @@ All colors MUST be HSL.
     --info: 217 91% 65%;
     --info-foreground: 0 0% 100%;
 
-    --danger: 0 62.8% 50%;
-    --danger-foreground: 210 40% 98%;
+    --danger: 0 62% 50%;
+    --danger-foreground: 220 14% 96%;
 
-    /* Brand colors - Dark mode */
-    --brand: 239 84% 67%;
-    --brand-foreground: 0 0% 100%;
+    --brand: 263 85% 75%;
+    --brand-foreground: 240 10% 5%;
+    --brand-light: 263 85% 82%;
+    --brand-dark: 263 70% 58%;
+
+    --border: 240 10% 14%;
+    --input: 240 10% 14%;
+    --ring: 263 85% 75%;
 
     --shopify: 85 51% 51%;
     --shopify-foreground: 0 0% 100%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-background: 240 10% 4%;
+    --sidebar-foreground: 220 14% 96%;
+    --sidebar-primary: 263 85% 75%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 240 10% 12%;
+    --sidebar-accent-foreground: 220 14% 96%;
+    --sidebar-border: 240 10% 12%;
+    --sidebar-ring: 263 85% 75%;
   }
 }
+
+/* ============================================
+   BASE STYLES
+   Typography, body, heading defaults
+   ============================================ */
 
 @layer base {
   * {
@@ -120,7 +155,7 @@ All colors MUST be HSL.
   body,
   :host,
   #finalform-shadow-wrapper {
-    @apply font-sans bg-[#FAFAFA] text-slate-900 antialiased;
+    @apply font-sans bg-[#F8F7F5] text-[#1A1D26] antialiased;
   }
 
   h1,
@@ -134,16 +169,17 @@ All colors MUST be HSL.
 
   h1 {
     @apply text-4xl lg:text-5xl;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
   }
 
   h2 {
     @apply text-3xl lg:text-4xl;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.02em;
   }
 
   h3 {
     @apply text-2xl lg:text-3xl;
+    letter-spacing: -0.01em;
   }
 
   h4 {
@@ -151,7 +187,11 @@ All colors MUST be HSL.
   }
 }
 
-/* Animations */
+/* ============================================
+   CORE ANIMATIONS
+   Entry, transition, and utility keyframes
+   ============================================ */
+
 @keyframes fade-in {
   from {
     opacity: 0;
@@ -217,7 +257,7 @@ All colors MUST be HSL.
   animation-name: zoom-in-95;
 }
 
-/* Shimmer animation for trust badges banner */
+/* Shimmer for loading states */
 @keyframes shimmer {
   0% {
     transform: translateX(-100%);
@@ -228,7 +268,10 @@ All colors MUST be HSL.
   }
 }
 
-/* Hide scrollbar but keep scrolling */
+/* ============================================
+   SCROLLBAR STYLES
+   ============================================ */
+
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
@@ -238,7 +281,6 @@ All colors MUST be HSL.
   scrollbar-width: none;
 }
 
-/* Custom scrollbar styles */
 .custom-scroll::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -257,13 +299,29 @@ All colors MUST be HSL.
   background: rgba(148, 163, 184, 0.5);
 }
 
+.custom-scroll-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scroll-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scroll-thin::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.15);
+  border-radius: 3px;
+}
+
+.custom-scroll-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.35);
+}
+
 /* ============================================
    CTA BUTTON ANIMATIONS
-   Enhanced looping animations with proper pauses
-   for a sophisticated, non-distracting UX
+   Looping micro-animations with natural pauses
    ============================================ */
 
-/* PULSE - Gentle scale animation */
 @keyframes pulse-loop {
 
   0%,
@@ -289,7 +347,6 @@ All colors MUST be HSL.
   }
 }
 
-/* BOUNCE - Playful vertical bounce */
 @keyframes bounce-loop {
 
   0%,
@@ -311,7 +368,6 @@ All colors MUST be HSL.
   }
 }
 
-/* GLOW - Subtle shadow pulse effect */
 @keyframes glow-loop {
 
   0%,
@@ -329,7 +385,6 @@ All colors MUST be HSL.
   }
 }
 
-/* SHAKE - Refined shake with rotation */
 @keyframes shake-loop {
 
   0%,
@@ -363,7 +418,6 @@ All colors MUST be HSL.
   }
 }
 
-/* SLIDE - Horizontal slide motion */
 @keyframes slide-loop {
 
   0%,
@@ -385,7 +439,6 @@ All colors MUST be HSL.
   }
 }
 
-/* SCALE - Zoom in/out effect */
 @keyframes scale-loop {
 
   0%,
@@ -403,7 +456,6 @@ All colors MUST be HSL.
   }
 }
 
-/* FLOAT - Gentle vertical float */
 @keyframes float-loop {
 
   0%,
@@ -421,7 +473,6 @@ All colors MUST be HSL.
   }
 }
 
-/* Spin - Gentle rotation */
 @keyframes spin-loop {
 
   0%,
@@ -443,7 +494,6 @@ All colors MUST be HSL.
   }
 }
 
-/* Animation classes with optimized timing - faster speeds for better engagement */
 .animate-pulse-loop {
   animation: pulse-loop 3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
@@ -477,7 +527,7 @@ All colors MUST be HSL.
   animation: spin-loop 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
-/* Legacy shake animation (non-looping) */
+/* Legacy shake */
 @keyframes shake {
 
   0%,
@@ -505,7 +555,10 @@ All colors MUST be HSL.
   animation: shake 0.5s ease-in-out;
 }
 
-/* Page transition animations */
+/* ============================================
+   PAGE TRANSITION ANIMATIONS
+   ============================================ */
+
 @keyframes slide-in-from-bottom-8 {
   from {
     transform: translateY(2rem);
@@ -570,22 +623,18 @@ All colors MUST be HSL.
   animation-delay: 200ms;
 }
 
-/* Smooth transitions */
 .transition-smooth {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Better scrolling */
 html {
   scroll-behavior: smooth;
 }
 
-/* Sidebar smooth width transitions */
 aside {
   transition: width 0.3s ease-in-out;
 }
 
-/* Performance optimizations */
 .will-change-transform {
   will-change: transform;
 }
@@ -595,22 +644,22 @@ aside {
 }
 
 /* ============================================
-   GLASS-MORPHISM EFFECTS
-   Premium frosted glass UI elements
+   GLASS MORPHISM — MIDNIGHT EDGE
+   Premium frosted glass with violet tints
    ============================================ */
 
 .glass {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.4);
 }
 
 .glass-dark {
-  background: rgba(15, 23, 42, 0.8);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(17, 17, 24, 0.85);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .glass-subtle {
@@ -619,12 +668,17 @@ aside {
   -webkit-backdrop-filter: blur(8px);
 }
 
+.glass-brand {
+  background: rgba(124, 58, 237, 0.08);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(124, 58, 237, 0.12);
+}
+
 /* ============================================
-   NEW MICRO-ANIMATIONS
-   Subtle, premium animations for UX polish
+   MICRO-ANIMATIONS — Premium UX Polish
    ============================================ */
 
-/* Fade Up - For card entrances */
 @keyframes fade-up {
   from {
     opacity: 0;
@@ -641,7 +695,6 @@ aside {
   animation: fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Scale In - For modal/popup entrances */
 @keyframes scale-in {
   from {
     opacity: 0;
@@ -658,7 +711,7 @@ aside {
   animation: scale-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Stagger animation delays for lists */
+/* Stagger delays for list entrance */
 .stagger-1 {
   animation-delay: 50ms;
 }
@@ -691,7 +744,6 @@ aside {
   animation-delay: 400ms;
 }
 
-/* Subtle pulse for attention */
 @keyframes subtle-pulse {
 
   0%,
@@ -708,7 +760,6 @@ aside {
   animation: subtle-pulse 2s ease-in-out infinite;
 }
 
-/* Gradient shimmer for loading states */
 @keyframes gradient-shimmer {
   0% {
     background-position: 200% 0;
@@ -720,17 +771,70 @@ aside {
 }
 
 .animate-gradient-shimmer {
-  background: linear-gradient(90deg,
-      transparent 0%,
-      rgba(255, 255, 255, 0.4) 50%,
-      transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%);
   background-size: 200% 100%;
   animation: gradient-shimmer 1.5s ease-in-out infinite;
 }
 
 /* ============================================
-   ENHANCED CARD EFFECTS
-   Premium hover and focus states
+   BRAND GRADIENT ANIMATIONS
+   Animated gradient mesh for hero / dark sections
+   ============================================ */
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-gradient-shift {
+  background-size: 300% 300%;
+  animation: gradient-shift 8s ease infinite;
+}
+
+@keyframes brand-glow-pulse {
+
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-brand-glow {
+  animation: brand-glow-pulse 4s ease-in-out infinite;
+}
+
+@keyframes float-gentle {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+.animate-float-gentle {
+  animation: float-gentle 6s ease-in-out infinite;
+}
+
+/* ============================================
+   CARD EFFECTS — Premium
+   Hover lift, spotlight, glow
    ============================================ */
 
 .card-hover {
@@ -738,15 +842,31 @@ aside {
 }
 
 .card-hover:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 40px -12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-3px);
+  box-shadow:
+    0 20px 40px -12px rgba(0, 0, 0, 0.08),
+    0 0 0 1px rgba(124, 58, 237, 0.06);
 }
 
 .card-hover:active {
-  transform: translateY(0);
+  transform: translateY(-1px);
 }
 
-/* Gradient border effect */
+@layer utilities {
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+  }
+
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+    /* Chrome, Safari and Opera */
+  }
+}
+
+/* Gradient border effect — violet */
 .gradient-border {
   position: relative;
 }
@@ -757,7 +877,7 @@ aside {
   inset: 0;
   border-radius: inherit;
   padding: 1px;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(168, 85, 247, 0.3));
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.3), rgba(167, 139, 250, 0.3));
   -webkit-mask:
     linear-gradient(#fff 0 0) content-box,
     linear-gradient(#fff 0 0);
@@ -775,12 +895,81 @@ aside {
   opacity: 1;
 }
 
+/* Brand glow effect */
+.glow-brand {
+  box-shadow: 0 0 20px rgba(124, 58, 237, 0.15);
+}
+
+.glow-brand-lg {
+  box-shadow: 0 0 40px rgba(124, 58, 237, 0.2);
+}
+
+/* Spotlight card effect (CSS-only version) */
+.card-spotlight {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-spotlight::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(124, 58, 237, 0.06), transparent 40%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.card-spotlight:hover::before {
+  opacity: 1;
+}
+
 /* ============================================
-   RESPONSIVE UTILITIES
-   Mobile-first helper classes
+   TEXT UTILITIES
+   Gradient text, balance, typography
    ============================================ */
 
-/* Safe area padding for iOS */
+.text-balance {
+  text-wrap: balance;
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, #7C3AED 0%, #A78BFA 50%, #818CF8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-brand {
+  background: linear-gradient(135deg, #7C3AED 0%, #A78BFA 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ============================================
+   NOISE TEXTURE
+   Subtle grain overlay for premium depth
+   ============================================ */
+
+.bg-noise::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 1;
+  mix-blend-mode: overlay;
+}
+
+/* ============================================
+   RESPONSIVE UTILITIES
+   Mobile-first helpers
+   ============================================ */
+
 .safe-area-inset-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0);
 }
@@ -789,20 +978,17 @@ aside {
   padding-top: env(safe-area-inset-top, 0);
 }
 
-/* Touch-friendly minimum sizes */
 .touch-target {
   min-height: 44px;
   min-width: 44px;
 }
 
-/* Hide on mobile, show on desktop */
 @media (max-width: 640px) {
   .hide-mobile {
     display: none !important;
   }
 }
 
-/* Horizontal scroll container for mobile */
 .scroll-x-mobile {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
@@ -814,12 +1000,10 @@ aside {
   display: none;
 }
 
-/* Safe area for notched devices */
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-/* Better focus states for accessibility */
 .focus-ring {
   outline: none;
 }
@@ -829,47 +1013,7 @@ aside {
 }
 
 /* ============================================
-   IMPROVED SCROLLBAR
-   Custom styled scrollbar for content areas
-   ============================================ */
-
-.custom-scroll-thin::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-.custom-scroll-thin::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.custom-scroll-thin::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.2);
-  border-radius: 3px;
-}
-
-.custom-scroll-thin::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.4);
-}
-
-/* ============================================
-   TEXT UTILITIES
-   Typography helpers
-   ============================================ */
-
-.text-balance {
-  text-wrap: balance;
-}
-
-.text-gradient {
-  background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* ============================================
    RESPONSIVE TYPOGRAPHY
-   Fluid font sizes
    ============================================ */
 
 @media (max-width: 640px) {

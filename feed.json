@@ -1,0 +1,24 @@
+{
+    "whatsapp": {
+        "name": "My WhatsApp",
+        "phone": "213555449955"
+    },
+    "shopify": {
+        "clientId": "3267facf7b3733a5e74e1e9c3b077437",
+        "clientSecret": "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",
+        "shopDomain": "https://baraaelectromenager-com.myshopify.com"
+    },
+    "meta": {
+        "capiToken": "EAAMMUN1T8QIBQyZAmZCnUHzERIThsUz8A2nIhE5irSFqd1JK3C6ZCmNgggR4FXBbp48ZA6O3vh3txBk89FwrGJFLffAVA5u0m7Am2XQoMNrIePgZCM1BkdsKcW33Q4YXkB2ccjaa3DItgZBNq9wx2vlZCjx0XbJZCn4VXJYjsSWUeSMFT9FxeRlIys6NAVWZAjGx2wgZDZD",
+        "pixelId": "705206500004807",
+        "testEventCode": "TEST81373"
+    },
+    "tiktok": {
+        "pixelId": "D6AAVS3C77U5EFCE5FGG",
+        "accessToken": "0096bdb3a232dec2fda628279528217a8ce3c7a4",
+        "testCode": "TEST94745"
+    },
+    "googleSheets": {
+        "spreadsheetURL": "https://script.google.com/macros/s/AKfycbyqvcGnwXXSzavC9Zo5EyvxjQFtmpOxCYgmq3Ve_7D5ABirWkxT15lXuEaEybjCfkS7/exec"
+    }
+}

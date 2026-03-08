@@ -51,20 +51,25 @@ export const FormLoadingCard: React.FC<FormLoadingCardProps> = ({
 
   if (isLoading) {
     return (
-      <div className={cn("rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm animate-pulse", className)}>
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="h-11 w-11 rounded-xl bg-slate-100" />
-            <div className="space-y-2">
+      <div className={cn("group relative bg-white rounded-2xl border border-slate-200/80 p-5 overflow-hidden h-full flex flex-col justify-between", className)}>
+        {/* Header */}
+        <div className="relative flex items-start justify-between mb-4">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className="w-11 h-11 rounded-xl bg-slate-100 shrink-0" />
+            <div className="min-w-0 flex-1 space-y-2">
               <div className="h-4 w-32 bg-slate-100 rounded" />
-              <div className="h-3 w-20 bg-slate-100 rounded" />
+              <div className="h-3 w-20 bg-slate-100 rounded mt-1" />
             </div>
           </div>
-          <div className="h-8 w-8 rounded-lg bg-slate-100" />
         </div>
-        <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-          <div className="h-3 w-24 bg-slate-100 rounded" />
-          <div className="h-8 w-20 bg-slate-100 rounded-full" />
+
+        {/* Footer */}
+        <div className="relative flex items-center justify-between pt-4 border-t border-slate-100 mt-2">
+          <div className="flex items-center gap-1">
+            <div className="h-8 w-8 rounded-full bg-slate-100" />
+            <div className="h-8 w-8 rounded-full bg-slate-100" />
+          </div>
+          <div className="h-8 w-20 bg-slate-100 rounded-full ml-auto" />
         </div>
       </div>
     );
@@ -315,18 +320,25 @@ export const FormLoadingCardSkeleton = ({ count = 4 }) => (
   </>
 );
 
-export const FormLoadingEmptyState = ({ hasSearchQuery }: { hasSearchQuery?: boolean }) => (
-  <div className="flex flex-col items-center justify-center py-16 text-center">
-    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-50 flex items-center justify-center mb-5 shadow-sm">
-      <FileText size={28} className="text-slate-300" />
+export const FormLoadingEmptyState = ({ hasSearchQuery, onClear }: { hasSearchQuery?: boolean, onClear?: () => void }) => {
+  return (
+    <div className="flex flex-col items-center justify-center py-16 text-center w-full max-w-lg mx-auto bg-slate-50/50 rounded-3xl border border-dashed border-slate-200 p-8">
+      <div className="w-16 h-16 rounded-2xl bg-white shadow-sm border border-slate-100 flex items-center justify-center mb-5 hover:scale-105 transition-transform">
+        <FileText size={28} className="text-slate-400" />
+      </div>
+      <h3 className="text-lg font-bold text-slate-900 mb-2 tracking-tight">
+        {hasSearchQuery ? 'No matching forms found' : 'No forms yet'}
+      </h3>
+      <p className="max-w-xs mx-auto text-sm text-slate-500 leading-relaxed mb-6">
+        {hasSearchQuery
+          ? "We couldn't find any forms matching your search criteria. Try adjusting your filters."
+          : "Create your first form to start capturing leads and processing orders instantly."}
+      </p>
+      {hasSearchQuery && onClear && (
+        <Button onClick={onClear} variant="outline" className="rounded-full shadow-sm bg-white h-10 px-6 font-semibold">
+          Clear Search
+        </Button>
+      )}
     </div>
-    <h3 className="text-lg font-semibold text-slate-900 mb-2">
-      {hasSearchQuery ? 'No matching forms found' : 'No forms yet'}
-    </h3>
-    <p className="max-w-xs mx-auto text-sm text-slate-500 leading-relaxed">
-      {hasSearchQuery
-        ? 'Try adjusting your search terms.'
-        : 'Create your first form to start building high-converting pages.'}
-    </p>
-  </div>
-);
+  );
+};

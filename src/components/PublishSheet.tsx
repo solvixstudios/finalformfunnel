@@ -33,7 +33,7 @@ interface PublishSheetProps {
     userId: string;
     formId: string;
     formName: string;
-    formConfig: unknown;
+    formConfig: Record<string, any>;
     formType?: 'store' | 'product';
     initialStoreId?: string;
     onPublishSuccess?: () => void;
@@ -63,7 +63,7 @@ export function PublishSheet({
     const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
     const [productSearch, setProductSearch] = useState('');
     const [isPublishing, setIsPublishing] = useState(false);
-    const [conflictAssignment, setConflictAssignment] = useState<unknown>(null);
+    const [conflictAssignment, setConflictAssignment] = useState<any>(null);
 
     // Manage State
     const [selectedAssignmentIds, setSelectedAssignmentIds] = useState<string[]>([]);
@@ -277,10 +277,10 @@ export function PublishSheet({
         if (!store) return;
 
         if (conflictAssignment) {
-            await deleteAssignment(conflictAssignment.id!);
+            await deleteAssignment((conflictAssignment as any).id);
         }
 
-        // assignForm handles: adapter push to n8n + refetch for UI sync
+        // assignForm handles: adapter push to backend + refetch for UI sync
         await assignForm({
             formId,
             storeId: selectedStoreId,
@@ -316,7 +316,7 @@ export function PublishSheet({
             );
 
             if (!alreadyAssigned) {
-                // assignForm handles: adapter push to n8n + refetch for UI sync
+                // assignForm handles: adapter push to backend + refetch for UI sync
                 // We SKIP refetch here and do it once at the end
                 await assignForm({
                     formId,
@@ -349,7 +349,7 @@ export function PublishSheet({
         const loadingToast = toast.loading(`Unpublishing ${selectedAssignmentIds.length} items...`);
 
         try {
-            // deleteAssignment handles n8n cleanup internally
+            // deleteAssignment handles backend cleanup internally
             const promises = selectedAssignmentIds.map(assignId =>
                 deleteAssignment(assignId).catch(e =>
                     console.warn(`Failed to unpublish ${assignId}:`, e)
@@ -373,7 +373,7 @@ export function PublishSheet({
         const loadingToast = toast.loading('Unpublishing...');
 
         try {
-            // deleteAssignment handles n8n cleanup internally
+            // deleteAssignment handles backend cleanup internally
             await deleteAssignment(assignment.id);
             toast.success('Unpublished successfully');
         } catch (e: any) {

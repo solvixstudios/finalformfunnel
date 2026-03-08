@@ -1,7 +1,8 @@
 import { ShopifyManager } from '@/components/integrations/ShopifyManager';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardTitle } from '@/components/ui/card';
+import { CardTitle } from '@/components/ui/card';
+import { HoverSpotlightCard } from '@/components/ui/HoverSpotlightCard';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -25,8 +26,10 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { useConnectedStores } from '../../lib/firebase/hooks';
-import { getAdapter, LOADER_VERSION } from '../../lib/integrations';
+import { useConnectedStores } from '@/lib/firebase/hooks';
+// @ts-ignore
+import feedData from '../../../feed.json';
+import { getAdapter, LOADER_VERSION } from '@/lib/integrations';
 import { cn } from '@/lib/utils';
 import { syncProductsFromShopify, notifyProductSyncComplete } from '../../lib/products';
 
@@ -168,9 +171,9 @@ const ShopifyGuide = () => (
             <p>Add the following URL to <strong>Allowed redirection URL(s)</strong>:</p>
             <div className="flex items-center gap-2 mt-2">
                 <div className="relative flex-1">
-                    <Input readOnly value="https://oauth.n8n.cloud/oauth2/callback" className="bg-slate-50 border-slate-200 font-mono text-xs h-9 pr-20" onClick={(e) => e.currentTarget.select()} />
+                    <Input readOnly value="https://your-backend-url.com/oauth2/callback" className="bg-slate-50 border-slate-200 font-mono text-xs h-9 pr-20" onClick={(e) => e.currentTarget.select()} />
                     <div className="absolute right-1 top-1">
-                        <CopyButton text="https://oauth.n8n.cloud/oauth2/callback" className="h-7 bg-white shadow-sm border border-slate-200 hover:bg-slate-50" />
+                        <CopyButton text="https://your-backend-url.com/oauth2/callback" className="h-7 bg-white shadow-sm border border-slate-200 hover:bg-slate-50" />
                     </div>
                 </div>
             </div>
@@ -202,9 +205,9 @@ export function ShopifyIntegration({ userId }: ShopifyIntegrationProps) {
     const [view, setView] = useState<'list' | 'add'>('list');
 
     const [shopifyForm, setShopifyForm] = useState({
-        subdomain: 'baraaelectromenager-com',
-        clientId: '3267facf7b3733a5e74e1e9c3b077437',
-        clientSecret: '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',
+        subdomain: feedData.shopify.shopDomain.replace('https://', '').replace('.myshopify.com', ''),
+        clientId: feedData.shopify.clientId,
+        clientSecret: feedData.shopify.clientSecret,
     });
     const [isConnecting, setIsConnecting] = useState(false);
 
@@ -295,7 +298,7 @@ export function ShopifyIntegration({ userId }: ShopifyIntegrationProps) {
 
                     setView('list');
                     setShopifyForm({ subdomain: '', clientId: '', clientSecret: '' });
-                } catch (addError: unknown) {
+                } catch (addError: any) {
                     if (addError.message === 'STORE_ALREADY_OWNED') {
                         toast.error('This store is already connected to a different account.');
                     } else if (addError.message === 'STORE_ALREADY_CONNECTED') {
@@ -307,7 +310,7 @@ export function ShopifyIntegration({ userId }: ShopifyIntegrationProps) {
             } else {
                 toast.error(result.error || 'Connection failed. Please check your credentials.');
             }
-        } catch (error: unknown) {
+        } catch (error: any) {
             console.error(error);
             toast.error(error.message || 'An unexpected error occurred.');
         } finally {
@@ -318,8 +321,9 @@ export function ShopifyIntegration({ userId }: ShopifyIntegrationProps) {
     return (
         <div className="md:col-span-1 md:row-span-1">
             <Sheet open={openSheet} onOpenChange={handleOpenChange}>
-                <Card
-                    className="bg-white border border-slate-200 rounded-2xl sm:rounded-3xl overflow-hidden hover:ring-2 hover:ring-indigo-100 hover:shadow-xl transition-all duration-300 group relative h-full flex flex-col shadow-sm min-h-[140px] sm:min-h-[180px] p-4 sm:p-6 cursor-pointer active:scale-[0.99]"
+                <HoverSpotlightCard
+                    spotlightColor="rgba(99, 102, 241, 0.15)"
+                    className="rounded-2xl sm:rounded-3xl hover:ring-2 hover:ring-indigo-100 hover:shadow-xl group flex flex-col p-4 sm:p-6 min-h-[140px] sm:min-h-[180px] h-full"
                     onClick={() => {
                         setActiveTab(isConnected ? 'manage' : 'guide');
                         setOpenSheet(true);
@@ -344,7 +348,7 @@ export function ShopifyIntegration({ userId }: ShopifyIntegrationProps) {
                             </p>
                         </div>
                     </div>
-                </Card>
+                </HoverSpotlightCard>
 
                 <SheetContent hideClose className="sm:max-w-md w-full flex flex-col h-full p-0 gap-0 bg-white overflow-hidden sm:border-l sm:shadow-2xl">
                     <SheetHeader className="px-6 py-5 border-b border-slate-100 shrink-0 bg-white">
@@ -403,10 +407,12 @@ export function ShopifyIntegration({ userId }: ShopifyIntegrationProps) {
                     </SheetHeader>
 
                     <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'manage' | 'guide')} className="flex-1 flex flex-col min-h-0">
-                        <TabsList className="grid w-full grid-cols-2 bg-slate-50 p-1 rounded-none shrink-0 border-b border-slate-100">
-                            <TabsTrigger value="manage" className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-indigo-600 text-xs font-medium text-slate-500">Manage</TabsTrigger>
-                            <TabsTrigger value="guide" className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-indigo-600 text-xs font-medium text-slate-500">Setup Guide</TabsTrigger>
-                        </TabsList>
+                        <div className="flex justify-center py-4 bg-white shrink-0 border-b border-slate-100">
+                            <TabsList className="inline-flex h-9 items-center justify-center rounded-full bg-slate-100/80 p-1 text-slate-500 shadow-inner">
+                                <TabsTrigger value="manage" className="rounded-full px-6 py-1.5 text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm transition-all duration-300">Manage</TabsTrigger>
+                                <TabsTrigger value="guide" className="rounded-full px-6 py-1.5 text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm transition-all duration-300">Setup Guide</TabsTrigger>
+                            </TabsList>
+                        </div>
 
                         <ScrollArea className="flex-1 bg-slate-50/50 [&>div>div]:!block">
                             <TabsContent value="manage" className="mt-0 p-6 space-y-4">

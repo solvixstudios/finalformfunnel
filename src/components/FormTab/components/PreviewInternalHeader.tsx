@@ -31,7 +31,7 @@ export const PreviewInternalHeader = ({
     const [isEditing, setIsEditing] = useState(false);
 
     return (
-        <div className="flex items-center gap-4 h-full">
+        <div className="flex items-center gap-4 h-14 px-4 sm:px-6 border-b border-slate-200 bg-white shadow-sm shrink-0">
             {/* Form Name */}
             <div className="flex items-center gap-2 max-w-[200px] lg:max-w-[300px]">
                 {isEditing ? (

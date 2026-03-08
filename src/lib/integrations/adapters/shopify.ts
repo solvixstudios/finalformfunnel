@@ -13,8 +13,8 @@ import type {
   Product,
 } from './types';
 
-const N8N_BACKEND_URL = import.meta.env.VITE_N8N_BACKEND_URL || 'https://your-n8n-instance.com';
-const WEBHOOK_ENV = import.meta.env.VITE_N8N_WEBHOOK_ENV || 'webhook';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://your-backend-instance.com';
+const WEBHOOK_ENV = import.meta.env.VITE_WEBHOOK_ENV || 'webhook';
 
 export const LOADER_VERSION = '1.1.0';
 
@@ -61,7 +61,7 @@ async function parseErrorResponse(response: Response, fallbackMessage: string): 
 }
 
 /**
- * Helper to normalize n8n array responses
+ * Helper to normalize backend array responses
  */
 function normalizeResponse<T>(data: T | T[]): T {
   return Array.isArray(data) ? data[0] : data;
@@ -88,7 +88,9 @@ export class ShopifyAdapter implements PlatformAdapter {
     }
 
     try {
-      const response = await fetch(`${N8N_BACKEND_URL}/${WEBHOOK_ENV}/shopify/connect`, {
+      // The provided snippet has a different URL and console.log, applying that specific change.
+      console.log(`[Shopify Adapter] Sending config to webhook ${BACKEND_URL}/webhook/shopify/config...`);
+      const response = await fetch(`${BACKEND_URL}/webhook/shopify/config`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ subdomain, clientId, clientSecret, userId }),
@@ -131,7 +133,7 @@ export class ShopifyAdapter implements PlatformAdapter {
   async enableLoader(subdomain: string, credentials: PlatformCredentials): Promise<EnableLoaderResult> {
     const { clientId, clientSecret } = credentials;
 
-    const response = await fetch(`${N8N_BACKEND_URL}/${WEBHOOK_ENV}/shopify/enable-loader`, {
+    const response = await fetch(`${BACKEND_URL}/${WEBHOOK_ENV}/shopify/enable-loader`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ subdomain, clientId, clientSecret }),
@@ -152,8 +154,8 @@ export class ShopifyAdapter implements PlatformAdapter {
   async disableLoader(subdomain: string, credentials: PlatformCredentials): Promise<void> {
     const { clientId, clientSecret } = credentials;
 
-    // Disable the loader script tag ONLY (don't remove store from n8n yet)
-    const response = await fetch(`${N8N_BACKEND_URL}/${WEBHOOK_ENV}/shopify/disable-loader`, {
+    // Disable the loader script tag ONLY (don't remove store from backend yet)
+    const response = await fetch(`${BACKEND_URL}/${WEBHOOK_ENV}/shopify/disable-loader`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ subdomain, clientId, clientSecret }),
@@ -167,13 +169,14 @@ export class ShopifyAdapter implements PlatformAdapter {
   async disconnectStore(subdomain: string): Promise<void> {
     const shopDomain = `${subdomain}.myshopify.com`;
     try {
-      await fetch(`${N8N_BACKEND_URL}/${WEBHOOK_ENV}/shopify/disconnect`, {
+      // The provided snippet has a different URL, applying that specific change.
+      await fetch(`${BACKEND_URL}/webhook/shopify/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ shopDomain }),
       });
-    } catch (e) {
-      console.warn('Failed to remove store from n8n:', e);
+    } catch (e: unknown) {
+      console.warn('Failed to remove store from backend:', (e as Error).message);
     }
   }
 
@@ -206,8 +209,8 @@ export class ShopifyAdapter implements PlatformAdapter {
       productId: context?.productId ? String(context.productId) : null,
     };
 
-    // DEBUG: Trace final payload to N8N
-    console.log('[ShopifyAdapter] Sending payload to N8N:', {
+    // DEBUG: Trace final payload to backend
+    console.log('[ShopifyAdapter] Sending payload to backend:', {
       shopDomain,
       formId: payload.formId,
       hasFormData: !!payload.formData,
@@ -218,7 +221,7 @@ export class ShopifyAdapter implements PlatformAdapter {
       }
     });
 
-    const response = await fetch(`${N8N_BACKEND_URL}/${WEBHOOK_ENV}/shopify/save-config`, {
+    const response = await fetch(`${BACKEND_URL}/${WEBHOOK_ENV}/shopify/save-config`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -249,7 +252,7 @@ export class ShopifyAdapter implements PlatformAdapter {
       productId: productId ? String(productId) : null,
     };
 
-    const response = await fetch(`${N8N_BACKEND_URL}/${WEBHOOK_ENV}/shopify/delete-config`, {
+    const response = await fetch(`${BACKEND_URL}/${WEBHOOK_ENV}/shopify/delete-config`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -265,7 +268,7 @@ export class ShopifyAdapter implements PlatformAdapter {
     const { clientId, clientSecret } = credentials;
     const shopDomain = `${subdomain}.myshopify.com`;
 
-    const response = await fetchWithTimeout(`${N8N_BACKEND_URL}/${WEBHOOK_ENV}/shopify/assignments`, {
+    const response = await fetchWithTimeout(`${BACKEND_URL}/${WEBHOOK_ENV}/shopify/assignments`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ shopDomain, clientId, clientSecret }),
@@ -283,7 +286,7 @@ export class ShopifyAdapter implements PlatformAdapter {
   async fetchProducts(subdomain: string, credentials: PlatformCredentials): Promise<Product[]> {
     const { clientId, clientSecret } = credentials;
 
-    const response = await fetch(`${N8N_BACKEND_URL}/${WEBHOOK_ENV}/shopify/get-products`, {
+    const response = await fetch(`${BACKEND_URL}/${WEBHOOK_ENV}/shopify/get-products`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ subdomain, clientId, clientSecret }),
@@ -298,7 +301,7 @@ export class ShopifyAdapter implements PlatformAdapter {
   }
 
   async submitOrder(orderData: OrderData): Promise<unknown> {
-    const response = await fetch(`${N8N_BACKEND_URL}/${WEBHOOK_ENV}/submit-order`, {
+    const response = await fetch(`${BACKEND_URL}/${WEBHOOK_ENV}/submit-order`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(orderData),

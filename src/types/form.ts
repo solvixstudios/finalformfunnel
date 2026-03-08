@@ -271,7 +271,7 @@ export interface FormConfig {
   sectionOrder?: string[];
   type?: "product" | "store";
 
-  // Contextual store properties usually injected via n8n/backend
+  // Contextual store properties usually injected via backend
   storeName?: string;
   shopifyDomain?: string;
 

@@ -1,19 +1,20 @@
 {
   "name": "vite_react_shadcn_ts",
   "private": true,
-  "version": "1.2.129",
+  "version": "1.2.130",
   "type": "module",
   "scripts": {
-    "dev": "node scripts/init-n8n-tables.js && vite",
+    "dev": "node scripts/init-backend-tables.js && vite",
     "server": "cd server && npm run dev",
     "build": "vite build && npm run build:loader",
     "build:loader": "node scripts/bump-version.js && vite build --config vite.loader.config.ts && vite build --config vite.global.config.ts && node scripts/build-loader.js",
     "deploy:loader": "npm run build:loader && firebase deploy --only hosting",
     "build:dev": "vite build --mode development",
     "deploy": "firebase deploy",
-    "bnd": "vite build && npm run build:loader && firebase deploy && node scripts/init-n8n-tables.js",
+    "bnd": "vite build && npm run build:loader && firebase deploy && node scripts/init-backend-tables.js",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "clean:db": "cd server && npm run clean:db"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

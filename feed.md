@@ -1,18 +1,22 @@
 
+//Whatsapp
+name='My WhatsApp'
+phone='213555449955'
+
 //Shopify
 clientId= '3267facf7b3733a5e74e1e9c3b077437',
 clientSecret= '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',
 shopDomain= 'https://baraaelectromenager-com.myshopify.com'
 
 //Meta Pixels
-capiToken = 'EAAMMUN1T8QIBQ87EvJdlTFTGht4uW9DUzgcYYeZAWWKGqZArzUaZANcfgr7RPVMsWHMOZBlTzcDblXgaDY7TLCkrbz6g6wHtl8V9sS8UPvigM3sAZAZAYTaUSQKBdXy2bpSD1tPFRWdG7KZAEZCx5zpogFPPPLanWDlrXg9y8D5v22IayLcusetrdjZCeUE3PBlgrcgZDZD'
+capiToken = 'EAAMMUN1T8QIBQyZAmZCnUHzERIThsUz8A2nIhE5irSFqd1JK3C6ZCmNgggR4FXBbp48ZA6O3vh3txBk89FwrGJFLffAVA5u0m7Am2XQoMNrIePgZCM1BkdsKcW33Q4YXkB2ccjaa3DItgZBNq9wx2vlZCjx0XbJZCn4VXJYjsSWUeSMFT9FxeRlIys6NAVWZAjGx2wgZDZD'
 pixelId = '705206500004807'
-testEventCode = 'TEST43134'
+testEventCode = 'TEST81373'
 
 //Tiktok Pixel
 tiktokPixelId = 'D6AAVS3C77U5EFCE5FGG'
-tiktokAccessToken = '73ea87e5f64a4f57bc37deb9b952d10516c6c3d3'
-tiktokTestCode = 'TEST22478'
+tiktokAccessToken = '0096bdb3a232dec2fda628279528217a8ce3c7a4'
+tiktokTestCode = 'TEST94745'
 
 //Google Sheets
-spreadsheetURL= 'https://script.google.com/macros/s/AKfycbyg9c8WY3sV_9kv1U7QMATgemJ_A8Q-c7A-gM_vR8Z39YAaXdHccp6wVG6SmhYnD_9s/exec'
+spreadsheetURL= 'https://script.google.com/macros/s/AKfycbyqvcGnwXXSzavC9Zo5EyvxjQFtmpOxCYgmq3Ve_7D5ABirWkxT15lXuEaEybjCfkS7/exec'

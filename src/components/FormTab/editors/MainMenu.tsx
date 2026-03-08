@@ -95,7 +95,7 @@ const MenuCard = ({
 const CategoryHeader = ({
   icon,
   title,
-  accentClass = "text-slate-500",
+  accentClass = "text-slate-900",
 }: {
   icon: IconDefinition;
   title: string;
@@ -103,7 +103,7 @@ const CategoryHeader = ({
 }) => (
   <div className="flex items-center gap-2 pt-6 pb-2.5 first:pt-0">
     <FontAwesomeIcon icon={icon} className={accentClass} style={{ fontSize: 13 }} />
-    <span className="text-[11px] font-black uppercase text-slate-500 tracking-[0.15em]">
+    <span className="text-[11px] font-black uppercase text-slate-900 tracking-[0.15em]">
       {title}
     </span>
     <div className="flex-1 h-px bg-gradient-to-r from-slate-200 to-transparent ml-2" />
@@ -117,13 +117,13 @@ export const MainMenu = ({ onLoadClick }: { onLoadClick?: () => void }) => {
   return (
     <div className="pb-8 animate-in fade-in slide-in-from-bottom-4 duration-500 relative overflow-x-clip">
 
-      {/* Background ambient glow */}
-      <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 bg-indigo-50 rounded-full blur-3xl opacity-50 pointer-events-none" />
+      {/* Background ambient glow - changed to warm beige */}
+      <div className="absolute top-0 right-0 w-64 h-64 bg-orange-50/50 rounded-full blur-[80px] opacity-60 pointer-events-none translate-x-1/2 -translate-y-1/2" />
 
       {/* ═══ SMART SEARCH ═══ */}
       <div className="relative z-10 mb-6 group">
         <BuilderSearch onNavigate={(id) => setEditingSection(id)} />
-        <div className="absolute inset-0 -z-10 bg-indigo-50/30 rounded-xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+        <div className="absolute inset-0 -z-10 bg-[#FF5A1F]/5 rounded-xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
       </div>
 
       {/* ═══ TEMPLATE HERO CARD ═══ */}
@@ -131,15 +131,15 @@ export const MainMenu = ({ onLoadClick }: { onLoadClick?: () => void }) => {
         <button
           onClick={onLoadClick}
           className="
-            w-full mb-8 bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-700
-            p-5 rounded-2xl flex items-center gap-4 
-            shadow-[0_8px_30px_rgb(79,70,229,0.2)] hover:shadow-[0_8px_30px_rgb(79,70,229,0.35)]
+            w-full mb-8 bg-[#FF5A1F]
+            p-5 rounded-[20px] flex items-center gap-4 
+            shadow-lg shadow-[#FF5A1F]/20 hover:shadow-xl hover:shadow-[#FF5A1F]/30
             hover:-translate-y-1 active:translate-y-0.5 active:scale-[0.98]
             transition-all duration-300 cursor-pointer relative overflow-hidden
-            text-left group z-10
+            text-left group z-10 border-0
           "
         >
-          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none mix-blend-overlay" />
+          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 pointer-events-none mix-blend-overlay" />
 
           <div className="absolute right-0 top-0 w-32 h-32 bg-white opacity-10 rounded-full blur-2xl -mr-10 -mt-10 group-hover:opacity-20 transition-opacity duration-500" />
 

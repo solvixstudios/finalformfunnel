@@ -26,6 +26,8 @@ import {
     X
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { TableSkeleton } from '@/components/ui/table-skeleton';
+import EmptyState from '@/components/ui/EmptyState';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -248,10 +250,10 @@ export default function ProductsPage({ userId }: { userId: string }) {
         let nextPageInfo: string | undefined = undefined;
         let hasMore = true;
         const cleanSubdomain = store.url.replace('.myshopify.com', '').replace('https://', '').replace(/\/$/, '');
-        const n8nHost = import.meta.env.VITE_N8N_BACKEND_URL;
+        const backendHost = import.meta.env.VITE_BACKEND_URL;
         try {
             while (hasMore) {
-                const response = await fetch(`${n8nHost}/webhook/shopify/products`, {
+                const response = await fetch(`${backendHost}/webhook/shopify/products`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -262,30 +264,40 @@ export default function ProductsPage({ userId }: { userId: string }) {
                         page_info: nextPageInfo,
                     })
                 });
+
                 if (!response.ok) throw new Error('Fetch failed');
+
                 const data = await response.json();
+
                 let batch: Product[] = [];
                 if (data.products) {
                     batch = typeof data.products === 'string' ? JSON.parse(data.products) : data.products;
                     if ((batch as any).products) batch = (batch as any).products;
                 }
+
                 allFetchedProducts.push(...batch);
+
                 if (!isBackground) {
                     setSyncProgress(prev => prev + batch.length);
                 }
+
                 if (data.next_page_info) nextPageInfo = data.next_page_info;
                 else hasMore = false;
+
                 if (allFetchedProducts.length > 50000) {
                     if (!isBackground) toast.warning("Stopped at 50,000 products.");
                     hasMore = false;
                 }
             }
+
             await saveToCache(selectedStoreId, allFetchedProducts);
             setProducts(allFetchedProducts);
             setLastSynced(Date.now());
+
             if (!isBackground) {
                 toast.success(`Sync complete! ${allFetchedProducts.length} products loaded.`);
             }
+
         } catch (error) {
             console.error(error);
             if (!isBackground) {
@@ -339,7 +351,7 @@ export default function ProductsPage({ userId }: { userId: string }) {
             }
 
             // Execute deletions sequentially to avoid rate limits/overload
-            // N8N sync could be batched later if needed
+            // Backend sync could be batched later if needed
             for (const assignment of assignmentsToRemove) {
                 try {
                     await deleteAssignment(assignment.id);
@@ -392,11 +404,11 @@ export default function ProductsPage({ userId }: { userId: string }) {
     const headerActions = (
         <div className="flex items-center gap-3">
             <Select value={selectedStoreId} onValueChange={setSelectedStoreId}>
-                <SelectTrigger className="w-[200px] h-9 bg-white border-slate-200/80 rounded-full text-xs font-semibold shadow-sm text-slate-700 hover:bg-slate-50 transition-colors">
-                    <Store size={13} className="mr-2 text-slate-400" />
+                <SelectTrigger className="w-[200px] h-9 bg-white border-slate-200/80 rounded-lg text-xs font-semibold shadow-sm text-slate-700 hover:bg-slate-50 transition-colors">
+                    <Store size={14} className="mr-2 text-slate-400" />
                     <SelectValue placeholder="Select Store" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="rounded-xl">
                     {stores.map(store => (
                         <SelectItem key={store.id} value={store.id}>{store.name}</SelectItem>
                     ))}
@@ -409,22 +421,22 @@ export default function ProductsPage({ userId }: { userId: string }) {
                 onClick={() => syncAllProducts(false)}
                 disabled={syncing || !selectedStoreId}
                 className={cn(
-                    "h-9 rounded-full text-xs font-semibold px-4 shadow-sm transition-all relative overflow-hidden",
-                    !lastSynced && "bg-slate-900 hover:bg-slate-800 text-white",
-                    lastSynced && "bg-white text-slate-600 hover:bg-slate-50 border-slate-200 hover:border-slate-300"
+                    "h-9 rounded-lg text-xs font-bold px-4 shadow-sm transition-all relative overflow-hidden",
+                    !lastSynced && "bg-[#FF5A1F] hover:bg-[#E04D1A] text-white border-0",
+                    lastSynced && "bg-white text-slate-700 hover:bg-slate-50 border-slate-200 hover:border-slate-300"
                 )}
             >
                 {syncing ? (
                     <><Loader2 size={13} className="mr-1.5 animate-spin" />{syncProgress > 0 ? `${syncProgress} imported` : 'Syncing...'}</>
                 ) : (
-                    <><CloudDownload size={13} className="mr-1.5" />{lastSynced ? 'Sync Products' : 'Start Sync'}</>
+                    <><CloudDownload size={14} className="mr-1.5" />{lastSynced ? 'Sync Products' : 'Start Sync'}</>
                 )}
             </Button>
         </div>
     );
 
     return (
-        <div className="max-w-[1600px] mx-auto w-full space-y-6 flex flex-col pt-2 pb-8 relative">
+        <div className="max-w-[1600px] mx-auto w-full space-y-6 flex flex-col pt-2 md:pt-4 pb-8 relative">
             <PageHeader
                 title="Store Management"
                 breadcrumbs={[{ label: 'Store Management' }]}
@@ -435,11 +447,11 @@ export default function ProductsPage({ userId }: { userId: string }) {
             <div className="flex flex-col gap-8">
 
                 {/* 1. Global Store Form Hero Card */}
-                <div className="relative group rounded-3xl p-1 bg-gradient-to-br from-slate-200/50 via-slate-100 to-slate-200/50">
-                    <div className="absolute inset-0 bg-white/40 backdrop-blur-3xl rounded-3xl" />
-                    <div className="relative bg-white/80 backdrop-blur-sm rounded-[20px] p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 shadow-sm border border-white/50">
+                <div className="relative group rounded-xl p-1 bg-gradient-to-br from-slate-200/50 via-slate-100 to-slate-200/50">
+                    <div className="absolute inset-0 bg-white/40 backdrop-blur-3xl rounded-xl" />
+                    <div className="relative bg-white/80 backdrop-blur-sm rounded-xl p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 shadow-sm border border-white/50">
                         <div className="flex items-start gap-5">
-                            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 text-white flex items-center justify-center shadow-lg shadow-slate-900/20 shrink-0">
+                            <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-slate-900 to-slate-800 text-white flex items-center justify-center shadow-lg shadow-slate-900/20 shrink-0">
                                 <Store size={28} />
                             </div>
                             <div className="space-y-2">
@@ -465,36 +477,36 @@ export default function ProductsPage({ userId }: { userId: string }) {
                             {currentStoreForm ? (
                                 <div className="w-full p-4 rounded-xl border border-indigo-100 bg-indigo-50/50 flex items-center justify-between gap-4 group/card hover:bg-indigo-50 transition-colors cursor-pointer" onClick={() => navigate(`/dashboard/forms/edit/${currentStoreForm.id}`)}>
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-lg bg-white border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm">
+                                        <div className="w-10 h-10 rounded-md bg-white border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm">
                                             <FileText size={18} />
                                         </div>
                                         <div>
-                                            <h4 className="text-sm font-bold text-slate-900 group-hover/card:text-indigo-700 transition-colors">{currentStoreForm.name}</h4>
-                                            <span className="text-[10px] uppercase font-bold text-emerald-600 tracking-wider">Active</span>
+                                            <h4 className="text-sm font-semibold text-slate-900 group-hover/card:text-indigo-700 transition-colors">{currentStoreForm.name}</h4>
+                                            <span className="text-[10px] uppercase font-semibold text-emerald-600 tracking-wider">Active</span>
                                         </div>
                                     </div>
                                     <div className="flex items-center">
                                         <Button
                                             variant="ghost"
                                             size="icon"
-                                            className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-white"
+                                            className="h-9 w-9 rounded-md text-slate-400 hover:text-red-600 hover:bg-white border border-transparent hover:border-red-100"
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 deleteAssignment(storeAssignment!.id);
                                             }}
                                         >
-                                            <Trash2 size={14} />
+                                            <Trash2 size={16} />
                                         </Button>
                                     </div>
                                 </div>
                             ) : (
-                                <div className="w-full p-4 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/50 flex items-center justify-center text-slate-400 text-sm font-medium">
+                                <div className="w-full p-4 rounded-xl border border-dashed border-slate-200 bg-slate-50/50 flex items-center justify-center text-slate-400 text-sm font-medium">
                                     No global form assigned
                                 </div>
                             )}
 
                             <Button
-                                className="w-full bg-slate-900 hover:bg-slate-800 text-white shadow-md shadow-slate-900/10 rounded-xl h-11 font-semibold"
+                                className="w-full bg-slate-950 hover:bg-black text-white shadow-sm rounded-lg h-10 font-bold transition-all"
                                 onClick={() => {
                                     setAssignDialogProductIds([]);
                                     setDialogInitialFormId(undefined);
@@ -512,10 +524,10 @@ export default function ProductsPage({ userId }: { userId: string }) {
                     {/* Toolbar */}
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
                         <div className="flex items-center gap-3 flex-1">
-                            <div className="relative max-w-sm w-full">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" size={14} />
+                            <div className="relative max-w-sm w-full group">
+                                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors" size={16} />
                                 <Input
-                                    className="pl-9 h-9 bg-white border-slate-200 rounded-lg text-sm shadow-sm focus:ring-slate-900/5 placeholder:text-slate-400"
+                                    className="pl-9 h-10 bg-white border-slate-200 rounded-lg text-sm shadow-sm focus:ring-1 focus:ring-slate-400 focus:border-slate-400 placeholder:text-slate-400 font-medium"
                                     placeholder="Search products..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -523,11 +535,11 @@ export default function ProductsPage({ userId }: { userId: string }) {
                             </div>
                             <div className="h-6 w-px bg-slate-200 mx-1 hidden sm:block" />
                             <Select value={statusFilter} onValueChange={(val: 'all' | 'active' | 'draft') => setStatusFilter(val)}>
-                                <SelectTrigger className="w-[130px] h-9 bg-white border-slate-200/80 rounded-lg text-xs font-medium text-slate-600 shadow-sm">
-                                    <Filter size={12} className="mr-2 text-slate-400" />
+                                <SelectTrigger className="w-[140px] h-10 bg-white border-slate-200 rounded-lg text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 transition-colors">
+                                    <Filter size={14} className="mr-2 text-slate-400" />
                                     <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="rounded-xl">
                                     <SelectItem value="all">All Status</SelectItem>
                                     <SelectItem value="active">Active</SelectItem>
                                     <SelectItem value="draft">Draft</SelectItem>
@@ -542,33 +554,41 @@ export default function ProductsPage({ userId }: { userId: string }) {
                     </div>
 
                     {/* Table */}
-                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden min-h-[400px]">
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden min-h-[400px]">
                         <Table>
                             <TableHeader>
-                                <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
-                                    <TableHead className="w-[40px] pl-4">
+                                <TableRow className="bg-[#EFEBE0]/40 border-b border-slate-200 hover:bg-[#EFEBE0]/60">
+                                    <TableHead className="w-[40px] pl-6 py-4">
                                         <Checkbox
                                             checked={paginatedProducts.length > 0 && selectedProductIds.length === paginatedProducts.length}
                                             onCheckedChange={handleBulkSelect}
                                             className="translate-y-[2px]"
                                         />
                                     </TableHead>
-                                    <TableHead className="w-[60px] text-[10px] font-bold text-slate-500 uppercase tracking-wider">Image</TableHead>
-                                    <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Product</TableHead>
-                                    <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-wider hidden md:table-cell">Status</TableHead>
-                                    <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Assigned Form</TableHead>
-                                    <TableHead className="w-[50px]"></TableHead>
+                                    <TableHead className="w-[60px] text-[10px] font-bold text-slate-500 uppercase tracking-wider py-4">Image</TableHead>
+                                    <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-wider py-4">Product Name</TableHead>
+                                    <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-wider py-4 hidden md:table-cell">Status</TableHead>
+                                    <TableHead className="text-[10px] font-bold text-slate-500 uppercase tracking-wider py-4">Assigned Form</TableHead>
+                                    <TableHead className="w-[50px] py-4 pr-6"></TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {paginatedProducts.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={6} className="h-[300px] text-center">
-                                            <div className="flex flex-col items-center justify-center text-slate-400">
-                                                <Package size={32} className="mb-3 opacity-50" />
-                                                <p className="text-sm font-medium">No products found</p>
-                                                {syncing && <p className="text-xs mt-1 animate-pulse">Syncing catalog...</p>}
-                                            </div>
+                                        <TableCell colSpan={6} className="h-[300px] text-center p-0 align-middle">
+                                            {syncing ? (
+                                                <div className="w-full pointer-events-none p-4 opacity-50">
+                                                    <TableSkeleton columns={6} rows={5} className="w-full border-0 shadow-none bg-transparent" />
+                                                </div>
+                                            ) : (
+                                                <EmptyState
+                                                    icon={<Package size={28} />}
+                                                    title={searchTerm ? "No matching products found" : "No products available"}
+                                                    description={searchTerm ? "Try adjusting your search query or filters." : "Sync your Shopify products to get started."}
+                                                    variant="ghost"
+                                                    compact
+                                                />
+                                            )}
                                         </TableCell>
                                     </TableRow>
                                 ) : (
@@ -578,65 +598,65 @@ export default function ProductsPage({ userId }: { userId: string }) {
                                         const isSelected = selectedProductIds.includes(String(product.id));
 
                                         return (
-                                            <TableRow key={product.id} className={cn("group transition-colors hover:bg-slate-50/50", isSelected && "bg-slate-50/80")}>
-                                                <TableCell className="pl-4">
+                                            <TableRow key={product.id} className={cn("group transition-colors hover:bg-slate-50/50", isSelected && "bg-[#FF5A1F]/5")}>
+                                                <TableCell className="pl-6 py-4">
                                                     <Checkbox
                                                         checked={isSelected}
                                                         onCheckedChange={(c) => handleSelectProduct(String(product.id), !!c)}
                                                         className="translate-y-[2px]"
                                                     />
                                                 </TableCell>
-                                                <TableCell>
-                                                    <div className="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center">
+                                                <TableCell className="py-4">
+                                                    <div className="w-12 h-12 rounded-lg bg-white border border-slate-200 overflow-hidden flex items-center justify-center shadow-sm">
                                                         {product.image?.src ? (
                                                             <img src={product.image.src} alt="" className="w-full h-full object-cover" />
                                                         ) : (
-                                                            <ImageIcon size={14} className="text-slate-300" />
+                                                            <ImageIcon size={18} className="text-slate-300" />
                                                         )}
                                                     </div>
                                                 </TableCell>
-                                                <TableCell>
+                                                <TableCell className="py-4">
                                                     <div className="flex flex-col">
-                                                        <span className="text-sm font-semibold text-slate-900 line-clamp-1">{product.title}</span>
-                                                        <span className="text-xs text-slate-500">{product.vendor}</span>
+                                                        <span className="text-sm font-bold text-slate-900 line-clamp-1">{product.title}</span>
+                                                        <span className="text-xs font-semibold text-slate-500">{product.vendor}</span>
                                                     </div>
                                                 </TableCell>
-                                                <TableCell className="hidden md:table-cell">
+                                                <TableCell className="hidden md:table-cell py-4">
                                                     <Badge variant="outline" className={cn(
-                                                        "text-[10px] px-2 h-5 font-bold uppercase tracking-wider border",
+                                                        "text-[10px] px-2.5 py-1 font-bold uppercase tracking-wider border rounded-md shadow-none",
                                                         product.status === 'active'
-                                                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                                            : "bg-slate-100 text-slate-500 border-slate-200"
+                                                            ? "bg-emerald-50 text-emerald-700 border-emerald-200/50"
+                                                            : "bg-slate-50 text-slate-500 border-slate-200"
                                                     )}>
                                                         {product.status}
                                                     </Badge>
                                                 </TableCell>
-                                                <TableCell>
+                                                <TableCell className="py-4">
                                                     {assignedForm ? (
-                                                        <div className="flex items-center gap-2 group/form cursor-pointer" onClick={() => navigate(`/dashboard/forms/edit/${assignedForm.id}`)}>
-                                                            <div className="w-6 h-6 rounded bg-indigo-50 border border-indigo-100 flex items-center justify-center">
-                                                                <FileText size={12} className="text-indigo-600" />
+                                                        <div className="flex items-center gap-2.5 group/form cursor-pointer" onClick={() => navigate(`/dashboard/forms/edit/${assignedForm.id}`)}>
+                                                            <div className="w-8 h-8 rounded-md bg-[#FF5A1F]/10 border border-[#FF5A1F]/20 flex items-center justify-center">
+                                                                <FileText size={14} className="text-[#FF5A1F]" />
                                                             </div>
-                                                            <span className="text-xs font-medium text-indigo-700 group-hover/form:underline truncate max-w-[150px]">
+                                                            <span className="text-sm font-bold text-slate-900 group-hover/form:text-[#FF5A1F] transition-colors truncate max-w-[150px]">
                                                                 {assignedForm.name}
                                                             </span>
                                                         </div>
                                                     ) : (
-                                                        <span className="text-xs text-slate-400 italic flex items-center gap-1.5">
-                                                            <Store size={12} />
+                                                        <span className="text-xs text-slate-400 italic flex items-center gap-1.5 font-semibold">
+                                                            <Store size={14} />
                                                             Using Global Form
                                                         </span>
                                                     )}
                                                 </TableCell>
-                                                <TableCell>
+                                                <TableCell className="py-4 pr-6 text-right">
                                                     <DropdownMenu>
                                                         <DropdownMenuTrigger asChild>
-                                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                <MoreHorizontal size={15} />
+                                                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-slate-400 hover:text-slate-900 hover:bg-slate-100 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                <MoreHorizontal size={16} />
                                                             </Button>
                                                         </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end">
-                                                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                        <DropdownMenuContent align="end" className="rounded-xl shadow-md w-44">
+                                                            <DropdownMenuLabel className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Actions</DropdownMenuLabel>
                                                             <DropdownMenuItem onClick={() => {
                                                                 setAssignDialogProductIds([String(product.id)]);
                                                                 setDialogInitialFormId(undefined);
@@ -687,70 +707,60 @@ export default function ProductsPage({ userId }: { userId: string }) {
             </div>
 
             {/* Sticky Bulk Action Bar */}
-            {selectedProductIds.length > 0 && (
-                <div className="sticky bottom-4 z-40 flex justify-center pointer-events-none animate-in slide-in-from-bottom-5">
-                    <div className="pointer-events-auto relative overflow-hidden bg-slate-900/90 backdrop-blur-xl text-white pl-5 pr-3 py-3 rounded-2xl shadow-2xl shadow-slate-900/30 flex items-center gap-4 border border-white/10">
-                        {/* Gradient accent line */}
-                        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-indigo-500 via-violet-500 to-indigo-500" />
+            {
+                selectedProductIds.length > 0 && (
+                    <div className="sticky bottom-6 z-40 flex justify-center pointer-events-none animate-in slide-in-from-bottom-5">
+                        <div className="pointer-events-auto relative overflow-hidden bg-slate-900 border border-slate-800 text-white pl-5 pr-3 py-3 rounded-xl shadow-xl shadow-slate-900/10 flex items-center gap-4">
 
-                        {/* Selection count */}
-                        <div className="flex items-center gap-2.5">
-                            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-xs font-bold shadow-lg shadow-indigo-500/30">
-                                {selectedProductIds.length}
+                            {/* Selection count */}
+                            <div className="flex items-center gap-2.5">
+                                <div className="w-7 h-7 rounded-md bg-slate-800 flex items-center justify-center text-xs font-semibold border border-slate-700">
+                                    {selectedProductIds.length}
+                                </div>
+                                <span className="text-sm font-semibold text-white">
+                                    {selectedProductIds.length === 1 ? 'Product' : 'Products'} selected
+                                </span>
                             </div>
-                            <span className="text-sm font-semibold text-slate-200">
-                                {selectedProductIds.length === 1 ? 'Product' : 'Products'} selected
-                            </span>
-                        </div>
 
-                        {/* Divider */}
-                        <div className="h-5 w-px bg-white/15" />
+                            {/* Divider */}
+                            <div className="h-6 w-px bg-slate-800 mx-2" />
 
-                        {/* Assign Form button */}
-                        <Button
-                            size="sm"
-                            className="bg-white text-slate-900 hover:bg-slate-100 font-bold h-9 rounded-xl px-5 shadow-sm transition-all hover:shadow-md"
-                            onClick={handleBulkAssign}
-                        >
-                            <LayoutTemplate size={14} className="mr-1.5" />
-                            Assign Form
-                        </Button>
+                            {/* Revert to Global button - Only show if at least one selected product has a specific assignment */}
+                            {selectedProductIds.some(id => productAssignments.some(a => String(a.productId) === id)) && (
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="border-slate-800 hover:bg-slate-800 hover:text-white text-slate-300 font-semibold h-9 rounded-lg px-4 transition-all"
+                                    onClick={handleBulkUnlink}
+                                >
+                                    <Trash2 size={14} className="mr-1.5" />
+                                    Revert to Global
+                                </Button>
+                            )}
 
-                        {/* Revert to Global button - Only show if at least one selected product has a specific assignment */}
-                        {selectedProductIds.some(id => productAssignments.some(a => String(a.productId) === id)) && (
+                            {/* Assign Form button */}
                             <Button
                                 size="sm"
-                                variant="destructive"
-                                className="bg-red-500/10 hover:bg-red-500/20 text-red-400 font-bold h-9 rounded-xl px-4 transition-all"
-                                onClick={handleBulkUnlink}
+                                className="bg-white text-slate-900 hover:bg-slate-100 font-semibold h-9 rounded-lg px-5 shadow-sm transition-all"
+                                onClick={handleBulkAssign}
                             >
-                                <Trash2 size={14} className="mr-1.5" />
-                                Revert to Global
+                                <LayoutTemplate size={14} className="mr-1.5" />
+                                Assign Form
                             </Button>
-                        )}
 
-                        {/* Assign Form button */}
-                        <Button
-                            size="sm"
-                            className="bg-white text-slate-900 hover:bg-slate-100 font-bold h-9 rounded-xl px-5 shadow-sm transition-all hover:shadow-md"
-                            onClick={handleBulkAssign}
-                        >
-                            <LayoutTemplate size={14} className="mr-1.5" />
-                            Assign Form
-                        </Button>
-
-                        {/* Clear button */}
-                        <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8 text-slate-400 hover:text-white hover:bg-white/10 rounded-full transition-colors"
-                            onClick={() => setSelectedProductIds([])}
-                        >
-                            <X size={16} />
-                        </Button>
+                            {/* Clear button */}
+                            <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-colors ml-1"
+                                onClick={() => setSelectedProductIds([])}
+                            >
+                                <X size={15} />
+                            </Button>
+                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Assignment Sheet */}
             <FormAssignmentSheet
@@ -762,6 +772,6 @@ export default function ProductsPage({ userId }: { userId: string }) {
                 initialProductIds={assignDialogProductIds}
                 initialFormId={dialogInitialFormId}
             />
-        </div>
+        </div >
     );
 }

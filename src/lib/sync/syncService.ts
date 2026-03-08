@@ -1,5 +1,5 @@
 /**
- * Sync Service - Centralized Firebase ↔ n8n synchronization
+ * Sync Service - Centralized Firebase ↔ backend synchronization
  *
  * Handles all form publishing, unpublishing, and sync operations
  * with proper error handling and rollback support.
@@ -91,7 +91,7 @@ export async function publishToStore(params: PublishParams): Promise<{ success: 
     return { success: true };
   } catch (error: unknown) {
     console.error(`Sync failed for store ${store.id}:`, error);
-    return { success: false, error: error.message || 'Unknown error' };
+    return { success: false, error: (error as Error).message || 'Unknown error' };
   }
 }
 
@@ -117,7 +117,7 @@ export async function unpublishFromStore(params: UnpublishParams): Promise<{ suc
     return { success: true };
   } catch (error: unknown) {
     console.error(`Unpublish failed for store ${store.id}:`, error);
-    return { success: false, error: error.message || 'Unknown error' };
+    return { success: false, error: (error as Error).message || 'Unknown error' };
   }
 }
 
@@ -215,7 +215,7 @@ export async function retrySync<T>(
     try {
       return await operation();
     } catch (error: unknown) {
-      lastError = error;
+      lastError = error instanceof Error ? error : new Error(String(error));
       if (attempt < maxRetries - 1) {
         const delay = baseDelayMs * Math.pow(2, attempt);
         await new Promise(resolve => setTimeout(resolve, delay));

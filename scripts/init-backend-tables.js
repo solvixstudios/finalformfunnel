@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
 /**
- * Initialize n8n Data Tables
+ * Initialize Backend Data Tables
  * Run this during deployment to ensure tables exist
  * 
- * Usage: node scripts/init-n8n-tables.js
+ * Usage: node scripts/init-backend-tables.js
  */
 
 import fs from 'fs';
@@ -36,15 +36,15 @@ if (fs.existsSync(envPath)) {
   console.log('❌ .env file NOT found');
 }
 
-const N8N_BACKEND_URL = process.env.VITE_N8N_BACKEND_URL || 'https://your-n8n-instance.com';
-const WEBHOOK_ENV = process.env.VITE_N8N_WEBHOOK_ENV || 'webhook';
+const BACKEND_URL = process.env.VITE_BACKEND_URL || 'https://your-backend-instance.com';
+const WEBHOOK_ENV = process.env.VITE_WEBHOOK_ENV || 'webhook';
 
 async function initTables() {
-  console.log('🔧 Initializing n8n data tables...');
-  console.log('📦 N8N_BACKEND_URL:', N8N_BACKEND_URL);
+  console.log('🔧 Initializing backend data tables...');
+  console.log('📦 BACKEND_URL:', BACKEND_URL);
   console.log('📦 WEBHOOK_ENV:', WEBHOOK_ENV);
 
-  const url = `${N8N_BACKEND_URL}/${WEBHOOK_ENV}/n8n/init`;
+  const url = `${BACKEND_URL}/${WEBHOOK_ENV}/backend/init`;
   console.log('🌐 Calling URL:', url);
 
   try {
@@ -76,7 +76,7 @@ async function initTables() {
   } catch (error) {
     console.error('❌ Failed to initialize tables:', error.message);
     // Don't exit with error - tables might already exist and init endpoint not deployed yet
-    console.log('ℹ️  If this is a fresh deployment, import N8N_Init_Tables.json workflow first');
+    console.log('ℹ️  If this is a fresh deployment, import Backend_Init_Tables.json workflow first');
   }
 }
 

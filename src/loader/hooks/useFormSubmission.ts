@@ -277,7 +277,7 @@ export function useFormSubmission({
                 await adapter.submitOrder(payload as unknown as Parameters<typeof adapter.submitOrder>[0]);
 
                 if (import.meta.env.DEV) {
-                    console.log("Order submitted successfully to n8n");
+                    console.log("Order submitted successfully to backend");
                 }
 
                 // Direct write to Firebase Orders collection
@@ -325,7 +325,7 @@ export function useFormSubmission({
             const payload = buildPayload('abandoned');
 
             if (import.meta.env.DEV) {
-                console.log("Logging abandoned order to n8n...", payload);
+                console.log("Logging abandoned order to backend...", payload);
             }
 
             const adapter = getAdapter('shopify');

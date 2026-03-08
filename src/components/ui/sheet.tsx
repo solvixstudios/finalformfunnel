@@ -1,5 +1,6 @@
 import * as SheetPrimitive from "@radix-ui/react-dialog";
 import { cva, type VariantProps } from "class-variance-authority";
+import { motion } from "framer-motion";
 import { X } from "lucide-react";
 import * as React from "react";
 
@@ -54,20 +55,39 @@ interface SheetContentProps
 }
 
 const SheetContent = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Content>, SheetContentProps>(
-  ({ side = "right", className, children, hideClose, ...props }, ref) => (
-    <SheetPortal>
-      <SheetOverlay />
-      <SheetPrimitive.Content ref={ref} className={cn(sheetVariants({ side }), className)} {...props}>
-        {children}
-        {!hideClose && (
-          <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity data-[state=open]:bg-secondary hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">
-            <X className="h-4 w-4" />
-            <span className="sr-only">Close</span>
-          </SheetPrimitive.Close>
-        )}
-      </SheetPrimitive.Content>
-    </SheetPortal>
-  ),
+  ({ side = "right", className, children, hideClose, ...props }, ref) => {
+    const motionProps = {
+      top: { initial: { y: "-100%" }, animate: { y: 0 }, exit: { y: "-100%" } },
+      bottom: { initial: { y: "100%" }, animate: { y: 0 }, exit: { y: "100%" } },
+      left: { initial: { x: "-100%" }, animate: { x: 0 }, exit: { x: "-100%" } },
+      right: { initial: { x: "100%" }, animate: { x: 0 }, exit: { x: "100%" } },
+    }[side || "right"];
+
+    return (
+      <SheetPortal>
+        <SheetOverlay />
+        <SheetPrimitive.Content
+          ref={ref}
+          asChild
+          {...props}
+        >
+          <motion.div
+            {...motionProps}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className={cn(sheetVariants({ side }), className)}
+          >
+            {children}
+            {!hideClose && (
+              <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity data-[state=open]:bg-secondary hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">
+                <X className="h-4 w-4" />
+                <span className="sr-only">Close</span>
+              </SheetPrimitive.Close>
+            )}
+          </motion.div>
+        </SheetPrimitive.Content>
+      </SheetPortal>
+    );
+  }
 );
 SheetContent.displayName = SheetPrimitive.Content.displayName;
 

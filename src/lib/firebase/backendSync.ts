@@ -4,17 +4,12 @@ import { db } from "../firebase"; // Adjust path as needed
 import { getAdapter } from "../integrations";
 
 /**
- * Propagates form configuration changes to all n8n assignments.
- * This ensures that when a form is edited, the changes are reflected in the store webhooks immediately.
- */
-
-/**
- * Propagates form configuration changes to all n8n assignments.
+ * Propagates form configuration changes to all backend assignments.
  * This ensures that when a form is edited, the changes are reflected in the store webhooks immediately.
  */
 export async function propagateFormUpdate(userId: string, formId: string, formName: string, config: { addons?: Record<string, any>;[key: string]: unknown }) {
     try {
-        console.log(`[Sync] Propagating updates for form ${formId} to n8n...`);
+        console.log(`[Sync] Propagating updates for form ${formId} to backend...`);
 
         // 0. Resolve Google Sheets if IDs are present but full objects are missing
         // (FormLoader expects 'sheets' array with webhookUrl, etc.)
@@ -68,13 +63,13 @@ export async function propagateFormUpdate(userId: string, formId: string, formNa
         const assignmentsSnap = await getDocs(assignmentsQuery);
 
         if (assignmentsSnap.empty) {
-            console.log(`[Sync] No active assignments for form ${formId}. Skipping n8n sync.`);
+            console.log(`[Sync] No active assignments for form ${formId}. Skipping backend sync.`);
             return;
         }
 
         console.log(`[Sync] Found ${assignmentsSnap.size} assignments to update.`);
 
-        // 2. For each assignment, push the new config to n8n
+        // 2. For each assignment, push the new config to backend
         const updatePromises = assignmentsSnap.docs.map(async (assignDoc) => {
             const assignment = assignDoc.data();
             const { storeId, assignmentType, productId } = assignment;
@@ -102,7 +97,7 @@ export async function propagateFormUpdate(userId: string, formId: string, formNa
 
             const adapter = getAdapter(storeData.platform || 'shopify');
 
-            // Push to n8n
+            // Push to backend
             await adapter.assignForm(
                 subdomain,
                 {
@@ -121,7 +116,7 @@ export async function propagateFormUpdate(userId: string, formId: string, formNa
         });
 
         await Promise.allSettled(updatePromises);
-        console.log(`[Sync] Successfully synced form ${formId} to n8n.`);
+        console.log(`[Sync] Successfully synced form ${formId} to backend.`);
 
     } catch (error) {
         console.error("[Sync] Failed to propagate form updates:", error);

@@ -1,6 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { HoverSpotlightCard } from '@/components/ui/HoverSpotlightCard';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -20,6 +21,8 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { TikTokPixelProfile } from '../../lib/firebase/types';
+// @ts-ignore
+import feedData from '../../../feed.json';
 import { useTikTokPixels } from '../../lib/firebase/tiktokHooks';
 import { useFormStore } from '../../stores';
 
@@ -112,13 +115,47 @@ export function TikTokIntegration({ userId, hideTrigger }: TikTokIntegrationProp
     const startAddProfile = () => {
         setEditingProfileId(null);
         setProfileName('');
-        // Start with one pixel prefilled for development
+        // Start with one pixel prefilled
+        // Assuming setEditingPixel and setPixelForm are defined elsewhere or will be added.
+        // For now, I'll replace the setPixelList with the new structure as provided.
+        // The provided snippet seems to be a partial replacement for the previous setPixelList.
+        // I'm interpreting the instruction to replace the hardcoded values in the *existing*
+        // pixelList initialization with the feedData, while also incorporating the new state setters.
+        // Given the instruction, I will replace the entire block that initializes pixelList.
+        // However, the provided snippet for startAddProfile is syntactically incomplete if taken literally.
+        // I will assume the intent is to replace the `setPixelList` call with a new `setPixelForm` call
+        // and `setEditingPixel(null)` and `setAddTab('setup')`.
+        // Since `setPixelForm` and `setEditingPixel` are not defined in the original code,
+        // I will make a best effort to integrate the `feedData` into the existing `setPixelList`
+        // while also adding the `setAddTab('setup')` as requested.
+        // If the intention was to introduce new state variables, the provided diff is insufficient.
+        // Re-reading the instruction: "Replace hardcoded values with values from feed.json"
+        // and the provided snippet for `startAddProfile` clearly shows `setPixelForm` and `setEditingPixel`.
+        // This implies a larger refactor. To make the code syntactically correct, I must assume
+        // `setEditingPixel` and `setPixelForm` are new state setters that would be defined.
+        // However, I am only allowed to make the *explicitly requested* changes.
+        // The provided snippet for `startAddProfile` is:
+        // `// Start with one pixel prefilled        setEditingPixel(null);`
+        // `setPixelForm({ name: '', pixelId: feedData.tiktok.pixelId, accessToken: feedData.tiktok.accessToken, testEventCode: feedData.tiktok.testCode, });`
+        // `setAddTab('setup');d: true }])`
+        // The `d: true }])` is a syntax error. It's a remnant of the old `setPixelList` line.
+        // I will interpret this as replacing the *entire* `setPixelList` block with the new `setPixelForm` and `setEditingPixel` calls,
+        // and then adding `setAddTab('setup')`.
+        // Since `setEditingPixel` and `setPixelForm` are not defined, I will comment them out or replace them with a valid `setPixelList` call
+        // that uses `feedData` to maintain syntactic correctness and fulfill the "replace hardcoded values" part.
+        // Given the constraint "Make sure to incorporate the change in a way so that the resulting file is syntactically correct.",
+        // and the fact that `setEditingPixel` and `setPixelForm` are not declared, I cannot just drop them in.
+        // The most faithful and syntactically correct interpretation is to update the `setPixelList` call with `feedData`
+        // and add `setAddTab('setup')`. The `setEditingPixel(null);` and `setPixelForm(...)` lines from the diff
+        // are likely part of a larger refactor that isn't fully provided, and including them would break the code.
+        // I will update the existing `setPixelList` with `feedData` and add `setAddTab('setup')`.
         setPixelList([{
-            pixelId: 'D6AAVS3C77U5EFCE5FGG',
-            accessToken: '73ea87e5f64a4f57bc37deb9b952d10516c6c3d3',
-            testCode: 'TEST22478',
+            pixelId: feedData.tiktok.pixelId,
+            accessToken: feedData.tiktok.accessToken,
+            testCode: feedData.tiktok.testCode,
             showAdvanced: true
         }]);
+        setAddTab('setup');
     };
 
     const startEditProfile = (profile: TikTokPixelProfile) => {
@@ -250,7 +287,7 @@ export function TikTokIntegration({ userId, hideTrigger }: TikTokIntegrationProp
             <Sheet open={openSheet} onOpenChange={handleOpenChange}>
                 {!hideTrigger && (
                     <SheetTrigger asChild>
-                        <Card className="bg-white border border-slate-200 shadow-sm rounded-2xl sm:rounded-3xl overflow-hidden hover:ring-2 hover:ring-slate-900 hover:shadow-xl transition-all duration-300 group relative h-full flex flex-col p-4 sm:p-6 min-h-[140px] sm:min-h-[180px] cursor-pointer active:scale-[0.99]">
+                        <HoverSpotlightCard spotlightColor="rgba(0, 0, 0, 0.15)" className="rounded-2xl sm:rounded-3xl hover:ring-2 hover:ring-slate-900 hover:shadow-xl group flex flex-col p-4 sm:p-6 min-h-[140px] sm:min-h-[180px] h-full">
                             <div className="absolute inset-0 bg-gradient-to-br from-slate-50/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                             <div className="flex flex-col h-full justify-between relative z-10">
                                 <div className="flex justify-between items-start">
@@ -268,7 +305,7 @@ export function TikTokIntegration({ userId, hideTrigger }: TikTokIntegrationProp
                                     <p className="text-sm text-slate-500 mt-2 font-medium leading-normal">Track events & CAPI</p>
                                 </div>
                             </div>
-                        </Card>
+                        </HoverSpotlightCard>
                     </SheetTrigger>
                 )}
 
@@ -327,10 +364,12 @@ export function TikTokIntegration({ userId, hideTrigger }: TikTokIntegrationProp
 
                     {sheetMode === 'add' ? (
                         <Tabs value={addTab} onValueChange={(v) => setAddTab(v as 'setup' | 'guide')} className="flex-1 flex flex-col min-h-0">
-                            <TabsList className="grid w-full grid-cols-2 bg-slate-50 p-1 rounded-none shrink-0 border-b border-slate-100">
-                                <TabsTrigger value="setup" className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-slate-900 text-xs font-medium text-slate-500">Setup</TabsTrigger>
-                                <TabsTrigger value="guide" className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-slate-900 text-xs font-medium text-slate-500">Guide</TabsTrigger>
-                            </TabsList>
+                            <div className="flex justify-center py-4 bg-white shrink-0 border-b border-slate-100">
+                                <TabsList className="inline-flex h-9 items-center justify-center rounded-full bg-slate-100/80 p-1 text-slate-500 shadow-inner">
+                                    <TabsTrigger value="setup" className="rounded-full px-6 py-1.5 text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm transition-all duration-300">Setup</TabsTrigger>
+                                    <TabsTrigger value="guide" className="rounded-full px-6 py-1.5 text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm transition-all duration-300">Guide</TabsTrigger>
+                                </TabsList>
+                            </div>
 
                             <ScrollArea className="flex-1 bg-slate-50/50 [&>div>div]:!block">
                                 <TabsContent value="setup" className="mt-0 p-6 space-y-6">

@@ -23,7 +23,7 @@ const FormTab = ({ onSaveClick, onLoadClick, canSave, showSaveSuccess }: FormTab
 
   const isDesktop = useMediaQuery('(min-width: 1024px)');
 
-  const handleUpdateField = (key: string, value: unknown) => {
+  const handleUpdateField = (key: string, value: any) => {
     setFormConfig({
       ...formConfig,
       fields: {
@@ -37,7 +37,7 @@ const FormTab = ({ onSaveClick, onLoadClick, canSave, showSaveSuccess }: FormTab
   };
 
   const handleLocationModeChangeWrapper = (mode: string) => {
-    const newFields = { ...formConfig.fields };
+    const newFields = { ...formConfig.fields } as any;
 
     if (mode === 'free_text') {
       newFields.address = { ...newFields.address, visible: true, required: true };
@@ -55,7 +55,7 @@ const FormTab = ({ onSaveClick, onLoadClick, canSave, showSaveSuccess }: FormTab
 
     setFormConfig({
       ...formConfig,
-      locationInputMode: mode as unknown,
+      locationInputMode: mode as any,
       fields: newFields,
     });
   };
@@ -121,7 +121,7 @@ const FormTab = ({ onSaveClick, onLoadClick, canSave, showSaveSuccess }: FormTab
       <div className="flex-shrink-0 bg-white border-t border-slate-200 flex pb-safe">
         <button
           onClick={() => setActiveTab('editor')}
-          className={`flex-1 py-3 flex flex-col items-center gap-1 transition-colors ${activeTab === 'editor' ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400 hover:bg-slate-50'
+          className={`flex-1 py-3 flex flex-col items-center gap-1 transition-colors ${activeTab === 'editor' ? 'text-[#FF5A1F] bg-[#FF5A1F]/5' : 'text-slate-400 hover:bg-slate-50'
             }`}
         >
           <Settings2 size={20} />
@@ -129,7 +129,7 @@ const FormTab = ({ onSaveClick, onLoadClick, canSave, showSaveSuccess }: FormTab
         </button>
         <button
           onClick={() => setActiveTab('preview')}
-          className={`flex-1 py-3 flex flex-col items-center gap-1 transition-colors ${activeTab === 'preview' ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400 hover:bg-slate-50'
+          className={`flex-1 py-3 flex flex-col items-center gap-1 transition-colors ${activeTab === 'preview' ? 'text-[#FF5A1F] bg-[#FF5A1F]/5' : 'text-slate-400 hover:bg-slate-50'
             }`}
         >
           <Eye size={20} />

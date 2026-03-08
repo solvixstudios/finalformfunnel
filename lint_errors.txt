@@ -1,0 +1,141 @@
+[0m[0m
+[0m[4mC:\Users\CONFORT TECH\Documents\zac\finalform\server\scripts\clean-db.ts[24m[0m
+[0m  [2m27:28[22m  [31merror[39m  A `require()` style import is forbidden  [2m@typescript-eslint/no-require-imports[22m[0m
+[0m[0m
+[0m[4mC:\Users\CONFORT TECH\Documents\zac\finalform\server\src\config\firebase.ts[24m[0m
+[0m  [2m25:32[22m  [31merror[39m  A `require()` style import is forbidden  [2m@typescript-eslint/no-require-imports[22m[0m
+[0m[0m
+[0m[4mC:\Users\CONFORT TECH\Documents\zac\finalform\src\components\FormTab\contexts\BuilderContext.tsx[24m[0m
+[0m  [2m21:14[22m  [33mwarning[39m  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  [2mreact-refresh/only-export-components[22m[0m
+[0m[0m
+[0m[4mC:\Users\CONFORT TECH\Documents\zac\finalform\src\components\FormTab\editors\ComingSoonEditor.tsx[24m[0m
+[0m  [2m5:14[22m  [33mwarning[39m  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  [2mreact-refresh/only-export-components[22m[0m
+[0m[0m
+[0m[4mC:\Users\CONFORT TECH\Documents\zac\finalform\src\components\FormTab\editors\ShopifyEditor.tsx[24m[0m
+[0m  [2m29:11[22m  [33mwarning[39m  The 'storeLinks' logical expression could make the dependencies of useMemo Hook (at line 32) change on every render. To fix this, wrap the initialization of 'storeLinks' in its own useMemo() Hook      [2mreact-hooks/exhaustive-deps[22m[0m
+[0m  [2m29:11[22m  [33mwarning[39m  The 'storeLinks' logical expression could make the dependencies of useCallback Hook (at line 49) change on every render. To fix this, wrap the initialization of 'storeLinks' in its own useMemo() Hook  [2mreact-hooks/exhaustive-deps[22m[0m
+[0m  [2m29:11[22m  [33mwarning[39m  The 'storeLinks' logical expression could make the dependencies of useCallback Hook (at line 54) change on every render. To fix this, wrap the initialization of 'storeLinks' in its own useMemo() Hook  [2mreact-hooks/exhaustive-deps[22m[0m
+[0m[0m
+[0m[4mC:\Users\CONFORT TECH\Documents\zac\finalform\src\components\GlobalHeader\PageHeader.tsx[24m[0m
+[0m  [2m161:8[22m  [33mwarning[39m  React Hook useEffect has missing dependencies: 'handleBack' and 'handleBreadcrumbClick'. Either include them or remove the dependency array  [2mreact-hooks/exhaustive-deps[22m[0m
+[0m[0m
+[0m[4mC:\Users\CONFORT TECH\Documents\zac\finalform\src\components\integrations\ConnectShopifySheet.tsx[24m[0m
+[0m  [2m14:1[22m  [31merror[39m  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  [2m@typescript-eslint/ban-ts-comment[22m[0m
+[0m[0m
+[0m[4mC:\Users\CONFORT TECH\Documents\zac\finalform\src\components\integrations\GoogleSheetsIntegration.tsx[24m[0m
+[0m  [2m24:1[22m  [31merror[39m    Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free                      [2m@typescript-eslint/ban-ts-comment[22m[0m
+[0m  [2m96:8[22m  [33mwarning[39m  React Hook useEffect has missing dependencies: 'startAddSheet' and 'startEditSheet'. Either include them or remove the dependency array  [2mreact-hooks/exhaustive-deps[22m[0m
+[0m[0m
+[0m[4mC:\Users\CONFORT TECH\Documents\zac\finalform\src\components\integrations\MetaPixelIntegration.tsx[24m[0m
+[0m  [2m25:1[22m  [31merror[39m  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  [2m@typescript-eslint/ban-ts-comment[22m[0m
+[0m[0m
+[0m[4mC:\Users\CONFORT TECH\Documents\zac\finalform\src\components\integrations\ShopifyIntegration.tsx[24m[0m
+[0m  [2m30:1[22m  [31merror[39m  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  [2m@typescript-eslint/ban-ts-comment[22m[0m
+[0m[0m
+[0m[4mC:\Users\CONFORT TECH\Documents\zac\finalform\src\components\integrations\TikTokIntegration.tsx[24m[0m
+[0m  [2m24:1[22m  [31merror[39m  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  [2m@typescript-eslint/ban-ts-comment[22m[0m
+[0m[0m
+[0m[4mC:\Users\CONFORT TECH\Documents\zac\finalform\src\components\integrations\WhatsAppIntegration.tsx[24m[0m
+[0m  [2m24:1[22m  [31merror[39m    Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  [2m@typescript-eslint/ban-ts-comment[22m[0m
+[0m  [2m85:8[22m  [33mwarning[39m  React Hook useEffect has a missing dependency: 'startAddProfile'. Either include it or remove the dependency array   [2mreact-hooks/exhaustive-deps[22m[0m
+[0m[0m
+[0m[4mC:\Users\CONFORT TECH\Documents\zac\finalform\src\components\ui\badge.tsx[24m[0m
+[0m  [2m29:17[22m  [33mwarning[39m  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  [2mreact-refresh/only-export-components[22m[0m
+[0m[0m
+[0m[4mC:\Users\CONFORT TECH\Documents\zac\finalform\src\components\ui\button.tsx[24m[0m
+[0m  [2m54:18[22m  [33mwarning[39m  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  [2mreact-refresh/only-export-components[22m[0m
+[0m[0m
+[0m[4mC:\Users\CONFORT TECH\Documents\zac\finalform\src\components\ui\command.tsx[24m[0m
+[0m  [2m24:11[22m  [31merror[39m  An interface declaring no members is equivalent to its supertype  [2m@typescript-eslint/no-empty-object-type[22m[0m
+[0m[0m
+[0m[4mC:\Users\CONFORT TECH\Documents\zac\finalform\src\components\ui\form.tsx[24m[0m
+[0m  [2m129:10[22m  [33mwarning[39m  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  [2mreact-refresh/only-export-components[22m[0m
+[0m[0m
+[0m[4mC:\Users\CONFORT TECH\Documents\zac\finalform\src\components\ui\navigation-menu.tsx[24m[0m
+[0m  [2m111:3[22m  [33mwarning[39m  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  [2mreact-refresh/only-export-components[22m[0m
+[0m[0m
+[0m[4mC:\Users\CONFORT TECH\Documents\zac\finalform\src\components\ui\sidebar.tsx[24m[0m
+[0m  [2m636:3[22m  [33mwarning[39m  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  [2mreact-refresh/only-export-components[22m[0m
+[0m[0m
+[0m[4mC:\Users\CONFORT TECH\Documents\zac\finalform\src\components\ui\sonner.tsx[24m[0m
+[0m  [2m27:19[22m  [33mwarning[39m  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  [2mreact-refresh/only-export-components[22m[0m
+[0m[0m
+[0m[4mC:\Users\CONFORT TECH\Documents\zac\finalform\src\components\ui\textarea.tsx[24m[0m
+[0m  [2m5:18[22m  [31merror[39m  An interface declaring no members is equivalent to its supertype  [2m@typescript-eslint/no-empty-object-type[22m[0m
+[0m[0m
+[0m[4mC:\Users\CONFORT TECH\Documents\zac\finalform\src\components\ui\toggle.tsx[24m[0m
+[0m  [2m37:18[22m  [33mwarning[39m  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  [2mreact-refresh/only-export-components[22m[0m
+[0m[0m
+[0m[4mC:\Users\CONFORT TECH\Documents\zac\finalform\src\contexts\AssignmentsContext.tsx[24m[0m
+[0m  [2m30:17[22m  [33mwarning[39m  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  [2mreact-refresh/only-export-components[22m[0m
+[0m[0m
+[0m[4mC:\Users\CONFORT TECH\Documents\zac\finalform\src\contexts\HeaderActionsContext.tsx[24m[0m
+[0m  [2m26:14[22m  [33mwarning[39m  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  [2mreact-refresh/only-export-components[22m[0m
+[0m[0m
+[0m[4mC:\Users\CONFORT TECH\Documents\zac\finalform\src\lib\api\formConfig.ts[24m[0m
+[0m  [2m189:11[22m  [31merror[39m  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  [2m@typescript-eslint/ban-ts-comment[22m[0m
+[0m[0m
+[0m[4mC:\Users\CONFORT TECH\Documents\zac\finalform\src\lib\firebase\realtimeHooks.ts[24m[0m
+[0m  [2m189:6[22m  [33mwarning[39m  React Hook useEffect has a missing dependency: 'userId'. Either include it or remove the dependency array  [2mreact-hooks/exhaustive-deps[22m[0m
+[0m[0m
+[0m[4mC:\Users\CONFORT TECH\Documents\zac\finalform\src\lib\firebase\sheetsHooks.ts[24m[0m
+[0m  [2m127:9[22m  [33mwarning[39m  React Hook useCallback has a missing dependency: 'userId'. Either include it or remove the dependency array  [2mreact-hooks/exhaustive-deps[22m[0m
+[0m  [2m132:8[22m  [33mwarning[39m  React Hook useCallback has a missing dependency: 'userId'. Either include it or remove the dependency array  [2mreact-hooks/exhaustive-deps[22m[0m
+[0m[0m
+[0m[4mC:\Users\CONFORT TECH\Documents\zac\finalform\src\lib\i18n\i18nContext.tsx[24m[0m
+[0m  [2m64:14[22m  [33mwarning[39m  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  [2mreact-refresh/only-export-components[22m[0m
+[0m[0m
+[0m[4mC:\Users\CONFORT TECH\Documents\zac\finalform\src\lib\jsonValidator.ts[24m[0m
+[0m  [2m28:7[22m  [31merror[39m  'offers' is never reassigned. Use 'const' instead  [2mprefer-const[22m[0m
+[0m[0m
+[0m[4mC:\Users\CONFORT TECH\Documents\zac\finalform\src\loader\hooks\usePixelTracking.ts[24m[0m
+[0m   [2m42:64[22m  [31merror[39m  The `Function` type accepts any function-like value.[0m
+[0mPrefer explicitly defining any function parameters and return type  [2m@typescript-eslint/no-unsafe-function-type[22m[0m
+[0m   [2m43:21[22m  [31merror[39m  Expected an assignment or function call and instead saw an expression                                                    [2m@typescript-eslint/no-unused-expressions[22m[0m
+[0m   [2m60:36[22m  [31merror[39m  The `Function` type accepts any function-like value.[0m
+[0mPrefer explicitly defining any function parameters and return type  [2m@typescript-eslint/no-unsafe-function-type[22m[0m
+[0m   [2m69:32[22m  [31merror[39m  The `Function` type accepts any function-like value.[0m
+[0mPrefer explicitly defining any function parameters and return type  [2m@typescript-eslint/no-unsafe-function-type[22m[0m
+[0m   [2m73:32[22m  [31merror[39m  The `Function` type accepts any function-like value.[0m
+[0mPrefer explicitly defining any function parameters and return type  [2m@typescript-eslint/no-unsafe-function-type[22m[0m
+[0m   [2m87:21[22m  [31merror[39m  Unexpected var, use let or const instead                                                                                 [2mno-var[22m[0m
+[0m   [2m91:74[22m  [31merror[39m  Use the rest parameters instead of 'arguments'                                                                           [2mprefer-rest-params[22m[0m
+[0m   [2m94:26[22m  [31merror[39m  Unexpected var, use let or const instead                                                                                 [2mno-var[22m[0m
+[0m   [2m96:30[22m  [31merror[39m  Unexpected var, use let or const instead                                                                                 [2mno-var[22m[0m
+[0m  [2m100:25[22m  [31merror[39m  Unexpected var, use let or const instead                                                                                 [2mno-var[22m[0m
+[0m  [2m108:25[22m  [31merror[39m  Unexpected var, use let or const instead                                                                                 [2mno-var[22m[0m
+[0m  [2m112:25[22m  [31merror[39m  Unexpected var, use let or const instead                                                                                 [2mno-var[22m[0m
+[0m[0m
+[0m[4mC:\Users\CONFORT TECH\Documents\zac\finalform\src\loader\index.tsx[24m[0m
+[0m  [2m371:64[22m  [31merror[39m  The `Function` type accepts any function-like value.[0m
+[0mPrefer explicitly defining any function parameters and return type  [2m@typescript-eslint/no-unsafe-function-type[22m[0m
+[0m  [2m372:21[22m  [31merror[39m  Expected an assignment or function call and instead saw an expression                                                    [2m@typescript-eslint/no-unused-expressions[22m[0m
+[0m  [2m392:36[22m  [31merror[39m  The `Function` type accepts any function-like value.[0m
+[0mPrefer explicitly defining any function parameters and return type  [2m@typescript-eslint/no-unsafe-function-type[22m[0m
+[0m  [2m400:32[22m  [31merror[39m  The `Function` type accepts any function-like value.[0m
+[0mPrefer explicitly defining any function parameters and return type  [2m@typescript-eslint/no-unsafe-function-type[22m[0m
+[0m  [2m432:77[22m  [31merror[39m  Use the rest parameters instead of 'arguments'                                                                           [2mprefer-rest-params[22m[0m
+[0m  [2m436:26[22m  [31merror[39m  Unexpected var, use let or const instead                                                                                 [2mno-var[22m[0m
+[0m  [2m439:30[22m  [31merror[39m  Unexpected var, use let or const instead                                                                                 [2mno-var[22m[0m
+[0m  [2m446:25[22m  [31merror[39m  Unexpected var, use let or const instead                                                                                 [2mno-var[22m[0m
+[0m  [2m454:25[22m  [31merror[39m  Unexpected var, use let or const instead                                                                                 [2mno-var[22m[0m
+[0m  [2m458:25[22m  [31merror[39m  Unexpected var, use let or const instead                                                                                 [2mno-var[22m[0m
+[0m[0m
+[0m[4mC:\Users\CONFORT TECH\Documents\zac\finalform\src\pages\EditFormPage.tsx[24m[0m
+[0m  [2m134:3[22m   [31merror[39m    React Hook "useEffect" is called conditionally. React Hooks must be called in the exact same order in every component render                                                                    [2mreact-hooks/rules-of-hooks[22m[0m
+[0m  [2m146:3[22m   [31merror[39m    React Hook "useEffect" is called conditionally. React Hooks must be called in the exact same order in every component render                                                                    [2mreact-hooks/rules-of-hooks[22m[0m
+[0m  [2m202:30[22m  [31merror[39m    React Hook "useCallback" is called conditionally. React Hooks must be called in the exact same order in every component render                                                                  [2mreact-hooks/rules-of-hooks[22m[0m
+[0m  [2m355:26[22m  [31merror[39m    React Hook "useCallback" is called conditionally. React Hooks must be called in the exact same order in every component render                                                                  [2mreact-hooks/rules-of-hooks[22m[0m
+[0m  [2m497:6[22m   [33mwarning[39m  React Hook useCallback has missing dependencies: 'formConfig.type', 'gsSheets', and 'waProfiles'. Either include them or remove the dependency array                                            [2mreact-hooks/exhaustive-deps[22m[0m
+[0m  [2m651:26[22m  [31merror[39m    React Hook "useFormStore" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  [2mreact-hooks/rules-of-hooks[22m[0m
+[0m  [2m652:29[22m  [31merror[39m    React Hook "useFormStore" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  [2mreact-hooks/rules-of-hooks[22m[0m
+[0m[0m
+[0m[4mC:\Users\CONFORT TECH\Documents\zac\finalform\src\pages\FormsPage.tsx[24m[0m
+[0m  [2m154:38[22m  [33mwarning[39m  React Hook useMemo has unnecessary dependencies: 'filter', 'searchQuery', and 'sortBy'. Either exclude them or remove the dependency array  [2mreact-hooks/exhaustive-deps[22m[0m
+[0m[0m
+[0m[4mC:\Users\CONFORT TECH\Documents\zac\finalform\src\pages\ProductsPage.tsx[24m[0m
+[0m  [2m185:8[22m  [33mwarning[39m  React Hook useEffect has a missing dependency: 'loadFromDB'. Either include it or remove the dependency array  [2mreact-hooks/exhaustive-deps[22m[0m
+[0m[0m
+[0m[31m[1m✖ 64 problems (40 errors, 24 warnings)[22m[39m[0m
+[0m[31m[1m[22m[39m[31m[1m  10 errors and 0 warnings potentially fixable with the `--fix` option.[22m[39m[0m
+[0m[31m[1m[22m[39m[0m

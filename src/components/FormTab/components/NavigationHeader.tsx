@@ -88,30 +88,30 @@ export const NavigationHeader = ({
     };
 
     return (
-        <div className="flex border-b border-slate-200/80 px-4 sm:px-5 py-3.5 items-center justify-between shrink-0 bg-white/80 backdrop-blur-sm shadow-[0_1px_3px_-1px_rgba(0,0,0,0.06)]">
+        <div className="flex border-b border-slate-200 px-4 sm:px-6 h-14 items-center justify-between shrink-0 bg-white shadow-sm z-10 relative">
             {editingSection ? (
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-3">
                     {editingField ? (
                         <>
                             <button
                                 onClick={() => setEditingField(null)}
-                                className="p-2 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-slate-600 transition-all active:scale-95"
+                                className="p-1.5 -ml-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-900 transition-colors"
                                 aria-label="Back"
                             >
-                                <ArrowLeft size={18} strokeWidth={2.5} />
+                                <ArrowLeft size={16} strokeWidth={2.5} />
                             </button>
-                            <h2 className="text-[14px] font-bold text-slate-800 tracking-tight">Field Configuration</h2>
+                            <h2 className="text-sm font-semibold text-slate-900 tracking-tight">Field Configuration</h2>
                         </>
                     ) : (
                         <>
                             <button
                                 onClick={handleBack}
-                                className="p-2 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-slate-600 transition-all active:scale-95"
+                                className="p-1.5 -ml-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-900 transition-colors"
                                 aria-label="Back"
                             >
                                 <ChevronLeft size={18} strokeWidth={2.5} />
                             </button>
-                            <h2 className="text-[14px] font-bold text-slate-800 tracking-tight">
+                            <h2 className="text-sm font-semibold text-slate-900 tracking-tight">
                                 {getSectionTitle(editingSection!)}
                             </h2>
                         </>
@@ -119,7 +119,7 @@ export const NavigationHeader = ({
                 </div>
             ) : (
                 <div className="flex items-center gap-2">
-                    <h2 className="text-[14px] font-bold text-slate-800 tracking-tight">{t('editor.configureForm')}</h2>
+                    <h2 className="text-sm font-semibold text-slate-900 tracking-tight">{t('editor.configureForm')}</h2>
                 </div>
             )}
         </div>

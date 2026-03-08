@@ -11,6 +11,8 @@ import {
 } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useConnectedStores } from '@/lib/firebase/hooks';
+// @ts-ignore
+import feedData from '../../../feed.json';
 import { getAdapter, LOADER_VERSION } from '@/lib/integrations';
 import { notifyProductSyncComplete, syncProductsFromShopify } from '@/lib/products';
 import { cn } from '@/lib/utils';
@@ -156,9 +158,9 @@ const ShopifyGuide = () => (
             <p>Add the following URL to <strong>Allowed redirection URL(s)</strong>:</p>
             <div className="flex items-center gap-2 mt-2">
                 <div className="relative flex-1">
-                    <Input readOnly value="https://oauth.n8n.cloud/oauth2/callback" className="bg-slate-50 border-slate-200 font-mono text-xs h-9 pr-20" onClick={(e) => e.currentTarget.select()} />
+                    <Input readOnly value="https://your-backend-url.com/oauth2/callback" className="bg-slate-50 border-slate-200 font-mono text-xs h-9 pr-20" onClick={(e) => e.currentTarget.select()} />
                     <div className="absolute right-1 top-1">
-                        <CopyButton text="https://oauth.n8n.cloud/oauth2/callback" className="h-7 bg-white shadow-sm border border-slate-200 hover:bg-slate-50" />
+                        <CopyButton text="https://your-backend-url.com/oauth2/callback" className="h-7 bg-white shadow-sm border border-slate-200 hover:bg-slate-50" />
                     </div>
                 </div>
             </div>
@@ -188,9 +190,9 @@ export function ConnectShopifySheet({ open, onOpenChange, userId }: ConnectShopi
     const [isConnecting, setIsConnecting] = useState(false);
 
     const [shopifyForm, setShopifyForm] = useState({
-        subdomain: 'baraaelectromenager-com',
-        clientId: '3267facf7b3733a5e74e1e9c3b077437',
-        clientSecret: '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',
+        subdomain: feedData.shopify.shopDomain.replace('https://', '').replace('.myshopify.com', ''),
+        clientId: feedData.shopify.clientId,
+        clientSecret: feedData.shopify.clientSecret,
     });
 
     const handleShopifyConnect = async () => {
@@ -311,10 +313,12 @@ export function ConnectShopifySheet({ open, onOpenChange, userId }: ConnectShopi
                 </SheetHeader>
 
                 <Tabs value={activeTab} onValueChange={(v: any) => setActiveTab(v)} className="flex-1 flex flex-col min-h-0">
-                    <TabsList className="grid w-full grid-cols-2 bg-slate-50 p-1 rounded-none shrink-0 border-b border-slate-100">
-                        <TabsTrigger value="add" className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-indigo-600 text-xs font-medium text-slate-500">Credentials</TabsTrigger>
-                        <TabsTrigger value="guide" className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-indigo-600 text-xs font-medium text-slate-500">Setup Guide</TabsTrigger>
-                    </TabsList>
+                    <div className="flex justify-center py-4 bg-white shrink-0 border-b border-slate-100">
+                        <TabsList className="inline-flex h-9 items-center justify-center rounded-full bg-slate-100/80 p-1 text-slate-500 shadow-inner">
+                            <TabsTrigger value="add" className="rounded-full px-6 py-1.5 text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm transition-all duration-300">Credentials</TabsTrigger>
+                            <TabsTrigger value="guide" className="rounded-full px-6 py-1.5 text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm transition-all duration-300">Setup Guide</TabsTrigger>
+                        </TabsList>
+                    </div>
 
                     <ScrollArea className="flex-1 bg-slate-50/50 [&>div>div]:!block">
                         <TabsContent value="add" className="mt-0 p-6 space-y-4">
