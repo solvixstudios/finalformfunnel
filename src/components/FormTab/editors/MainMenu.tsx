@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faPalette,
@@ -13,6 +13,7 @@ import {
   faTruckFast,
   faBox,
   faBriefcase,
+  faSearch,
 } from "@fortawesome/free-solid-svg-icons";
 import {
   faWhatsapp,
@@ -24,7 +25,7 @@ import {
 } from "@fortawesome/free-brands-svg-icons";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { useFormStore } from "../../../stores";
-import { BuilderSearch } from "../components/BuilderSearch";
+import { BuilderSearchInput, useBuilderSearch } from "../components/BuilderSearch";
 
 /* ─── Reusable MenuCard (FontAwesome) ─── */
 const MenuCard = ({
@@ -113,24 +114,61 @@ const CategoryHeader = ({
 export const MainMenu = ({ onLoadClick }: { onLoadClick?: () => void }) => {
   const setEditingSection = useFormStore((state) => state.setEditingSection);
   const formType = useFormStore((state) => state.formConfig.type);
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchResults = useBuilderSearch(searchQuery);
 
   return (
-    <div className="pb-8 animate-in fade-in slide-in-from-bottom-4 duration-500 relative overflow-x-clip">
+    <div className="pb-8 animate-in fade-in slide-in-from-bottom-4 duration-500 relative">
 
       {/* Background ambient glow - changed to warm beige */}
       <div className="absolute top-0 right-0 w-64 h-64 bg-orange-50/50 rounded-full blur-[80px] opacity-60 pointer-events-none translate-x-1/2 -translate-y-1/2" />
 
       {/* ═══ SMART SEARCH ═══ */}
-      <div className="relative z-10 mb-6 group">
-        <BuilderSearch onNavigate={(id) => setEditingSection(id)} />
-        <div className="absolute inset-0 -z-10 bg-[#FF5A1F]/5 rounded-xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      <div className="sticky top-0 z-50 -mt-5 sm:-mt-6 lg:-mt-8 -mx-5 sm:-mx-6 lg:-mx-8 px-5 sm:px-6 lg:px-8 pt-5 sm:pt-6 lg:pt-8 bg-[#F8F5F1]/90 backdrop-blur-xl border-b border-transparent transition-all mb-6">
+        <div className="relative group">
+          <BuilderSearchInput query={searchQuery} onChange={setSearchQuery} />
+        </div>
       </div>
 
-      {/* ═══ TEMPLATE HERO CARD ═══ */}
-      {onLoadClick && (
-        <button
-          onClick={onLoadClick}
-          className="
+      {searchQuery.trim() ? (
+        <div className="space-y-4 relative z-10 min-h-[300px] mt-2">
+          {searchResults.length === 0 ? (
+            <div className="text-center py-12 animate-in fade-in zoom-in duration-300">
+              <div className="w-16 h-16 bg-white/50 border border-slate-200 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
+                <FontAwesomeIcon icon={faSearch} className="text-slate-400 text-xl" />
+              </div>
+              <p className="text-slate-800 font-bold text-[15px]">Aucun résultat trouvé</p>
+              <p className="text-slate-500 text-sm mt-1 font-medium">Essayez d'autres mots-clés pour "{searchQuery}"</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              {searchResults.map((item) => (
+                <MenuCard
+                  key={item.id}
+                  icon={item.icon}
+                  label={item.label}
+                  description={
+                    item.subMatches?.length
+                      ? `↳ ${item.subMatches.slice(0, 3).join(", ")}`
+                      : item.description
+                  }
+                  accentClass={item.accentClass}
+                  onClick={() => {
+                    setEditingSection(item.id);
+                    setSearchQuery("");
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <>
+          {/* ═══ TEMPLATE HERO CARD ═══ */}
+          {onLoadClick && (
+            <button
+              onClick={onLoadClick}
+              className="
             w-full mb-8 bg-[#FF5A1F]
             p-5 rounded-[20px] flex items-center gap-4 
             shadow-lg shadow-[#FF5A1F]/20 hover:shadow-xl hover:shadow-[#FF5A1F]/30
@@ -138,188 +176,190 @@ export const MainMenu = ({ onLoadClick }: { onLoadClick?: () => void }) => {
             transition-all duration-300 cursor-pointer relative overflow-hidden
             text-left group z-10 border-0
           "
-        >
-          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 pointer-events-none mix-blend-overlay" />
+            >
+              <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 pointer-events-none mix-blend-overlay" />
 
-          <div className="absolute right-0 top-0 w-32 h-32 bg-white opacity-10 rounded-full blur-2xl -mr-10 -mt-10 group-hover:opacity-20 transition-opacity duration-500" />
+              <div className="absolute right-0 top-0 w-32 h-32 bg-white opacity-10 rounded-full blur-2xl -mr-10 -mt-10 group-hover:opacity-20 transition-opacity duration-500" />
 
-          <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white shadow-inner group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 shrink-0 relative z-10 border border-white/10">
-            <FontAwesomeIcon icon={faWandMagicSparkles} style={{ fontSize: 20 }} />
-          </div>
+              <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white shadow-inner group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 shrink-0 relative z-10 border border-white/10">
+                <FontAwesomeIcon icon={faWandMagicSparkles} style={{ fontSize: 20 }} />
+              </div>
 
-          <div className="flex-1 min-w-0 relative z-10">
-            <span className="block text-[15px] font-extrabold text-white tracking-tight">
-              Start with a Template
-            </span>
-            <span className="block text-sm text-indigo-100/90 mt-0.5 font-medium">
-              Import a high-converting design
-            </span>
-          </div>
-        </button>
-      )}
-
-      <div className="space-y-6 relative z-10">
-
-        {/* ═══════ CATEGORY: DESIGN & LAYOUT ═══════ */}
-        <CategoryHeader icon={faPalette} title="Design & Mise en page" accentClass="text-indigo-500" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 mb-2">
-          <MenuCard
-            icon={faPalette}
-            label="Design Global"
-            description="Couleurs, formes & styles"
-            accentClass="from-indigo-500 to-violet-600"
-            onClick={() => setEditingSection("global_design")}
-          />
-          <MenuCard
-            icon={faTableCells}
-            label="Sections"
-            description="Ordre et visibilité"
-            accentClass="from-blue-500 to-cyan-600"
-            onClick={() => setEditingSection("sections_list")}
-          />
-        </div>
-
-        {/* ═══════ CATEGORY: PRODUCTS & OFFERS ═══════ */}
-        <CategoryHeader icon={faTags} title="Produits & Offres" accentClass="text-amber-500" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 mb-2">
-          {formType !== 'store' && (
-            <MenuCard
-              icon={faTags}
-              label="Packs & Offres"
-              description="Gérer les offres produits"
-              accentClass="from-amber-500 to-orange-600"
-              onClick={() => setEditingSection("packs_manager")}
-            />
+              <div className="flex-1 min-w-0 relative z-10">
+                <span className="block text-[15px] font-extrabold text-white tracking-tight">
+                  Start with a Template
+                </span>
+                <span className="block text-sm text-indigo-100/90 mt-0.5 font-medium">
+                  Import a high-converting design
+                </span>
+              </div>
+            </button>
           )}
-          <MenuCard
-            icon={faTruck}
-            label="Tarifs Livraison"
-            description="Frais & règles nationales"
-            accentClass="from-emerald-500 to-teal-600"
-            onClick={() => setEditingSection("shipping_manager")}
-          />
-          <MenuCard
-            icon={faTicket}
-            label="Codes Promo"
-            description="Réductions & offres spéciales"
-            accentClass="from-violet-500 to-purple-600"
-            onClick={() => setEditingSection("promo_code_manager")}
-          />
-        </div>
 
-        {/* ═══════ CATEGORY: CONVERSION ═══════ */}
-        <CategoryHeader icon={faCircleCheck} title="Conversion" accentClass="text-green-500" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 mb-2">
-          <MenuCard
-            icon={faCircleCheck}
-            label="Confirmation"
-            description="Page de remerciement"
-            accentClass="from-green-500 to-emerald-600"
-            onClick={() => setEditingSection("thank_you")}
-          />
-        </div>
+          <div className="space-y-6 relative z-10">
 
-        {/* ═══════ CATEGORY: INTEGRATIONS ═══════ */}
-        <CategoryHeader icon={faPlug} title="Intégrations" accentClass="text-blue-500" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
-          <MenuCard
-            icon={faWhatsapp}
-            label="WhatsApp"
-            description="Connecter profils WhatsApp"
-            accentClass="from-emerald-400 to-green-600"
-            onClick={() => setEditingSection("whatsapp")}
-          />
-          <MenuCard
-            icon={faGoogle}
-            label="Google Sheets"
-            description="Exporter commandes"
-            accentClass="from-green-500 to-emerald-700"
-            onClick={() => setEditingSection("google_sheets")}
-          />
-          <MenuCard
-            icon={faFacebookF}
-            label="Meta Pixel"
-            description="Conversions Facebook"
-            accentClass="from-blue-600 to-indigo-700"
-            onClick={() => setEditingSection("meta_pixel")}
-          />
-          <MenuCard
-            icon={faTiktok}
-            label="TikTok Pixel"
-            description="Conversions TikTok"
-            accentClass="from-slate-700 to-slate-900"
-            onClick={() => setEditingSection("tiktok_pixel")}
-          />
-          <MenuCard
-            icon={faShopify}
-            label="Shopify"
-            description="Connecter boutique Shopify"
-            accentClass="from-green-500 to-emerald-600"
-            onClick={() => setEditingSection("shopify")}
-          />
-          <MenuCard
-            icon={faWordpress}
-            label="WooCommerce"
-            description="Connecter WooCommerce"
-            accentClass="from-purple-500 to-indigo-600"
-            comingSoon={true}
-            onClick={() => setEditingSection("woocommerce")}
-          />
-          <MenuCard
-            icon={faBolt}
-            label="Webhook"
-            description="Créer automatisation"
-            accentClass="from-amber-400 to-yellow-600"
-            comingSoon={true}
-            onClick={() => setEditingSection("webhook")}
-          />
-        </div>
+            {/* ═══════ CATEGORY: DESIGN & LAYOUT ═══════ */}
+            <CategoryHeader icon={faPalette} title="Design & Mise en page" accentClass="text-indigo-500" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 mb-2">
+              <MenuCard
+                icon={faPalette}
+                label="Design Global"
+                description="Couleurs, formes & styles"
+                accentClass="from-indigo-500 to-violet-600"
+                onClick={() => setEditingSection("global_design")}
+              />
+              <MenuCard
+                icon={faTableCells}
+                label="Sections"
+                description="Ordre et visibilité"
+                accentClass="from-blue-500 to-cyan-600"
+                onClick={() => setEditingSection("sections_list")}
+              />
+            </div>
 
-        {/* ═══════ CATEGORY: DELIVERY & SHIPPING ═══════ */}
-        <CategoryHeader icon={faTruckFast} title="Services de Livraison" accentClass="text-amber-500" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
-          <MenuCard
-            icon={faTruckFast}
-            label="Maystro Delivery"
-            description="Livraison Maystro"
-            accentClass="from-blue-500 to-indigo-600"
-            comingSoon={true}
-            onClick={() => setEditingSection("maystro")}
-          />
-          <MenuCard
-            icon={faTruckFast}
-            label="ZR Delivery"
-            description="Livraison ZR Delivery"
-            accentClass="from-orange-400 to-red-500"
-            comingSoon={true}
-            onClick={() => setEditingSection("zr_delivery")}
-          />
-          <MenuCard
-            icon={faBox}
-            label="Yalidine"
-            description="Livraison Yalidine Express"
-            accentClass="from-rose-500 to-red-600"
-            comingSoon={true}
-            onClick={() => setEditingSection("yalidine")}
-          />
-          <MenuCard
-            icon={faBox}
-            label="Anderson"
-            description="Livraison Anderson"
-            accentClass="from-zinc-500 to-neutral-600"
-            comingSoon={true}
-            onClick={() => setEditingSection("anderson")}
-          />
-          <MenuCard
-            icon={faBriefcase}
-            label="Ecommanager"
-            description="Intégration Ecommanager"
-            accentClass="from-cyan-500 to-blue-600"
-            comingSoon={true}
-            onClick={() => setEditingSection("ecommanager")}
-          />
-        </div>
-      </div>
+            {/* ═══════ CATEGORY: PRODUCTS & OFFERS ═══════ */}
+            <CategoryHeader icon={faTags} title="Produits & Offres" accentClass="text-amber-500" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 mb-2">
+              {formType !== 'store' && (
+                <MenuCard
+                  icon={faTags}
+                  label="Packs & Offres"
+                  description="Gérer les offres produits"
+                  accentClass="from-amber-500 to-orange-600"
+                  onClick={() => setEditingSection("packs_manager")}
+                />
+              )}
+              <MenuCard
+                icon={faTruck}
+                label="Tarifs Livraison"
+                description="Frais & règles nationales"
+                accentClass="from-emerald-500 to-teal-600"
+                onClick={() => setEditingSection("shipping_manager")}
+              />
+              <MenuCard
+                icon={faTicket}
+                label="Codes Promo"
+                description="Réductions & offres spéciales"
+                accentClass="from-violet-500 to-purple-600"
+                onClick={() => setEditingSection("promo_code_manager")}
+              />
+            </div>
+
+            {/* ═══════ CATEGORY: CONVERSION ═══════ */}
+            <CategoryHeader icon={faCircleCheck} title="Conversion" accentClass="text-green-500" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 mb-2">
+              <MenuCard
+                icon={faCircleCheck}
+                label="Confirmation"
+                description="Page de remerciement"
+                accentClass="from-green-500 to-emerald-600"
+                onClick={() => setEditingSection("thank_you")}
+              />
+            </div>
+
+            {/* ═══════ CATEGORY: INTEGRATIONS ═══════ */}
+            <CategoryHeader icon={faPlug} title="Intégrations" accentClass="text-blue-500" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
+              <MenuCard
+                icon={faWhatsapp}
+                label="WhatsApp"
+                description="Connecter profils WhatsApp"
+                accentClass="from-emerald-400 to-green-600"
+                onClick={() => setEditingSection("whatsapp")}
+              />
+              <MenuCard
+                icon={faGoogle}
+                label="Google Sheets"
+                description="Exporter commandes"
+                accentClass="from-green-500 to-emerald-700"
+                onClick={() => setEditingSection("google_sheets")}
+              />
+              <MenuCard
+                icon={faFacebookF}
+                label="Meta Pixel"
+                description="Conversions Facebook"
+                accentClass="from-blue-600 to-indigo-700"
+                onClick={() => setEditingSection("meta_pixel")}
+              />
+              <MenuCard
+                icon={faTiktok}
+                label="TikTok Pixel"
+                description="Conversions TikTok"
+                accentClass="from-slate-700 to-slate-900"
+                onClick={() => setEditingSection("tiktok_pixel")}
+              />
+              <MenuCard
+                icon={faShopify}
+                label="Shopify"
+                description="Connecter boutique Shopify"
+                accentClass="from-green-500 to-emerald-600"
+                onClick={() => setEditingSection("shopify")}
+              />
+              <MenuCard
+                icon={faWordpress}
+                label="WooCommerce"
+                description="Connecter WooCommerce"
+                accentClass="from-purple-500 to-indigo-600"
+                comingSoon={true}
+                onClick={() => setEditingSection("woocommerce")}
+              />
+              <MenuCard
+                icon={faBolt}
+                label="Webhook"
+                description="Créer automatisation"
+                accentClass="from-amber-400 to-yellow-600"
+                comingSoon={true}
+                onClick={() => setEditingSection("webhook")}
+              />
+            </div>
+
+            {/* ═══════ CATEGORY: DELIVERY & SHIPPING ═══════ */}
+            <CategoryHeader icon={faTruckFast} title="Services de Livraison" accentClass="text-amber-500" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
+              <MenuCard
+                icon={faTruckFast}
+                label="Maystro Delivery"
+                description="Livraison Maystro"
+                accentClass="from-blue-500 to-indigo-600"
+                comingSoon={true}
+                onClick={() => setEditingSection("maystro")}
+              />
+              <MenuCard
+                icon={faTruckFast}
+                label="ZR Delivery"
+                description="Livraison ZR Delivery"
+                accentClass="from-orange-400 to-red-500"
+                comingSoon={true}
+                onClick={() => setEditingSection("zr_delivery")}
+              />
+              <MenuCard
+                icon={faBox}
+                label="Yalidine"
+                description="Livraison Yalidine Express"
+                accentClass="from-rose-500 to-red-600"
+                comingSoon={true}
+                onClick={() => setEditingSection("yalidine")}
+              />
+              <MenuCard
+                icon={faBox}
+                label="Anderson"
+                description="Livraison Anderson"
+                accentClass="from-zinc-500 to-neutral-600"
+                comingSoon={true}
+                onClick={() => setEditingSection("anderson")}
+              />
+              <MenuCard
+                icon={faBriefcase}
+                label="Ecommanager"
+                description="Intégration Ecommanager"
+                accentClass="from-cyan-500 to-blue-600"
+                comingSoon={true}
+                onClick={() => setEditingSection("ecommanager")}
+              />
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
