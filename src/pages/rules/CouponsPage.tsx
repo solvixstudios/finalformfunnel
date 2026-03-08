@@ -1,9 +1,21 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, ArrowLeft, Save, Eye, Ticket, Sparkles } from 'lucide-react';
+import { Plus, Trash2, Save, Eye, Ticket, MoreHorizontal, Pencil, Loader2 } from 'lucide-react';
 import { useFormRules, CouponRule } from '@/hooks/useFormRules';
 import PromoCodeManager, { PromoCode } from '@/components/managers/PromoCodeManager';
 import { PromoCodeSection } from '@/components/FormTab/preview/sections/PromoCodeSection';
 import { SummarySection } from '@/components/FormTab/preview/sections/SummarySection';
+import { PageHeader } from '@/components/GlobalHeader/PageHeader';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import type { FormConfig } from '@/types/form';
 
 interface CouponsPageProps {
@@ -85,9 +97,7 @@ const CouponsPage: React.FC<CouponsPageProps> = ({ userId }) => {
         }
     };
 
-    const handlePreviewRemove = () => {
-        resetPreview();
-    };
+    const handlePreviewRemove = () => resetPreview();
 
     const handleSave = async () => {
         if (!editingRule) return;
@@ -102,20 +112,11 @@ const CouponsPage: React.FC<CouponsPageProps> = ({ userId }) => {
         }
     };
 
-    const handleDelete = async (e: React.MouseEvent, ruleId: string) => {
-        e.stopPropagation();
+    const handleDelete = async (ruleId: string) => {
         if (confirm("Voulez-vous vraiment supprimer ce profil de codes promo ?")) {
             await deleteRule(ruleId);
         }
     };
-
-    if (loading) {
-        return (
-            <div className="flex h-full items-center justify-center p-12">
-                <div className="w-8 h-8 border-4 border-violet-600 border-t-transparent rounded-full animate-spin" />
-            </div>
-        );
-    }
 
     // --- EDITOR VIEW ---
     if (editingRule) {
@@ -131,41 +132,45 @@ const CouponsPage: React.FC<CouponsPageProps> = ({ userId }) => {
             : { subtotalDiscount: 0, shippingDiscount: 0, totalDiscount: 0 };
 
         return (
-            <div className="flex flex-col h-full">
-                {/* Editor Header */}
-                <div className="flex items-center justify-between mb-6 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-                    <div className="flex items-center gap-4">
-                        <button onClick={() => setEditingRule(null)} className="p-2 hover:bg-slate-100 rounded-xl transition-colors text-slate-500">
-                            <ArrowLeft size={20} />
-                        </button>
-                        <input
-                            type="text"
-                            value={ruleName}
-                            onChange={(e) => setRuleName(e.target.value)}
-                            className="text-xl font-bold text-slate-900 bg-transparent border-none p-0 focus:ring-0 hover:bg-slate-50 rounded px-2 py-1 w-64"
-                            placeholder="Nom du profil"
-                        />
-                    </div>
-                    <button
-                        onClick={handleSave}
-                        disabled={isSaving}
-                        className="group relative flex items-center gap-2.5 bg-gradient-to-r from-violet-600 to-purple-600 text-white px-7 py-3 rounded-2xl font-bold shadow-lg shadow-violet-200/50 hover:shadow-xl hover:shadow-violet-300/50 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {isSaving ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Save size={18} />}
-                        <span>Enregistrer</span>
-                        <div className="absolute inset-0 rounded-2xl bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </button>
+            <div className="max-w-[1600px] mx-auto w-full flex flex-col pt-2 md:pt-4 pb-8 h-full">
+                <PageHeader
+                    title="Codes Promo"
+                    breadcrumbs={[
+                        { label: 'Rules', href: '/dashboard/rules/coupons' },
+                        { label: ruleName || 'Modifier' },
+                    ]}
+                    icon={Ticket}
+                    backHref="/dashboard/rules/coupons"
+                    onBack={() => setEditingRule(null)}
+                    actions={
+                        <Button
+                            onClick={handleSave}
+                            disabled={isSaving}
+                            size="sm"
+                            className="h-8 rounded-lg text-xs font-bold px-4 bg-[#FF5A1F] hover:bg-[#E04D1A] text-white shadow-sm"
+                        >
+                            {isSaving ? <Loader2 size={13} className="mr-1.5 animate-spin" /> : <Save size={13} className="mr-1.5" />}
+                            Enregistrer
+                        </Button>
+                    }
+                />
+
+                {/* Editable Name */}
+                <div className="mb-5 pt-2">
+                    <Input
+                        value={ruleName}
+                        onChange={(e) => setRuleName(e.target.value)}
+                        className="text-lg font-bold text-slate-900 bg-white border-slate-200 rounded-lg h-11 px-4 shadow-sm focus:ring-1 focus:ring-slate-900/5 max-w-md"
+                        placeholder="Nom du profil"
+                    />
                 </div>
 
                 {/* Split Screen */}
-                <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 pb-24">
-                    {/* Left: Configuration — only codes, no enabled/required toggles */}
-                    <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm overflow-y-auto">
-                        <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                            <Ticket size={20} className="text-violet-500" />
-                            Codes Promo
-                        </h2>
-                        <div className="bg-[#F8F5F1] rounded-2xl p-4 sm:p-6 border border-slate-200 shadow-inner">
+                <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-0">
+                    {/* Left: Configuration */}
+                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 overflow-y-auto">
+                        <h2 className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-4">Codes Promo</h2>
+                        <div className="bg-[#F8F5F1] rounded-xl p-4 sm:p-5 border border-slate-200">
                             <PromoCodeManager
                                 codes={localCoupons}
                                 onCodesChange={setLocalCoupons}
@@ -179,21 +184,19 @@ const CouponsPage: React.FC<CouponsPageProps> = ({ userId }) => {
                     </div>
 
                     {/* Right: Live Preview */}
-                    <div className="bg-slate-50 rounded-3xl border border-slate-200 p-6 flex flex-col">
-                        <div className="flex items-center gap-2 mb-5">
-                            <div className="w-8 h-8 rounded-lg bg-violet-100 text-violet-600 flex items-center justify-center">
-                                <Eye size={16} />
-                            </div>
-                            <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider">Aperçu en Direct</h3>
+                    <div className="bg-slate-50 rounded-xl border border-slate-200 p-5 flex flex-col">
+                        <div className="flex items-center gap-2 mb-4">
+                            <Eye size={14} className="text-slate-400" />
+                            <h3 className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Aperçu en Direct</h3>
                         </div>
 
                         <div className="flex-1 flex items-start justify-center">
-                            <div className="w-full max-w-sm bg-white rounded-2xl border border-slate-200 p-5 shadow-lg space-y-4">
+                            <div className="w-full max-w-sm bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-4">
                                 {localCoupons.length === 0 ? (
-                                    <div className="py-12 text-center text-slate-400">
-                                        <Ticket className="mx-auto mb-3 text-slate-300" size={32} />
-                                        <p className="text-sm font-bold">Aucun code configuré</p>
-                                        <p className="text-xs mt-1">Ajoutez des codes promo à gauche pour tester l'aperçu.</p>
+                                    <div className="py-10 text-center text-slate-400">
+                                        <Ticket className="mx-auto mb-2 text-slate-300" size={28} />
+                                        <p className="text-xs font-semibold">Aucun code configuré</p>
+                                        <p className="text-[11px] mt-1">Ajoutez des codes promo à gauche.</p>
                                     </div>
                                 ) : (
                                     <>
@@ -230,58 +233,108 @@ const CouponsPage: React.FC<CouponsPageProps> = ({ userId }) => {
     }
 
     // --- LIST VIEW ---
-    return (
-        <div className="space-y-6 pb-24">
-            <div className="flex justify-between items-center bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-                <div>
-                    <h2 className="text-xl font-bold text-slate-900">Profils Codes Promo</h2>
-                    <p className="text-sm text-slate-500">Créez des campagnes de codes promo pour vos formulaires.</p>
-                </div>
-                <button
-                    onClick={handleCreateNew}
-                    className="group relative flex items-center gap-2.5 bg-gradient-to-r from-violet-600 to-purple-600 text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-violet-200/50 hover:shadow-xl hover:shadow-violet-300/50 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
-                >
-                    <Plus size={18} />
-                    <span>Nouveau Profil</span>
-                    <Sparkles size={14} className="opacity-50 group-hover:opacity-100 transition-opacity" />
-                    <div className="absolute inset-0 rounded-2xl bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </button>
-            </div>
+    const headerActions = (
+        <Button
+            size="sm"
+            onClick={handleCreateNew}
+            className="h-8 rounded-lg text-xs font-bold px-4 bg-[#FF5A1F] hover:bg-[#FF5A1F]/90 text-white shadow-sm"
+        >
+            <Plus size={13} className="mr-1.5" />
+            Nouveau Profil
+        </Button>
+    );
 
-            {rules.length === 0 ? (
-                <div className="bg-white rounded-3xl border-2 border-dashed border-slate-200 p-16 text-center">
-                    <div className="w-16 h-16 rounded-2xl bg-violet-50 text-violet-500 flex items-center justify-center mx-auto mb-4">
-                        <Ticket size={28} />
+    return (
+        <div className="max-w-[1600px] mx-auto w-full space-y-5 flex flex-col pt-2 md:pt-4 pb-8">
+            <PageHeader
+                title="Codes Promo"
+                breadcrumbs={[{ label: 'Profils Codes Promo' }]}
+                count={rules.length}
+                icon={Ticket}
+                actions={headerActions}
+            />
+
+            {loading ? (
+                <div className="flex items-center justify-center p-12">
+                    <Loader2 size={20} className="animate-spin text-slate-400" />
+                </div>
+            ) : rules.length === 0 ? (
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-16 text-center">
+                    <div className="w-12 h-12 rounded-lg bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+                        <Ticket size={22} />
                     </div>
-                    <h3 className="text-lg font-bold text-slate-700 mb-2">Aucun profil de codes promo</h3>
-                    <p className="text-sm text-slate-400 mb-6">Créez votre premier profil pour commencer.</p>
-                    <button onClick={handleCreateNew} className="inline-flex items-center gap-2 bg-violet-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-violet-700 transition-colors">
-                        <Plus size={18} /> Créer un profil
-                    </button>
+                    <h3 className="text-sm font-bold text-slate-700 mb-1">Aucun profil de codes promo</h3>
+                    <p className="text-xs text-slate-400 mb-5">Créez votre premier profil pour commencer.</p>
+                    <Button onClick={handleCreateNew} size="sm" className="h-8 rounded-lg text-xs font-bold px-4 bg-[#FF5A1F] hover:bg-[#FF5A1F]/90 text-white">
+                        <Plus size={13} className="mr-1.5" /> Créer un profil
+                    </Button>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {(rules as CouponRule[]).map((rule) => (
-                        <div
-                            key={rule.id}
-                            onClick={() => handleEdit(rule)}
-                            className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md hover:border-violet-300 transition-all cursor-pointer group flex flex-col"
-                        >
-                            <div className="flex justify-between items-start mb-4">
-                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-50 to-purple-50 text-violet-600 flex items-center justify-center group-hover:from-violet-600 group-hover:to-purple-600 group-hover:text-white transition-all duration-300">
-                                    <Ticket size={24} />
-                                </div>
-                                <button onClick={(e) => handleDelete(e, rule.id)} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100">
-                                    <Trash2 size={16} />
-                                </button>
-                            </div>
-                            <h3 className="text-lg font-bold text-slate-800 mb-1">{rule.name || 'Sans nom'}</h3>
-                            <p className="text-sm text-slate-500 mb-4">{rule.coupons?.length || 0} code(s)</p>
-                            <div className="mt-auto pt-4 border-t border-slate-100 text-xs text-slate-400">
-                                Mis à jour le {new Date(rule.updatedAt).toLocaleDateString()}
-                            </div>
-                        </div>
-                    ))}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                    <Table>
+                        <TableHeader>
+                            <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-b border-slate-200">
+                                <TableHead className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider py-3 pl-5">Nom</TableHead>
+                                <TableHead className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider py-3">Codes</TableHead>
+                                <TableHead className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider py-3">Dernière mise à jour</TableHead>
+                                <TableHead className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider py-3 pr-5 w-[60px]"></TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {(rules as CouponRule[]).map((rule) => (
+                                <TableRow
+                                    key={rule.id}
+                                    className="group cursor-pointer hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-b-0"
+                                    onClick={() => handleEdit(rule)}
+                                >
+                                    <TableCell className="py-3.5 pl-5">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-violet-50 ring-1 ring-black/[0.04]">
+                                                <Ticket size={14} className="text-violet-600" />
+                                            </div>
+                                            <span className="text-sm font-semibold text-slate-900">{rule.name || 'Sans nom'}</span>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="py-3.5">
+                                        <Badge variant="secondary" className="h-5 px-2 text-[10px] font-semibold shadow-none rounded-md">
+                                            {rule.coupons?.length || 0} code(s)
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell className="py-3.5">
+                                        <span className="text-xs text-slate-400 tabular-nums">
+                                            {new Date(rule.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                        </span>
+                                    </TableCell>
+                                    <TableCell className="py-3.5 pr-5 text-right">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 rounded-md opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-slate-900 hover:bg-slate-100"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    <MoreHorizontal size={16} />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end" className="w-44">
+                                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(rule); }}>
+                                                    <Pencil size={13} className="mr-2" /> Modifier
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem
+                                                    className="text-red-600 focus:text-red-700 focus:bg-red-50"
+                                                    onClick={(e) => { e.stopPropagation(); handleDelete(rule.id); }}
+                                                >
+                                                    <Trash2 size={13} className="mr-2" /> Supprimer
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
                 </div>
             )}
         </div>

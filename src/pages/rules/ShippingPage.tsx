@@ -1,10 +1,22 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Trash2, ArrowLeft, Save, Eye, Truck, Sparkles, ChevronDown, MapPin } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, Save, Eye, Truck, MoreHorizontal, Pencil, Loader2, ChevronDown, MapPin } from 'lucide-react';
 import { useFormRules, ShippingRule } from '@/hooks/useFormRules';
 import ShippingManager, { ShippingConfig } from '@/components/managers/ShippingManager';
 import { DeliverySection } from '@/components/FormTab/preview/sections/DeliverySection';
 import { SummarySection } from '@/components/FormTab/preview/sections/SummarySection';
 import { WILAYAS } from '@/lib/constants';
+import { PageHeader } from '@/components/GlobalHeader/PageHeader';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import type { FormConfig } from '@/types/form';
 
 interface ShippingPageProps {
@@ -52,13 +64,8 @@ const ShippingPage: React.FC<ShippingPageProps> = ({ userId }) => {
     const [previewShippingType, setPreviewShippingType] = useState<'home' | 'desk'>('home');
     const [previewWilaya, setPreviewWilaya] = useState('');
 
-    // Compute the effective shipping cost based on selected wilaya + exceptions
     const shippingCost = useMemo(() => {
-        if (!previewWilaya) {
-            return previewShippingType === 'home' ? localShipping.standard.home : localShipping.standard.desk;
-        }
-        // Check for exception
-        const exception = localShipping.exceptions?.find(ex => ex.id === previewWilaya);
+        const exception = previewWilaya ? localShipping.exceptions?.find(ex => ex.id === previewWilaya) : null;
         if (exception) {
             return previewShippingType === 'home' ? exception.home : exception.desk;
         }
@@ -94,125 +101,111 @@ const ShippingPage: React.FC<ShippingPageProps> = ({ userId }) => {
         }
     };
 
-    const handleDelete = async (e: React.MouseEvent, ruleId: string) => {
-        e.stopPropagation();
+    const handleDelete = async (ruleId: string) => {
         if (confirm("Voulez-vous vraiment supprimer ce profil de livraison ?")) {
             await deleteRule(ruleId);
         }
     };
 
-    if (loading) {
-        return (
-            <div className="flex h-full items-center justify-center p-12">
-                <div className="w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin" />
-            </div>
-        );
-    }
-
     // --- EDITOR VIEW ---
     if (editingRule) {
         const subtotal = 3500;
+        const homePrice = previewWilaya
+            ? (localShipping.exceptions?.find(ex => ex.id === previewWilaya)?.home ?? localShipping.standard.home)
+            : localShipping.standard.home;
+        const deskPrice = previewWilaya
+            ? (localShipping.exceptions?.find(ex => ex.id === previewWilaya)?.desk ?? localShipping.standard.desk)
+            : localShipping.standard.desk;
 
         return (
-            <div className="flex flex-col h-full">
-                {/* Editor Header */}
-                <div className="flex items-center justify-between mb-6 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-                    <div className="flex items-center gap-4">
-                        <button onClick={() => setEditingRule(null)} className="p-2 hover:bg-slate-100 rounded-xl transition-colors text-slate-500">
-                            <ArrowLeft size={20} />
-                        </button>
-                        <input
-                            type="text"
-                            value={ruleName}
-                            onChange={(e) => setRuleName(e.target.value)}
-                            className="text-xl font-bold text-slate-900 bg-transparent border-none p-0 focus:ring-0 hover:bg-slate-50 rounded px-2 py-1 w-64"
-                            placeholder="Nom du profil"
-                        />
-                    </div>
-                    <button
-                        onClick={handleSave}
-                        disabled={isSaving}
-                        className="group relative flex items-center gap-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-7 py-3 rounded-2xl font-bold shadow-lg shadow-emerald-200/50 hover:shadow-xl hover:shadow-emerald-300/50 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {isSaving ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Save size={18} />}
-                        <span>Enregistrer</span>
-                        <div className="absolute inset-0 rounded-2xl bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </button>
+            <div className="max-w-[1600px] mx-auto w-full flex flex-col pt-2 md:pt-4 pb-8 h-full">
+                <PageHeader
+                    title="Livraison"
+                    breadcrumbs={[
+                        { label: 'Rules', href: '/dashboard/rules/shipping' },
+                        { label: ruleName || 'Modifier' },
+                    ]}
+                    icon={Truck}
+                    backHref="/dashboard/rules/shipping"
+                    onBack={() => setEditingRule(null)}
+                    actions={
+                        <Button
+                            onClick={handleSave}
+                            disabled={isSaving}
+                            size="sm"
+                            className="h-8 rounded-lg text-xs font-bold px-4 bg-[#FF5A1F] hover:bg-[#E04D1A] text-white shadow-sm"
+                        >
+                            {isSaving ? <Loader2 size={13} className="mr-1.5 animate-spin" /> : <Save size={13} className="mr-1.5" />}
+                            Enregistrer
+                        </Button>
+                    }
+                />
+
+                {/* Editable Name */}
+                <div className="mb-5 pt-2">
+                    <Input
+                        value={ruleName}
+                        onChange={(e) => setRuleName(e.target.value)}
+                        className="text-lg font-bold text-slate-900 bg-white border-slate-200 rounded-lg h-11 px-4 shadow-sm focus:ring-1 focus:ring-slate-900/5 max-w-md"
+                        placeholder="Nom du profil"
+                    />
                 </div>
 
                 {/* Split Screen */}
-                <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 pb-24">
+                <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-0">
                     {/* Left: Configuration */}
-                    <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm overflow-y-auto">
-                        <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                            <Truck size={20} className="text-emerald-500" />
-                            Frais de Livraison
-                        </h2>
-                        <div className="bg-[#F8F5F1] rounded-2xl p-4 sm:p-6 border border-slate-200 shadow-inner">
+                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 overflow-y-auto">
+                        <h2 className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-4">Frais de Livraison</h2>
+                        <div className="bg-[#F8F5F1] rounded-xl p-4 sm:p-5 border border-slate-200">
                             <ShippingManager shipping={localShipping} onShippingChange={setLocalShipping} />
                         </div>
                     </div>
 
                     {/* Right: Live Preview */}
-                    <div className="bg-slate-50 rounded-3xl border border-slate-200 p-6 flex flex-col">
-                        <div className="flex items-center gap-2 mb-5">
-                            <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
-                                <Eye size={16} />
-                            </div>
-                            <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider">Aperçu en Direct</h3>
+                    <div className="bg-slate-50 rounded-xl border border-slate-200 p-5 flex flex-col">
+                        <div className="flex items-center gap-2 mb-4">
+                            <Eye size={14} className="text-slate-400" />
+                            <h3 className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Aperçu en Direct</h3>
                         </div>
 
                         <div className="flex-1 flex items-start justify-center">
-                            <div className="w-full max-w-sm bg-white rounded-2xl border border-slate-200 p-5 shadow-lg space-y-4">
-                                {/* Wilaya Selector — for testing shipping rates */}
+                            <div className="w-full max-w-sm bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-4">
+                                {/* Wilaya Selector */}
                                 <div>
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <MapPin size={14} className="text-emerald-600" />
-                                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Zone de livraison</span>
+                                    <div className="flex items-center gap-1.5 mb-2">
+                                        <MapPin size={12} className="text-slate-400" />
+                                        <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Zone de livraison</span>
                                     </div>
                                     <div className="relative">
                                         <select
                                             value={previewWilaya}
                                             onChange={(e) => setPreviewWilaya(e.target.value)}
-                                            className="w-full appearance-none px-4 py-3 text-sm font-semibold border-2 rounded-xl bg-slate-50 text-slate-800 cursor-pointer focus:border-emerald-400 focus:ring-0 outline-none transition-colors"
-                                            style={{ borderColor: '#e2e8f0' }}
+                                            className="w-full appearance-none px-3 py-2.5 text-sm font-medium border rounded-lg bg-white text-slate-800 cursor-pointer focus:border-slate-400 focus:ring-0 outline-none transition-colors border-slate-200"
                                         >
                                             <option value="">Tarif standard (par défaut)</option>
                                             {WILAYAS.map(w => (
                                                 <option key={w.id} value={w.id}>{w.name}</option>
                                             ))}
                                         </select>
-                                        <ChevronDown className="absolute right-4 top-3.5 text-slate-400 pointer-events-none" size={16} />
+                                        <ChevronDown className="absolute right-3 top-3 text-slate-400 pointer-events-none" size={14} />
                                     </div>
                                     {previewWilaya && localShipping.exceptions?.find(ex => ex.id === previewWilaya) && (
-                                        <p className="text-[10px] text-amber-600 font-bold mt-1.5 flex items-center gap-1">
-                                            ⚡ Tarif spécial appliqué pour cette wilaya
-                                        </p>
+                                        <p className="text-[10px] text-amber-600 font-semibold mt-1.5">⚡ Tarif spécial appliqué</p>
                                     )}
                                 </div>
 
-                                {/* Delivery Type Selector */}
                                 <DeliverySection
                                     config={PREVIEW_CONFIG}
                                     lang="fr"
                                     shippingType={previewShippingType}
                                     onSelect={setPreviewShippingType}
                                     formatCurrency={(amount) => `${amount} DA`}
-                                    homePrice={
-                                        previewWilaya
-                                            ? (localShipping.exceptions?.find(ex => ex.id === previewWilaya)?.home ?? localShipping.standard.home)
-                                            : localShipping.standard.home
-                                    }
-                                    deskPrice={
-                                        previewWilaya
-                                            ? (localShipping.exceptions?.find(ex => ex.id === previewWilaya)?.desk ?? localShipping.standard.desk)
-                                            : localShipping.standard.desk
-                                    }
+                                    homePrice={homePrice}
+                                    deskPrice={deskPrice}
                                     showSection={true}
                                     hasWilaya={true}
                                 />
 
-                                {/* Order Summary */}
                                 <SummarySection
                                     config={PREVIEW_CONFIG}
                                     lang="fr"
@@ -233,61 +226,116 @@ const ShippingPage: React.FC<ShippingPageProps> = ({ userId }) => {
     }
 
     // --- LIST VIEW ---
-    return (
-        <div className="space-y-6 pb-24">
-            <div className="flex justify-between items-center bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-                <div>
-                    <h2 className="text-xl font-bold text-slate-900">Profils de Livraison</h2>
-                    <p className="text-sm text-slate-500">Créez des grilles tarifaires de livraison pour vos formulaires.</p>
-                </div>
-                <button
-                    onClick={handleCreateNew}
-                    className="group relative flex items-center gap-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-emerald-200/50 hover:shadow-xl hover:shadow-emerald-300/50 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
-                >
-                    <Plus size={18} />
-                    <span>Nouveau Profil</span>
-                    <Sparkles size={14} className="opacity-50 group-hover:opacity-100 transition-opacity" />
-                    <div className="absolute inset-0 rounded-2xl bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </button>
-            </div>
+    const headerActions = (
+        <Button
+            size="sm"
+            onClick={handleCreateNew}
+            className="h-8 rounded-lg text-xs font-bold px-4 bg-[#FF5A1F] hover:bg-[#FF5A1F]/90 text-white shadow-sm"
+        >
+            <Plus size={13} className="mr-1.5" />
+            Nouveau Profil
+        </Button>
+    );
 
-            {rules.length === 0 ? (
-                <div className="bg-white rounded-3xl border-2 border-dashed border-slate-200 p-16 text-center">
-                    <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-500 flex items-center justify-center mx-auto mb-4">
-                        <Truck size={28} />
+    return (
+        <div className="max-w-[1600px] mx-auto w-full space-y-5 flex flex-col pt-2 md:pt-4 pb-8">
+            <PageHeader
+                title="Livraison"
+                breadcrumbs={[{ label: 'Profils de Livraison' }]}
+                count={rules.length}
+                icon={Truck}
+                actions={headerActions}
+            />
+
+            {loading ? (
+                <div className="flex items-center justify-center p-12">
+                    <Loader2 size={20} className="animate-spin text-slate-400" />
+                </div>
+            ) : rules.length === 0 ? (
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-16 text-center">
+                    <div className="w-12 h-12 rounded-lg bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+                        <Truck size={22} />
                     </div>
-                    <h3 className="text-lg font-bold text-slate-700 mb-2">Aucun profil de livraison</h3>
-                    <p className="text-sm text-slate-400 mb-6">Créez votre premier profil pour commencer.</p>
-                    <button onClick={handleCreateNew} className="inline-flex items-center gap-2 bg-emerald-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-emerald-700 transition-colors">
-                        <Plus size={18} /> Créer un profil
-                    </button>
+                    <h3 className="text-sm font-bold text-slate-700 mb-1">Aucun profil de livraison</h3>
+                    <p className="text-xs text-slate-400 mb-5">Créez votre premier profil pour commencer.</p>
+                    <Button onClick={handleCreateNew} size="sm" className="h-8 rounded-lg text-xs font-bold px-4 bg-[#FF5A1F] hover:bg-[#FF5A1F]/90 text-white">
+                        <Plus size={13} className="mr-1.5" /> Créer un profil
+                    </Button>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {(rules as ShippingRule[]).map((rule) => (
-                        <div
-                            key={rule.id}
-                            onClick={() => handleEdit(rule)}
-                            className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all cursor-pointer group flex flex-col"
-                        >
-                            <div className="flex justify-between items-start mb-4">
-                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 text-emerald-600 flex items-center justify-center group-hover:from-emerald-600 group-hover:to-teal-600 group-hover:text-white transition-all duration-300">
-                                    <Truck size={24} />
-                                </div>
-                                <button onClick={(e) => handleDelete(e, rule.id)} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100">
-                                    <Trash2 size={16} />
-                                </button>
-                            </div>
-                            <h3 className="text-lg font-bold text-slate-800 mb-1">{rule.name || 'Sans nom'}</h3>
-                            <div className="flex gap-4 text-sm text-slate-500 mb-4">
-                                <span>Dom: {rule.shipping?.standard?.home || 0} DA</span>
-                                <span>Bur: {rule.shipping?.standard?.desk || 0} DA</span>
-                            </div>
-                            <div className="mt-auto pt-4 border-t border-slate-100 text-xs text-slate-400">
-                                Mis à jour le {new Date(rule.updatedAt).toLocaleDateString()}
-                            </div>
-                        </div>
-                    ))}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                    <Table>
+                        <TableHeader>
+                            <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-b border-slate-200">
+                                <TableHead className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider py-3 pl-5">Nom</TableHead>
+                                <TableHead className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider py-3">Domicile</TableHead>
+                                <TableHead className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider py-3">Bureau</TableHead>
+                                <TableHead className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider py-3">Exceptions</TableHead>
+                                <TableHead className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider py-3">Dernière mise à jour</TableHead>
+                                <TableHead className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider py-3 pr-5 w-[60px]"></TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {(rules as ShippingRule[]).map((rule) => (
+                                <TableRow
+                                    key={rule.id}
+                                    className="group cursor-pointer hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-b-0"
+                                    onClick={() => handleEdit(rule)}
+                                >
+                                    <TableCell className="py-3.5 pl-5">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-emerald-50 ring-1 ring-black/[0.04]">
+                                                <Truck size={14} className="text-emerald-600" />
+                                            </div>
+                                            <span className="text-sm font-semibold text-slate-900">{rule.name || 'Sans nom'}</span>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="py-3.5">
+                                        <span className="text-sm font-medium text-slate-700 tabular-nums">{rule.shipping?.standard?.home || 0} DA</span>
+                                    </TableCell>
+                                    <TableCell className="py-3.5">
+                                        <span className="text-sm font-medium text-slate-700 tabular-nums">{rule.shipping?.standard?.desk || 0} DA</span>
+                                    </TableCell>
+                                    <TableCell className="py-3.5">
+                                        <Badge variant="secondary" className="h-5 px-2 text-[10px] font-semibold shadow-none rounded-md">
+                                            {rule.shipping?.exceptions?.length || 0}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell className="py-3.5">
+                                        <span className="text-xs text-slate-400 tabular-nums">
+                                            {new Date(rule.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                        </span>
+                                    </TableCell>
+                                    <TableCell className="py-3.5 pr-5 text-right">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 rounded-md opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-slate-900 hover:bg-slate-100"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    <MoreHorizontal size={16} />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end" className="w-44">
+                                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(rule); }}>
+                                                    <Pencil size={13} className="mr-2" /> Modifier
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem
+                                                    className="text-red-600 focus:text-red-700 focus:bg-red-50"
+                                                    onClick={(e) => { e.stopPropagation(); handleDelete(rule.id); }}
+                                                >
+                                                    <Trash2 size={13} className="mr-2" /> Supprimer
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
                 </div>
             )}
         </div>
