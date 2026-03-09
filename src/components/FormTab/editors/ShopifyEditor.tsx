@@ -1,10 +1,11 @@
 import { useBuilderContext } from '../contexts/BuilderContext';
 import { useFormStore } from '../../../stores';
 import { useConnectedStores } from '@/lib/firebase/hooks';
-import { ConnectShopifySheet } from '@/components/integrations/ConnectShopifySheet';
+
 import { ProductPickerSheet } from '@/components/ProductPickerSheet';
 import { Button } from '@/components/ui/button';
 import { useState, useMemo, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { Store, Globe, Package, Unlink, Plus, ChevronRight, Link2, X, Check, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -18,7 +19,7 @@ export const ShopifyEditor = () => {
 
     const { stores, loading: storesLoading } = useConnectedStores(userId);
 
-    const [connectSheetOpen, setConnectSheetOpen] = useState(false);
+
     const [pickerOpen, setPickerOpen] = useState(false);
     const [pickerStoreId, setPickerStoreId] = useState<string>('');
     const [pickingLinkType, setPickingLinkType] = useState<string | null>(null);
@@ -230,13 +231,13 @@ export const ShopifyEditor = () => {
                             <p className="text-[10px] text-slate-400 mb-4 leading-relaxed">
                                 Connect your Shopify store to start linking forms.
                             </p>
-                            <Button
-                                onClick={() => setConnectSheetOpen(true)}
-                                className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md hover:shadow-lg h-9 rounded-xl px-5 text-xs font-bold transition-all active:scale-95"
+                            <Link
+                                to="/dashboard/integrations?open=shopify&add=true"
+                                className="inline-flex items-center justify-center bg-emerald-600 hover:bg-emerald-700 text-white shadow-md hover:shadow-lg h-9 rounded-xl px-5 text-xs font-bold transition-all active:scale-95"
                             >
                                 <Plus size={14} className="mr-1.5" />
                                 Connect Store
-                            </Button>
+                            </Link>
                         </div>
 
                     ) : (
@@ -259,24 +260,24 @@ export const ShopifyEditor = () => {
 
                             {/* All linked — offer to connect new */}
                             {unlinkedStores.length === 0 && storeLinks.length > 0 && (
-                                <button
-                                    onClick={() => setConnectSheetOpen(true)}
+                                <Link
+                                    to="/dashboard/integrations?open=shopify&add=true"
                                     className="w-full flex items-center justify-center gap-1.5 p-2.5 rounded-xl border border-dashed border-slate-200 bg-slate-50/30 hover:border-emerald-300 hover:bg-emerald-50/40 transition-all duration-200 text-[11px] font-bold text-slate-400 hover:text-emerald-600 cursor-pointer"
                                 >
                                     <Plus size={12} />
                                     Connect Another Store
-                                </button>
+                                </Link>
                             )}
 
                             {unlinkedStores.length > 0 && (
                                 <div className="pt-1 border-t border-slate-100 mt-1">
-                                    <button
-                                        onClick={() => setConnectSheetOpen(true)}
+                                    <Link
+                                        to="/dashboard/integrations?open=shopify&add=true"
                                         className="w-full flex items-center justify-center gap-1.5 p-2 rounded-lg text-[10px] font-bold text-slate-400 hover:text-emerald-600 transition-colors cursor-pointer"
                                     >
                                         <Plus size={10} />
                                         Connect New Store
-                                    </button>
+                                    </Link>
                                 </div>
                             )}
                         </div>
@@ -319,11 +320,6 @@ export const ShopifyEditor = () => {
                 </div>
             </div>
 
-            <ConnectShopifySheet
-                open={connectSheetOpen}
-                onOpenChange={setConnectSheetOpen}
-                userId={userId}
-            />
 
             <ProductPickerSheet
                 open={pickerOpen}

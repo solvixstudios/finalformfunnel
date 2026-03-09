@@ -4,6 +4,8 @@
  */
 
 import { Eye, EyeOff, Receipt } from 'lucide-react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faInfoCircle } from '@fortawesome/free-solid-svg-icons';
 import { useFormStore } from '../../../stores';
 
 export const SummaryEditor = () => {
@@ -188,19 +190,7 @@ export const SummaryEditor = () => {
             {/* Info Box */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex gap-2">
                 <div className="text-blue-600 flex-shrink-0">
-                    <svg
-                        className="w-4 h-4 mt-0.5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                    >
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                    </svg>
+                    <FontAwesomeIcon icon={faInfoCircle} className="w-4 h-4 mt-0.5" />
                 </div>
                 <p className="text-xs text-blue-700 leading-relaxed">
                     The summary section displays the order breakdown. Hiding shipping in the summary will

@@ -92,15 +92,25 @@ export const FormPreview = ({ config, offers, shipping }: FormPreviewProps) => {
                 id: 1, // Mock ID
                 title: 'Produit de démonstration', // Mock Title
                 images: [], // Mock Images
-                options: [{ name: 'Option', values: Array.isArray(offers) ? offers.map((o: any) => o.title?.fr || 'Option') : [] }],
-                variants: Array.isArray(offers) && offers.length > 0 ? offers.map((o: any, index: number) => ({
-                    id: index + 1,
-                    title: o.title?.fr || `Option ${index + 1}`,
-                    option1: o.title?.fr || null,
-                    option2: null,
-                    option3: null,
-                    price: o.price || 0
-                })) : []
+                options: [{ name: 'Modèles', values: ['Modèle A', 'Modèle B'] }],
+                variants: [
+                    {
+                        id: 1,
+                        title: 'Modèle A',
+                        option1: 'Modèle A',
+                        option2: null,
+                        option3: null,
+                        price: 2500
+                    },
+                    {
+                        id: 2,
+                        title: 'Modèle B',
+                        option1: 'Modèle B',
+                        option2: null,
+                        option3: null,
+                        price: 3500
+                    }
+                ]
             }}
             sectionWrapper={sectionWrapper}
             previewMode={true}

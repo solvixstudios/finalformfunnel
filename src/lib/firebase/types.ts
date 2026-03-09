@@ -173,3 +173,20 @@ export interface Order {
   createdAt: string;
   updatedAt: string;
 }
+
+// Delivery Integration
+export type DeliveryProviderType = 'yalidine' | 'maystro' | 'zr_delivery' | 'anderson' | 'ecommanager';
+
+export interface DeliveryProfile {
+  id: string;
+  userId: string;
+  name: string;
+  provider: DeliveryProviderType;
+  isActive: boolean;
+  apiToken?: string;
+  apiKey?: string;
+  apiId?: string;
+  storeId?: string;
+  createdAt: string;
+  updatedAt: string;
+}

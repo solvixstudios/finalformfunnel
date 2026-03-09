@@ -1,39 +1,53 @@
-import { ShopifyManager } from '@/components/integrations/ShopifyManager';
+import React, { useState } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faShopify } from '@fortawesome/free-brands-svg-icons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CardTitle } from '@/components/ui/card';
-import { HoverSpotlightCard } from '@/components/ui/HoverSpotlightCard';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-    Sheet,
-    SheetContent,
-    SheetDescription,
-    SheetHeader,
-    SheetTitle,
-} from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { PageHeader } from '@/components/GlobalHeader/PageHeader';
+import { GuideStep, VideoPlaceholder, CopyButton, TestConnectionButton } from './GuideUI';
+import {
+    Activity,
     Check,
-    ChevronRight,
     Copy,
     ExternalLink,
     Loader2,
+    MoreHorizontal,
     Plus,
-    Store,
+    RotateCw,
     X,
+    Trash2,
+    HelpCircle
 } from 'lucide-react';
-import { useState } from 'react';
 import { toast } from 'sonner';
 import { useConnectedStores } from '@/lib/firebase/hooks';
-// @ts-ignore
-import feedData from '../../../feed.json';
 import { getAdapter, LOADER_VERSION } from '@/lib/integrations';
 import { cn } from '@/lib/utils';
-import { syncProductsFromShopify, notifyProductSyncComplete } from '../../lib/products';
+import { notifyProductSyncComplete, syncProductsFromShopify } from '@/lib/products';
+// @ts-ignore
+import feedData from '../../../feed.json';
 
-// --- CONSTANTS ---
+const CURRENT_LOADER_VERSION = LOADER_VERSION;
+
 const SHOPIFY_SCOPES = [
     'read_all_orders', 'read_analytics', 'read_app_proxy', 'write_app_proxy', 'read_apps',
     'read_assigned_fulfillment_orders', 'write_assigned_fulfillment_orders', 'read_audit_events',
@@ -85,146 +99,101 @@ const SHOPIFY_SCOPES = [
     'unauthenticated_read_content'
 ].join(',');
 
-// --- Helper Components ---
-
-const CopyButton = ({ text, label, className }: { text: string; label?: string; className?: string }) => {
-    const [copied, setCopied] = useState(false);
-    const handleCopy = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        navigator.clipboard.writeText(text);
-        setCopied(true);
-        toast.success(label ? `${label} copied!` : 'Copied to clipboard');
-        setTimeout(() => setCopied(false), 2000);
-    };
-
-    return (
-        <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleCopy}
-            className={cn("h-7 px-2 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors", className)}
-        >
-            {copied ? <Check size={12} className="mr-1.5 text-green-600" /> : <Copy size={12} className="mr-1.5" />}
-            {label || (copied ? 'Copied' : 'Copy')}
-        </Button>
-    );
-};
-
-const GuideStep = ({ number, title, children }: { number: number; title: string; children: React.ReactNode }) => (
-    <div className="flex gap-4 relative pb-8 last:pb-0">
-        <div className="flex-shrink-0 flex flex-col items-center">
-            <div className="w-8 h-8 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center text-sm font-bold text-slate-700 shadow-sm z-10">
-                {number}
-            </div>
-            <div className="w-px h-full bg-slate-200 absolute top-8 -bottom-2 -z-0" />
-        </div>
-        <div className="flex-1 pt-1 space-y-2">
-            <h4 className="font-semibold text-slate-900">{title}</h4>
-            <div className="text-sm text-slate-600 space-y-3">{children}</div>
-        </div>
-    </div>
-);
 
 const ShopifyGuide = () => (
-    <div className="py-4">
-        <GuideStep number={1} title="Create Custom App">
+    <div className="py-2 animate-in fade-in duration-300">
+        <VideoPlaceholder title="Comment lier Shopify à Final Form (Tutoriel Complet)" thumbnailUrl="https://images.unsplash.com/photo-1556742059-47bca3807878?q=80&w=2000&auto=format&fit=crop" />
+
+        <GuideStep number={1} title="Créer une application personnalisée">
             <p>
-                Log in to your <a href="https://dev.shopify.com/dashboard" target="_blank" className="text-indigo-600 font-medium hover:underline inline-flex items-center gap-0.5">Shopify Partners Dashboard <ExternalLink size={10} /></a>.
-                Click <strong>Create App</strong> and select <strong>Manually created</strong>.
+                Connectez-vous au <a href="https://dev.shopify.com/dashboard" target="_blank" rel="noreferrer" className="text-indigo-600 font-medium hover:underline inline-flex items-center gap-0.5">Tableau de bord partenaires Shopify <ExternalLink size={10} /></a>.
+                Cliquez sur <strong>Créer une application</strong> et choisissez <strong>Création manuelle</strong>.
             </p>
             <div className="flex items-center gap-2 mt-2">
                 <div className="relative flex-1">
-                    <Input readOnly value="Final Form Funnel" className="bg-slate-50 border-slate-200 font-mono text-xs h-9 pr-20" onClick={(e) => e.currentTarget.select()} />
-                    <div className="absolute right-1 top-1">
+                    <Input readOnly value="Final Form Funnel" className="bg-slate-50 border-slate-200 font-mono text-xs h-10 pr-24" onClick={(e) => e.currentTarget.select()} />
+                    <div className="absolute right-1.5 top-1.5">
                         <CopyButton text="Final Form Funnel" className="h-7 bg-white shadow-sm border border-slate-200 hover:bg-slate-50" />
                     </div>
                 </div>
             </div>
         </GuideStep>
 
-        <GuideStep number={2} title="Configure App">
-            <ul className="list-disc list-outside ml-4 space-y-1">
-                <li>Uncheck <strong>"Embed app in Shopify admin"</strong>.</li>
-                <li>Go to the <strong>Configuration</strong> tab.</li>
-                <li>Locate <strong>Admin API integration</strong>.</li>
+        <GuideStep number={2} title="Configurer l'application">
+            <ul className="list-disc list-outside ml-4 space-y-1.5 text-slate-600">
+                <li>Décochez <strong>"Intégrer l'application dans l'interface administrateur Shopify"</strong>.</li>
+                <li>Allez dans l'onglet <strong>Configuration</strong>.</li>
+                <li>Localisez <strong>Intégration de l'API Admin</strong>.</li>
             </ul>
         </GuideStep>
 
-        <GuideStep number={3} title="Set Permissions (Scopes)">
-            <p>Copy the scopes below and paste them into the scopes field.</p>
+        <GuideStep number={3} title="Définir les autorisations (Scopes)">
+            <p>Copiez les autorisations ci-dessous et collez-les dans le champ prévu.</p>
             <div className="relative group mt-2">
                 <div className="relative">
                     <textarea
                         readOnly
                         value={SHOPIFY_SCOPES}
-                        className="w-full bg-slate-900 text-slate-300 p-3 rounded-lg font-mono text-[10px] break-all h-28 custom-scroll border border-slate-800 shadow-sm leading-relaxed resize-none focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        className="w-full bg-slate-900 text-slate-300 p-4 rounded-xl font-mono text-[11px] break-all h-32 custom-scroll border border-slate-800 shadow-inner leading-relaxed resize-none focus:outline-none focus:ring-1 focus:ring-indigo-500"
                         onClick={(e) => e.currentTarget.select()}
                     />
-                    <div className="absolute top-2 right-2">
-                        <CopyButton text={SHOPIFY_SCOPES} label="Copy Scopes" className="bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white border border-slate-700 backdrop-blur-sm" />
+                    <div className="absolute top-3 right-3">
+                        <CopyButton text={SHOPIFY_SCOPES} label="Copier Scopes" className="bg-slate-800/80 hover:bg-slate-700 text-white border border-slate-600 backdrop-blur-md" />
                     </div>
                 </div>
             </div>
         </GuideStep>
 
-        <GuideStep number={4} title="Set Redirect URL">
-            <p>Add the following URL to <strong>Allowed redirection URL(s)</strong>:</p>
+        <GuideStep number={4} title="Définir l'URL de redirection">
+            <p>Ajoutez l'URL suivante dans <strong>URL de redirection autorisées</strong> :</p>
             <div className="flex items-center gap-2 mt-2">
                 <div className="relative flex-1">
-                    <Input readOnly value="https://your-backend-url.com/oauth2/callback" className="bg-slate-50 border-slate-200 font-mono text-xs h-9 pr-20" onClick={(e) => e.currentTarget.select()} />
-                    <div className="absolute right-1 top-1">
+                    <Input readOnly value="https://your-backend-url.com/oauth2/callback" className="bg-slate-50 border-slate-200 font-mono text-xs h-10 pr-24 text-slate-500" onClick={(e) => e.currentTarget.select()} />
+                    <div className="absolute right-1.5 top-1.5">
                         <CopyButton text="https://your-backend-url.com/oauth2/callback" className="h-7 bg-white shadow-sm border border-slate-200 hover:bg-slate-50" />
                     </div>
                 </div>
             </div>
         </GuideStep>
 
-        <GuideStep number={5} title="Install & Get Credentials">
-            <ol className="list-decimal list-outside ml-4 space-y-1">
-                <li>Click <strong>Release</strong> to publish a version.</li>
-                <li><strong>Install</strong> the app on your target store.</li>
-                <li>Copy the <strong>Client ID</strong> and <strong>Client Secret</strong>.</li>
+        <GuideStep number={5} title="Installer & Obtenir les accès">
+            <ol className="list-decimal list-outside ml-4 space-y-1.5 text-slate-600">
+                <li>Cliquez sur <strong>Publier</strong> pour créer une version.</li>
+                <li><strong>Installez</strong> l'application sur votre boutique.</li>
+                <li>Copiez l'<strong>Identifiant client (Client ID)</strong> et la <strong>Clé secrète (Client Secret)</strong> dans le formulaire de connexion.</li>
             </ol>
         </GuideStep>
     </div>
 );
 
-// --- Main Component ---
-
-// --- Main Component ---
-
 interface ShopifyIntegrationProps {
     userId: string;
+    onBack?: () => void;
 }
 
-export function ShopifyIntegration({ userId }: ShopifyIntegrationProps) {
-    const { stores, addStore, updateStore } = useConnectedStores(userId);
+export function ShopifyIntegration({ userId, onBack }: ShopifyIntegrationProps) {
+    const { stores, addStore, updateStore, deleteStore } = useConnectedStores(userId);
 
-    const [openSheet, setOpenSheet] = useState(false);
-    const [activeTab, setActiveTab] = useState<'manage' | 'guide'>('manage');
     const [view, setView] = useState<'list' | 'add'>('list');
-
-    const [shopifyForm, setShopifyForm] = useState({
-        subdomain: feedData.shopify.shopDomain.replace('https://', '').replace('.myshopify.com', ''),
-        clientId: feedData.shopify.clientId,
-        clientSecret: feedData.shopify.clientSecret,
-    });
+    const [addTab, setAddTab] = useState<'setup' | 'guide'>('setup');
     const [isConnecting, setIsConnecting] = useState(false);
+    const [processingStoreId, setProcessingStoreId] = useState<string | null>(null);
+    const [shopifyForm, setShopifyForm] = useState({
+        subdomain: feedData.shopify?.shopDomain?.replace('https://', '').replace('.myshopify.com', '') || '',
+        clientId: feedData.shopify?.clientId || '',
+        clientSecret: feedData.shopify?.clientSecret || '',
+    });
 
-    const isConnected = stores.some((s) => s.platform === 'shopify');
+    const shopifyStores = stores.filter(s => s.platform === 'shopify');
 
-    // Reset view when opening/closing
-    const handleOpenChange = (open: boolean) => {
-        setOpenSheet(open);
-        if (!open) {
-            setView('list');
-            setActiveTab(isConnected ? 'manage' : 'guide');
-        }
+    const handleCancel = () => {
+        setView('list');
+        setShopifyForm({ subdomain: '', clientId: '', clientSecret: '' });
     };
 
     const handleShopifyConnect = async () => {
         if (!shopifyForm.subdomain || !shopifyForm.clientId || !shopifyForm.clientSecret) {
-            toast.error('Please complete all fields.');
+            toast.error('Veuillez remplir tous les champs.');
             return;
         }
 
@@ -273,244 +242,444 @@ export function ShopifyIntegration({ userId }: ShopifyIntegrationProps) {
                                     loaderScriptTagId: loaderResult.scriptId,
                                     loaderInstalledAt: new Date().toISOString(),
                                 });
-                                toast.success(`Successfully connected and loader installed on ${result.store.name}!`);
+                                toast.success(`Boutique connectée et script installé sur ${result.store.name} !`);
                             } else {
-                                toast.success(`Store connected, but failed to auto-install loader: ${loaderResult.error}`);
+                                toast.warning(`Boutique connectée, mais échec de l'installation du script: ${loaderResult.error}`);
                             }
                         } catch (loaderErr) {
                             console.error('Auto-install loader failed', loaderErr);
-                            toast.success(`Store connected, but manual loader installation may be required.`);
+                            toast.warning(`Boutique connectée. Installation manuelle du script requise.`);
                         }
                     } else {
-                        toast.success(`Successfully connected ${result.store.name}!`);
+                        toast.success(`Boutique ${result.store.name} connectée avec succès !`);
                     }
 
                     // Auto-sync products
-                    toast.info("Syncing products...");
+                    toast.info("Synchronisation des produits en cours...");
                     try {
                         const syncedProducts = await syncProductsFromShopify(newStore);
                         notifyProductSyncComplete(newStore.id, syncedProducts);
-                        toast.success(`Synced ${syncedProducts.length} products`);
+                        toast.success(`${syncedProducts.length} produits synchronisés.`);
                     } catch (syncErr) {
                         console.error("Auto-sync failed", syncErr);
-                        toast.warning("Store connected, but initial product sync failed.");
+                        toast.warning("Boutique connectée, mais la synchronisation initiale a échoué.");
                     }
 
                     setView('list');
-                    setShopifyForm({ subdomain: '', clientId: '', clientSecret: '' });
                 } catch (addError: any) {
                     if (addError.message === 'STORE_ALREADY_OWNED') {
-                        toast.error('This store is already connected to a different account.');
+                        toast.error('Cette boutique est déjà liée à un autre compte.');
                     } else if (addError.message === 'STORE_ALREADY_CONNECTED') {
-                        toast.error('This store is already connected to your account.');
+                        toast.error('Cette boutique est déjà connectée à votre compte.');
                     } else {
                         throw addError;
                     }
                 }
             } else {
-                toast.error(result.error || 'Connection failed. Please check your credentials.');
+                toast.error(result.error || 'La connexion a échoué. Veuillez vérifier vos accès.');
             }
         } catch (error: any) {
             console.error(error);
-            toast.error(error.message || 'An unexpected error occurred.');
+            toast.error(error.message || 'Une erreur inattendue est survenue.');
         } finally {
             setIsConnecting(false);
         }
     };
 
-    return (
-        <div className="md:col-span-1 md:row-span-1">
-            <Sheet open={openSheet} onOpenChange={handleOpenChange}>
-                <HoverSpotlightCard
-                    spotlightColor="rgba(99, 102, 241, 0.15)"
-                    className="rounded-2xl sm:rounded-3xl hover:ring-2 hover:ring-indigo-100 hover:shadow-xl group flex flex-col p-4 sm:p-6 min-h-[140px] sm:min-h-[180px] h-full"
-                    onClick={() => {
-                        setActiveTab(isConnected ? 'manage' : 'guide');
-                        setOpenSheet(true);
-                    }}
-                >
-                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                    <div className="flex flex-col h-full justify-between relative z-10">
-                        <div className="flex justify-between items-start">
-                            <div className="w-14 h-14 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-3xl mb-4 shadow-sm group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300">
-                                🛍️
-                            </div>
-                            {isConnected && (
-                                <Badge variant="secondary" className="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-indigo-100">
-                                    Connected
-                                </Badge>
-                            )}
-                        </div>
-                        <div>
-                            <CardTitle className="text-xl font-bold text-slate-900 tracking-tight">Shopify</CardTitle>
-                            <p className="text-sm text-slate-500 mt-2 font-medium leading-normal">
-                                Sync products & orders
-                            </p>
-                        </div>
-                    </div>
-                </HoverSpotlightCard>
+    const handleEnableLoader = async (store: any) => {
+        setProcessingStoreId(store.id);
+        const loadingToast = toast.loading('Activation du script en cours...');
 
-                <SheetContent hideClose className="sm:max-w-md w-full flex flex-col h-full p-0 gap-0 bg-white overflow-hidden sm:border-l sm:shadow-2xl">
-                    <SheetHeader className="px-6 py-5 border-b border-slate-100 shrink-0 bg-white">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-xl shrink-0">🛍️</div>
-                                <div className="flex flex-col">
-                                    {view === 'add' ? (
-                                        <>
-                                            <SheetTitle className="text-slate-900 leading-tight">Connect Store</SheetTitle>
-                                            <SheetDescription className="text-xs mt-0.5">Add your Shopify store</SheetDescription>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <SheetTitle className="text-slate-900 leading-tight">Shopify</SheetTitle>
-                                            <SheetDescription className="text-xs mt-0.5">Manage your stores</SheetDescription>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
+        try {
+            const subdomain = store.url.replace('.myshopify.com', '').replace(/https?:\/\//, '');
+            if (!store.clientId || !store.clientSecret) {
+                toast.error('Identifiants manquants. Veuillez reconnecter la boutique.');
+                return;
+            }
+            const shopifyAdapter = getAdapter('shopify');
+            const result = await shopifyAdapter.enableLoader(subdomain, {
+                clientId: store.clientId,
+                clientSecret: store.clientSecret
+            });
 
+            toast.dismiss(loadingToast);
+
+            if (result.success) {
+                await updateStore(store.id, {
+                    loaderInstalled: true,
+                    loaderVersion: result.version || CURRENT_LOADER_VERSION,
+                    loaderScriptTagId: result.scriptId,
+                    loaderInstalledAt: new Date().toISOString()
+                });
+                toast.success(`Script (v${result.version || CURRENT_LOADER_VERSION}) activé avec succès !`);
+            } else {
+                toast.error(result.error || "L'activation du script a échoué.");
+            }
+        } catch (error) {
+            toast.dismiss(loadingToast);
+            toast.error("L'activation du script a échoué.");
+            console.error(error);
+        } finally {
+            setProcessingStoreId(null);
+        }
+    };
+
+    const handleRefreshProducts = async (store: any) => {
+        setProcessingStoreId(store.id);
+        const loadingToast = toast.loading('Synchronisation des produits...');
+
+        try {
+            const syncedProducts = await syncProductsFromShopify(store);
+            notifyProductSyncComplete(store.id, syncedProducts);
+            toast.success(`${syncedProducts.length} produits mis à jour.`);
+        } catch (error: any) {
+            console.error("Refresh failed:", error);
+            toast.error(error.message || 'La synchronisation a échoué.');
+        } finally {
+            toast.dismiss(loadingToast);
+            setProcessingStoreId(null);
+        }
+    };
+
+    const handleSyncAssignments = async (store: any) => {
+        setProcessingStoreId(store.id);
+        const loadingToast = toast.loading('Synchronisation des formulaires...');
+
+        try {
+            const { collection, query, where, getDocs, writeBatch, doc } = await import('firebase/firestore');
+            const { db } = await import('@/lib/firebase');
+
+            const q = query(collection(db, "assignments"), where("storeId", "==", store.id));
+            const snapshot = await getDocs(q);
+
+            const batch = writeBatch(db);
+            let updates = 0;
+            const domain = store.url;
+
+            snapshot.docs.forEach(d => {
+                const data = d.data();
+                if (!data.shopifyDomain || data.shopifyDomain !== domain) {
+                    batch.update(doc(db, "assignments", d.id), { shopifyDomain: domain });
+                    updates++;
+                }
+            });
+
+            if (updates > 0) {
+                await batch.commit();
+                toast.success(`${updates} formulaires synchronisés.`);
+            } else {
+                toast.info('Tous les formulaires sont déjà à jour.');
+            }
+        } catch (e) {
+            console.error(e);
+            toast.error('La synchronisation a échoué.');
+        } finally {
+            toast.dismiss(loadingToast);
+            setProcessingStoreId(null);
+        }
+    };
+
+    const handleDeleteStore = async (storeId: string) => {
+        if (confirm('Voulez-vous vraiment déconnecter cette boutique ? Toutes les configurations liées seront perdues.')) {
+            setProcessingStoreId(storeId);
+            try {
+                await deleteStore(storeId);
+                toast.success('Boutique déconnectée avec succès.');
+            } catch (error: any) {
+                console.error(error);
+                toast.error(error.message || 'Impossible de déconnecter la boutique.');
+            } finally {
+                setProcessingStoreId(null);
+            }
+        }
+    };
+
+    // Custom Icon
+    const ShopifyIcon = () => (
+        <FontAwesomeIcon icon={faShopify} className="text-[#95BF47] text-xl md:text-2xl" />
+    );
+
+    // --- EDITOR VIEW (Add Store) ---
+    if (view === 'add') {
+        return (
+            <div className="flex-1 flex flex-col h-full bg-slate-50/50">
+                <div className="bg-white border-b border-slate-200 shrink-0 sticky top-0 z-30">
+                    <PageHeader
+                        title="Connecter une boutique Shopify"
+                        breadcrumbs={[
+                            { label: 'Intégrations', href: '/integrations', onClick: onBack },
+                            { label: 'Shopify', href: '#' }
+                        ]}
+                        icon={ShopifyIcon}
+                        onBack={handleCancel}
+                        actions={
                             <div className="flex items-center gap-2">
-                                {activeTab === 'manage' && (
-                                    view === 'list' ? (
+                                <Sheet>
+                                    <SheetTrigger asChild>
                                         <Button
+                                            variant="outline"
                                             size="sm"
-                                            className="bg-indigo-600 hover:bg-indigo-700 text-white h-8 text-xs gap-1.5 shadow-sm px-3 rounded-full"
-                                            onClick={() => setView('add')}
+                                            className="h-8 rounded-lg text-xs font-bold px-4 bg-white text-slate-700 shadow-sm border-slate-200"
                                         >
-                                            <Plus size={14} className="stroke-[2.5]" /> Add Store
+                                            <HelpCircle size={13} className="mr-1.5" />
+                                            Guide d'intégration
                                         </Button>
-                                    ) : (
-                                        <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="h-8 text-slate-500 hover:text-slate-900 hover:bg-slate-100 text-xs gap-1.5 px-3 rounded-full"
-                                            onClick={() => setView('list')}
-                                        >
-                                            Cancel
-                                        </Button>
-                                    )
-                                )}
-
-                                <div className="h-6 w-px bg-slate-200 mx-1" />
-
+                                    </SheetTrigger>
+                                    <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+                                        <SheetHeader className="mb-6">
+                                            <SheetTitle className="text-xl font-bold text-slate-900">Guide d'intégration Shopify</SheetTitle>
+                                            <p className="text-sm text-slate-500 mt-2 text-left">Suivez ces étapes pour générer les clés API de votre application personnalisée Shopify.</p>
+                                        </SheetHeader>
+                                        <ShopifyGuide />
+                                    </SheetContent>
+                                </Sheet>
+                                <TestConnectionButton
+                                    onTest={async () => {
+                                        if (!shopifyForm.subdomain || !shopifyForm.clientId || !shopifyForm.clientSecret) {
+                                            throw new Error("Veuillez remplir tous les champs avant de tester.");
+                                        }
+                                        const cleanDomain = shopifyForm.subdomain
+                                            .replace(/https?:\/\//, '')
+                                            .replace('.myshopify.com', '')
+                                            .trim();
+                                        try {
+                                            const shopifyAdapter = getAdapter('shopify');
+                                            const result = await shopifyAdapter.connect(cleanDomain, {
+                                                clientId: shopifyForm.clientId.trim(),
+                                                clientSecret: shopifyForm.clientSecret.trim(),
+                                            });
+                                            return result.success === true;
+                                        } catch {
+                                            return false;
+                                        }
+                                    }}
+                                    label="Tester la connexion"
+                                />
                                 <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    className="h-8 w-8 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100"
-                                    onClick={() => handleOpenChange(false)}
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleCancel}
+                                    className="h-8 rounded-lg text-xs font-bold px-4 bg-white text-slate-700 shadow-sm"
                                 >
-                                    <X size={18} />
+                                    Annuler
+                                </Button>
+                                <Button
+                                    onClick={handleShopifyConnect}
+                                    disabled={isConnecting}
+                                    size="sm"
+                                    className="h-8 rounded-lg text-xs font-bold px-4 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
+                                >
+                                    {isConnecting ? <Loader2 size={13} className="mr-1.5 animate-spin" /> : <Plus size={13} className="mr-1.5" />}
+                                    {isConnecting ? 'Connexion...' : 'Connecter'}
                                 </Button>
                             </div>
+                        }
+                    />
+                </div>
+
+                <div className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">
+                    <div className="max-w-3xl mx-auto">
+                        <div className="bg-white p-6 md:p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+                            <div className="space-y-6">
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-900 mb-1">Détails de connexion</h3>
+                                    <p className="text-sm text-slate-500">Saisissez les informations de votre application personnalisée Shopify pour lier votre boutique.</p>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="subdomain" className="text-sm font-semibold text-slate-700">Nom de la boutique (Domaine Myshopify)</Label>
+                                        <div className="flex shadow-sm rounded-xl overflow-hidden group focus-within:ring-2 focus-within:ring-indigo-100 focus-within:border-indigo-300 transition-all border border-slate-200 bg-white">
+                                            <Input
+                                                id="subdomain"
+                                                placeholder="ma-boutique"
+                                                value={shopifyForm.subdomain}
+                                                onChange={(e) => setShopifyForm((prev) => ({ ...prev, subdomain: e.target.value }))}
+                                                className="rounded-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 relative z-10 bg-transparent h-11"
+                                            />
+                                            <div className="bg-slate-50 px-4 flex items-center whitespace-nowrap border-l border-slate-200 text-sm text-slate-500 font-medium">
+                                                .myshopify.com
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="clientId" className="text-sm font-semibold text-slate-700">Identifiant client (Client ID)</Label>
+                                        <Input
+                                            id="clientId"
+                                            value={shopifyForm.clientId}
+                                            onChange={(e) => setShopifyForm((prev) => ({ ...prev, clientId: e.target.value }))}
+                                            className="font-mono text-xs bg-slate-50 h-11 border-slate-200 focus:bg-white"
+                                            placeholder="ex. 1234567890abcdef..."
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="clientSecret" className="text-sm font-semibold text-slate-700">Clé secrète (Client Secret)</Label>
+                                        <Input
+                                            id="clientSecret"
+                                            type="password"
+                                            value={shopifyForm.clientSecret}
+                                            onChange={(e) => setShopifyForm((prev) => ({ ...prev, clientSecret: e.target.value }))}
+                                            className="font-mono text-xs bg-slate-50 h-11 border-slate-200 focus:bg-white"
+                                            placeholder="ex. shpca_1234567890abcdef..."
+                                        />
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                    </SheetHeader>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
-                    <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'manage' | 'guide')} className="flex-1 flex flex-col min-h-0">
-                        <div className="flex justify-center py-4 bg-white shrink-0 border-b border-slate-100">
-                            <TabsList className="inline-flex h-9 items-center justify-center rounded-full bg-slate-100/80 p-1 text-slate-500 shadow-inner">
-                                <TabsTrigger value="manage" className="rounded-full px-6 py-1.5 text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm transition-all duration-300">Manage</TabsTrigger>
-                                <TabsTrigger value="guide" className="rounded-full px-6 py-1.5 text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm transition-all duration-300">Setup Guide</TabsTrigger>
-                            </TabsList>
+    // --- LIST VIEW ---
+    const headerActions = (
+        <Button
+            size="sm"
+            onClick={() => setView('add')}
+            className="h-8 rounded-lg text-xs font-bold px-4 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
+        >
+            <Plus size={13} className="mr-1.5" />
+            Connecter une boutique
+        </Button>
+    );
+
+    return (
+        <div className="flex-1 flex flex-col h-full bg-slate-50/50">
+            <div className="bg-white border-b border-slate-200 shrink-0 sticky top-0 z-30">
+                <PageHeader
+                    title="Shopify"
+                    breadcrumbs={[
+                        { label: 'Intégrations', href: '/integrations', onClick: onBack },
+                        { label: 'Shopify', href: '#' }
+                    ]}
+                    count={shopifyStores.length}
+                    icon={ShopifyIcon}
+                    onBack={onBack}
+                    actions={headerActions}
+                />
+            </div>
+
+            <div className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">
+                <div className="max-w-[1600px] mx-auto w-full">
+                    {shopifyStores.length === 0 ? (
+                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-16 text-center">
+                            <div className="w-16 h-16 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center mx-auto mb-4">
+                                <ShopifyIcon />
+                            </div>
+                            <h3 className="text-base font-bold text-slate-700 mb-1">Aucune boutique connectée</h3>
+                            <p className="text-sm text-slate-500 mb-6 max-w-sm mx-auto">
+                                Connectez votre boutique Shopify pour synchroniser vos produits et créer des commandes automatiquement.
+                            </p>
+                            <Button
+                                onClick={() => setView('add')}
+                                className="h-10 rounded-xl text-sm font-bold px-6 bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-100"
+                            >
+                                <Plus size={16} className="mr-2" /> Connecter la première boutique
+                            </Button>
                         </div>
-
-                        <ScrollArea className="flex-1 bg-slate-50/50 [&>div>div]:!block">
-                            <TabsContent value="manage" className="mt-0 p-6 space-y-4">
-
-                                {view === 'add' ? (
-                                    <div className="space-y-6 animate-in slide-in-from-right-8 fade-in duration-300">
-                                        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-5">
-                                            <div className="space-y-4">
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="subdomain" className="text-xs font-semibold text-slate-700">Store Domain</Label>
-                                                    <div className="flex shadow-sm rounded-lg overflow-hidden group focus-within:ring-2 focus-within:ring-indigo-100 focus-within:border-indigo-300 transition-all border border-slate-200">
-                                                        <Input
-                                                            id="subdomain"
-                                                            placeholder="my-store-name"
-                                                            value={shopifyForm.subdomain}
-                                                            onChange={(e) => setShopifyForm((prev) => ({ ...prev, subdomain: e.target.value }))}
-                                                            className="rounded-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 relative z-10 bg-white h-10"
-                                                        />
-                                                        <div className="bg-slate-50 px-3 py-2 text-xs text-slate-500 font-medium flex items-center whitespace-nowrap border-l border-slate-100">
-                                                            .myshopify.com
-                                                        </div>
+                    ) : (
+                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-b border-slate-200">
+                                        <TableHead className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider py-3 pl-5">Boutique</TableHead>
+                                        <TableHead className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider py-3">Statut du Script d'intégration</TableHead>
+                                        <TableHead className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider py-3 pr-5 w-[60px]"></TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {shopifyStores.map((store) => (
+                                        <TableRow
+                                            key={store.id}
+                                            className="group hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-b-0"
+                                        >
+                                            <TableCell className="py-4 pl-5">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0">
+                                                        <ShopifyIcon />
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-sm font-bold text-slate-900 mb-0.5">{store.name}</div>
+                                                        <a
+                                                            href={`https://${store.url}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-xs text-slate-500 hover:text-indigo-600 inline-flex items-center gap-1 group/link"
+                                                        >
+                                                            {store.url || store.shopifyDomain}
+                                                            <ExternalLink size={10} className="opacity-0 group-hover/link:opacity-100 transition-opacity" />
+                                                        </a>
                                                     </div>
                                                 </div>
+                                            </TableCell>
+                                            <TableCell className="py-4">
+                                                <div className="flex items-center gap-3">
+                                                    {store.loaderInstalled ? (
+                                                        <Badge variant="secondary" className="bg-green-50 text-green-700 hover:bg-green-100 border-green-200 font-semibold gap-1">
+                                                            <Check size={12} /> Installé (v{store.loaderVersion || '?'})
+                                                        </Badge>
+                                                    ) : (
+                                                        <Badge variant="secondary" className="bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-200 font-semibold gap-1">
+                                                            Non installé
+                                                        </Badge>
+                                                    )}
 
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="clientId" className="text-xs font-semibold text-slate-700">Client ID</Label>
-                                                    <Input
-                                                        id="clientId"
-                                                        value={shopifyForm.clientId}
-                                                        onChange={(e) => setShopifyForm((prev) => ({ ...prev, clientId: e.target.value }))}
-                                                        className="font-mono text-xs bg-white h-10"
-                                                        placeholder="From App settings"
-                                                    />
+                                                    {!store.loaderInstalled && (
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            className="h-7 text-[10px] px-3 font-semibold rounded-md border-slate-200 hover:bg-slate-50 shadow-sm"
+                                                            onClick={() => handleEnableLoader(store)}
+                                                            disabled={processingStoreId === store.id}
+                                                        >
+                                                            {processingStoreId === store.id ? <Loader2 size={12} className="animate-spin mr-1" /> : null}
+                                                            Installer le script
+                                                        </Button>
+                                                    )}
                                                 </div>
-
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="clientSecret" className="text-xs font-semibold text-slate-700">Client Secret</Label>
-                                                    <Input
-                                                        id="clientSecret"
-                                                        type="password"
-                                                        value={shopifyForm.clientSecret}
-                                                        onChange={(e) => setShopifyForm((prev) => ({ ...prev, clientSecret: e.target.value }))}
-                                                        className="font-mono text-xs bg-white h-10"
-                                                        placeholder="From App settings"
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-3 text-xs text-indigo-700 flex gap-2 items-start leading-relaxed">
-                                                <div className="mt-0.5">ℹ️</div>
-                                                <p>Credentials are encrypted and stored securely. We only use them to sync your products and orders.</p>
-                                            </div>
-
-                                            <Button
-                                                className="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-lg shadow-indigo-100 transition-all duration-200 h-11 text-sm font-medium rounded-xl mt-2"
-                                                onClick={handleShopifyConnect}
-                                                disabled={isConnecting}
-                                            >
-                                                {isConnecting ? (
-                                                    <>
-                                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Connecting...
-                                                    </>
-                                                ) : (
-                                                    'Connect Store'
-                                                )}
-                                            </Button>
-                                        </div>
-
-                                        <div className="text-center">
-                                            <Button variant="link" className="text-xs text-slate-400 font-normal hover:text-indigo-600" onClick={() => setActiveTab('guide')}>
-                                                Need help finding credentials? View Guide
-                                            </Button>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="animate-in fade-in duration-300">
-                                        <ShopifyManager userId={userId} showHeader={false} viewMode="list" onAddStore={() => setView('add')} />
-
-                                        {/* Empty State Hint if needed, handled by ShopifyManager usually, but let's add a consistent footer */}
-                                        {stores.length > 0 && (
-                                            <div className="mt-8 text-center">
-                                                <p className="text-xs text-slate-400">
-                                                    Need to connect another store? Click <span className="font-medium text-slate-600">Add Store</span> above.
-                                                </p>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </TabsContent>
-
-                            <TabsContent value="guide" className="mt-0 px-6 pb-8">
-                                <ShopifyGuide />
-                            </TabsContent>
-                        </ScrollArea>
-                    </Tabs>
-                </SheetContent>
-            </Sheet>
+                                            </TableCell>
+                                            <TableCell className="py-4 pr-5 text-right">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-8 w-8 rounded-md opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-slate-900 hover:bg-slate-100"
+                                                        >
+                                                            <MoreHorizontal size={16} />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end" className="w-56 rounded-xl">
+                                                        <DropdownMenuItem className="text-xs font-medium" onClick={() => window.open(`https://${store.url}`, '_blank')}>
+                                                            <ExternalLink size={14} className="mr-2" /> Ouvrir la boutique
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem className="text-xs font-medium" onClick={() => handleRefreshProducts(store)}>
+                                                            <RotateCw size={14} className="mr-2" /> Actualiser les produits
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem className="text-xs font-medium" onClick={() => handleSyncAssignments(store)}>
+                                                            <Activity size={14} className="mr-2" /> Synchroniser les assignations
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuSeparator />
+                                                        <DropdownMenuItem
+                                                            className="text-red-600 focus:text-red-700 focus:bg-red-50 text-xs font-medium"
+                                                            onClick={() => handleDeleteStore(store.id)}
+                                                        >
+                                                            <Trash2 size={14} className="mr-2" /> Déconnecter la boutique
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    )}
+                </div>
+            </div>
         </div>
     );
 }
-

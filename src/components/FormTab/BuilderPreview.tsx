@@ -1,9 +1,12 @@
 import { FormPreview } from './preview/FormPreview';
+import { useFormRules, OfferRule, ShippingRule, CouponRule } from '@/hooks/useFormRules';
+import { getStoredUser } from '@/lib/authGoogle';
+import { useMemo } from 'react';
 
 interface BuilderPreviewProps {
-    formConfig: unknown;
+    formConfig: any;
     previewWidth: number | string;
-    containerRef?: unknown;
+    containerRef?: any;
 }
 
 export const BuilderPreview = ({
@@ -11,6 +14,52 @@ export const BuilderPreview = ({
     previewWidth,
     containerRef,
 }: BuilderPreviewProps) => {
+    const user = getStoredUser();
+    const userId = user?.id;
+
+    // Fetch rules only when IDs are set
+    const { rules: offerRules } = useFormRules(userId, 'offers');
+    const { rules: shippingRules } = useFormRules(userId, 'shipping');
+    const { rules: couponRules } = useFormRules(userId, 'coupons');
+
+    // Resolve rule IDs to actual data
+    const resolvedOffers = useMemo(() => {
+        if (formConfig.offerRuleId) {
+            const rule = (offerRules as OfferRule[]).find(r => r.id === formConfig.offerRuleId);
+            if (rule?.offers) return rule.offers;
+        }
+        return formConfig.offers || [];
+    }, [formConfig.offerRuleId, formConfig.offers, offerRules]);
+
+    const resolvedShipping = useMemo(() => {
+        if (formConfig.shippingRuleId) {
+            const rule = (shippingRules as ShippingRule[]).find(r => r.id === formConfig.shippingRuleId);
+            if (rule?.shipping) return rule.shipping;
+        }
+        return formConfig.shipping;
+    }, [formConfig.shippingRuleId, formConfig.shipping, shippingRules]);
+
+    const resolvedConfig = useMemo(() => {
+        let config = { ...formConfig };
+
+        // Inject coupon rule data into config.promoCode
+        if (formConfig.couponRuleId) {
+            const rule = (couponRules as CouponRule[]).find(r => r.id === formConfig.couponRuleId);
+            if (rule?.coupons) {
+                config = {
+                    ...config,
+                    promoCode: {
+                        ...config.promoCode,
+                        enabled: true,
+                        codes: rule.coupons,
+                    },
+                };
+            }
+        }
+
+        return config;
+    }, [formConfig, couponRules]);
+
     return (
         <div className="flex h-full">
             {/* Preview Area with Dots Background */}
@@ -39,7 +88,7 @@ export const BuilderPreview = ({
 
                         {/* Form Preview */}
                         <div className="flex-1 overflow-y-auto relative flex flex-col no-scrollbar">
-                            <FormPreview config={formConfig} offers={formConfig.offers || []} shipping={formConfig.shipping} />
+                            <FormPreview config={resolvedConfig} offers={resolvedOffers} shipping={resolvedShipping} />
                         </div>
 
                         {/* Bottom Indicator */}

@@ -1,9 +1,8 @@
 import { Phone, Check, Plus, Unlink, ChevronRight } from "lucide-react";
-import { useSearchParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { auth } from "../../../lib/firebase";
 import { useWhatsAppProfiles } from "../../../lib/firebase/whatsappHooks";
 import { useFormStore } from "../../../stores";
-import { WhatsAppIntegration } from "../../integrations/WhatsAppIntegration";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -16,16 +15,7 @@ export const WhatsAppEditor = () => {
 
     const { profiles, loading: waLoading } = useWhatsAppProfiles(userId);
     const selectedProfileId: string | null = formConfig.addons?.selectedWhatsappProfileId || null;
-    const [, setSearchParams] = useSearchParams();
 
-    const openIntegration = () => {
-        setSearchParams(prev => {
-            const next = new URLSearchParams(prev);
-            next.set('open', 'whatsapp');
-            next.set('profileId', 'new');
-            return next;
-        });
-    };
 
     const linkProfile = (profileId: string) => {
         setFormConfig({
@@ -82,13 +72,13 @@ export const WhatsAppEditor = () => {
                             <p className="text-[10px] text-slate-400 mb-4 leading-relaxed">
                                 Connect a WhatsApp profile to enable messaging.
                             </p>
-                            <Button
-                                onClick={openIntegration}
-                                className="bg-[#25D366] hover:bg-[#20bd5a] text-white shadow-md h-9 rounded-xl px-5 text-xs font-bold transition-all active:scale-95"
+                            <Link
+                                to="/dashboard/integrations?open=whatsapp&profileId=new"
+                                className="inline-flex items-center justify-center bg-[#25D366] hover:bg-[#20bd5a] text-white shadow-md h-9 rounded-xl px-5 text-xs font-bold transition-all active:scale-95"
                             >
                                 <Plus size={14} className="mr-1.5" />
-                                Connect WhatsApp
-                            </Button>
+                                Configurer WhatsApp
+                            </Link>
                         </div>
                     ) : (
                         <div className="space-y-2">
@@ -155,16 +145,14 @@ export const WhatsAppEditor = () => {
                             ))}
 
                             <div className="pt-1 border-t border-slate-100 mt-1">
-                                <button onClick={openIntegration} className="w-full flex items-center justify-center gap-1.5 p-2 rounded-lg text-[10px] font-bold text-slate-400 hover:text-green-600 transition-colors cursor-pointer">
-                                    <Plus size={10} /> Connect New Profile
-                                </button>
+                                <Link to="/dashboard/integrations?open=whatsapp" className="w-full flex items-center justify-center gap-1.5 p-2 rounded-lg text-[10px] font-bold text-slate-400 hover:text-green-600 transition-colors cursor-pointer">
+                                    <Plus size={10} /> Gérer les Intégrations
+                                </Link>
                             </div>
                         </div>
                     )}
                 </div>
             </div>
-
-            <WhatsAppIntegration userId={userId} hideTrigger={true} />
         </div>
     );
 };

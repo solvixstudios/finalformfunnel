@@ -13,11 +13,14 @@ import {
   FileText,
   FolderOpen,
   LayoutGrid,
+  Loader2,
   Menu,
+  Save,
   ShoppingCart,
   Tag,
   Ticket,
-  Truck
+  Truck,
+  Plug
 } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 import { HeaderActionsProvider, useHeaderActions } from '../contexts/HeaderActionsContext';
@@ -51,9 +54,10 @@ const DashboardLayoutContent = ({
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { dir } = useI18n();
-  const { actions, centerContent } = useHeaderActions();
+  const { actions, centerContent, onSaveBeforeLeave } = useHeaderActions();
   const hasUnsavedChanges = useFormStore((state) => state.hasUnsavedChanges);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+  const [isSavingBeforeLeave, setIsSavingBeforeLeave] = useState(false);
   const pendingActionRef = React.useRef<(() => void) | null>(null);
 
   // Determine if we are in the Builder view
@@ -75,6 +79,31 @@ const DashboardLayoutContent = ({
     } else {
       if (action) action();
       onNavigate(path);
+    }
+  };
+
+  const handleSaveAndLeave = async () => {
+    if (!onSaveBeforeLeave) return;
+    setIsSavingBeforeLeave(true);
+    try {
+      await onSaveBeforeLeave();
+      // After save, navigate
+      if (pendingActionRef.current) {
+        // Don't clear form — it was saved. Just navigate.
+        const markClean = useFormStore.getState().markClean;
+        markClean();
+        // Extract only the navigate call from the pending action
+        const setFormId = useFormStore.getState().setFormId;
+        setFormId(null);
+        pendingActionRef.current();
+      }
+      setShowUnsavedDialog(false);
+      pendingActionRef.current = null;
+    } catch (error) {
+      console.error("Save before leave failed:", error);
+      // Keep dialog open so user can choose another option
+    } finally {
+      setIsSavingBeforeLeave(false);
     }
   };
 
@@ -114,6 +143,12 @@ const DashboardLayoutContent = ({
       label: 'Coupons',
       icon: <Ticket size={20} />,
       path: '/dashboard/rules/coupons',
+    },
+    {
+      id: 'integrations',
+      label: 'Integrations',
+      icon: <Plug size={20} />,
+      path: '/dashboard/integrations',
     },
   ], []);
 
@@ -179,17 +214,18 @@ const DashboardLayoutContent = ({
         </main>
 
         {/* Unsaved Changes Dialog */}
-        <AlertDialog open={showUnsavedDialog} onOpenChange={setShowUnsavedDialog}>
+        <AlertDialog open={showUnsavedDialog} onOpenChange={(open) => { if (!isSavingBeforeLeave) setShowUnsavedDialog(open); }}>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
               <AlertDialogDescription>
-                You have unsaved changes. Leaving this page will discard them. Are you sure?
+                You have unsaved changes. What would you like to do?
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Stay</AlertDialogCancel>
+            <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-2">
+              <AlertDialogCancel disabled={isSavingBeforeLeave}>Stay</AlertDialogCancel>
               <AlertDialogAction
+                disabled={isSavingBeforeLeave}
                 onClick={() => {
                   if (pendingActionRef.current) pendingActionRef.current();
                   setShowUnsavedDialog(false);
@@ -199,6 +235,20 @@ const DashboardLayoutContent = ({
               >
                 Leave & Discard
               </AlertDialogAction>
+              {onSaveBeforeLeave && (
+                <button
+                  onClick={handleSaveAndLeave}
+                  disabled={isSavingBeforeLeave}
+                  className="inline-flex items-center justify-center gap-2 rounded-md text-sm font-semibold h-10 px-4 bg-[#FF5A1F] text-white hover:bg-[#E04D1A] transition-colors disabled:opacity-50"
+                >
+                  {isSavingBeforeLeave ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Save size={14} />
+                  )}
+                  Save & Leave
+                </button>
+              )}
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>

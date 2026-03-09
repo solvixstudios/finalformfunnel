@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, ArrowLeft, Save, Eye, Tag, MoreHorizontal, Pencil, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Save, Tag, MoreHorizontal, Pencil, Loader2, X } from 'lucide-react';
 import { useFormRules, OfferRule } from '@/hooks/useFormRules';
 import PacksManager from '@/components/managers/PacksManager';
 import { OffersSection } from '@/components/FormTab/preview/sections/OffersSection';
@@ -7,7 +7,7 @@ import { SummarySection } from '@/components/FormTab/preview/sections/SummarySec
 import { PageHeader } from '@/components/GlobalHeader/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
     DropdownMenu,
@@ -16,7 +16,6 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { cn } from '@/lib/utils';
 import type { FormConfig } from '@/types/form';
 
 interface OffersPageProps {
@@ -49,12 +48,17 @@ const OffersPage: React.FC<OffersPageProps> = ({ userId }) => {
     const [ruleName, setRuleName] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     const [previewSelectedOffer, setPreviewSelectedOffer] = useState('');
+    const [previewLang, setPreviewLang] = useState<'fr' | 'ar'>('fr');
+    const [ruleLabels, setRuleLabels] = useState<string[]>([]);
+    const [labelInput, setLabelInput] = useState('');
 
     const handleCreateNew = () => {
         setEditingRule({ id: '', name: 'Nouvelles Offres', createdAt: 0, updatedAt: 0, offers: [] });
         setLocalOffers([]);
         setRuleName('Nouvelles Offres');
         setPreviewSelectedOffer('');
+        setRuleLabels([]);
+        setLabelInput('');
     };
 
     const handleEdit = (rule: OfferRule) => {
@@ -62,13 +66,15 @@ const OffersPage: React.FC<OffersPageProps> = ({ userId }) => {
         setLocalOffers(rule.offers || []);
         setRuleName(rule.name || 'Offres sans nom');
         setPreviewSelectedOffer(rule.offers?.[0]?.id || '');
+        setRuleLabels(rule.labels || []);
+        setLabelInput('');
     };
 
     const handleSave = async () => {
         if (!editingRule) return;
         setIsSaving(true);
         try {
-            await saveRule({ ...editingRule, name: ruleName, offers: localOffers });
+            await saveRule({ ...editingRule, name: ruleName, labels: ruleLabels, offers: localOffers });
             setEditingRule(null);
         } catch (error) {
             console.error("Error saving rule:", error);
@@ -99,7 +105,11 @@ const OffersPage: React.FC<OffersPageProps> = ({ userId }) => {
                     title="Offres"
                     breadcrumbs={[
                         { label: 'Rules', href: '/dashboard/rules/offers' },
-                        { label: ruleName || 'Modifier' },
+                        {
+                            label: ruleName || 'Modifier',
+                            editable: true,
+                            onEdit: (value) => setRuleName(value),
+                        },
                     ]}
                     icon={Tag}
                     backHref="/dashboard/rules/offers"
@@ -117,35 +127,65 @@ const OffersPage: React.FC<OffersPageProps> = ({ userId }) => {
                     }
                 />
 
-                {/* Editable Name */}
-                <div className="mb-5 pt-2">
-                    <Input
-                        value={ruleName}
-                        onChange={(e) => setRuleName(e.target.value)}
-                        className="text-lg font-bold text-slate-900 bg-white border-slate-200 rounded-lg h-11 px-4 shadow-sm focus:ring-1 focus:ring-slate-900/5 max-w-md"
-                        placeholder="Nom du profil"
+                {/* Labels Editor */}
+                <div className="flex items-center gap-2 flex-wrap mt-2">
+                    {ruleLabels.map(label => (
+                        <span key={label} className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-600 text-[10px] font-bold rounded-lg border border-indigo-200">
+                            {label}
+                            <button onClick={() => setRuleLabels(ruleLabels.filter(l => l !== label))} className="hover:text-red-500 transition-colors">
+                                <X size={10} />
+                            </button>
+                        </span>
+                    ))}
+                    <input
+                        type="text"
+                        value={labelInput}
+                        onChange={(e) => setLabelInput(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && labelInput.trim()) {
+                                e.preventDefault();
+                                const newLabel = labelInput.trim().toLowerCase();
+                                if (!ruleLabels.includes(newLabel)) {
+                                    setRuleLabels([...ruleLabels, newLabel]);
+                                }
+                                setLabelInput('');
+                            }
+                        }}
+                        placeholder="+ Ajouter un label..."
+                        className="px-2 py-0.5 text-[10px] font-medium bg-transparent border-none outline-none text-slate-400 placeholder:text-slate-300 w-28"
                     />
                 </div>
 
                 {/* Split Screen */}
-                <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-0">
+                <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-5 min-h-0 mt-4">
                     {/* Left: Configuration */}
                     <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 overflow-y-auto">
-                        <h2 className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-4">Configuration</h2>
-                        <div className="bg-[#F8F5F1] rounded-xl p-4 sm:p-5 border border-slate-200">
-                            <PacksManager offers={localOffers} onOffersChange={setLocalOffers} />
-                        </div>
+                        <PacksManager offers={localOffers} onOffersChange={setLocalOffers} />
                     </div>
 
                     {/* Right: Live Preview */}
                     <div className="bg-slate-50 rounded-xl border border-slate-200 p-5 flex flex-col">
-                        <div className="flex items-center gap-2 mb-4">
-                            <Eye size={14} className="text-slate-400" />
-                            <h3 className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Aperçu en Direct</h3>
+                        {/* Language Toggle */}
+                        <div className="flex items-center justify-end mb-3">
+                            <div className="flex bg-white rounded-lg p-0.5 border border-slate-200 shadow-sm">
+                                <button
+                                    onClick={() => setPreviewLang('fr')}
+                                    className={`px-3 py-1 rounded-md text-[10px] font-bold transition-all ${previewLang === 'fr' ? 'bg-[#FF5A1F] text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                                        }`}
+                                >
+                                    FR
+                                </button>
+                                <button
+                                    onClick={() => setPreviewLang('ar')}
+                                    className={`px-3 py-1 rounded-md text-[10px] font-bold transition-all ${previewLang === 'ar' ? 'bg-[#FF5A1F] text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                                        }`}
+                                >
+                                    AR
+                                </button>
+                            </div>
                         </div>
-
                         <div className="flex-1 flex items-start justify-center">
-                            <div className="w-full max-w-sm bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-4">
+                            <div className={`w-full max-w-sm bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-4 ${previewLang === 'ar' ? 'text-right' : ''}`} dir={previewLang === 'ar' ? 'rtl' : 'ltr'}>
                                 {localOffers.length === 0 ? (
                                     <div className="py-10 text-center text-slate-400">
                                         <Tag className="mx-auto mb-2 text-slate-300" size={28} />
@@ -156,7 +196,7 @@ const OffersPage: React.FC<OffersPageProps> = ({ userId }) => {
                                     <>
                                         <OffersSection
                                             config={PREVIEW_CONFIG}
-                                            lang="fr"
+                                            lang={previewLang}
                                             offers={localOffers}
                                             selectedOfferId={previewSelectedOffer}
                                             onSelect={setPreviewSelectedOffer}
@@ -165,7 +205,7 @@ const OffersPage: React.FC<OffersPageProps> = ({ userId }) => {
                                         />
                                         <SummarySection
                                             config={PREVIEW_CONFIG}
-                                            lang="fr"
+                                            lang={previewLang}
                                             offerPrice={Math.max(0, offerPrice)}
                                             shippingCost={600}
                                             promoDiscount={{ subtotalDiscount: 0, shippingDiscount: 0, totalDiscount: 0 }}
@@ -244,7 +284,16 @@ const OffersPage: React.FC<OffersPageProps> = ({ userId }) => {
                                             <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-indigo-50 ring-1 ring-black/[0.04]">
                                                 <Tag size={14} className="text-indigo-600" />
                                             </div>
-                                            <span className="text-sm font-semibold text-slate-900">{rule.name || 'Sans nom'}</span>
+                                            <div className="flex flex-col gap-1">
+                                                <span className="text-sm font-semibold text-slate-900">{rule.name || 'Sans nom'}</span>
+                                                {rule.labels && rule.labels.length > 0 && (
+                                                    <div className="flex gap-1 flex-wrap">
+                                                        {rule.labels.map(label => (
+                                                            <span key={label} className="px-1.5 py-0.5 bg-indigo-50 text-indigo-600 text-[8px] font-bold rounded-md">{label}</span>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     </TableCell>
                                     <TableCell className="py-3.5">

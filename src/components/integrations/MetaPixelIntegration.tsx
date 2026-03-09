@@ -1,45 +1,49 @@
+import React, { useState } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faMeta } from '@fortawesome/free-brands-svg-icons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { HoverSpotlightCard } from '@/components/ui/HoverSpotlightCard';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
+import { Separator } from '@/components/ui/separator';
 import {
-    Sheet,
-    SheetContent,
-    SheetDescription,
-    SheetHeader,
-    SheetTitle,
-    SheetTrigger,
-} from '@/components/ui/sheet';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ChevronRight, Plus, Trash2, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { PageHeader } from '@/components/GlobalHeader/PageHeader';
+import { GuideStep, VideoPlaceholder, TestConnectionButton } from './GuideUI';
+import { Plus, MoreHorizontal, Pencil, Trash2, Save, Loader2, X, HelpCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { MetaPixelProfile } from '../../lib/firebase/types';
 import { useMetaPixels } from '../../lib/firebase/metaPixelHooks';
-// @ts-ignore
-import feedData from '../../../feed.json';
-import { useI18n } from '../../lib/i18n/i18nContext';
 import { useFormStore } from '../../stores';
 
 interface MetaPixelIntegrationProps {
     userId: string;
-    hideTrigger?: boolean;
+    onBack?: () => void;
 }
 
 interface PixelData {
     pixelId: string;
     capiToken: string;
     testCode: string;
-    showAdvanced: boolean; // UI state for toggle
+    showAdvanced: boolean;
 }
 
-export function MetaPixelIntegration({ userId, hideTrigger }: MetaPixelIntegrationProps) {
+export function MetaPixelIntegration({ userId, onBack }: MetaPixelIntegrationProps) {
     const {
         pixels: profiles,
         addPixel,
@@ -47,89 +51,26 @@ export function MetaPixelIntegration({ userId, hideTrigger }: MetaPixelIntegrati
         deletePixel,
     } = useMetaPixels(userId);
 
-    const [openSheet, setOpenSheet] = useState(false);
-    const [sheetMode, setSheetMode] = useState<'add' | 'manage'>('manage');
-    const [addTab, setAddTab] = useState<'setup' | 'guide'>('setup');
-    const [view, setView] = useState<'list' | 'edit'>('list');
-
+    const [view, setView] = useState<'list' | 'edit' | 'add'>('list');
     const [editingProfileId, setEditingProfileId] = useState<string | null>(null);
     const [profileName, setProfileName] = useState('');
     const [pixelList, setPixelList] = useState<PixelData[]>([]);
+    const [isSaving, setIsSaving] = useState(false);
 
-    const [searchParams, setSearchParams] = useSearchParams();
     const formConfig = useFormStore(state => state.formConfig);
     const setFormConfig = useFormStore(state => state.setFormConfig);
 
-    // Deep Linking Logic
-    useEffect(() => {
-        const integrationParam = searchParams.get('integration');
-        const profileIdParam = searchParams.get('profileId'); // Changed from pixelId to profileId for clarity
-        const openParam = searchParams.get('open');
-
-        if (integrationParam === 'meta-pixel' || openParam === 'meta-pixel') {
-            setOpenSheet(true);
-            if (profiles.length === 0) {
-                setSheetMode('add');
-                setAddTab('setup');
-                startAddProfile();
-            } else {
-                setSheetMode('manage');
-                setView('list');
-            }
-
-            if (profileIdParam && profiles.length > 0) {
-                const targetProfile = profiles.find(p => p.id === profileIdParam);
-                if (targetProfile) {
-                    setSheetMode('manage');
-                    startEditProfile(targetProfile);
-                } else if (profileIdParam === 'new') {
-                    setSheetMode('add');
-                    setAddTab('setup');
-                    startAddProfile();
-                }
-            }
-        }
-    }, [searchParams, profiles]);
-
-    // Reset view when opening/closing
-    const handleOpenChange = (open: boolean) => {
-        setOpenSheet(open);
-        if (!open) {
-            setSheetMode('manage');
-            setAddTab('setup');
-            setView('list');
-            setEditingProfileId(null);
-            setProfileName('');
-            setPixelList([]);
-
-            // Clean up URL parameters
-            const params = new URLSearchParams(searchParams);
-            if (params.has('open') || params.has('integration') || params.has('profileId')) {
-                params.delete('open');
-                params.delete('integration');
-                params.delete('profileId');
-                setSearchParams(params, { replace: true });
-            }
-        }
-    };
-
     const startAddProfile = () => {
         setEditingProfileId(null);
-        setProfileName('Default Pixel');
-        // Start with one empty pixel
-        setPixelList([{
-            pixelId: feedData.meta.pixelId,
-            capiToken: feedData.meta.capiToken,
-            testCode: feedData.meta.testEventCode,
-            showAdvanced: true
-        }]);
+        setProfileName('Nouveau Profil Pixel');
+        setPixelList([{ pixelId: '', capiToken: '', testCode: '', showAdvanced: false }]);
+        setView('add');
     };
 
     const startEditProfile = (profile: MetaPixelProfile) => {
         setEditingProfileId(profile.id);
         setProfileName(profile.name);
 
-        // Map existing pixels or fallback to old structure if migration needed (though we updated types)
         const mappedPixels = (profile.pixels || []).map(p => ({
             pixelId: p.pixelId,
             capiToken: p.capiToken || '',
@@ -137,7 +78,6 @@ export function MetaPixelIntegration({ userId, hideTrigger }: MetaPixelIntegrati
             showAdvanced: !!(p.capiToken || p.testCode)
         }));
 
-        // Handle legacy data case if necessary (optional)
         if (mappedPixels.length === 0 && (profile as any).pixelId) {
             mappedPixels.push({
                 pixelId: (profile as any).pixelId,
@@ -156,9 +96,7 @@ export function MetaPixelIntegration({ userId, hideTrigger }: MetaPixelIntegrati
     };
 
     const handleCancel = () => {
-        if (sheetMode === 'manage') {
-            setView('list');
-        }
+        setView('list');
         setEditingProfileId(null);
         setProfileName('');
         setPixelList([]);
@@ -182,19 +120,19 @@ export function MetaPixelIntegration({ userId, hideTrigger }: MetaPixelIntegrati
 
     const handleSaveProfile = async () => {
         if (!profileName.trim()) {
-            toast.error('Profile Name is required.');
+            toast.error('Le nom du profil est requis.');
             return;
         }
 
         const validPixels = pixelList.filter(p => p.pixelId.trim() !== '');
 
         if (validPixels.length === 0) {
-            toast.error('At least one Pixel ID is required.');
+            toast.error('Au moins un Pixel ID est requis.');
             return;
         }
 
         if (validPixels.some(p => !/^\d+$/.test(p.pixelId))) {
-            toast.error('Pixel IDs must contain only numbers.');
+            toast.error('Les identifiants de Pixel ne doivent contenir que des chiffres.');
             return;
         }
 
@@ -207,10 +145,11 @@ export function MetaPixelIntegration({ userId, hideTrigger }: MetaPixelIntegrati
             }))
         };
 
+        setIsSaving(true);
         try {
-            if (sheetMode === 'add') {
+            if (view === 'add') {
                 const newProfile = await addPixel(payload);
-                toast.success('Meta Pixel Profile added!');
+                toast.success('Profil Meta Pixel ajouté !');
 
                 const currentIds = formConfig.addons?.metaPixelIds || [];
                 const currentData = formConfig.addons?.pixelData || [];
@@ -232,425 +171,393 @@ export function MetaPixelIntegration({ userId, hideTrigger }: MetaPixelIntegrati
                     },
                 });
 
-                setSheetMode('manage');
                 setView('list');
-            } else if (sheetMode === 'manage' && view === 'edit' && editingProfileId) {
+            } else if (view === 'edit' && editingProfileId) {
                 await updatePixel(editingProfileId, payload);
-                toast.success('Meta Pixel Profile updated!');
+                toast.success('Profil Meta Pixel mis à jour !');
                 setView('list');
             }
-            setEditingProfileId(null);
-            setProfileName('');
-            setPixelList([]);
+            handleCancel();
         } catch (e: any) {
             toast.error(e.message);
+        } finally {
+            setIsSaving(false);
         }
     };
 
-    const handleDeleteProfile = async (id: string) => {
-        if (confirm('Are you sure you want to delete this profile?')) {
+    const handleDeleteProfile = async (id: string, e?: React.MouseEvent) => {
+        if (e) e.stopPropagation();
+
+        if (confirm('Voulez-vous vraiment supprimer ce profil ?')) {
             try {
                 await deletePixel(id);
-                toast.success('Profile deleted');
-                handleCancel();
+                toast.success('Profil supprimé');
+                if (view === 'edit') handleCancel();
             } catch (e: any) {
                 toast.error(e.message);
             }
         }
     };
 
-    return (
-        <div className={hideTrigger ? "" : "md:col-span-1 md:row-span-1"}>
-            <Sheet open={openSheet} onOpenChange={handleOpenChange}>
-                {!hideTrigger && (
-                    <SheetTrigger asChild>
-                        <HoverSpotlightCard spotlightColor="rgba(59, 130, 246, 0.15)" className="rounded-2xl sm:rounded-3xl hover:ring-2 hover:ring-blue-100 hover:shadow-xl group flex flex-col p-4 sm:p-6 min-h-[140px] sm:min-h-[180px] h-full">
-                            <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                            <div className="flex flex-col h-full justify-between relative z-10">
-                                <div className="flex justify-between items-start">
-                                    <div className="w-14 h-14 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-3xl text-white shadow-sm group-hover:scale-110 group-hover:rotate-3 transition-transform mb-4">
-                                        ♾️
-                                    </div>
-                                    {profiles.length > 0 && (
-                                        <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100">
-                                            {profiles.length} Active
-                                        </Badge>
-                                    )}
-                                </div>
-                                <div>
-                                    <h4 className="text-xl font-bold text-slate-900 tracking-tight">Meta Pixel</h4>
-                                    <p className="text-sm text-slate-500 mt-2 font-medium leading-normal">Track events & CAPI</p>
-                                </div>
-                            </div>
-                        </HoverSpotlightCard>
-                    </SheetTrigger>
-                )}
+    // Custom Icon for Headers
+    const MetaIcon = () => (
+        <FontAwesomeIcon icon={faMeta} className="text-[#1877F2] text-xl md:text-2xl" />
+    );
 
-                <SheetContent hideClose className="sm:max-w-md w-full flex flex-col h-full p-0 gap-0 bg-white overflow-hidden sm:border-l sm:shadow-2xl">
-                    <SheetHeader className="px-6 py-5 border-b border-slate-100 shrink-0 bg-white">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-xl shrink-0">♾️</div>
-                                <div className="flex flex-col">
-                                    {sheetMode === 'add' ? (
-                                        <>
-                                            <SheetTitle className="text-slate-900 leading-tight">Add New Profile</SheetTitle>
-                                            <SheetDescription className="text-xs mt-0.5">Configure a new tracking profile</SheetDescription>
-                                        </>
-                                    ) : view === 'edit' ? (
-                                        <>
-                                            <SheetTitle className="text-slate-900 leading-tight">Edit Profile</SheetTitle>
-                                            <SheetDescription className="text-xs mt-0.5">Update pixel configuration</SheetDescription>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <SheetTitle className="text-slate-900 leading-tight">Manage Connections</SheetTitle>
-                                            <SheetDescription className="text-xs mt-0.5">View and edit existing pixels</SheetDescription>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-
+    // --- EDITOR VIEW (Add / Edit) ---
+    if (view === 'add' || view === 'edit') {
+        return (
+            <div className="flex-1 flex flex-col h-full bg-slate-50/50">
+                <div className="bg-white border-b border-slate-200 shrink-0 sticky top-0 z-30">
+                    <PageHeader
+                        title={view === 'add' ? 'Nouveau Profil Meta Pixel' : 'Modifier le Profil Meta'}
+                        breadcrumbs={[
+                            { label: 'Intégrations', href: '/integrations', onClick: onBack },
+                            { label: 'Meta Pixel', href: '#' }
+                        ]}
+                        icon={MetaIcon}
+                        onBack={handleCancel}
+                        actions={
                             <div className="flex items-center gap-2">
-                                {sheetMode === 'manage' && view === 'edit' && (
-                                    <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        className="h-8 text-slate-500 hover:text-slate-900 hover:bg-slate-100 text-xs gap-1.5 px-3 rounded-full"
-                                        onClick={handleCancel}
-                                    >
-                                        Cancel
-                                    </Button>
-                                )}
+                                <Sheet>
+                                    <SheetTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-8 rounded-lg text-xs font-bold px-4 bg-white text-slate-700 shadow-sm border-slate-200"
+                                        >
+                                            <HelpCircle size={13} className="mr-1.5" />
+                                            Astuces d'intégration
+                                        </Button>
+                                    </SheetTrigger>
+                                    <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+                                        <SheetHeader className="mb-6">
+                                            <SheetTitle className="text-xl font-bold text-slate-900">Guide Meta Pixel</SheetTitle>
+                                            <p className="text-sm text-slate-500 mt-2 text-left">Étapes pour configurer le suivi Meta (Facebook) sur vos formulaires.</p>
+                                        </SheetHeader>
+                                        <div className="space-y-6 text-sm text-slate-600 pb-8">
+                                            <VideoPlaceholder title="Configurer Meta Pixel & API Conversions" thumbnailUrl="https://images.unsplash.com/photo-1611162616475-46b635cb6868?q=80&w=2000&auto=format&fit=crop" />
 
-                                {sheetMode === 'manage' && view === 'edit' && (
-                                    <div className="h-6 w-px bg-slate-200 mx-1" />
-                                )}
+                                            <GuideStep number={1} title="Accéder au Meta Events Manager">
+                                                <p>
+                                                    Connectez-vous à <strong>Meta Business Suite</strong> → <strong>Événements</strong> → <strong>Gestionnaire d'événements</strong>. Sélectionnez ou créez un nouveau Pixel.
+                                                </p>
+                                                <p className="text-xs text-slate-500">
+                                                    URL directe : <code className="bg-slate-100 px-1.5 py-0.5 rounded text-[10px] font-mono">business.facebook.com/events_manager</code>
+                                                </p>
+                                            </GuideStep>
 
+                                            <GuideStep number={2} title="Copier le Pixel ID">
+                                                <p>
+                                                    Votre Pixel ID est un nombre de <strong>15 chiffres</strong> (ex. <code className="bg-slate-100 px-1 py-0.5 rounded text-[10px] font-mono">123456789012345</code>). Il se trouve dans les paramètres de votre pixel dans le Events Manager.
+                                                </p>
+                                            </GuideStep>
+
+                                            <GuideStep number={3} title="Configurer l'API Conversions (CAPI)">
+                                                <p>
+                                                    Pour un suivi plus précis (résistant à iOS 14+ et bloqueurs de pub), configurez l'<strong>API Conversions</strong> :
+                                                </p>
+                                                <ol className="list-decimal list-outside ml-4 space-y-2 mt-2">
+                                                    <li>Dans le Events Manager, sélectionnez votre pixel.</li>
+                                                    <li>Allez dans <strong>Paramètres</strong> → <strong>API Conversions</strong>.</li>
+                                                    <li>Cliquez sur <strong>Générer un token d'accès</strong>.</li>
+                                                    <li>Copiez le token et collez-le dans le champ «Access Token» ci-contre.</li>
+                                                </ol>
+                                            </GuideStep>
+
+                                            <GuideStep number={4} title="Événements automatiques & multi-pixels">
+                                                <p>
+                                                    Final Form déclenche automatiquement les événements suivants :
+                                                </p>
+                                                <div className="grid grid-cols-2 gap-2 mt-2">
+                                                    <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-center">
+                                                        <span className="block text-xs font-bold text-slate-800">ViewContent</span>
+                                                        <span className="text-[10px] text-slate-500">Chargement de page</span>
+                                                    </div>
+                                                    <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-center">
+                                                        <span className="block text-xs font-bold text-slate-800">Purchase</span>
+                                                        <span className="text-[10px] text-slate-500">Soumission réussie</span>
+                                                    </div>
+                                                </div>
+                                                <p className="text-xs text-slate-500 mt-2">
+                                                    Vous pouvez ajouter <strong>plusieurs pixels</strong> au sein du même profil. Les événements seront envoyés simultanément à tous.
+                                                </p>
+                                            </GuideStep>
+
+                                            <GuideStep number={5} title="Code de test (optionnel)">
+                                                <p>
+                                                    Utilisez l'extension Chrome <strong>Meta Pixel Helper</strong> pour vérifier les déclenchements. Si vous utilisez un code de test CAPI, <strong>pensez à le supprimer</strong> avant la mise en production.
+                                                </p>
+                                                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800 flex gap-2 items-start mt-2 shadow-sm">
+                                                    <span className="mt-0.5 text-base leading-none">⚠️</span>
+                                                    <span>Les événements avec un code de test ne sont <strong>pas</strong> comptabilisés pour vos campagnes publicitaires.</span>
+                                                </div>
+                                            </GuideStep>
+                                        </div>
+                                    </SheetContent>
+                                </Sheet>
+                                <TestConnectionButton
+                                    onTest={async () => {
+                                        const hasPixel = pixelList.some(p => p.pixelId && p.pixelId.length >= 10);
+                                        if (!hasPixel) {
+                                            throw new Error("Veuillez saisir au moins un Pixel ID valide (15 chiffres).");
+                                        }
+                                        const allValid = pixelList.filter(p => p.pixelId).every(p => /^\d{10,20}$/.test(p.pixelId));
+                                        if (!allValid) {
+                                            throw new Error("Le Pixel ID Meta doit contenir uniquement des chiffres (ex. 123456789012345).");
+                                        }
+                                        return true;
+                                    }}
+                                    label="Vérifier le format"
+                                />
                                 <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    className="h-8 w-8 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100"
-                                    onClick={() => handleOpenChange(false)}
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleCancel}
+                                    className="h-8 rounded-lg text-xs font-bold px-4 bg-white text-slate-700 shadow-sm"
                                 >
-                                    <X size={18} />
+                                    Annuler
+                                </Button>
+                                <Button
+                                    onClick={handleSaveProfile}
+                                    disabled={isSaving}
+                                    size="sm"
+                                    className="h-8 rounded-lg text-xs font-bold px-4 bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+                                >
+                                    {isSaving ? <Loader2 size={13} className="mr-1.5 animate-spin" /> : <Save size={13} className="mr-1.5" />}
+                                    Enregistrer
                                 </Button>
                             </div>
-                        </div>
-                    </SheetHeader>
+                        }
+                    />
+                </div>
 
-                    {sheetMode === 'add' ? (
-                        <Tabs value={addTab} onValueChange={(v) => setAddTab(v as 'setup' | 'guide')} className="flex-1 flex flex-col min-h-0">
-                            <div className="flex justify-center py-4 bg-white shrink-0 border-b border-slate-100">
-                                <TabsList className="inline-flex h-9 items-center justify-center rounded-full bg-slate-100/80 p-1 text-slate-500 shadow-inner">
-                                    <TabsTrigger value="setup" className="rounded-full px-6 py-1.5 text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm transition-all duration-300">Setup</TabsTrigger>
-                                    <TabsTrigger value="guide" className="rounded-full px-6 py-1.5 text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm transition-all duration-300">Guide</TabsTrigger>
-                                </TabsList>
-                            </div>
+                <div className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">
+                    <div className="max-w-4xl mx-auto">
+                        <div className="space-y-6">
+                            {/* Editor Configuration */}
+                            <div className="bg-white p-6 md:p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <Label className="text-sm font-semibold text-slate-700">Nom du profil</Label>
+                                        <Input
+                                            placeholder="ex. Boutique Principale"
+                                            className="bg-white h-11 border-slate-200"
+                                            value={profileName}
+                                            onChange={(e) => setProfileName(e.target.value)}
+                                        />
+                                        <p className="text-[11px] text-slate-500 mt-1">Donnez un nom à ce groupe de pixels pour l'identifier dans l'éditeur de formulaire.</p>
+                                    </div>
 
-                            <ScrollArea className="flex-1 bg-slate-50/50 [&>div>div]:!block">
-                                <TabsContent value="setup" className="mt-0 p-6 space-y-6">
-                                    {/* Add Form View */}
-                                    <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-5 animate-in slide-in-from-right-8 fade-in duration-300">
-                                        <div className="space-y-4">
-                                            <div className="space-y-2">
-                                                <Label className="text-xs font-semibold text-slate-700">Profile Name</Label>
-                                                <Input
-                                                    placeholder="e.g. Main Store Pixels"
-                                                    className="bg-white h-10 border-slate-200"
-                                                    value={profileName}
-                                                    onChange={(e) => setProfileName(e.target.value)}
-                                                />
-                                            </div>
+                                    <Separator className="my-6" />
 
-                                            <Separator />
-
-                                            <div className="space-y-3">
-                                                <div className="flex items-center justify-between">
-                                                    <Label className="text-xs font-semibold text-slate-700">Pixels</Label>
-                                                    <Button variant="ghost" size="sm" onClick={handleAddPixelRow} className="h-6 text-[10px] text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-2">
-                                                        <Plus size={12} className="mr-1" /> Add Another Pixel
-                                                    </Button>
-                                                </div>
-
-                                                <div className="space-y-4">
-                                                    {pixelList.map((pixel, index) => (
-                                                        <div key={index} className="space-y-3 p-3 bg-slate-50 rounded-lg border border-slate-100 relative group">
-                                                            {pixelList.length > 1 && (
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    className="absolute top-2 right-2 h-6 w-6 text-slate-400 hover:text-red-500 hover:bg-red-50"
-                                                                    onClick={() => handleRemovePixelRow(index)}
-                                                                >
-                                                                    <Trash2 size={12} />
-                                                                </Button>
-                                                            )}
-
-                                                            <div className="space-y-2">
-                                                                <Label className="text-[10px] font-semibold text-slate-500 uppercase">Pixel ID</Label>
-                                                                <Input
-                                                                    placeholder="1234567890"
-                                                                    className="bg-white font-mono h-9 border-slate-200 text-xs"
-                                                                    value={pixel.pixelId}
-                                                                    onChange={(e) => {
-                                                                        const digits = e.target.value.replace(/\D/g, '');
-                                                                        updatePixelRow(index, 'pixelId', digits);
-                                                                    }}
-                                                                />
-                                                            </div>
-
-                                                            <div className="flex items-center justify-between pt-1">
-                                                                <Label className="text-[10px] text-slate-500 flex items-center gap-1.5 cursor-pointer" onClick={() => updatePixelRow(index, 'showAdvanced', !pixel.showAdvanced)}>
-                                                                    Enable CAPI / Test Code
-                                                                </Label>
-                                                                <Switch
-                                                                    checked={pixel.showAdvanced}
-                                                                    onCheckedChange={(c) => updatePixelRow(index, 'showAdvanced', c)}
-                                                                    className="scale-75 origin-right"
-                                                                />
-                                                            </div>
-
-                                                            {pixel.showAdvanced && (
-                                                                <div className="space-y-3 pt-2 animate-in slide-in-from-top-2 fade-in duration-200">
-                                                                    <div className="space-y-1.5">
-                                                                        <Label className="text-[10px] font-semibold text-slate-500 uppercase">CAPI Token (Optional)</Label>
-                                                                        <Input
-                                                                            placeholder="EAAB..."
-                                                                            type="password"
-                                                                            className="bg-white font-mono h-9 border-slate-200 text-xs"
-                                                                            value={pixel.capiToken}
-                                                                            onChange={(e) => updatePixelRow(index, 'capiToken', e.target.value)}
-                                                                        />
-                                                                    </div>
-                                                                    <div className="space-y-1.5">
-                                                                        <Label className="text-[10px] font-semibold text-slate-500 uppercase">Test Code (Optional)</Label>
-                                                                        <Input
-                                                                            placeholder="TEST12345"
-                                                                            className="bg-white font-mono h-9 border-slate-200 text-xs"
-                                                                            value={pixel.testCode}
-                                                                            onChange={(e) => updatePixelRow(index, 'testCode', e.target.value)}
-                                                                        />
-                                                                        <div className="bg-amber-50 text-amber-800 text-[10px] p-2 rounded border border-amber-100 flex items-start gap-1.5">
-                                                                            <span>⚠️</span>
-                                                                            <span>Remember to remove this code after testing, otherwise events will not be processed by Meta ads.</span>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex flex-col gap-3 pt-2">
-                                            <Button
-                                                className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-100 transition-all duration-200 h-11 text-sm font-medium rounded-xl mt-2"
-                                                onClick={handleSaveProfile}
-                                            >
-                                                Create Profile
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <Label className="text-sm font-semibold text-slate-700">Configuration des Pixels</Label>
+                                            <Button variant="ghost" size="sm" onClick={handleAddPixelRow} className="h-8 text-xs font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-3 rounded-lg border border-blue-100">
+                                                <Plus size={14} className="mr-1.5" /> Ajouter un Pixel
                                             </Button>
                                         </div>
-                                    </div>
-                                </TabsContent>
 
-                                <TabsContent value="guide" className="mt-0 p-6">
-                                    {/* Setup Guide */}
-                                    <div className="space-y-4 text-sm text-slate-600 bg-blue-50/50 p-5 rounded-xl border border-blue-100">
-                                        <div className="space-y-4 text-sm text-slate-600">
-                                            <h4 className="font-semibold text-slate-900">Setting up Meta Pixel</h4>
-                                            <ol className="list-decimal list-inside space-y-2 marker:text-blue-600 marker:font-bold">
-                                                <li>Go to Meta Events Manager.</li>
-                                                <li>Create a new Data Source (Web).</li>
-                                                <li>Copy your <strong>Pixel ID</strong>.</li>
-                                                <li>Generate an Access Token in settings for CAPI support.</li>
-                                            </ol>
-                                            <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-700 flex gap-2 items-start">
-                                                <span className="mt-0.5">💡</span>
-                                                <span>Pro Tip: Add multiple pixels to one profile if you need to track events across multiple ad accounts simultaneously.</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </TabsContent>
-                            </ScrollArea>
-                        </Tabs>
-                    ) : (
-                        <ScrollArea className="flex-1 bg-slate-50/50 [&>div>div]:!block">
-                            <div className="p-6 space-y-4">
-                                {view === 'list' ? (
-                                    <div className="animate-in fade-in duration-300 space-y-4">
-                                        {/* List View */}
-                                        {profiles.length === 0 && (
-                                            <div className="flex flex-col items-center justify-center py-12 text-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50">
-                                                <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center mb-3">
-                                                    <span className="text-2xl grayscale opacity-50">♾️</span>
-                                                </div>
-                                                <h3 className="text-sm font-semibold text-slate-900">No profiles yet</h3>
-                                                <p className="text-xs text-slate-500 mt-1 max-w-[200px]">Create a profile to group your Meta Pixels.</p>
-                                                <Button
-                                                    className="mt-4 bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-100 h-9 text-xs rounded-full px-4 font-medium transition-all hover:scale-105"
-                                                    onClick={() => {
-                                                        setSheetMode('add');
-                                                        setAddTab('setup');
-                                                        startAddProfile();
-                                                    }}
-                                                >
-                                                    Create Profile
-                                                </Button>
-                                            </div>
-                                        )}
+                                        <div className="space-y-4">
+                                            {pixelList.map((pixel, index) => (
+                                                <div key={index} className="space-y-4 p-5 bg-slate-50 rounded-xl border border-slate-200 relative group animate-in slide-in-from-top-2 fade-in duration-200">
+                                                    {pixelList.length > 1 && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="absolute top-3 right-3 h-7 w-7 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md"
+                                                            onClick={() => handleRemovePixelRow(index)}
+                                                        >
+                                                            <Trash2 size={14} />
+                                                        </Button>
+                                                    )}
 
-                                        <div className="space-y-3">
-                                            {profiles.map((profile) => (
-                                                <div
-                                                    key={profile.id}
-                                                    className="group bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md hover:border-blue-200 transition-all cursor-pointer relative overflow-hidden"
-                                                    onClick={() => startEditProfile(profile)}
-                                                >
-                                                    <div className="absolute inset-y-0 left-0 w-1 bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-lg shadow-inner">
-                                                                ♾️
+                                                    <div className="space-y-2 w-full md:w-3/4">
+                                                        <Label className="text-xs font-semibold text-slate-700">Identifiant du Pixel (Pixel ID)</Label>
+                                                        <Input
+                                                            placeholder="1234567890"
+                                                            className="bg-white font-mono h-10 border-slate-200"
+                                                            value={pixel.pixelId}
+                                                            onChange={(e) => {
+                                                                const digits = e.target.value.replace(/\D/g, '');
+                                                                updatePixelRow(index, 'pixelId', digits);
+                                                            }}
+                                                        />
+                                                    </div>
+
+                                                    <div className="flex items-center justify-between py-2 border-t border-slate-100 mt-2 pt-4">
+                                                        <Label className="text-xs font-bold text-slate-700 cursor-pointer" onClick={() => updatePixelRow(index, 'showAdvanced', !pixel.showAdvanced)}>
+                                                            Options Avancées (CAPI / Test Code)
+                                                        </Label>
+                                                        <Switch
+                                                            checked={pixel.showAdvanced}
+                                                            onCheckedChange={(c) => updatePixelRow(index, 'showAdvanced', c)}
+                                                            className="data-[state=checked]:bg-blue-600"
+                                                        />
+                                                    </div>
+
+                                                    {pixel.showAdvanced && (
+                                                        <div className="space-y-4 pt-4 border-t border-slate-200 animate-in slide-in-from-top-2 fade-in duration-200">
+                                                            <div className="space-y-2">
+                                                                <Label className="text-xs font-semibold text-slate-700">CAPI Token (Optionnel)</Label>
+                                                                <Input
+                                                                    placeholder="EAAB..."
+                                                                    type="password"
+                                                                    className="bg-white font-mono h-10 border-slate-200 text-xs"
+                                                                    value={pixel.capiToken}
+                                                                    onChange={(e) => updatePixelRow(index, 'capiToken', e.target.value)}
+                                                                />
                                                             </div>
-                                                            <div>
-                                                                <div className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                                                                    {profile.name}
-                                                                </div>
-                                                                <div className="text-xs text-slate-500 font-mono mt-0.5">
-                                                                    {profile.pixels?.length || 0} Pixel{(profile.pixels?.length || 0) !== 1 ? 's' : ''} Configured
+                                                            <div className="space-y-2">
+                                                                <Label className="text-xs font-semibold text-slate-700">Code de test des évènements (Optionnel)</Label>
+                                                                <Input
+                                                                    placeholder="TEST12345"
+                                                                    className="bg-white font-mono h-10 border-slate-200 text-xs uppercase"
+                                                                    value={pixel.testCode}
+                                                                    onChange={(e) => updatePixelRow(index, 'testCode', e.target.value.toUpperCase())}
+                                                                />
+                                                                <div className="bg-amber-50 text-amber-800 text-[11px] p-3 rounded-lg border border-amber-200 flex items-start gap-2 mt-2">
+                                                                    <span className="text-base leading-none">⚠️</span>
+                                                                    <span>N'oubliez pas de supprimer ce code après vos tests, sinon les événements de production ne seront pas pris en compte.</span>
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 group-hover:text-blue-600 transition-colors">
-                                                            <ChevronRight size={16} />
-                                                        </Button>
-                                                    </div>
+                                                    )}
                                                 </div>
                                             ))}
                                         </div>
                                     </div>
-                                ) : (
-                                    /* Edit Form View (Inside Manage Tab) */
-                                    <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-5 animate-in slide-in-from-right-8 fade-in duration-300">
-                                        <div className="space-y-4">
-                                            <div className="space-y-2">
-                                                <Label className="text-xs font-semibold text-slate-700">Profile Name</Label>
-                                                <Input
-                                                    placeholder="e.g. Main Store Pixels"
-                                                    className="bg-white h-10 border-slate-200"
-                                                    value={profileName}
-                                                    onChange={(e) => setProfileName(e.target.value)}
-                                                />
-                                            </div>
-
-                                            <Separator />
-
-                                            <div className="space-y-3">
-                                                <div className="flex items-center justify-between">
-                                                    <Label className="text-xs font-semibold text-slate-700">Pixels</Label>
-                                                    <Button variant="ghost" size="sm" onClick={handleAddPixelRow} className="h-6 text-[10px] text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-2">
-                                                        <Plus size={12} className="mr-1" /> Add Another Pixel
-                                                    </Button>
-                                                </div>
-
-                                                <div className="space-y-4">
-                                                    {pixelList.map((pixel, index) => (
-                                                        <div key={index} className="space-y-3 p-3 bg-slate-50 rounded-lg border border-slate-100 relative group">
-                                                            {pixelList.length > 1 && (
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    className="absolute top-2 right-2 h-6 w-6 text-slate-400 hover:text-red-500 hover:bg-red-50"
-                                                                    onClick={() => handleRemovePixelRow(index)}
-                                                                >
-                                                                    <Trash2 size={12} />
-                                                                </Button>
-                                                            )}
-
-                                                            <div className="space-y-2">
-                                                                <Label className="text-[10px] font-semibold text-slate-500 uppercase">Pixel ID</Label>
-                                                                <Input
-                                                                    placeholder="1234567890"
-                                                                    className="bg-white font-mono h-9 border-slate-200 text-xs"
-                                                                    value={pixel.pixelId}
-                                                                    onChange={(e) => {
-                                                                        const digits = e.target.value.replace(/\D/g, '');
-                                                                        updatePixelRow(index, 'pixelId', digits);
-                                                                    }}
-                                                                />
-                                                            </div>
-
-                                                            <div className="flex items-center justify-between pt-1">
-                                                                <Label className="text-[10px] text-slate-500 flex items-center gap-1.5 cursor-pointer" onClick={() => updatePixelRow(index, 'showAdvanced', !pixel.showAdvanced)}>
-                                                                    Enable CAPI / Test Code
-                                                                </Label>
-                                                                <Switch
-                                                                    checked={pixel.showAdvanced}
-                                                                    onCheckedChange={(c) => updatePixelRow(index, 'showAdvanced', c)}
-                                                                    className="scale-75 origin-right"
-                                                                />
-                                                            </div>
-
-                                                            {pixel.showAdvanced && (
-                                                                <div className="space-y-3 pt-2 animate-in slide-in-from-top-2 fade-in duration-200">
-                                                                    <div className="space-y-1.5">
-                                                                        <Label className="text-[10px] font-semibold text-slate-500 uppercase">CAPI Token (Optional)</Label>
-                                                                        <Input
-                                                                            placeholder="EAAB..."
-                                                                            type="password"
-                                                                            className="bg-white font-mono h-9 border-slate-200 text-xs"
-                                                                            value={pixel.capiToken}
-                                                                            onChange={(e) => updatePixelRow(index, 'capiToken', e.target.value)}
-                                                                        />
-                                                                    </div>
-                                                                    <div className="space-y-1.5">
-                                                                        <Label className="text-[10px] font-semibold text-slate-500 uppercase">Test Code (Optional)</Label>
-                                                                        <Input
-                                                                            placeholder="TEST12345"
-                                                                            className="bg-white font-mono h-9 border-slate-200 text-xs"
-                                                                            value={pixel.testCode}
-                                                                            onChange={(e) => updatePixelRow(index, 'testCode', e.target.value)}
-                                                                        />
-                                                                        <div className="bg-amber-50 text-amber-800 text-[10px] p-2 rounded border border-amber-100 flex items-start gap-1.5">
-                                                                            <span>⚠️</span>
-                                                                            <span>Remember to remove this code after testing, otherwise events will not be processed by Meta ads.</span>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex flex-col gap-3 pt-2">
-                                            <Button
-                                                className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-100 transition-all duration-200 h-11 text-sm font-medium rounded-xl mt-2"
-                                                onClick={handleSaveProfile}
-                                            >
-                                                Save Changes
-                                            </Button>
-
-                                            {editingProfileId && (
-                                                <Button
-                                                    variant="ghost"
-                                                    className="w-full text-red-500 hover:text-red-700 hover:bg-red-50 h-10 text-xs font-medium rounded-xl"
-                                                    onClick={() => handleDeleteProfile(editingProfileId)}
-                                                >
-                                                    Delete Profile
-                                                </Button>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
+                                </div>
                             </div>
-                        </ScrollArea>
+                        </div>
+
+
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // --- LIST VIEW ---
+    const headerActions = (
+        <Button
+            size="sm"
+            onClick={startAddProfile}
+            className="h-8 rounded-lg text-xs font-bold px-4 bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+        >
+            <Plus size={13} className="mr-1.5" />
+            Nouveau Profil Pixel
+        </Button>
+    );
+
+    return (
+        <div className="flex-1 flex flex-col h-full bg-slate-50/50">
+            <div className="bg-white border-b border-slate-200 shrink-0 sticky top-0 z-30">
+                <PageHeader
+                    title="Meta Pixel & CAPI"
+                    breadcrumbs={[
+                        { label: 'Intégrations', href: '/integrations', onClick: onBack },
+                        { label: 'Meta Pixel', href: '#' }
+                    ]}
+                    count={profiles.length}
+                    icon={MetaIcon}
+                    onBack={onBack}
+                    actions={headerActions}
+                />
+            </div>
+
+            <div className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">
+                <div className="max-w-[1600px] mx-auto w-full">
+                    {profiles.length === 0 ? (
+                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-16 text-center">
+                            <div className="w-16 h-16 rounded-2xl bg-[#E8F0FE] text-blue-600 flex items-center justify-center mx-auto mb-4 border border-[#D2E3FC]">
+                                <MetaIcon />
+                            </div>
+                            <h3 className="text-base font-bold text-slate-700 mb-1">Aucun profil Meta Pixel configuré</h3>
+                            <p className="text-sm text-slate-500 mb-6 max-w-sm mx-auto">
+                                Créez un profil pour regrouper et gérer vos Pixels Facebook (Meta) et l'API Conversions.
+                            </p>
+                            <Button
+                                onClick={startAddProfile}
+                                className="h-10 rounded-xl text-sm font-bold px-6 bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-100"
+                            >
+                                <Plus size={16} className="mr-2" /> Créer le premier profil
+                            </Button>
+                        </div>
+                    ) : (
+                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-b border-slate-200">
+                                        <TableHead className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider py-3 pl-5">Nom du Profil</TableHead>
+                                        <TableHead className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider py-3">Pixels Configurés</TableHead>
+                                        <TableHead className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider py-3 pr-5 w-[60px]"></TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {profiles.map((profile) => (
+                                        <TableRow
+                                            key={profile.id}
+                                            className="group cursor-pointer hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-b-0"
+                                            onClick={() => startEditProfile(profile)}
+                                        >
+                                            <TableCell className="py-3.5 pl-5">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-blue-50 ring-1 ring-blue-100">
+                                                        <div className="w-4 h-4 text-[#1877F2]">
+                                                            <MetaIcon />
+                                                        </div>
+                                                    </div>
+                                                    <span className="text-sm font-semibold text-slate-900">{profile.name}</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="py-3.5">
+                                                <div className="flex flex-col gap-1 items-start">
+                                                    <Badge variant="secondary" className="bg-slate-100 text-slate-600 hover:bg-slate-200 border-slate-200 font-semibold shadow-none">
+                                                        {profile.pixels?.length || 0} Pixel{(profile.pixels?.length || 0) !== 1 ? 's' : ''}
+                                                    </Badge>
+                                                    {profile.pixels && profile.pixels.length > 0 && (
+                                                        <span className="text-xs text-slate-400 font-mono">
+                                                            ID principal: {profile.pixels[0].pixelId}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="py-3.5 pr-5 text-right">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-8 w-8 rounded-md opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-slate-900 hover:bg-slate-100"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        >
+                                                            <MoreHorizontal size={16} />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end" className="w-44">
+                                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); startEditProfile(profile); }}>
+                                                            <Pencil size={13} className="mr-2" /> Modifier
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuSeparator />
+                                                        <DropdownMenuItem
+                                                            className="text-red-600 focus:text-red-700 focus:bg-red-50"
+                                                            onClick={(e) => handleDeleteProfile(profile.id, e)}
+                                                        >
+                                                            <Trash2 size={13} className="mr-2" /> Supprimer
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
                     )}
-                </SheetContent>
-            </Sheet>
+                </div>
+            </div>
         </div>
     );
 }

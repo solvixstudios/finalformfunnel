@@ -26,6 +26,7 @@ import { getExportData, loadFormWithValidation, normalizeImportedConfig, validat
 import { useI18n } from '../lib/i18n/i18nContext';
 import { useFormStore } from '../stores';
 import { BuilderProvider } from '../components/FormTab/contexts/BuilderContext';
+import { useHeaderActions } from '../contexts/HeaderActionsContext';
 
 interface EditFormPageProps {
   userId: string;
@@ -61,6 +62,7 @@ const EditFormPage = ({ userId }: EditFormPageProps) => {
   const saveSuccessAction = useFormStore((state) => state.saveSuccess);
   const saveFailure = useFormStore((state) => state.saveFailure);
   const canSave = useFormStore((state) => state.canSave());
+  const { setOnSaveBeforeLeave } = useHeaderActions();
   const [showLoadModal, setShowLoadModal] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -496,6 +498,12 @@ const EditFormPage = ({ userId }: EditFormPageProps) => {
     }
   }, [formName, formDescription, formId, updateForm, saveForm, exportDataMemoized, setFormName, setFormId, markClean, isNameDuplicate, t, navigate, isSaving, startSaving, saveSuccessAction, saveFailure, assignments, stores, assignForm, deleteAssignment]);
 
+  // Register save callback for the unsaved changes dialog in DashboardLayout
+  useEffect(() => {
+    setOnSaveBeforeLeave(() => handleSaveForm());
+    return () => setOnSaveBeforeLeave(null);
+  }, [handleSaveForm, setOnSaveBeforeLeave]);
+
 
 
 
@@ -572,8 +580,11 @@ const EditFormPage = ({ userId }: EditFormPageProps) => {
 
         </div>
       )}
-      {/* Publish Toggle */}
-      <div className="flex items-center gap-2 mr-2">
+      {/* Publish Toggle Switch */}
+      <div className={`flex items-center gap-2 ${!formId ? 'opacity-30 pointer-events-none' : ''}`}>
+        <span className={`text-[10px] font-bold uppercase tracking-wider transition-colors ${formStatus === 'published' ? 'text-emerald-600' : 'text-slate-400'}`}>
+          {formStatus === 'published' ? 'Live' : 'Draft'}
+        </span>
         <button
           onClick={() => {
             const newStatus = formStatus === 'published' ? 'draft' : 'published';
@@ -585,14 +596,10 @@ const EditFormPage = ({ userId }: EditFormPageProps) => {
             }
           }}
           disabled={!formId}
-          className={`relative flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm ${formStatus === 'published'
-            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
-            : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50'
-            } ${!formId ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+          className={`relative w-9 h-5 rounded-full transition-colors ${formStatus === 'published' ? 'bg-emerald-500' : 'bg-slate-200'}`}
           title={formId ? (formStatus === 'published' ? 'Click to unpublish' : 'Click to publish') : 'Save form first'}
         >
-          <div className={`w-2 h-2 rounded-full ${formStatus === 'published' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
-          {formStatus === 'published' ? 'Live' : 'Draft'}
+          <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform shadow-sm ${formStatus === 'published' ? 'translate-x-4' : ''}`} />
         </button>
       </div>
     </div>
@@ -675,19 +682,10 @@ const EditFormPage = ({ userId }: EditFormPageProps) => {
     }
   };
 
-  // 1. Form Name (Root Builder Home) - now the first item since back button handles navigation
+  // 1. Form Name (Root Builder Home) - single click to edit, consistent with rules pages
   breadcrumbs.push({
     label: formName,
-    editable: true, // Always allow edit mode access 
-    doubleClickToEdit: true, // REQUIRE double click to edit
-    // Single click behavior:
-    onClick: (e) => {
-      // If we are deep, single click goes back to root.
-      if (editingSection) {
-        setEditingSection(null);
-      }
-      // If at root, single click does nothing (waiting for double click to edit)
-    },
+    editable: true,
     onEdit: (value: string) => {
       setFormName(value);
     },

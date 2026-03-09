@@ -51,11 +51,6 @@ const EDITORS_MAP: Record<string, React.FC<unknown>> = {
     shopify: ShopifyEditor,
     woocommerce: ComingSoonEditor,
     webhook: ComingSoonEditor,
-    maystro: ComingSoonEditor,
-    zr_delivery: ComingSoonEditor,
-    yalidine: ComingSoonEditor,
-    anderson: ComingSoonEditor,
-    ecommanager: ComingSoonEditor,
 };
 
 // Shared editor content component
@@ -168,7 +163,7 @@ export const BuilderEditor = ({
 }: BuilderEditorProps) => {
     return (
         <div className="w-full lg:w-[480px] shrink-0 h-full bg-[#F8F5F1] flex flex-col relative overflow-hidden border-r border-slate-200 shadow-xl z-20">
-            <div className="flex-1 overflow-y-auto custom-scroll w-full">
+            <div className="flex-1 overflow-y-auto custom-scroll scroll-smooth w-full">
                 <div className="p-5 sm:p-6 lg:p-8 w-full">
                     <EditorContent
                         formConfig={formConfig}

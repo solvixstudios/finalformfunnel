@@ -1,10 +1,8 @@
 import { FileSpreadsheet, Check, Plus, Unlink, ChevronRight } from "lucide-react";
-import { useSearchParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { auth } from "../../../lib/firebase";
 import { useGoogleSheets } from "../../../lib/firebase/sheetsHooks";
 import { useFormStore } from "../../../stores";
-import { GoogleSheetsIntegration } from "../../integrations/GoogleSheetsIntegration";
-import { Button } from "@/components/ui/button";
 
 
 export const GoogleSheetsEditor = () => {
@@ -14,16 +12,6 @@ export const GoogleSheetsEditor = () => {
 
     const { sheets, loading: sheetsLoading } = useGoogleSheets(userId);
     const selectedSheetIds: string[] = formConfig.addons?.selectedSheetIds || [];
-    const [, setSearchParams] = useSearchParams();
-
-    const openIntegration = () => {
-        setSearchParams(prev => {
-            const next = new URLSearchParams(prev);
-            next.set('open', 'google-sheets');
-            next.set('sheetId', 'new');
-            return next;
-        });
-    };
 
     const linkSheet = (sheetId: string) => {
         const updated = [...selectedSheetIds, sheetId];
@@ -84,13 +72,13 @@ export const GoogleSheetsEditor = () => {
                             <p className="text-[10px] text-slate-400 mb-4 leading-relaxed">
                                 Connect a Google Sheet to log orders automatically.
                             </p>
-                            <Button
-                                onClick={openIntegration}
-                                className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md h-9 rounded-xl px-5 text-xs font-bold transition-all active:scale-95"
+                            <Link
+                                to="/dashboard/integrations?open=google-sheets&sheetId=new"
+                                className="inline-flex items-center justify-center bg-emerald-600 hover:bg-emerald-700 text-white shadow-md h-9 rounded-xl px-5 text-xs font-bold transition-all active:scale-95"
                             >
                                 <Plus size={14} className="mr-1.5" />
                                 Connect Sheet
-                            </Button>
+                            </Link>
                         </div>
                     ) : (
                         <div className="space-y-2">
@@ -138,16 +126,14 @@ export const GoogleSheetsEditor = () => {
                             ))}
 
                             <div className="pt-1 border-t border-slate-100 mt-1">
-                                <button onClick={openIntegration} className="w-full flex items-center justify-center gap-1.5 p-2 rounded-lg text-[10px] font-bold text-slate-400 hover:text-emerald-600 transition-colors cursor-pointer">
+                                <Link to="/integrations?open=google-sheets" className="w-full flex items-center justify-center gap-1.5 p-2 rounded-lg text-[10px] font-bold text-slate-400 hover:text-emerald-600 transition-colors cursor-pointer">
                                     <Plus size={10} /> Connect New Sheet
-                                </button>
+                                </Link>
                             </div>
                         </div>
                     )}
                 </div>
             </div>
-
-            <GoogleSheetsIntegration userId={userId} hideTrigger={true} />
         </div>
     );
 };

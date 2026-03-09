@@ -28,6 +28,7 @@ const FormConfigAPI = lazy(() => import("./pages/api/FormConfigAPI"));
 const OffersPage = lazy(() => import("./pages/rules/OffersPage"));
 const ShippingPage = lazy(() => import("./pages/rules/ShippingPage"));
 const CouponsPage = lazy(() => import("./pages/rules/CouponsPage"));
+const IntegrationsPage = lazy(() => import("./pages/IntegrationsPage"));
 
 // Loading component
 const LoadingSpinner = () => (
@@ -153,7 +154,7 @@ const AppContent = () => {
                       />
                       <Route
                         path="integrations"
-                        element={<Navigate to="/dashboard/forms" replace />}
+                        element={<IntegrationsPage userId={user.id} />}
                       />
 
                       <Route

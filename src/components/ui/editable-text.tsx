@@ -1,5 +1,6 @@
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { Pencil } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 
 interface EditableTextProps {
@@ -78,12 +79,13 @@ export const EditableText: React.FC<EditableTextProps> = ({
             onClick={handleClick}
             onDoubleClick={handleDoubleClick}
             className={cn(
-                "cursor-text hover:text-indigo-600 transition-colors truncate max-w-[200px] lg:max-w-[300px] px-1 -ml-1 rounded hover:bg-slate-100/50 block",
+                "cursor-text hover:text-indigo-600 transition-colors truncate max-w-[200px] lg:max-w-[300px] px-1 -ml-1 rounded hover:bg-slate-100/50 inline-flex items-center gap-1.5 group",
                 className
             )}
             title="Click to edit"
         >
             {value || placeholder}
+            <Pencil size={11} className="text-slate-300 group-hover:text-indigo-400 opacity-0 group-hover:opacity-100 transition-all shrink-0" />
         </span>
     );
 };

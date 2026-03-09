@@ -5,11 +5,6 @@ import { Sparkles } from "lucide-react";
 export const COMING_SOON_INTEGRATIONS: Record<string, { name: string, emoji: string, description: string }> = {
     woocommerce: { name: 'WooCommerce', emoji: '📦', description: 'Connect directly to your WooCommerce store.' },
     webhook: { name: 'Webhook', emoji: '⚡', description: 'Send data to any URL or Zapier/Make flow.' },
-    maystro: { name: 'Maystro Delivery', emoji: '🚚', description: 'Automate tracking and delivery with Maystro.' },
-    zr_delivery: { name: 'ZR Delivery', emoji: '🚛', description: 'Ship your orders easily with ZR Delivery.' },
-    yalidine: { name: 'Yalidine', emoji: '📮', description: 'Seamless integration with Yalidine Express.' },
-    anderson: { name: 'Anderson', emoji: '📦', description: 'Anderson logistics integration.' },
-    ecommanager: { name: 'Ecommanager', emoji: '💼', description: 'Connect with Ecommanager CRM.' },
 };
 
 export const ComingSoonEditor = () => {

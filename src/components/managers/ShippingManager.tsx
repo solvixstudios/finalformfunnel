@@ -13,6 +13,8 @@ import {
 import React, { useCallback, useMemo } from 'react';
 import { WILAYAS } from '../../lib/constants';
 import { CollapsibleSection } from '../FormTab/components/CollapsibleSection';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faChevronDown } from '@fortawesome/free-solid-svg-icons';
 
 // Types
 export interface ShippingException {
@@ -76,9 +78,7 @@ const ExceptionRow: React.FC<ExceptionRowProps> = React.memo(({
                         ))}
                     </select>
                     <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                        <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
+                        <FontAwesomeIcon icon={faChevronDown} className="w-3.5 h-3.5 text-slate-400" />
                     </div>
                 </div>
 

@@ -2,6 +2,7 @@
 // Extracted for separation of concerns and reusability
 
 import {
+    DollarSign,
     GripVertical,
     Hash,
     Package,
@@ -41,6 +42,7 @@ export interface Offer {
     _type: 'perc' | 'fixed';
     _idManuallyEdited?: boolean;
     _internalId?: string;
+    basePrice?: number;
     title: { fr: string; ar: string };
     desc: { fr: string; ar: string };
     sticker?: OfferSticker;
@@ -49,12 +51,15 @@ export interface Offer {
 interface PacksManagerProps {
     offers: Offer[];
     onOffersChange: (offers: Offer[]) => void;
+    pricingMode?: 'product' | 'individual';
+    onPricingModeChange?: (mode: 'product' | 'individual') => void;
 }
 
 interface OfferCardProps {
     offer: Offer;
     index: number;
     isSlugDuplicate: boolean;
+    showBasePrice: boolean;
     onUpdate: (index: number, updates: Partial<Offer>) => void;
     onTitleChange: (index: number, val: string, lang: 'fr' | 'ar') => void;
     onUpdateNested: (index: number, field: 'title' | 'desc', lang: 'fr' | 'ar', value: string) => void;
@@ -66,8 +71,9 @@ const OfferCard: React.FC<OfferCardProps> = React.memo(({
     offer,
     index,
     isSlugDuplicate,
+    showBasePrice,
     onUpdate,
-    onTitleChange, // New prop
+    onTitleChange,
     onUpdateNested,
     onRemove,
 }) => {
@@ -94,6 +100,10 @@ const OfferCard: React.FC<OfferCardProps> = React.memo(({
     const handleTypeToggle = useCallback(() => {
         onUpdate(index, { _type: isPerc ? 'fixed' : 'perc' });
     }, [index, isPerc, onUpdate]);
+
+    const handleBasePriceChange = useCallback((val: string) => {
+        onUpdate(index, { basePrice: parseFloat(val) || 0 });
+    }, [index, onUpdate]);
 
     const handleStickerToggle = useCallback(() => {
         const newEnabled = !offer.sticker?.enabled;
@@ -238,6 +248,24 @@ const OfferCard: React.FC<OfferCardProps> = React.memo(({
                                 </div>
                             </div>
 
+                            {/* Base Price (per offer) */}
+                            {showBasePrice && (
+                                <div className="col-span-3 space-y-1.5">
+                                    <label className="text-[9px] font-bold text-slate-500 uppercase">Prix unitaire (DA)</label>
+                                    <div className="relative">
+                                        <DollarSign size={10} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            className="w-full bg-white border border-slate-200 rounded-lg pl-7 pr-2 py-2.5 text-xs font-black text-emerald-600 outline-none focus:border-indigo-400 shadow-sm transition-all"
+                                            value={offer.basePrice || 0}
+                                            onChange={(e) => handleBasePriceChange(e.target.value)}
+                                            placeholder="0"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Quantity */}
                             <div className="space-y-1.5">
                                 <label className="text-[9px] font-bold text-slate-500 uppercase">Quantité</label>
@@ -349,7 +377,7 @@ const OfferCard: React.FC<OfferCardProps> = React.memo(({
 OfferCard.displayName = 'OfferCard';
 
 // Main PacksManager Component
-const PacksManager: React.FC<PacksManagerProps> = ({ offers, onOffersChange }) => {
+const PacksManager: React.FC<PacksManagerProps> = ({ offers, onOffersChange, pricingMode = 'product', onPricingModeChange }) => {
 
     // Check for duplicate slugs
     const getDuplicateSlugs = useMemo(() => {
@@ -446,14 +474,14 @@ const PacksManager: React.FC<PacksManagerProps> = ({ offers, onOffersChange }) =
                 offer={offer}
                 index={idx}
                 isSlugDuplicate={getDuplicateSlugs.has(offer.id)}
+                showBasePrice={pricingMode === 'individual'}
                 onUpdate={updateOffer}
-                onTitleChange={handleTitleChange} // Pass new handler
+                onTitleChange={handleTitleChange}
                 onUpdateNested={updateNestedField}
                 onRemove={removeOffer}
-
             />
         ))
-    ), [offers, getDuplicateSlugs, updateOffer, updateNestedField, removeOffer, handleTitleChange]);
+    ), [offers, getDuplicateSlugs, updateOffer, updateNestedField, removeOffer, handleTitleChange, pricingMode]);
 
     return (
         <div className="space-y-6">
@@ -469,6 +497,36 @@ const PacksManager: React.FC<PacksManagerProps> = ({ offers, onOffersChange }) =
                     <Plus size={14} strokeWidth={3} /> Nouveau Pack
                 </button>
             </div>
+
+            {/* Pricing Mode Toggle */}
+            {onPricingModeChange && (
+                <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                    <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2">Mode de tarification</div>
+                    <div className="relative bg-slate-200/60 rounded-lg p-1 flex">
+                        <div
+                            className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-md bg-white shadow-sm transition-all duration-200 ${pricingMode === 'individual' ? 'left-[calc(50%+2px)]' : 'left-1'}`}
+                        />
+                        <button
+                            onClick={() => onPricingModeChange('product')}
+                            className={`flex-1 text-[10px] font-bold z-10 py-1.5 rounded-md transition-colors ${pricingMode === 'product' ? 'text-slate-800' : 'text-slate-400'}`}
+                        >
+                            Prix produit
+                        </button>
+                        <button
+                            onClick={() => onPricingModeChange('individual')}
+                            className={`flex-1 text-[10px] font-bold z-10 py-1.5 rounded-md transition-colors ${pricingMode === 'individual' ? 'text-slate-800' : 'text-slate-400'}`}
+                        >
+                            Prix individuel
+                        </button>
+                    </div>
+                    <p className="text-[9px] text-slate-400 mt-1.5">
+                        {pricingMode === 'product'
+                            ? 'Le prix de base du produit sera appliqué à toutes les offres.'
+                            : 'Chaque offre aura son propre prix unitaire.'
+                        }
+                    </p>
+                </div>
+            )}
 
             {/* Offers List */}
             <div className="space-y-4">

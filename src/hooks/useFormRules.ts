@@ -8,6 +8,7 @@ import { db } from '../lib/firebase';
 export interface RuleMetadata {
     id: string;
     name: string;
+    labels?: string[];
     createdAt: number;
     updatedAt: number;
 }

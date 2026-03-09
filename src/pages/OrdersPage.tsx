@@ -2,8 +2,11 @@ import { useOrders } from '@/hooks/useOrders';
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
     Search, Filter, ShoppingCart, DollarSign, X, ChevronDown, TrendingUp,
-    Calendar, MapPin, Download, ArrowUpDown, ArrowUp, ArrowDown, CheckSquare, FileText
+    Calendar, MapPin, Download, ArrowUpDown, ArrowUp, ArrowDown, CheckSquare, FileText, Truck, Send
 } from 'lucide-react';
+import { toast } from 'sonner';
+import { useDeliveryProfiles } from '../lib/firebase/deliveryHooks';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { useHeaderActions } from '../contexts/HeaderActionsContext';
 import { Input } from '@/components/ui/input';
@@ -40,10 +43,13 @@ type DateRange = 'all' | 'today' | '7d' | '30d' | 'custom';
 
 export default function OrdersPage({ userId }: OrdersPageProps) {
     const { orders, loading, error, updateOrderStatus } = useOrders(userId);
+    const { profiles: devProfiles } = useDeliveryProfiles(userId);
+    const activeDevProfiles = devProfiles.filter(p => p.isActive);
     const navigate = useNavigate();
     const user = getStoredUser();
 
     // Filters
+    const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [dateRange, setDateRange] = useState<string>('all');
@@ -136,6 +142,7 @@ export default function OrdersPage({ userId }: OrdersPageProps) {
         setCustomDateFrom('');
         setCustomDateTo('');
         setCalendarRange(undefined);
+        setSelectedOrders([]);
     };
 
     // Filtering
@@ -259,16 +266,59 @@ export default function OrdersPage({ userId }: OrdersPageProps) {
         URL.revokeObjectURL(url);
     }, [filteredOrders]);
 
+    const toggleOrderSelection = (id: string) => {
+        setSelectedOrders(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+    };
+
+    const toggleAllSelection = () => {
+        if (selectedOrders.length === filteredOrders.length) {
+            setSelectedOrders([]);
+        } else {
+            setSelectedOrders(filteredOrders.map(o => o.id));
+        }
+    };
+
+    const handleDispatch = (profileId: string) => {
+        const profile = devProfiles.find(p => p.id === profileId);
+        if (!profile) return;
+        toast.success(`Dispatched ${selectedOrders.length} orders to ${profile.name}!`);
+        setSelectedOrders([]);
+    };
+
     const headerActions = (
-        <Button
-            size="sm"
-            onClick={exportCSV}
-            className="h-8 rounded-lg text-xs font-semibold px-4 bg-slate-900 hover:bg-slate-800 text-white shadow-sm gap-1.5"
-            disabled={filteredOrders.length === 0}
-        >
-            <Download size={14} className="opacity-80" />
-            Export CSV
-        </Button>
+        <div className="flex items-center gap-2">
+            {selectedOrders.length > 0 && activeDevProfiles.length > 0 && (
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button
+                            size="sm"
+                            className="h-8 rounded-lg text-xs font-semibold px-4 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm gap-1.5"
+                        >
+                            <Truck size={14} className="opacity-80" />
+                            Dispatch ({selectedOrders.length})
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-md">
+                        <DropdownMenuLabel className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Select Partner</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {activeDevProfiles.map(p => (
+                            <DropdownMenuItem key={p.id} onClick={() => handleDispatch(p.id)} className="cursor-pointer">
+                                <Send size={14} className="mr-2 text-indigo-500" /> {p.name}
+                            </DropdownMenuItem>
+                        ))}
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            )}
+            <Button
+                size="sm"
+                onClick={exportCSV}
+                className="h-8 rounded-lg text-xs font-semibold px-4 bg-slate-900 hover:bg-slate-800 text-white shadow-sm gap-1.5"
+                disabled={filteredOrders.length === 0}
+            >
+                <Download size={14} className="opacity-80" />
+                Export CSV
+            </Button>
+        </div>
     );
 
     if (loading) {
@@ -640,6 +690,12 @@ export default function OrdersPage({ userId }: OrdersPageProps) {
                             <table className="w-full text-left border-collapse min-w-[800px]">
                                 <thead className="sticky top-0 z-10">
                                     <tr className="bg-slate-50/50 border-b border-slate-200">
+                                        <th className="py-3 px-4 w-10 text-center">
+                                            <Checkbox
+                                                checked={filteredOrders.length > 0 && selectedOrders.length === filteredOrders.length}
+                                                onCheckedChange={toggleAllSelection}
+                                            />
+                                        </th>
                                         <th className="py-3 px-6 text-[10px] font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">Order ID</th>
                                         <th className="py-3 px-6 text-[10px] font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap cursor-pointer select-none hover:text-slate-900 transition-colors" onClick={() => toggleSort('date')}>
                                             <span className="inline-flex items-center gap-1">Date <SortIcon field="date" /></span>
@@ -659,6 +715,12 @@ export default function OrdersPage({ userId }: OrdersPageProps) {
                                 <tbody className="divide-y divide-slate-100">
                                     {filteredOrders.map((order, idx) => (
                                         <tr key={order.id} className="hover:bg-slate-50 transition-colors group border-b border-slate-100 last:border-b-0">
+                                            <td className="py-3.5 px-4 align-top w-10 text-center">
+                                                <Checkbox
+                                                    checked={selectedOrders.includes(order.id)}
+                                                    onCheckedChange={() => toggleOrderSelection(order.id)}
+                                                />
+                                            </td>
                                             <td className="py-3.5 px-6 align-top">
                                                 <div className="font-mono text-[11px] font-semibold text-slate-600 bg-slate-100/70 px-2 py-1 rounded-md inline-block border border-slate-200">
                                                     {order.orderId ? order.orderId.replace('ORD-', '') : order.id.slice(0, 8)}
