@@ -286,11 +286,12 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
                                     </div>
                                 </div>
                             </div>
-                        )}
                         </div>
+                    )}
+                </div>
             </div>
-            </div>
-            );
+        </div>
+    );
 };
 
-            export default SettingsPage;
+export default SettingsPage;
