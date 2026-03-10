@@ -32,8 +32,20 @@ function updateLoaderVersionInFile(filePath, newVersion) {
 try {
   const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
   const versionParts = pkg.version.split(".").map(Number);
-  // Bump patch
-  versionParts[2] += 1;
+
+  // Smart Bump Logic
+  if (versionParts[2] < 9) {
+    versionParts[2] += 1; // Increment patch
+  } else {
+    versionParts[2] = 0; // Reset patch
+    if (versionParts[1] < 9) {
+      versionParts[1] += 1; // Increment minor
+    } else {
+      versionParts[1] = 0; // Reset minor
+      versionParts[0] += 1; // Increment major
+    }
+  }
+
   const newVersion = versionParts.join(".");
 
   pkg.version = newVersion;

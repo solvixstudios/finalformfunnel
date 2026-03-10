@@ -196,6 +196,8 @@ const AppContent = () => {
   );
 };
 
+import { ChangelogModal } from "./components/ChangelogModal";
+
 const App = () => {
   return (
     <I18nProvider>
@@ -204,6 +206,7 @@ const App = () => {
           <BrowserRouter>
             <Toaster />
             <Sonner position="bottom-right" />
+            <ChangelogModal />
             <AppContent />
           </BrowserRouter>
         </TooltipProvider>

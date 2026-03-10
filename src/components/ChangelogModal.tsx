@@ -1,0 +1,91 @@
+import React from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { PartyPopper, Rocket, ShieldCheck, Sparkles, Wrench } from 'lucide-react';
+import { useChangelog } from '@/hooks/useChangelog';
+
+export function ChangelogModal() {
+    const { showChangelog, dismissChangelog, currentVersion } = useChangelog();
+
+    // In a real app, this could be fetched from a markdown file or backend API. 
+    // We'll hardcode the latest release notes here for v1.x.
+    const releaseNotes = [
+        {
+            version: "1.1.0",
+            date: "11 Mars 2026",
+            title: "Mise à jour majeure du Loader !",
+            features: [
+                {
+                    icon: <Rocket className="w-4 h-4 text-indigo-500" />,
+                    title: "Auto-synchronisation des versions",
+                    desc: "Votre application est maintenant synchronisée. Le tag de script Shopify est mis à jour automatiquement."
+                },
+                {
+                    icon: <ShieldCheck className="w-4 h-4 text-emerald-500" />,
+                    title: "Correction des Webhooks 404",
+                    desc: "Les commandes sont maintenant soumises correctement vers vos boutiques via notre API mise à jour."
+                },
+                {
+                    icon: <Wrench className="w-4 h-4 text-amber-500" />,
+                    title: "Mise à jour des règles de livraison",
+                    desc: "Les tarifs de livraison en direct se synchronisent enfin parfaitement entre la prévisualisation et la vraie boutique !"
+                }
+            ]
+        },
+        // You can add more historical notes down here
+    ];
+
+    // Get the most recent notes, or fallback
+    const latestNotes = releaseNotes[0];
+
+    return (
+        <Dialog open={showChangelog} onOpenChange={(open) => !open && dismissChangelog()}>
+            <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden bg-white gap-0 rounded-2xl border-0 shadow-2xl">
+                <div className="bg-gradient-to-br from-indigo-500 via-indigo-600 to-purple-700 p-8 text-center relative overflow-hidden">
+                    <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay"></div>
+                    <div className="relative z-10">
+                        <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/20 shadow-inner">
+                            <PartyPopper className="w-8 h-8 text-white" />
+                        </div>
+                        <DialogTitle className="text-2xl font-bold text-white mb-2">
+                            Quoi de neuf ? (v{currentVersion})
+                        </DialogTitle>
+                        <DialogDescription className="text-indigo-100 font-medium">
+                            {latestNotes?.title || 'Découvrez les dernières améliorations de Final Form.'}
+                        </DialogDescription>
+                    </div>
+                </div>
+
+                <div className="p-6">
+                    <ScrollArea className="h-[280px] pr-4 custom-scroll">
+                        <div className="space-y-6">
+                            {latestNotes?.features.map((feature, idx) => (
+                                <div key={idx} className="flex gap-4">
+                                    <div className="w-10 h-10 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0 shadow-sm mt-0.5">
+                                        {feature.icon}
+                                    </div>
+                                    <div>
+                                        <h4 className="text-sm font-bold text-slate-900 mb-1">{feature.title}</h4>
+                                        <p className="text-xs text-slate-500 leading-relaxed">
+                                            {feature.desc}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </ScrollArea>
+                </div>
+
+                <DialogFooter className="p-6 pt-0 border-t border-slate-100">
+                    <Button
+                        onClick={dismissChangelog}
+                        className="w-full h-11 bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-lg shadow-slate-200 font-semibold"
+                    >
+                        Super, fermer
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
