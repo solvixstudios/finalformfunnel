@@ -16,7 +16,7 @@ import type {
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://your-backend-instance.com';
 const WEBHOOK_ENV = import.meta.env.VITE_WEBHOOK_ENV || 'webhook';
 
-export const LOADER_VERSION = '1.1.0';
+export const LOADER_VERSION = '1.2.176';
 
 // Configuration
 const REQUEST_TIMEOUT_MS = 15000; // 15 second timeout
@@ -176,9 +176,16 @@ export class ShopifyAdapter implements PlatformAdapter {
 
   async disconnectStore(subdomain: string, credentials?: PlatformCredentials, userId?: string): Promise<void> {
     const shopDomain = `${subdomain}.myshopify.com`;
-    // Disconnect is handled by the frontend deleting the store from Firestore.
-    // We don't need to call the backend here, since the loader will 404 naturally when the store is gone.
-    console.log(`[Shopify Adapter] Disconnecting store ${shopDomain}`);
+    if (credentials?.clientId && credentials?.clientSecret) {
+      try {
+        await this.disableLoader(subdomain, credentials, userId);
+        console.log(`[Shopify Adapter] Successfully disabled loader config for ${shopDomain} during disconnect`);
+      } catch (err) {
+        console.warn(`[Shopify Adapter] Could not disable loader during disconnect for ${shopDomain}:`, err);
+      }
+    } else {
+      console.log(`[Shopify Adapter] Disconnecting store ${shopDomain}`);
+    }
   }
 
   async assignForm(
@@ -235,7 +242,7 @@ export class ShopifyAdapter implements PlatformAdapter {
   }
 
   async submitOrder(orderData: OrderData): Promise<unknown> {
-    const response = await fetch(`${BACKEND_URL}/${WEBHOOK_ENV}/submit-order`, {
+    const response = await fetch(`${BACKEND_URL}/${WEBHOOK_ENV}/shopify/submit-order`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(orderData),

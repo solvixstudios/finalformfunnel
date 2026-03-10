@@ -137,12 +137,14 @@ export const DEFAULT_FORM_CONFIG = {
 
   // Embedded offers (empty by default — user must assign an offers rule)
   offers: [] as typeof DEFAULT_OFFERS,
+  offerRuleId: null as string | null,
 
   // Embedded shipping (free by default — user must assign a shipping rule)
   shipping: {
     standard: { home: 0, desk: 0 },
     exceptions: [] as { id: string; home: number; desk: number }[],
   },
+  shippingRuleId: null as string | null,
 
   // Stickers
   stickers: {
@@ -218,6 +220,7 @@ export const DEFAULT_FORM_CONFIG = {
       isActive: boolean;
     }[],
   },
+  couponRuleId: null as string | null,
 
   // Trust Badges
   trustBadgeStyle: "cards" as

@@ -350,6 +350,20 @@ export function ShopifyIntegration({ userId, onBack }: ShopifyIntegrationProps) 
         if (confirm('Voulez-vous vraiment déconnecter cette boutique ? Toutes les configurations liées seront perdues.')) {
             setProcessingStoreId(storeId);
             try {
+                const store = shopifyStores.find(s => s.id === storeId);
+                if (store) {
+                    const shopifyAdapter = getAdapter('shopify');
+                    const cleanDomain = store.url.replace('.myshopify.com', '').replace(/https?:\/\//, '').trim();
+                    try {
+                        await shopifyAdapter.disconnectStore(cleanDomain, {
+                            clientId: store.clientId,
+                            clientSecret: store.clientSecret
+                        }, userId);
+                    } catch (err) {
+                        console.warn('Failed to disconnect store explicitly', err);
+                    }
+                }
+
                 await deleteStore(storeId);
                 toast.success('Boutique déconnectée avec succès.');
             } catch (error: any) {
@@ -585,9 +599,29 @@ export function ShopifyIntegration({ userId, onBack }: ShopifyIntegrationProps) 
                                             <TableCell className="py-4">
                                                 <div className="flex items-center gap-3">
                                                     {store.loaderInstalled ? (
-                                                        <Badge variant="secondary" className="bg-green-50 text-green-700 hover:bg-green-100 border-green-200 font-semibold gap-1">
-                                                            <Check size={12} /> Installé (v{store.loaderVersion || '?'})
-                                                        </Badge>
+                                                        <>
+                                                            {store.loaderVersion === CURRENT_LOADER_VERSION ? (
+                                                                <Badge variant="secondary" className="bg-green-50 text-green-700 hover:bg-green-100 border-green-200 font-semibold gap-1">
+                                                                    <Check size={12} /> Installé (v{store.loaderVersion})
+                                                                </Badge>
+                                                            ) : (
+                                                                <div className="flex items-center gap-2">
+                                                                    <Badge variant="secondary" className="bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-200 font-semibold gap-1">
+                                                                        Ancienne version (v{store.loaderVersion || '?'})
+                                                                    </Badge>
+                                                                    <Button
+                                                                        size="sm"
+                                                                        variant="outline"
+                                                                        className="h-7 text-[10px] px-3 font-semibold rounded-md border-indigo-200 text-indigo-700 hover:bg-indigo-50 shadow-sm whitespace-nowrap"
+                                                                        onClick={() => handleEnableLoader(store)}
+                                                                        disabled={processingStoreId === store.id}
+                                                                    >
+                                                                        {processingStoreId === store.id ? <Loader2 size={12} className="animate-spin mr-1" /> : <RotateCw size={12} className="mr-1" />}
+                                                                        Mettre à jour (v{CURRENT_LOADER_VERSION})
+                                                                    </Button>
+                                                                </div>
+                                                            )}
+                                                        </>
                                                     ) : (
                                                         <Badge variant="secondary" className="bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-200 font-semibold gap-1">
                                                             Non installé
@@ -598,7 +632,7 @@ export function ShopifyIntegration({ userId, onBack }: ShopifyIntegrationProps) 
                                                         <Button
                                                             size="sm"
                                                             variant="outline"
-                                                            className="h-7 text-[10px] px-3 font-semibold rounded-md border-slate-200 hover:bg-slate-50 shadow-sm"
+                                                            className="h-7 text-[10px] px-3 font-semibold rounded-md border-slate-200 hover:bg-slate-50 shadow-sm whitespace-nowrap"
                                                             onClick={() => handleEnableLoader(store)}
                                                             disabled={processingStoreId === store.id}
                                                         >

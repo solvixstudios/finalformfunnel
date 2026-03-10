@@ -125,10 +125,13 @@ export const getExportData = (
     ctaStickyVariant: formConfig.ctaStickyVariant,
     // Offers
     offers: exportOffers,
+    offerRuleId: formConfig.offerRuleId || null,
     // Shipping
     shipping: exportShipping,
+    shippingRuleId: formConfig.shippingRuleId || null,
     // Promo Code
     promoCode: formConfig.promoCode,
+    couponRuleId: formConfig.couponRuleId || null,
     // Trust Badges
     trustBadgeStyle: formConfig.trustBadgeStyle,
     trustBadges: formConfig.trustBadges,
