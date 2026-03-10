@@ -45,7 +45,8 @@ export async function connect(req: Request, res: Response) {
         console.error('Failed to get script tags:', e?.response?.data || e.message);
     }
 
-    const loaderTag = shopifyApi.findLoaderTag(scriptTags);
+    const loaderTags = shopifyApi.findAllLoaderTags(scriptTags);
+    const loaderTag = loaderTags.length > 0 ? loaderTags[0] : undefined;
     const loaderInstalled = !!loaderTag;
     const loaderVersion = shopifyApi.parseLoaderVersion(loaderTag);
 
