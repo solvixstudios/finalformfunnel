@@ -12,9 +12,10 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { cn } from '@/lib/utils';
-import { Camera, Save, Trash2, User as UserIcon } from 'lucide-react';
+import { Camera, Save, Trash2, User as UserIcon, Copy } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { toast } from 'sonner';
 import { GoogleUser } from '../lib/authGoogle';
 import { useI18n } from '../lib/i18n/i18nContext';
 import { Language } from '../lib/i18n/translations';
@@ -72,6 +73,9 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
 
     const handleSave = () => {
         console.log('Saved settings:', { displayName, photoUrl, language });
+        toast.success('Paramètres enregistrés', {
+            description: "Vos modifications ont été sauvegardées avec succès."
+        });
     };
 
     const handleAvatarClick = () => {
@@ -91,6 +95,14 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
+    const handleCopyId = () => {
+        navigator.clipboard.writeText(user.id);
+        toast.success("Copié !", {
+            description: "Identifiant copié dans le presse-papiers.",
+            duration: 2000
+        });
+    };
+
     const headerActions = (
         <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" className="text-[#908878] hover:text-[#4A443A] hover:bg-[#E6E0D3]/50">
@@ -104,7 +116,7 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
     );
 
     return (
-        <div className="w-full h-full flex flex-col font-sans">
+        <div className="flex flex-col font-sans w-full pb-12">
             <PageHeader
                 title="Paramètres"
                 breadcrumbs={[{ label: 'Paramètres' }]}
@@ -145,10 +157,22 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
                             );
                         })}
 
-                        {/* App Version Info */}
-                        <div className="hidden md:block mt-4 pt-4 border-t border-[#DDD7C8] px-2 pb-1">
-                            <p className="text-[9px] font-bold text-[#A69D8A] uppercase tracking-[0.12em] mb-1">Version</p>
-                            <p className="text-xs font-mono font-semibold text-[#4A443A] truncate">v{appVersion}</p>
+                        {/* App & User Info Sidebar Additions */}
+                        <div className="hidden md:flex flex-col gap-4 mt-4 pt-4 border-t border-[#DDD7C8] px-2 text-left">
+                            <div>
+                                <p className="text-[9px] font-bold text-[#A69D8A] uppercase tracking-[0.12em] mb-1">Version APP</p>
+                                <p className="text-xs font-mono font-semibold text-[#4A443A] truncate">v{appVersion}</p>
+                            </div>
+
+                            <div className="group cursor-pointer" onClick={handleCopyId}>
+                                <p className="text-[9px] font-bold text-[#A69D8A] uppercase tracking-[0.12em] mb-1 flex items-center justify-between">
+                                    Identifiant ID
+                                    <Copy size={10} className="text-[#A69D8A] opacity-0 group-hover:opacity-100 transition-opacity" />
+                                </p>
+                                <p className="text-[10px] font-mono font-semibold text-[#A69D8A] truncate w-full group-hover:text-[#FF5A1F] transition-colors" title={user.id}>
+                                    {user.id}
+                                </p>
+                            </div>
                         </div>
                     </nav>
                 </aside>
@@ -160,10 +184,6 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
                     {activeTab === 'profile' && (
                         <div className="space-y-6 animate-fade-in">
                             <Card className="rounded-xl border-[#E2DCCF] shadow-sm bg-white overflow-hidden">
-                                <CardHeader className="bg-[#FAF9F6] border-b border-[#E2DCCF] pb-4">
-                                    <CardTitle className="text-lg text-[#4A443A]">Profil Public</CardTitle>
-                                    <CardDescription className="text-[#908878]">Gérez votre identité et vos informations de contact principal.</CardDescription>
-                                </CardHeader>
                                 <CardContent className="space-y-8 pt-6">
 
                                     {/* Avatar Upload */}
@@ -225,26 +245,6 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
                                     </div>
                                 </CardContent>
                             </Card>
-
-                            <Card className="rounded-xl border-[#E2DCCF] shadow-sm bg-white overflow-hidden">
-                                <CardHeader className="bg-[#FAF9F6] border-b border-[#E2DCCF] pb-4">
-                                    <CardTitle className="text-lg text-[#4A443A]">Sécurité du Compte</CardTitle>
-                                    <CardDescription className="text-[#908878]">Informations d'identification interne.</CardDescription>
-                                </CardHeader>
-                                <CardContent className="pt-6">
-                                    <div className="flex flex-col gap-2">
-                                        <label className="text-sm font-semibold text-[#4A443A]">Votre ID Final Form</label>
-                                        <div className="flex items-center gap-3">
-                                            <Input
-                                                value={user.id}
-                                                readOnly
-                                                className="max-w-md font-mono text-[#908878] bg-[#FAF9F6] border-[#E2DCCF]"
-                                            />
-                                            <Button variant="outline" className="border-[#E2DCCF] text-[#4A443A] hover:bg-[#EFEBE0]" onClick={() => navigator.clipboard.writeText(user.id)}>Copier</Button>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
                         </div>
                     )}
 
@@ -252,13 +252,10 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
                     {activeTab === 'language' && (
                         <div className="space-y-6 animate-fade-in">
                             <Card className="rounded-xl border-[#E2DCCF] shadow-sm bg-white overflow-hidden">
-                                <CardHeader className="bg-[#FAF9F6] border-b border-[#E2DCCF] pb-4">
-                                    <CardTitle className="text-lg text-[#4A443A]">Préférences Régionales</CardTitle>
-                                    <CardDescription className="text-[#908878]">Personnalisez la langue et les formats d'affichage pour votre tableau de bord.</CardDescription>
-                                </CardHeader>
                                 <CardContent className="pt-6">
                                     <div className="grid gap-2">
-                                        <label className="text-sm font-semibold text-[#4A443A]">Langue de l'interface</label>
+                                        <label className="text-sm font-semibold text-[#4A443A]">Langue Globale</label>
+                                        <p className="text-xs text-[#908878] mb-2">Modifiez la langue de tous les menus de votre compte.</p>
                                         <div className="max-w-md">
                                             <Select value={language} onValueChange={(val) => setLanguage(val as Language)}>
                                                 <SelectTrigger className="border-[#E2DCCF] focus:ring-[#FF5A1F]">
@@ -273,7 +270,6 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
                                                 </SelectContent>
                                             </Select>
                                         </div>
-                                        <p className="text-xs text-[#908878] mt-1">La modification s'applique immédiatement à tous les menus.</p>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -314,7 +310,7 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
                                     <Table>
                                         <TableHeader className="bg-[#FAF9F6]">
                                             <TableRow className="border-[#E2DCCF] hover:bg-transparent">
-                                                <TableHead className="font-semibold text-[#908878]">N° Transaction</TableHead>
+                                                <TableHead className="font-semibold text-[#908878] pl-6">N° Transaction</TableHead>
                                                 <TableHead className="font-semibold text-[#908878]">Forfait</TableHead>
                                                 <TableHead className="font-semibold text-[#908878]">Période</TableHead>
                                                 <TableHead className="font-semibold text-[#908878]">Montant</TableHead>
@@ -324,7 +320,7 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
                                         <TableBody>
                                             {transactions.map((trx, idx) => (
                                                 <TableRow key={trx.id} className={cn("border-[#E2DCCF]", idx % 2 === 0 ? "bg-white" : "bg-[#FAF9F6]/50")}>
-                                                    <TableCell className="font-mono text-xs text-[#908878] pl-4">{trx.id}</TableCell>
+                                                    <TableCell className="font-mono text-xs text-[#908878] pl-6">{trx.id}</TableCell>
                                                     <TableCell className="font-semibold text-[#4A443A]">{trx.plan}</TableCell>
                                                     <TableCell className="text-[#908878] text-xs">
                                                         {trx.start} <br /> {trx.end}
