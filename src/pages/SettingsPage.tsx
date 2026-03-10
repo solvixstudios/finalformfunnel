@@ -1,5 +1,9 @@
+import { PageHeader } from '@/components/GlobalHeader/PageHeader';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { Trash2, Upload } from 'lucide-react';
+import { Save, Trash2, Upload } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { GoogleUser } from '../lib/authGoogle';
@@ -21,6 +25,10 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
     const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab);
     const { setLanguage, language } = useI18n();
     const appVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.0';
+
+    // Form state (simulated)
+    const [displayName, setDisplayName] = useState(user.displayName || '');
+    const [email, setEmail] = useState(user.email || '');
 
     useEffect(() => {
         const tab = searchParams.get('tab') as SettingsTab;
@@ -46,15 +54,34 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
         setSearchParams({ tab });
     };
 
-    return (
-        <div className="max-w-6xl mx-auto w-full h-full flex flex-col pt-8 pb-24 px-4 sm:px-8">
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight mb-8">Paramètres</h1>
+    const handleSave = () => {
+        // Mock save logic
+        console.log('Saved settings:', { displayName, email, language });
+    };
 
-            <div className="flex flex-col md:flex-row gap-8 lg:gap-16 flex-1">
+    const headerActions = (
+        <div className="flex items-center gap-3">
+            <Button variant="outline">Annuler</Button>
+            <Button onClick={handleSave} className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white">
+                <Save size={16} />
+                Enregistrer
+            </Button>
+        </div>
+    );
+
+    return (
+        <div className="max-w-[1200px] mx-auto w-full flex flex-col px-4 sm:px-8 pb-12">
+            <PageHeader
+                title="Paramètres"
+                breadcrumbs={[{ label: 'Paramètres' }]}
+                actions={headerActions}
+            />
+
+            <div className="flex flex-col md:flex-row gap-8 lg:gap-12 flex-1 mt-6">
 
                 {/* Minimalist Sidebar */}
-                <div className="w-full md:w-64 shrink-0 flex flex-col">
-                    <div className="flex flex-row md:flex-col gap-1 overflow-x-auto md:overflow-visible custom-scroll pb-2 md:pb-0">
+                <div className="w-full md:w-64 shrink-0 flex flex-col sticky top-20 h-max">
+                    <div className="flex flex-row md:flex-col gap-1 overflow-x-auto md:overflow-visible pb-2 md:pb-0">
                         {tabs.map((tab) => {
                             const isActive = activeTab === tab.id;
                             return (
@@ -64,8 +91,8 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
                                     className={cn(
                                         "flex items-center px-4 py-2.5 rounded-xl transition-colors text-left text-sm font-semibold whitespace-nowrap",
                                         isActive
-                                            ? "bg-indigo-50 text-indigo-700"
-                                            : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                                            ? "bg-slate-900 text-white shadow-sm"
+                                            : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                                     )}
                                 >
                                     {tab.label}
@@ -81,84 +108,77 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
                     </div>
                 </div>
 
-                {/* List-Based Main Content Area */}
-                <div className="flex-1 max-w-3xl">
+                {/* Main Content Area - Form Styled */}
+                <div className="flex-1 max-w-2xl bg-white border border-slate-200 shadow-sm rounded-2xl h-max mb-12">
 
                     {/* Profile Tab */}
                     {activeTab === 'profile' && (
                         <div className="animate-in fade-in duration-300">
+                            <div className="p-6 md:p-8 border-b border-slate-100">
+                                <h2 className="text-lg font-bold text-slate-900 mb-1">Profil Public</h2>
+                                <p className="text-sm text-slate-500">Ces informations sont associées à votre session actuelle.</p>
+                            </div>
 
                             {/* Avatar Row */}
-                            <div className="flex items-center gap-6 pb-6 border-b border-slate-200">
+                            <div className="flex items-center gap-6 p-6 md:p-8 border-b border-slate-100">
                                 {user.photoURL ? (
                                     <img
                                         src={user.photoURL}
                                         alt={user.displayName}
-                                        className="w-16 h-16 rounded-full object-cover border border-slate-200"
+                                        className="w-20 h-20 rounded-full object-cover border border-slate-200"
                                     />
                                 ) : (
-                                    <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200 text-slate-400 font-bold text-xl">
+                                    <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200 text-slate-400 font-bold text-xl">
                                         {user.displayName?.charAt(0) || 'U'}
                                     </div>
                                 )}
-                                <div className="flex items-center gap-2">
-                                    <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+                                <div className="flex items-center gap-3">
+                                    <Button variant="outline" size="sm" className="gap-2">
                                         <Upload size={14} />
                                         Upload
-                                    </button>
-                                    <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-transparent text-sm font-medium text-red-600 hover:bg-red-50 transition-colors">
-                                        <Trash2 size={14} />
-                                    </button>
+                                    </Button>
+                                    <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-600 hover:bg-red-50 px-3">
+                                        <Trash2 size={16} />
+                                    </Button>
                                 </div>
                             </div>
 
-                            <div className="flex flex-col">
-                                <div className="py-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                    <div className="flex-1">
-                                        <p className="text-sm font-semibold text-slate-900">Nom d'affichage</p>
-                                        <p className="text-sm text-slate-500 mt-0.5">{user.displayName}</p>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-xs font-semibold rounded-md border border-slate-200">Google</span>
-                                        <button className="px-4 py-1.5 rounded-lg border border-slate-200 text-sm font-semibold hover:bg-slate-50 transition-colors">
-                                            Edit
-                                        </button>
-                                    </div>
+                            <div className="p-6 md:p-8 space-y-8">
+                                <div className="space-y-3">
+                                    <label className="text-sm font-semibold text-slate-900">Nom d'affichage</label>
+                                    <Input
+                                        type="text"
+                                        value={displayName}
+                                        onChange={(e) => setDisplayName(e.target.value)}
+                                        className="max-w-md"
+                                        disabled
+                                    />
+                                    <p className="text-xs text-slate-500">
+                                        Synchronisé via Google OAuth.
+                                    </p>
                                 </div>
 
-                                <div className="py-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                    <div className="flex-1">
-                                        <p className="text-sm font-semibold text-slate-900">Contact</p>
-                                        <p className="text-sm text-slate-500 mt-0.5 whitespace-pre-line">
-                                            Email: {user.email}
-                                        </p>
-                                    </div>
-                                    <button className="px-4 py-1.5 rounded-lg border border-slate-200 text-sm font-semibold hover:bg-slate-50 transition-colors">
-                                        Edit
-                                    </button>
+                                <div className="space-y-3 border-t border-slate-100 pt-8">
+                                    <label className="text-sm font-semibold text-slate-900">Adresse e-mail</label>
+                                    <Input
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        className="max-w-md"
+                                        disabled
+                                    />
                                 </div>
 
-                                <div className="py-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                    <div className="flex-1">
-                                        <p className="text-sm font-semibold text-slate-900">Identifiant Unique</p>
-                                        <p className="text-sm font-mono text-slate-500 mt-0.5">{user.id}</p>
-                                    </div>
-                                    <button className="px-4 py-1.5 rounded-lg border border-slate-200 text-sm font-semibold hover:bg-slate-50 transition-colors">
-                                        Copy
-                                    </button>
-                                </div>
-
-                                <div className="py-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                    <div className="flex-1">
-                                        <p className="text-sm font-semibold text-slate-900">Statut</p>
-                                        <div className="flex items-center gap-2 mt-0.5">
-                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-100/50 text-emerald-700">
-                                                Active
-                                            </span>
-                                            <span className="text-sm text-slate-500">
-                                                Membre depuis {new Date(user.createdAt).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
-                                            </span>
-                                        </div>
+                                <div className="space-y-3 border-t border-slate-100 pt-8">
+                                    <label className="text-sm font-semibold text-slate-900">Identifiant Unique</label>
+                                    <div className="flex items-center gap-3">
+                                        <Input
+                                            type="text"
+                                            value={user.id}
+                                            readOnly
+                                            className="max-w-md font-mono text-slate-500 bg-slate-50"
+                                        />
+                                        <Button variant="secondary">Copier</Button>
                                     </div>
                                 </div>
                             </div>
@@ -168,31 +188,46 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
                     {/* Language Tab */}
                     {activeTab === 'language' && (
                         <div className="animate-in fade-in duration-300">
-                            <div className="pb-6 border-b border-slate-200">
-                                <h2 className="text-lg font-bold text-slate-900">Paramètres régionaux</h2>
-                                <p className="text-sm text-slate-500 mt-1">Personnalisez la langue et les formats d'affichage.</p>
+                            <div className="p-6 md:p-8 border-b border-slate-100">
+                                <h2 className="text-lg font-bold text-slate-900 mb-1">Langue & Région</h2>
+                                <p className="text-sm text-slate-500">Personnalisez votre confort d'utilisation.</p>
                             </div>
 
-                            <div className="flex flex-col">
-                                {languages.map(lang => (
-                                    <div key={lang.code} className="py-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                        <div className="flex-1">
-                                            <p className="text-sm font-semibold text-slate-900">{lang.name}</p>
-                                            <p className="text-sm text-slate-500 mt-0.5 py-0.5">Locale: {lang.locale}</p>
-                                        </div>
-                                        <button
-                                            onClick={() => setLanguage(lang.code)}
-                                            className={cn(
-                                                "px-4 py-1.5 rounded-lg border text-sm font-semibold transition-colors",
-                                                language === lang.code
-                                                    ? "bg-slate-900 border-slate-900 text-white"
-                                                    : "border-slate-200 text-slate-700 hover:bg-slate-50"
-                                            )}
-                                        >
-                                            {language === lang.code ? 'Actuelle' : 'Choisir'}
-                                        </button>
+                            <div className="p-6 md:p-8 space-y-8">
+                                <div className="space-y-3">
+                                    <label className="text-sm font-semibold text-slate-900">Langue de l'interface</label>
+                                    <div className="max-w-[280px]">
+                                        <Select value={language} onValueChange={(val) => setLanguage(val as Language)}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Choisir une langue" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {languages.map(lang => (
+                                                    <SelectItem key={lang.code} value={lang.code}>
+                                                        {lang.name} - {lang.locale}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                     </div>
-                                ))}
+                                    <p className="text-xs text-slate-500">La langue de votre tableau de bord modifie immédiatement tous les textes affichés.</p>
+                                </div>
+
+                                <div className="space-y-3 border-t border-slate-100 pt-8">
+                                    <label className="text-sm font-semibold text-slate-900">Format d'heure et de Date</label>
+                                    <div className="max-w-[280px]">
+                                        <Select defaultValue="system">
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Format" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="system">Selon le système</SelectItem>
+                                                <SelectItem value="24h">24 Heures (14:00)</SelectItem>
+                                                <SelectItem value="12h">12 Heures (2:00 PM)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -200,68 +235,62 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
                     {/* Subscription Tab */}
                     {activeTab === 'subscription' && (
                         <div className="animate-in fade-in duration-300">
-                            <div className="pb-6 border-b border-slate-200">
-                                <h2 className="text-lg font-bold text-slate-900">Forfaits et paiements</h2>
-                                <p className="text-sm text-slate-500 mt-1">Gérez votre abonnement et vos informations de facturation.</p>
+                            <div className="p-6 md:p-8 border-b border-slate-100">
+                                <h2 className="text-lg font-bold text-slate-900 mb-1">Abonnement & Facturation</h2>
+                                <p className="text-sm text-slate-500">Gérez votre formule, observez vos limites et mettez à jour votre paiement.</p>
                             </div>
 
-                            <div className="flex flex-col">
-                                <div className="py-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                    <div className="flex-1">
-                                        <p className="text-sm font-semibold text-slate-900">Forfait Actuel</p>
-                                        <div className="flex items-center gap-2 mt-0.5 py-0.5">
-                                            <p className="text-sm text-slate-500">PRO Plan</p>
-                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-indigo-50 text-indigo-700">
-                                                Actif
-                                            </span>
+                            <div className="p-6 md:p-8">
+                                {/* Plan Card Minimal */}
+                                <div className="border border-indigo-100 bg-indigo-50/50 rounded-xl p-5 mb-8">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-lg font-bold text-slate-900 tracking-tight">PRO Plan</span>
+                                            <span className="px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-700 text-xs font-bold uppercase tracking-wider">Actif</span>
                                         </div>
+                                        <Button size="sm" variant="outline" className="bg-white">Modifier</Button>
                                     </div>
-                                    <button className="px-4 py-1.5 rounded-lg border border-slate-200 text-sm font-semibold hover:bg-slate-50 transition-colors">
-                                        Manage
-                                    </button>
+                                    <p className="text-sm text-slate-600">Renouvellement le 28 Février 2026 pour 49.00€</p>
                                 </div>
 
-                                <div className="py-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                    <div className="flex-1 max-w-sm">
-                                        <div className="flex justify-between items-center mb-1.5">
-                                            <p className="text-sm font-semibold text-slate-900">Limites de commandes</p>
-                                            <p className="text-xs font-semibold text-slate-500">824 / 1000</p>
+                                {/* Usage Limits */}
+                                <div className="space-y-4 mb-8">
+                                    <label className="text-sm font-semibold text-slate-900 block">Utilisation ce mois-ci</label>
+
+                                    <div>
+                                        <div className="flex justify-between items-end mb-2">
+                                            <span className="text-sm text-slate-600 font-medium">Commandes Totales</span>
+                                            <span className="text-sm font-mono text-slate-900 font-semibold">824 <span className="text-slate-400 font-normal">/ 1000</span></span>
                                         </div>
-                                        <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
-                                            <div className="h-full bg-emerald-500 rounded-full" style={{ width: '82%' }} />
+                                        <div className="w-full h-2.5 rounded-full bg-slate-100 overflow-hidden">
+                                            <div className="h-full bg-slate-900 rounded-full" style={{ width: '82%' }} />
                                         </div>
                                     </div>
-                                    <button className="px-4 py-1.5 rounded-lg border border-slate-200 text-sm font-semibold hover:bg-slate-50 transition-colors">
-                                        Upgrade
-                                    </button>
                                 </div>
 
-                                <div className="py-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                    <div className="flex-1">
-                                        <p className="text-sm font-semibold text-slate-900">Méthode de Paiement</p>
-                                        <p className="text-sm text-slate-500 mt-0.5 py-0.5">Carte se terminant par •••• 4242</p>
+                                <div className="space-y-6 border-t border-slate-100 pt-8">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                        <div>
+                                            <label className="text-sm font-semibold text-slate-900 block mb-1">Moyen de paiement</label>
+                                            <p className="text-sm text-slate-500">Mastercard se terminant par •••• 4242</p>
+                                        </div>
+                                        <Button variant="secondary" size="sm">Mettre à jour</Button>
                                     </div>
-                                    <button className="px-4 py-1.5 rounded-lg border border-slate-200 text-sm font-semibold hover:bg-slate-50 transition-colors">
-                                        Update
-                                    </button>
-                                </div>
 
-                                <div className="py-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                    <div className="flex-1">
-                                        <p className="text-sm font-semibold text-slate-900">Prochaine Facture</p>
-                                        <p className="text-sm text-slate-500 mt-0.5 py-0.5">Le renouvellement automatique aura lieu le 28 Février 2026</p>
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                        <div>
+                                            <label className="text-sm font-semibold text-slate-900 block mb-1">Factures</label>
+                                            <p className="text-sm text-slate-500">Téléchargez vos factures passées.</p>
+                                        </div>
+                                        <Button variant="secondary" size="sm">Historique</Button>
                                     </div>
-                                    <button className="px-4 py-1.5 rounded-lg border border-slate-200 text-sm font-semibold hover:bg-slate-50 transition-colors">
-                                        Cancel
-                                    </button>
                                 </div>
                             </div>
+                        )}
                         </div>
-                    )}
-                </div>
             </div>
-        </div>
-    );
+            </div>
+            );
 };
 
-export default SettingsPage;
+            export default SettingsPage;
