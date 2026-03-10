@@ -12,8 +12,8 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { cn } from '@/lib/utils';
-import { Camera, Save, Trash2 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { Camera, Save, Trash2, User as UserIcon } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { GoogleUser } from '../lib/authGoogle';
 import { useI18n } from '../lib/i18n/i18nContext';
@@ -61,8 +61,8 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
 
     // Mock Offline Transaction History
     const transactions = [
-        { id: 'TRX-9284', plan: 'PRO Plan', status: 'Actif', start: '2025-02-28', end: '2026-02-28', amount: '490.00 MAD' },
-        { id: 'TRX-4421', plan: 'STARTER Plan', status: 'Expiré', start: '2024-02-28', end: '2025-02-28', amount: '290.00 MAD' },
+        { id: 'TRX-9284', plan: 'PRO Plan', status: 'Actif', start: '2025-02-28', end: '2026-02-28', amount: '49.00 USD' },
+        { id: 'TRX-4421', plan: 'STARTER Plan', status: 'Expiré', start: '2024-02-28', end: '2025-02-28', amount: '29.00 USD' },
     ];
 
     const handleTabChange = (tab: SettingsTab) => {
@@ -81,7 +81,6 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            // Mock file upload by creating a local object URL
             const url = URL.createObjectURL(file);
             setPhotoUrl(url);
         }
@@ -93,9 +92,11 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
     };
 
     const headerActions = (
-        <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">Annuler</Button>
-            <Button onClick={handleSave} size="sm" className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white">
+        <div className="flex items-center gap-3">
+            <Button variant="ghost" size="sm" className="text-[#908878] hover:text-[#4A443A] hover:bg-[#E6E0D3]/50">
+                Annuler
+            </Button>
+            <Button onClick={handleSave} size="sm" className="gap-2 bg-[#FF5A1F] hover:bg-[#E04D1A] text-white rounded-md shadow-sm border-0 font-semibold">
                 <Save size={14} />
                 Enregistrer
             </Button>
@@ -103,18 +104,21 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
     );
 
     return (
-        <div className="max-w-6xl mx-auto w-full flex flex-col px-4 sm:px-6 lg:px-8 pb-12">
+        <div className="w-full h-full flex flex-col font-sans">
             <PageHeader
                 title="Paramètres"
                 breadcrumbs={[{ label: 'Paramètres' }]}
                 actions={headerActions}
             />
 
-            <div className="flex flex-col md:flex-row gap-8 flex-1 mt-6">
+            <div className="flex flex-col md:flex-row gap-6 lg:gap-8 flex-1 mt-6">
 
-                {/* Modern Sidebar */}
-                <aside className="w-full md:w-64 shrink-0">
-                    <nav className="flex flex-row md:flex-col gap-1 overflow-x-auto md:overflow-visible pb-2 md:pb-0 sticky top-20">
+                {/* Custom Styled Sidebar */}
+                <aside className="w-full md:w-[220px] shrink-0">
+                    <nav className="flex flex-row md:flex-col gap-1 w-full bg-[#EFEBE0] p-3 rounded-2xl border border-[#E2DCCF]">
+                        <h4 className="hidden md:block text-[9px] font-bold text-[#A69D8A] tracking-[0.12em] uppercase mb-2 px-2 pt-1">
+                            Navigation
+                        </h4>
                         {tabs.map((tab) => {
                             const isActive = activeTab === tab.id;
                             return (
@@ -122,16 +126,19 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
                                     key={tab.id}
                                     onClick={() => handleTabChange(tab.id)}
                                     className={cn(
-                                        "flex flex-col items-start px-4 py-3 rounded-lg transition-all text-left whitespace-nowrap min-w-[200px] md:min-w-0 md:w-full",
+                                        "group flex flex-col items-start px-3 py-2 text-[13px] font-semibold transition-all w-full relative text-left rounded-lg whitespace-nowrap overflow-hidden",
                                         isActive
-                                            ? "bg-slate-900 border border-slate-900 shadow-md"
-                                            : "bg-transparent border border-transparent hover:bg-slate-100/80"
+                                            ? "bg-[#E6E0D3] text-[#FF5A1F]"
+                                            : "text-[#908878] hover:bg-[#E6E0D3]/60 hover:text-[#FF5A1F]"
                                     )}
                                 >
-                                    <span className={cn("text-sm font-semibold", isActive ? "text-white" : "text-slate-900")}>
+                                    <span className={isActive ? "text-[#FF5A1F]" : "text-[#4A443A] group-hover:text-[#FF5A1F] transition-colors"}>
                                         {tab.label}
                                     </span>
-                                    <span className={cn("text-xs mt-0.5 hidden md:block", isActive ? "text-slate-300" : "text-slate-500")}>
+                                    <span className={cn(
+                                        "text-[10px] font-medium mt-0.5 hidden md:block truncate w-full transition-colors",
+                                        isActive ? "text-[#FF5A1F]/70" : "text-[#908878]"
+                                    )}>
                                         {tab.desc}
                                     </span>
                                 </button>
@@ -139,25 +146,25 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
                         })}
 
                         {/* App Version Info */}
-                        <div className="hidden md:block mt-8 p-4 bg-slate-50 rounded-lg border border-slate-100">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Version</p>
-                            <p className="text-sm font-mono font-semibold text-slate-700">v{appVersion}</p>
+                        <div className="hidden md:block mt-4 pt-4 border-t border-[#DDD7C8] px-2 pb-1">
+                            <p className="text-[9px] font-bold text-[#A69D8A] uppercase tracking-[0.12em] mb-1">Version</p>
+                            <p className="text-xs font-mono font-semibold text-[#4A443A] truncate">v{appVersion}</p>
                         </div>
                     </nav>
                 </aside>
 
                 {/* Main Content Area */}
-                <div className="flex-1 max-w-3xl">
+                <div className="flex-1 max-w-4xl min-w-0">
 
                     {/* Profile Tab */}
                     {activeTab === 'profile' && (
-                        <div className="space-y-6 animate-in fade-in duration-300">
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Profil Public</CardTitle>
-                                    <CardDescription>Gérez votre identité et vos informations de contact principal.</CardDescription>
+                        <div className="space-y-6 animate-fade-in">
+                            <Card className="rounded-xl border-[#E2DCCF] shadow-sm bg-white overflow-hidden">
+                                <CardHeader className="bg-[#FAF9F6] border-b border-[#E2DCCF] pb-4">
+                                    <CardTitle className="text-lg text-[#4A443A]">Profil Public</CardTitle>
+                                    <CardDescription className="text-[#908878]">Gérez votre identité et vos informations de contact principal.</CardDescription>
                                 </CardHeader>
-                                <CardContent className="space-y-8">
+                                <CardContent className="space-y-8 pt-6">
 
                                     {/* Avatar Upload */}
                                     <div className="flex items-center gap-6">
@@ -173,20 +180,20 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
                                                 <img
                                                     src={photoUrl}
                                                     alt={displayName}
-                                                    className="w-20 h-20 rounded-full object-cover border-2 border-slate-100 shadow-sm transition-opacity group-hover:opacity-80"
+                                                    className="w-20 h-20 rounded-2xl object-cover border border-[#E2DCCF] shadow-sm transition-opacity group-hover:opacity-80"
                                                 />
                                             ) : (
-                                                <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center border-2 border-slate-200 text-slate-400 font-bold text-xl group-hover:bg-slate-200 transition-colors">
-                                                    {displayName?.charAt(0) || 'U'}
+                                                <div className="w-20 h-20 rounded-2xl bg-[#EFEBE0] flex items-center justify-center border border-[#E2DCCF] text-[#A69D8A] font-bold text-xl group-hover:bg-[#E6E0D3] transition-colors">
+                                                    {displayName?.charAt(0) || <UserIcon size={24} />}
                                                 </div>
                                             )}
-                                            <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <div className="absolute inset-0 flex items-center justify-center bg-[#4A443A]/60 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <Camera className="text-white w-6 h-6" />
                                             </div>
                                         </div>
                                         <div className="space-y-1">
-                                            <h3 className="text-sm font-semibold text-slate-900">Photo de profil</h3>
-                                            <p className="text-xs text-slate-500 max-w-[200px]">Cliquez sur l'image pour uploader une nouvelle photo (JPG, PNG).</p>
+                                            <h3 className="text-sm font-semibold text-[#4A443A]">Photo de profil</h3>
+                                            <p className="text-xs text-[#908878] max-w-[200px]">Cliquez sur l'image pour uploader une nouvelle photo (JPG, PNG).</p>
                                         </div>
                                         {photoUrl !== user.photoURL && photoUrl !== '' && (
                                             <Button variant="ghost" size="icon" onClick={handleRemoveAvatar} className="ml-auto text-red-500 hover:text-red-700 hover:bg-red-50">
@@ -197,43 +204,43 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
 
                                     <div className="grid gap-6">
                                         <div className="grid gap-2">
-                                            <label className="text-sm font-semibold text-slate-900">Nom complet</label>
+                                            <label className="text-sm font-semibold text-[#4A443A]">Nom complet</label>
                                             <Input
                                                 value={displayName}
                                                 onChange={(e) => setDisplayName(e.target.value)}
-                                                className="max-w-md"
+                                                className="max-w-md border-[#E2DCCF] focus-visible:ring-[#FF5A1F]"
                                                 placeholder="John Doe"
                                             />
                                         </div>
                                         <div className="grid gap-2">
-                                            <label className="text-sm font-semibold text-slate-900">Adresse e-mail de connexion</label>
+                                            <label className="text-sm font-semibold text-[#4A443A]">Adresse e-mail de connexion</label>
                                             <Input
                                                 value={user.email || ''}
-                                                className="max-w-md bg-slate-50 text-slate-500 cursor-not-allowed"
+                                                className="max-w-md bg-[#FAF9F6] border-[#E2DCCF] text-[#908878] cursor-not-allowed"
                                                 disabled
                                                 readOnly
                                             />
-                                            <p className="text-xs text-slate-500">Votre email est géré par la connexion Google OAuth et ne peut être modifié ici.</p>
+                                            <p className="text-xs text-[#908878]">Votre email est géré par la connexion Google OAuth et ne peut être modifié ici.</p>
                                         </div>
                                     </div>
                                 </CardContent>
                             </Card>
 
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Sécurité du Compte</CardTitle>
-                                    <CardDescription>Informations d'identification interne.</CardDescription>
+                            <Card className="rounded-xl border-[#E2DCCF] shadow-sm bg-white overflow-hidden">
+                                <CardHeader className="bg-[#FAF9F6] border-b border-[#E2DCCF] pb-4">
+                                    <CardTitle className="text-lg text-[#4A443A]">Sécurité du Compte</CardTitle>
+                                    <CardDescription className="text-[#908878]">Informations d'identification interne.</CardDescription>
                                 </CardHeader>
-                                <CardContent>
+                                <CardContent className="pt-6">
                                     <div className="flex flex-col gap-2">
-                                        <label className="text-sm font-semibold text-slate-900">Votre ID Final Form</label>
+                                        <label className="text-sm font-semibold text-[#4A443A]">Votre ID Final Form</label>
                                         <div className="flex items-center gap-3">
                                             <Input
                                                 value={user.id}
                                                 readOnly
-                                                className="max-w-[280px] font-mono text-slate-500 bg-slate-50"
+                                                className="max-w-md font-mono text-[#908878] bg-[#FAF9F6] border-[#E2DCCF]"
                                             />
-                                            <Button variant="secondary" onClick={() => navigator.clipboard.writeText(user.id)}>Copier</Button>
+                                            <Button variant="outline" className="border-[#E2DCCF] text-[#4A443A] hover:bg-[#EFEBE0]" onClick={() => navigator.clipboard.writeText(user.id)}>Copier</Button>
                                         </div>
                                     </div>
                                 </CardContent>
@@ -243,28 +250,30 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
 
                     {/* Language Tab */}
                     {activeTab === 'language' && (
-                        <div className="space-y-6 animate-in fade-in duration-300">
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Préférences Régionales</CardTitle>
-                                    <CardDescription>Personnalisez la langue et les formats d'affichage pour votre tableau de bord.</CardDescription>
+                        <div className="space-y-6 animate-fade-in">
+                            <Card className="rounded-xl border-[#E2DCCF] shadow-sm bg-white overflow-hidden">
+                                <CardHeader className="bg-[#FAF9F6] border-b border-[#E2DCCF] pb-4">
+                                    <CardTitle className="text-lg text-[#4A443A]">Préférences Régionales</CardTitle>
+                                    <CardDescription className="text-[#908878]">Personnalisez la langue et les formats d'affichage pour votre tableau de bord.</CardDescription>
                                 </CardHeader>
-                                <CardContent className="space-y-6">
+                                <CardContent className="pt-6">
                                     <div className="grid gap-2">
-                                        <label className="text-sm font-semibold text-slate-900">Langue de l'interface</label>
-                                        <Select value={language} onValueChange={(val) => setLanguage(val as Language)}>
-                                            <SelectTrigger className="max-w-[280px]">
-                                                <SelectValue placeholder="Choisir une langue" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {languages.map(lang => (
-                                                    <SelectItem key={lang.code} value={lang.code}>
-                                                        {lang.name}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        <p className="text-xs text-slate-500 mt-1">La modification s'applique immédiatement à tous les menus.</p>
+                                        <label className="text-sm font-semibold text-[#4A443A]">Langue de l'interface</label>
+                                        <div className="max-w-md">
+                                            <Select value={language} onValueChange={(val) => setLanguage(val as Language)}>
+                                                <SelectTrigger className="border-[#E2DCCF] focus:ring-[#FF5A1F]">
+                                                    <SelectValue placeholder="Choisir une langue" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {languages.map(lang => (
+                                                        <SelectItem key={lang.code} value={lang.code}>
+                                                            {lang.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <p className="text-xs text-[#908878] mt-1">La modification s'applique immédiatement à tous les menus.</p>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -273,61 +282,60 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
 
                     {/* Subscription Tab Offline Payments */}
                     {activeTab === 'subscription' && (
-                        <div className="space-y-6 animate-in fade-in duration-300">
-                            <Card className="border-indigo-100 bg-indigo-50/20 shadow-none">
+                        <div className="space-y-6 animate-fade-in">
+                            <Card className="rounded-xl border-[#FF5A1F]/20 bg-[#FF5A1F]/5 shadow-none overflow-hidden">
                                 <CardHeader className="pb-4">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <CardTitle className="text-indigo-950">Abonnement Actuel</CardTitle>
-                                            <CardDescription className="text-indigo-900/60 mt-1">Votre accès premium à Final Form.</CardDescription>
+                                            <CardTitle className="text-lg text-[#FF5A1F]">Abonnement Actuel</CardTitle>
+                                            <CardDescription className="text-[#4A443A]/70 mt-1">Votre accès premium à Final Form.</CardDescription>
                                         </div>
-                                        <div className="px-3 py-1 rounded-full bg-emerald-100 border border-emerald-200 text-emerald-700 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                        <div className="px-3 py-1 rounded-full bg-[#FF5A1F] text-white text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-sm">
                                             Actif
                                         </div>
                                     </div>
                                 </CardHeader>
                                 <CardContent>
                                     <div className="flex items-baseline gap-2 mb-1">
-                                        <h2 className="text-3xl font-black text-slate-900">PRO Plan</h2>
+                                        <h2 className="text-3xl font-black text-[#4A443A] tracking-tight">PRO Plan</h2>
                                     </div>
-                                    <p className="text-sm font-medium text-slate-600">
-                                        Paiement hors ligne valide du <strong className="text-slate-900">28 Février 2025</strong> au <strong className="text-slate-900">28 Février 2026</strong>.
+                                    <p className="text-sm font-medium text-[#908878]">
+                                        Paiement hors ligne valide du <strong className="text-[#4A443A]">28 Février 2025</strong> au <strong className="text-[#4A443A]">28 Février 2026</strong>.
                                     </p>
                                 </CardContent>
                             </Card>
 
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Historique des Paiements</CardTitle>
-                                    <CardDescription>Consultez vos reçus et transactions traitées hors ligne par notre équipe.</CardDescription>
+                            <Card className="rounded-xl border-[#E2DCCF] shadow-sm bg-white overflow-hidden">
+                                <CardHeader className="bg-[#FAF9F6] border-b border-[#E2DCCF] pb-4">
+                                    <CardTitle className="text-lg text-[#4A443A]">Historique des Paiements</CardTitle>
+                                    <CardDescription className="text-[#908878]">Consultez vos reçus et transactions traitées hors ligne par notre équipe.</CardDescription>
                                 </CardHeader>
-                                <CardContent>
+                                <CardContent className="p-0">
                                     <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>N° Transaction</TableHead>
-                                                <TableHead>Forfait</TableHead>
-                                                <TableHead>Période</TableHead>
-                                                <TableHead>Montant</TableHead>
-                                                <TableHead className="text-right">Statut</TableHead>
+                                        <TableHeader className="bg-[#FAF9F6]">
+                                            <TableRow className="border-[#E2DCCF] hover:bg-transparent">
+                                                <TableHead className="font-semibold text-[#908878]">N° Transaction</TableHead>
+                                                <TableHead className="font-semibold text-[#908878]">Forfait</TableHead>
+                                                <TableHead className="font-semibold text-[#908878]">Période</TableHead>
+                                                <TableHead className="font-semibold text-[#908878]">Montant</TableHead>
+                                                <TableHead className="text-right font-semibold text-[#908878] pr-6">Statut</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {transactions.map((trx) => (
-                                                <TableRow key={trx.id}>
-                                                    <TableCell className="font-mono text-xs">{trx.id}</TableCell>
-                                                    <TableCell className="font-semibold text-slate-900">{trx.plan}</TableCell>
-                                                    <TableCell className="text-slate-500 text-xs">
+                                            {transactions.map((trx, idx) => (
+                                                <TableRow key={trx.id} className={cn("border-[#E2DCCF]", idx % 2 === 0 ? "bg-white" : "bg-[#FAF9F6]/50")}>
+                                                    <TableCell className="font-mono text-xs text-[#908878] pl-4">{trx.id}</TableCell>
+                                                    <TableCell className="font-semibold text-[#4A443A]">{trx.plan}</TableCell>
+                                                    <TableCell className="text-[#908878] text-xs">
                                                         {trx.start} <br /> {trx.end}
                                                     </TableCell>
-                                                    <TableCell className="font-semibold">{trx.amount}</TableCell>
-                                                    <TableCell className="text-right">
+                                                    <TableCell className="font-bold text-[#4A443A]">{trx.amount}</TableCell>
+                                                    <TableCell className="text-right pr-6">
                                                         <span className={cn(
                                                             "px-2 py-1 flex items-center justify-center max-w-[80px] ml-auto rounded-md text-[10px] font-bold uppercase tracking-wider",
                                                             trx.status === 'Actif'
-                                                                ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
-                                                                : "bg-slate-100 text-slate-600 border border-slate-200"
+                                                                ? "bg-[#E6E0D3] text-[#4A443A] border border-[#D9D1C3]"
+                                                                : "bg-transparent text-[#A69D8A] border border-[#E2DCCF]"
                                                         )}>
                                                             {trx.status}
                                                         </span>
