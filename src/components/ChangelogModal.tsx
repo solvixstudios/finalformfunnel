@@ -12,28 +12,27 @@ export function ChangelogModal() {
     // We'll hardcode the latest release notes here for v1.x.
     const releaseNotes = [
         {
-            version: "1.1.0",
-            date: "11 Mars 2026",
-            title: "Mise à jour majeure du Loader !",
+            version: "1.0.3",
+            date: "Aujourd'hui",
+            title: "Votre expérience, améliorée !",
             features: [
                 {
-                    icon: <Rocket className="w-4 h-4 text-indigo-500" />,
-                    title: "Auto-synchronisation des versions",
-                    desc: "Votre application est maintenant synchronisée. Le tag de script Shopify est mis à jour automatiquement."
+                    icon: <Rocket className="w-5 h-5 text-[#FF5A1F]" />,
+                    title: "Boutiques parfaitement synchronisées",
+                    desc: "La connexion à votre boutique Shopify est désormais plus fluide et plus intelligente. Les mises à jour se déploient en un éclair !"
                 },
                 {
-                    icon: <ShieldCheck className="w-4 h-4 text-emerald-500" />,
-                    title: "Correction des Webhooks 404",
-                    desc: "Les commandes sont maintenant soumises correctement vers vos boutiques via notre API mise à jour."
+                    icon: <ShieldCheck className="w-5 h-5 text-emerald-500" />,
+                    title: "Fiabilité des commandes",
+                    desc: "Nous avons renforcé notre système de traitement. Chaque commande passée atterrit dans votre tableau de bord sans accroc."
                 },
                 {
-                    icon: <Wrench className="w-4 h-4 text-amber-500" />,
-                    title: "Mise à jour des règles de livraison",
-                    desc: "Les tarifs de livraison en direct se synchronisent enfin parfaitement entre la prévisualisation et la vraie boutique !"
+                    icon: <Wrench className="w-5 h-5 text-indigo-500" />,
+                    title: "Livraison en direct",
+                    desc: "Vos clients verront toujours les frais de livraison parfaits en temps réel. Finies les mauvaises surprises !"
                 }
             ]
         },
-        // You can add more historical notes down here
     ];
 
     // Get the most recent notes, or fallback

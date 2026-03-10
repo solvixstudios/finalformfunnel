@@ -48,7 +48,7 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
     };
 
     return (
-        <div className="max-w-[1400px] mx-auto w-full space-y-8 h-full flex flex-col pt-2 md:pt-4 pb-24">
+        <div className="max-w-[1200px] mx-auto w-full space-y-6 h-full flex flex-col pt-2 md:pt-4 pb-24">
             <PageHeader
                 title="Paramètres"
                 breadcrumbs={[{ label: 'Paramètres' }]}
@@ -56,12 +56,12 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
             />
 
             {/* Premium Settings Layout */}
-            <div className="flex flex-col lg:flex-row gap-8 flex-1">
+            <div className="flex flex-col md:flex-row gap-6 flex-1">
 
                 {/* Sidebar Navigation */}
-                <div className="w-full lg:w-80 shrink-0 flex flex-col gap-6">
-                    <div className="bg-white/60 backdrop-blur-xl border border-white/80 rounded-3xl p-3 shadow-sm flex flex-col">
-                        <div className="flex flex-row lg:flex-col gap-2 overflow-x-auto lg:overflow-visible custom-scroll pb-2 lg:pb-0">
+                <div className="w-full md:w-64 shrink-0 flex flex-col gap-4">
+                    <div className="bg-white/80 backdrop-blur-md border border-slate-200 rounded-2xl p-2 shadow-sm flex flex-col">
+                        <div className="flex flex-row md:flex-col gap-1 overflow-x-auto md:overflow-visible custom-scroll pb-2 md:pb-0">
                             {tabs.map((tab) => {
                                 const isActive = activeTab === tab.id;
                                 return (
@@ -69,29 +69,25 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
                                         key={tab.id}
                                         onClick={() => handleTabChange(tab.id)}
                                         className={cn(
-                                            "flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all text-left relative overflow-hidden group min-w-[200px] lg:min-w-0 shrink-0",
+                                            "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-left relative group min-w-[160px] md:min-w-0 shrink-0",
                                             isActive
-                                                ? "bg-white shadow-[0_2px_10px_rgba(0,0,0,0.04)] border border-slate-100"
-                                                : "hover:bg-white/50 border border-transparent"
+                                                ? "bg-slate-900 shadow-md border border-slate-800"
+                                                : "hover:bg-slate-100 border border-transparent"
                                         )}
                                     >
-                                        {isActive && (
-                                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-indigo-600 rounded-r-full" />
-                                        )}
                                         <div className={cn(
-                                            "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors",
+                                            "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors",
                                             isActive
-                                                ? "bg-indigo-50 text-indigo-600"
-                                                : "bg-slate-50 text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600"
+                                                ? "bg-white/10 text-white"
+                                                : "bg-slate-200 text-slate-500 group-hover:bg-slate-300 group-hover:text-slate-700"
                                         )}>
                                             {tab.icon}
                                         </div>
                                         <div>
                                             <p className={cn(
-                                                "text-sm font-bold transition-colors",
-                                                isActive ? "text-slate-900" : "text-slate-600 group-hover:text-slate-900"
+                                                "text-sm font-semibold transition-colors",
+                                                isActive ? "text-white" : "text-slate-700 group-hover:text-slate-900"
                                             )}>{tab.label}</p>
-                                            <p className="text-xs text-slate-400 mt-0.5">{tab.description}</p>
                                         </div>
                                     </button>
                                 );
@@ -100,14 +96,10 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
                     </div>
 
                     {/* App Version Card */}
-                    <div className="mt-auto bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden hidden lg:block border border-slate-700">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/20 blur-3xl rounded-full" />
-                        <Shield className="w-8 h-8 text-indigo-400 mb-4" />
-                        <h4 className="text-sm font-bold mb-1">Final Form App</h4>
-                        <p className="text-xs text-slate-400 font-medium">Votre application est à jour.</p>
-                        <div className="mt-6 flex items-center justify-between">
-                            <span className="text-[10px] font-black tracking-widest uppercase text-slate-500">Version</span>
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-slate-800/50 border border-slate-700 text-xs font-mono font-bold text-slate-300">
+                    <div className="mt-auto bg-slate-50 rounded-2xl p-4 shadow-sm relative overflow-hidden hidden md:block border border-slate-200">
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><Shield size={14} className="text-[#FF5A1F]" /> App Version</span>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-white border border-slate-200 text-xs font-mono font-bold text-slate-700 shadow-sm">
                                 v{appVersion}
                             </span>
                         </div>
@@ -115,65 +107,64 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
                 </div>
 
                 {/* Main Content Area */}
-                <div className="flex-1 max-w-4xl">
-                    <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-10 min-h-[500px]">
+                <div className="flex-1 max-w-3xl">
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 min-h-[400px]">
 
                         {/* Profile Tab */}
                         {activeTab === 'profile' && (
-                            <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <div className="space-y-8 animate-in fade-in duration-300">
                                 <div>
-                                    <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">Profil Utilisateur</h2>
-                                    <p className="text-slate-500">Gérez vos informations personnelles et préférences de compte.</p>
+                                    <h2 className="text-xl font-bold text-slate-900 tracking-tight mb-1">Profil Utilisateur</h2>
+                                    <p className="text-sm text-slate-500">Gérez vos informations personnelles et préférences.</p>
                                 </div>
 
-                                <div className="flex flex-col sm:flex-row items-start gap-8 p-6 bg-slate-50/50 rounded-3xl border border-slate-100">
-                                    <div className="relative shrink-0 group">
-                                        <div className="absolute inset-0 bg-indigo-600/10 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+                                    <div className="relative shrink-0">
                                         {user.photoURL ? (
                                             <img
                                                 src={user.photoURL}
                                                 alt={user.displayName}
-                                                className="w-28 h-28 rounded-full object-cover border-4 border-white shadow-md relative z-10"
+                                                className="w-20 h-20 rounded-2xl object-cover border border-slate-200 shadow-sm"
                                             />
                                         ) : (
-                                            <div className="w-28 h-28 rounded-full bg-white flex items-center justify-center border-4 border-slate-50 shadow-md relative z-10">
-                                                <User size={40} className="text-slate-300" />
+                                            <div className="w-20 h-20 rounded-2xl bg-slate-50 flex items-center justify-center border border-slate-200 shadow-sm">
+                                                <User size={32} className="text-slate-300" />
                                             </div>
                                         )}
                                     </div>
 
-                                    <div className="flex-1 w-full space-y-6">
+                                    <div className="flex-1 w-full space-y-4">
                                         <div>
-                                            <label className="text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider block">Nom d'affichage</label>
-                                            <div className="flex items-center gap-2 px-5 py-4 rounded-2xl border border-slate-200 bg-white shadow-sm">
-                                                <span className="text-base font-bold text-slate-900">{user.displayName}</span>
-                                                <span className="ml-auto text-[10px] font-black text-slate-400 uppercase tracking-widest px-2.5 py-1 bg-slate-100 rounded-lg">Google Auth</span>
+                                            <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Nom d'affichage</label>
+                                            <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 shadow-sm">
+                                                <span className="text-sm font-semibold text-slate-900">{user.displayName}</span>
+                                                <span className="ml-auto text-[10px] font-bold text-slate-500 uppercase px-2 py-1 bg-white rounded-md border border-slate-200">Google Auth</span>
                                             </div>
                                         </div>
 
                                         <div>
-                                            <label className="text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider block">Adresse Email</label>
-                                            <div className="px-5 py-4 rounded-2xl border border-slate-200 bg-white shadow-sm text-base font-medium text-slate-600">
+                                            <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Adresse Email</label>
+                                            <div className="px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 shadow-sm text-sm font-medium text-slate-600">
                                                 {user.email}
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
-                                        <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center mb-4">
-                                            <Zap size={18} />
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-100">
+                                    <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                                        <div className="flex items-center gap-2 mb-2 text-slate-500">
+                                            <Zap size={14} className="text-orange-500" />
+                                            <p className="text-xs font-semibold uppercase tracking-wider">Identifiant</p>
                                         </div>
-                                        <p className="text-xs font-bold text-slate-400 mb-1 uppercase tracking-wider">Identifiant Unique</p>
-                                        <p className="font-mono text-xs font-semibold text-slate-700 bg-slate-50 px-3 py-2 rounded-lg border border-slate-100 truncate">{user.id}</p>
+                                        <p className="font-mono text-xs font-medium text-slate-700 truncate">{user.id}</p>
                                     </div>
-                                    <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
-                                        <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4">
-                                            <Check size={18} />
+                                    <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                                        <div className="flex items-center gap-2 mb-2 text-slate-500">
+                                            <Check size={14} className="text-emerald-500" />
+                                            <p className="text-xs font-semibold uppercase tracking-wider">Membre Depuis</p>
                                         </div>
-                                        <p className="text-xs font-bold text-slate-400 mb-1 uppercase tracking-wider">Membre Depuis</p>
-                                        <p className="text-sm font-bold text-slate-900">{new Date(user.createdAt).toLocaleDateString('fr-FR', { dateStyle: 'long' })}</p>
+                                        <p className="text-sm font-semibold text-slate-900">{new Date(user.createdAt).toLocaleDateString('fr-FR', { dateStyle: 'long' })}</p>
                                     </div>
                                 </div>
                             </div>
@@ -181,13 +172,13 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
 
                         {/* Language Tab */}
                         {activeTab === 'language' && (
-                            <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <div className="space-y-8 animate-in fade-in duration-300">
                                 <div>
-                                    <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">Langue de l'interface</h2>
-                                    <p className="text-slate-500">Personnalisez votre expérience en choisissant votre langue préférée.</p>
+                                    <h2 className="text-xl font-bold text-slate-900 tracking-tight mb-1">Langue de l'interface</h2>
+                                    <p className="text-sm text-slate-500">Choisissez votre langue préférée.</p>
                                 </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                     {languages.map((lang) => {
                                         const isSelected = language === lang.code;
                                         return (
@@ -195,27 +186,26 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
                                                 key={lang.code}
                                                 onClick={() => setLanguage(lang.code)}
                                                 className={cn(
-                                                    "relative flex flex-col items-center gap-4 p-8 rounded-3xl border-2 transition-all text-center group overflow-hidden",
+                                                    "relative flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all text-center",
                                                     isSelected
-                                                        ? "border-indigo-600 bg-indigo-50/30 shadow-md"
+                                                        ? "border-slate-900 bg-slate-50 shadow-sm"
                                                         : "border-slate-100 hover:border-slate-300 hover:bg-slate-50"
                                                 )}
                                             >
-                                                {/* Selection Indicator */}
                                                 <div className={cn(
-                                                    "absolute top-4 right-4 w-6 h-6 rounded-full flex items-center justify-center transition-all",
-                                                    isSelected ? "bg-indigo-600 text-white scale-100" : "bg-slate-100 text-transparent scale-0 group-hover:scale-100 group-hover:text-slate-300"
+                                                    "absolute top-3 right-3 w-5 h-5 rounded-full flex items-center justify-center transition-all",
+                                                    isSelected ? "bg-slate-900 text-white scale-100" : "bg-slate-100 text-transparent scale-0"
                                                 )}>
-                                                    <Check size={14} strokeWidth={3} />
+                                                    <Check size={12} strokeWidth={3} />
                                                 </div>
 
-                                                <span className="text-5xl filter drop-shadow-sm group-hover:scale-110 transition-transform">{lang.flag}</span>
+                                                <span className="text-4xl filter drop-shadow-sm">{lang.flag}</span>
                                                 <div>
                                                     <p className={cn(
-                                                        "font-bold text-lg mb-1",
-                                                        isSelected ? "text-indigo-900" : "text-slate-700"
+                                                        "font-bold text-sm mb-0.5",
+                                                        isSelected ? "text-slate-900" : "text-slate-700"
                                                     )}>{lang.name}</p>
-                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{lang.code}</p>
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{lang.code}</p>
                                                 </div>
                                             </button>
                                         );
@@ -226,66 +216,64 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
 
                         {/* Subscription Tab */}
                         {activeTab === 'subscription' && (
-                            <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <div className="space-y-8 animate-in fade-in duration-300">
                                 <div>
-                                    <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">Abonnement & Facturation</h2>
-                                    <p className="text-slate-500">Supervisez votre forfait actuel et les limites d'utilisation.</p>
+                                    <h2 className="text-xl font-bold text-slate-900 tracking-tight mb-1">Abonnement & Facturation</h2>
+                                    <p className="text-sm text-slate-500">Gérez votre forfait actuel et vos limites.</p>
                                 </div>
 
-                                <div className="relative overflow-hidden rounded-[2.5rem] bg-slate-950 text-white p-8 sm:p-12 shadow-2xl border border-slate-800">
-                                    <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[#FF5A1F]/20 blur-[120px] rounded-full pointer-events-none translate-x-1/3 -translate-y-1/3" />
-                                    <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-indigo-500/10 blur-[100px] rounded-full pointer-events-none -translate-x-1/3 translate-y-1/3" />
+                                <div className="relative overflow-hidden rounded-2xl bg-slate-950 text-white p-6 sm:p-8 shadow-xl">
+                                    <div className="absolute top-0 right-0 w-64 h-64 bg-[#FF5A1F]/15 blur-3xl rounded-full translate-x-1/3 -translate-y-1/3" />
 
                                     <div className="relative z-10">
-                                        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-12">
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                                             <div>
-                                                <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full mb-6 border border-white/10">
-                                                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                                                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/10 rounded-md mb-3 border border-white/10 shadow-sm">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                                                     <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">Actif</span>
                                                 </div>
-                                                <h3 className="text-5xl font-black text-white tracking-tight uppercase">PRO PLAN</h3>
-                                                <p className="text-slate-400 mt-2 font-medium">L'expérience complète Final Form.</p>
+                                                <h3 className="text-2xl font-black text-white tracking-tight uppercase">PRO PLAN</h3>
                                             </div>
-                                            <button className="px-6 py-3 bg-white text-slate-950 rounded-2xl text-sm font-bold shadow-lg hover:bg-slate-100 transition-colors">
-                                                Gérer la facturation
+                                            <button className="px-5 py-2.5 bg-white text-slate-900 rounded-xl text-sm font-bold shadow-sm hover:bg-slate-100 transition-colors">
+                                                Gérer
                                             </button>
                                         </div>
 
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 py-8 border-y border-white/10">
-                                            <div className="bg-slate-900/50 p-6 rounded-3xl border border-white/5 backdrop-blur-sm">
-                                                <div className="flex items-center justify-between mb-4">
-                                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Commandes</span>
-                                                    <span className="text-xs font-bold text-slate-500">82%</span>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-6 border-y border-white/10">
+                                            <div className="bg-white/5 p-4 rounded-xl border border-white/10">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Commandes</span>
+                                                    <span className="text-[10px] font-bold text-slate-400">82%</span>
                                                 </div>
-                                                <div className="flex items-end gap-2 mb-4">
-                                                    <span className="text-4xl font-black text-white tracking-tight leading-none">824</span>
-                                                    <span className="text-slate-500 font-medium mb-1">/ 1,000</span>
+                                                <div className="flex items-end gap-1.5 mb-3">
+                                                    <span className="text-2xl font-black text-white leading-none">824</span>
+                                                    <span className="text-xs text-slate-400 mb-0.5">/ 1,000</span>
                                                 </div>
-                                                <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden">
-                                                    <div className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full" style={{ width: '82%' }} />
+                                                <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                                                    <div className="h-full bg-emerald-400 rounded-full" style={{ width: '82%' }} />
                                                 </div>
                                             </div>
 
-                                            <div className="bg-slate-900/50 p-6 rounded-3xl border border-white/5 backdrop-blur-sm">
-                                                <div className="flex items-center justify-between mb-4">
-                                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Temps Restant</span>
-                                                    <span className="text-xs font-bold text-slate-500">28J</span>
+                                            <div className="bg-white/5 p-4 rounded-xl border border-white/10">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Restant</span>
+                                                    <span className="text-[10px] font-bold text-slate-400">28J</span>
                                                 </div>
-                                                <div className="flex items-end gap-2 mb-4">
-                                                    <span className="text-4xl font-black text-white tracking-tight leading-none">28</span>
-                                                    <span className="text-slate-500 font-medium mb-1">Jours</span>
+                                                <div className="flex items-end gap-1.5 mb-3">
+                                                    <span className="text-2xl font-black text-white leading-none">28</span>
+                                                    <span className="text-xs text-slate-400 mb-0.5">Jours</span>
                                                 </div>
-                                                <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden">
-                                                    <div className="h-full bg-gradient-to-r from-indigo-400 to-indigo-500 rounded-full" style={{ width: '93%' }} />
+                                                <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                                                    <div className="h-full bg-indigo-400 rounded-full" style={{ width: '93%' }} />
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-medium text-slate-400">
-                                            <p>Renouvellement automatique le 28 Fév 2026</p>
-                                            <div className="flex items-center gap-3 bg-white/5 px-4 py-2 rounded-xl border border-white/5">
-                                                <CreditCard size={16} className="text-slate-300" />
-                                                <span className="font-mono">•••• 4242</span>
+                                        <div className="pt-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-medium text-slate-400">
+                                            <p>Renouvellement auto le 28 Fév</p>
+                                            <div className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-lg border border-white/5">
+                                                <CreditCard size={14} className="text-slate-300" />
+                                                <span className="font-mono text-slate-300">•••• 4242</span>
                                             </div>
                                         </div>
                                     </div>
