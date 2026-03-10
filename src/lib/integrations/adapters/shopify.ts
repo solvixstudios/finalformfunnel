@@ -16,7 +16,7 @@ import type {
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://your-backend-instance.com';
 const WEBHOOK_ENV = import.meta.env.VITE_WEBHOOK_ENV || 'webhook';
 
-export const LOADER_VERSION = '1.0.1';
+export const LOADER_VERSION = '1.0.2';
 
 // Configuration
 const REQUEST_TIMEOUT_MS = 15000; // 15 second timeout
@@ -144,7 +144,7 @@ export class ShopifyAdapter implements PlatformAdapter {
     const response = await fetch(`${BACKEND_URL}/${WEBHOOK_ENV}/shopify/enable-loader`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subdomain, clientId, clientSecret, userId }),
+      body: JSON.stringify({ subdomain, clientId, clientSecret, userId, version: LOADER_VERSION }),
     });
 
     if (!response.ok) {

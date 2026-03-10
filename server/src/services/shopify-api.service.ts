@@ -149,8 +149,8 @@ export async function executeGraphQL(
 
 // ── Helpers ─────────────────────────────────────────────────────
 
-export function findLoaderTag(scriptTags: any[]) {
-    return scriptTags.find((t: any) => t.src && t.src.includes('finalform'));
+export function findAllLoaderTags(scriptTags: any[]) {
+    return scriptTags.filter((t: any) => t.src && t.src.includes('finalform'));
 }
 
 export function parseLoaderVersion(tag: any): string | null {

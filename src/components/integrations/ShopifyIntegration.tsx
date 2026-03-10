@@ -172,6 +172,19 @@ interface ShopifyIntegrationProps {
     onBack?: () => void;
 }
 
+// Compare semantic versions. Returns -1 if v1 < v2, 0 if v1 === v2, 1 if v1 > v2.
+function compareVersions(v1: string, v2: string): number {
+    const parts1 = v1.split('.').map(Number);
+    const parts2 = v2.split('.').map(Number);
+    for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
+        const p1 = parts1[i] || 0;
+        const p2 = parts2[i] || 0;
+        if (p1 < p2) return -1;
+        if (p1 > p2) return 1;
+    }
+    return 0;
+}
+
 export function ShopifyIntegration({ userId, onBack }: ShopifyIntegrationProps) {
     const { stores, addStore, updateStore, deleteStore } = useConnectedStores(userId);
 
@@ -600,14 +613,14 @@ export function ShopifyIntegration({ userId, onBack }: ShopifyIntegrationProps) 
                                                 <div className="flex items-center gap-3">
                                                     {store.loaderInstalled ? (
                                                         <>
-                                                            {store.loaderVersion === CURRENT_LOADER_VERSION ? (
+                                                            {!store.loaderVersion || compareVersions(store.loaderVersion, CURRENT_LOADER_VERSION) === 0 ? (
                                                                 <Badge variant="secondary" className="bg-green-50 text-green-700 hover:bg-green-100 border-green-200 font-semibold gap-1">
-                                                                    <Check size={12} /> Installé (v{store.loaderVersion})
+                                                                    <Check size={12} /> Installé (v{store.loaderVersion || CURRENT_LOADER_VERSION})
                                                                 </Badge>
-                                                            ) : (
+                                                            ) : compareVersions(store.loaderVersion, CURRENT_LOADER_VERSION) < 0 ? (
                                                                 <div className="flex items-center gap-2">
                                                                     <Badge variant="secondary" className="bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-200 font-semibold gap-1">
-                                                                        Ancienne version (v{store.loaderVersion || '?'})
+                                                                        Ancienne version (v{store.loaderVersion})
                                                                     </Badge>
                                                                     <Button
                                                                         size="sm"
@@ -618,6 +631,22 @@ export function ShopifyIntegration({ userId, onBack }: ShopifyIntegrationProps) 
                                                                     >
                                                                         {processingStoreId === store.id ? <Loader2 size={12} className="animate-spin mr-1" /> : <RotateCw size={12} className="mr-1" />}
                                                                         Mettre à jour (v{CURRENT_LOADER_VERSION})
+                                                                    </Button>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="flex items-center gap-2">
+                                                                    <Badge variant="secondary" className="bg-purple-50 text-purple-700 hover:bg-purple-100 border-purple-200 font-semibold gap-1">
+                                                                        Version future (v{store.loaderVersion})
+                                                                    </Badge>
+                                                                    <Button
+                                                                        size="sm"
+                                                                        variant="outline"
+                                                                        className="h-7 text-[10px] px-3 font-semibold rounded-md border-indigo-200 text-indigo-700 hover:bg-indigo-50 shadow-sm whitespace-nowrap"
+                                                                        onClick={() => handleEnableLoader(store)}
+                                                                        disabled={processingStoreId === store.id}
+                                                                    >
+                                                                        {processingStoreId === store.id ? <Loader2 size={12} className="animate-spin mr-1" /> : <RotateCw size={12} className="mr-1" />}
+                                                                        Rétrograder (v{CURRENT_LOADER_VERSION})
                                                                     </Button>
                                                                 </div>
                                                             )}

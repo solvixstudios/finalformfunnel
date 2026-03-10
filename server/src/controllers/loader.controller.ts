@@ -13,7 +13,8 @@ const CURRENT_VERSION = '1.1.0';
 // ── POST /enable-loader ─────────────────────────────────────────
 
 export async function enableLoader(req: Request, res: Response) {
-    const { subdomain, userId } = req.body;
+    const { subdomain, userId, version } = req.body;
+    const requestedVersion = version || '1.0.2'; // Fallback if client didn't supply it
 
     if (!subdomain || !userId) {
         throw AppError.badRequest('Missing subdomain or userId');
@@ -27,32 +28,42 @@ export async function enableLoader(req: Request, res: Response) {
 
     // Check existing scripts
     const scriptTags = await shopifyApi.getScriptTags(shopDomain, accessToken);
-    const loaderTag = shopifyApi.findLoaderTag(scriptTags);
+    const loaderTags = shopifyApi.findAllLoaderTags(scriptTags);
 
-    if (loaderTag) {
-        const existingVersion = shopifyApi.parseLoaderVersion(loaderTag);
+    let alreadyInstalledId: string | null = null;
+    let needsInstall = true;
 
-        if (existingVersion === CURRENT_VERSION) {
-            return res.json({
-                success: true,
-                version: existingVersion,
-                alreadyInstalled: true,
-                scriptTagId: String(loaderTag.id),
-            });
+    // Aggressively clean up all old/mismatched tags
+    for (const tag of loaderTags) {
+        const existingVersion = shopifyApi.parseLoaderVersion(tag);
+
+        // If we found the exact version we want, keep this ONE tag and note it
+        if (existingVersion === requestedVersion && !alreadyInstalledId) {
+            alreadyInstalledId = String(tag.id);
+            needsInstall = false;
+        } else {
+            // Delete duplicates or outdated versions
+            await shopifyApi.deleteScriptTag(shopDomain, accessToken, tag.id);
         }
+    }
 
-        // Upgrade: remove old, install new
-        await shopifyApi.deleteScriptTag(shopDomain, accessToken, loaderTag.id);
+    if (!needsInstall && alreadyInstalledId) {
+        return res.json({
+            success: true,
+            version: requestedVersion,
+            alreadyInstalled: true,
+            scriptTagId: alreadyInstalledId,
+        });
     }
 
     // Install new loader
     const sfToken = await shopifyApi.createStorefrontToken(shopDomain, accessToken);
-    const src = `https://finalformfunnel.web.app/finalform-loader.prod.js?sf_token=${sfToken}&v=${CURRENT_VERSION}`;
+    const src = `https://finalformfunnel.web.app/finalform-loader.prod.js?sf_token=${sfToken}&v=${requestedVersion}`;
     const newTag = await shopifyApi.createScriptTag(shopDomain, accessToken, src);
 
     res.json({
         success: true,
-        version: CURRENT_VERSION,
+        version: requestedVersion,
         alreadyInstalled: false,
         scriptTagId: String(newTag.id),
     });
@@ -74,10 +85,17 @@ export async function disableLoader(req: Request, res: Response) {
     const accessToken = store.data.accessToken;
 
     const scriptTags = await shopifyApi.getScriptTags(shopDomain, accessToken);
-    const loaderTag = shopifyApi.findLoaderTag(scriptTags);
+    const loaderTags = shopifyApi.findAllLoaderTags(scriptTags);
 
-    if (loaderTag) {
-        await shopifyApi.deleteScriptTag(shopDomain, accessToken, loaderTag.id);
+    let removedAny = false;
+
+    // Loop through ALL matching tags and destroy them
+    for (const tag of loaderTags) {
+        await shopifyApi.deleteScriptTag(shopDomain, accessToken, tag.id);
+        removedAny = true;
+    }
+
+    if (removedAny) {
         return res.json({ success: true, removed: true, message: 'Loader disabled successfully!' });
     }
 
