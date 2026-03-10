@@ -1,10 +1,19 @@
 import { PageHeader } from '@/components/GlobalHeader/PageHeader';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
 import { cn } from '@/lib/utils';
-import { Save, Trash2, Upload } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Camera, Save, Trash2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { GoogleUser } from '../lib/authGoogle';
 import { useI18n } from '../lib/i18n/i18nContext';
@@ -26,9 +35,10 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
     const { setLanguage, language } = useI18n();
     const appVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.0';
 
-    // Form state (simulated)
+    // Form state
     const [displayName, setDisplayName] = useState(user.displayName || '');
-    const [email, setEmail] = useState(user.email || '');
+    const [photoUrl, setPhotoUrl] = useState(user.photoURL || '');
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         const tab = searchParams.get('tab') as SettingsTab;
@@ -38,9 +48,9 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
     }, [searchParams, activeTab]);
 
     const tabs = [
-        { id: 'profile' as const, label: 'Général' },
-        { id: 'language' as const, label: 'Langue & Localisation' },
-        { id: 'subscription' as const, label: 'Abonnement & Facturation' },
+        { id: 'profile' as const, label: 'Général', desc: 'Vos infos personnelles' },
+        { id: 'language' as const, label: 'Langue & Localisation', desc: 'Affichage et régionalisation' },
+        { id: 'subscription' as const, label: 'Abonnement', desc: 'Historique des paiements' },
     ];
 
     const languages: { code: Language; name: string; locale: string }[] = [
@@ -49,39 +59,62 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
         { code: 'ar', name: 'العربية', locale: 'ar-SA' },
     ];
 
+    // Mock Offline Transaction History
+    const transactions = [
+        { id: 'TRX-9284', plan: 'PRO Plan', status: 'Actif', start: '2025-02-28', end: '2026-02-28', amount: '490.00 MAD' },
+        { id: 'TRX-4421', plan: 'STARTER Plan', status: 'Expiré', start: '2024-02-28', end: '2025-02-28', amount: '290.00 MAD' },
+    ];
+
     const handleTabChange = (tab: SettingsTab) => {
         setActiveTab(tab);
         setSearchParams({ tab });
     };
 
     const handleSave = () => {
-        // Mock save logic
-        console.log('Saved settings:', { displayName, email, language });
+        console.log('Saved settings:', { displayName, photoUrl, language });
+    };
+
+    const handleAvatarClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            // Mock file upload by creating a local object URL
+            const url = URL.createObjectURL(file);
+            setPhotoUrl(url);
+        }
+    };
+
+    const handleRemoveAvatar = () => {
+        setPhotoUrl('');
+        if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
     const headerActions = (
-        <div className="flex items-center gap-3">
-            <Button variant="outline">Annuler</Button>
-            <Button onClick={handleSave} className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white">
-                <Save size={16} />
+        <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm">Annuler</Button>
+            <Button onClick={handleSave} size="sm" className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white">
+                <Save size={14} />
                 Enregistrer
             </Button>
         </div>
     );
 
     return (
-        <div className="max-w-[1200px] mx-auto w-full flex flex-col px-4 sm:px-8 pb-12">
+        <div className="max-w-6xl mx-auto w-full flex flex-col px-4 sm:px-6 lg:px-8 pb-12">
             <PageHeader
                 title="Paramètres"
                 breadcrumbs={[{ label: 'Paramètres' }]}
                 actions={headerActions}
             />
 
-            <div className="flex flex-col md:flex-row gap-8 lg:gap-12 flex-1 mt-6">
+            <div className="flex flex-col md:flex-row gap-8 flex-1 mt-6">
 
-                {/* Minimalist Sidebar */}
-                <div className="w-full md:w-64 shrink-0 flex flex-col sticky top-20 h-max">
-                    <div className="flex flex-row md:flex-col gap-1 overflow-x-auto md:overflow-visible pb-2 md:pb-0">
+                {/* Modern Sidebar */}
+                <aside className="w-full md:w-64 shrink-0">
+                    <nav className="flex flex-row md:flex-col gap-1 overflow-x-auto md:overflow-visible pb-2 md:pb-0 sticky top-20">
                         {tabs.map((tab) => {
                             const isActive = activeTab === tab.id;
                             return (
@@ -89,203 +122,222 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
                                     key={tab.id}
                                     onClick={() => handleTabChange(tab.id)}
                                     className={cn(
-                                        "flex items-center px-4 py-2.5 rounded-xl transition-colors text-left text-sm font-semibold whitespace-nowrap",
+                                        "flex flex-col items-start px-4 py-3 rounded-lg transition-all text-left whitespace-nowrap min-w-[200px] md:min-w-0 md:w-full",
                                         isActive
-                                            ? "bg-slate-900 text-white shadow-sm"
-                                            : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                                            ? "bg-slate-900 border border-slate-900 shadow-md"
+                                            : "bg-transparent border border-transparent hover:bg-slate-100/80"
                                     )}
                                 >
-                                    {tab.label}
+                                    <span className={cn("text-sm font-semibold", isActive ? "text-white" : "text-slate-900")}>
+                                        {tab.label}
+                                    </span>
+                                    <span className={cn("text-xs mt-0.5 hidden md:block", isActive ? "text-slate-300" : "text-slate-500")}>
+                                        {tab.desc}
+                                    </span>
                                 </button>
                             );
                         })}
-                    </div>
 
-                    {/* App Version Info */}
-                    <div className="hidden md:block mt-8 pt-6 border-t border-slate-100 px-4">
-                        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Application</p>
-                        <p className="text-sm font-mono text-slate-600">v{appVersion}</p>
-                    </div>
-                </div>
+                        {/* App Version Info */}
+                        <div className="hidden md:block mt-8 p-4 bg-slate-50 rounded-lg border border-slate-100">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Version</p>
+                            <p className="text-sm font-mono font-semibold text-slate-700">v{appVersion}</p>
+                        </div>
+                    </nav>
+                </aside>
 
-                {/* Main Content Area - Form Styled */}
-                <div className="flex-1 max-w-2xl bg-white border border-slate-200 shadow-sm rounded-2xl h-max mb-12">
+                {/* Main Content Area */}
+                <div className="flex-1 max-w-3xl">
 
                     {/* Profile Tab */}
                     {activeTab === 'profile' && (
-                        <div className="animate-in fade-in duration-300">
-                            <div className="p-6 md:p-8 border-b border-slate-100">
-                                <h2 className="text-lg font-bold text-slate-900 mb-1">Profil Public</h2>
-                                <p className="text-sm text-slate-500">Ces informations sont associées à votre session actuelle.</p>
-                            </div>
+                        <div className="space-y-6 animate-in fade-in duration-300">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Profil Public</CardTitle>
+                                    <CardDescription>Gérez votre identité et vos informations de contact principal.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-8">
 
-                            {/* Avatar Row */}
-                            <div className="flex items-center gap-6 p-6 md:p-8 border-b border-slate-100">
-                                {user.photoURL ? (
-                                    <img
-                                        src={user.photoURL}
-                                        alt={user.displayName}
-                                        className="w-20 h-20 rounded-full object-cover border border-slate-200"
-                                    />
-                                ) : (
-                                    <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200 text-slate-400 font-bold text-xl">
-                                        {user.displayName?.charAt(0) || 'U'}
+                                    {/* Avatar Upload */}
+                                    <div className="flex items-center gap-6">
+                                        <div className="relative group cursor-pointer" onClick={handleAvatarClick}>
+                                            <input
+                                                type="file"
+                                                ref={fileInputRef}
+                                                className="hidden"
+                                                accept="image/*"
+                                                onChange={handleFileChange}
+                                            />
+                                            {photoUrl ? (
+                                                <img
+                                                    src={photoUrl}
+                                                    alt={displayName}
+                                                    className="w-20 h-20 rounded-full object-cover border-2 border-slate-100 shadow-sm transition-opacity group-hover:opacity-80"
+                                                />
+                                            ) : (
+                                                <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center border-2 border-slate-200 text-slate-400 font-bold text-xl group-hover:bg-slate-200 transition-colors">
+                                                    {displayName?.charAt(0) || 'U'}
+                                                </div>
+                                            )}
+                                            <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <Camera className="text-white w-6 h-6" />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <h3 className="text-sm font-semibold text-slate-900">Photo de profil</h3>
+                                            <p className="text-xs text-slate-500 max-w-[200px]">Cliquez sur l'image pour uploader une nouvelle photo (JPG, PNG).</p>
+                                        </div>
+                                        {photoUrl !== user.photoURL && photoUrl !== '' && (
+                                            <Button variant="ghost" size="icon" onClick={handleRemoveAvatar} className="ml-auto text-red-500 hover:text-red-700 hover:bg-red-50">
+                                                <Trash2 size={16} />
+                                            </Button>
+                                        )}
                                     </div>
-                                )}
-                                <div className="flex items-center gap-3">
-                                    <Button variant="outline" size="sm" className="gap-2">
-                                        <Upload size={14} />
-                                        Upload
-                                    </Button>
-                                    <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-600 hover:bg-red-50 px-3">
-                                        <Trash2 size={16} />
-                                    </Button>
-                                </div>
-                            </div>
 
-                            <div className="p-6 md:p-8 space-y-8">
-                                <div className="space-y-3">
-                                    <label className="text-sm font-semibold text-slate-900">Nom d'affichage</label>
-                                    <Input
-                                        type="text"
-                                        value={displayName}
-                                        onChange={(e) => setDisplayName(e.target.value)}
-                                        className="max-w-md"
-                                        disabled
-                                    />
-                                    <p className="text-xs text-slate-500">
-                                        Synchronisé via Google OAuth.
-                                    </p>
-                                </div>
-
-                                <div className="space-y-3 border-t border-slate-100 pt-8">
-                                    <label className="text-sm font-semibold text-slate-900">Adresse e-mail</label>
-                                    <Input
-                                        type="email"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        className="max-w-md"
-                                        disabled
-                                    />
-                                </div>
-
-                                <div className="space-y-3 border-t border-slate-100 pt-8">
-                                    <label className="text-sm font-semibold text-slate-900">Identifiant Unique</label>
-                                    <div className="flex items-center gap-3">
-                                        <Input
-                                            type="text"
-                                            value={user.id}
-                                            readOnly
-                                            className="max-w-md font-mono text-slate-500 bg-slate-50"
-                                        />
-                                        <Button variant="secondary">Copier</Button>
+                                    <div className="grid gap-6">
+                                        <div className="grid gap-2">
+                                            <label className="text-sm font-semibold text-slate-900">Nom complet</label>
+                                            <Input
+                                                value={displayName}
+                                                onChange={(e) => setDisplayName(e.target.value)}
+                                                className="max-w-md"
+                                                placeholder="John Doe"
+                                            />
+                                        </div>
+                                        <div className="grid gap-2">
+                                            <label className="text-sm font-semibold text-slate-900">Adresse e-mail de connexion</label>
+                                            <Input
+                                                value={user.email || ''}
+                                                className="max-w-md bg-slate-50 text-slate-500 cursor-not-allowed"
+                                                disabled
+                                                readOnly
+                                            />
+                                            <p className="text-xs text-slate-500">Votre email est géré par la connexion Google OAuth et ne peut être modifié ici.</p>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
+                                </CardContent>
+                            </Card>
+
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Sécurité du Compte</CardTitle>
+                                    <CardDescription>Informations d'identification interne.</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="flex flex-col gap-2">
+                                        <label className="text-sm font-semibold text-slate-900">Votre ID Final Form</label>
+                                        <div className="flex items-center gap-3">
+                                            <Input
+                                                value={user.id}
+                                                readOnly
+                                                className="max-w-[280px] font-mono text-slate-500 bg-slate-50"
+                                            />
+                                            <Button variant="secondary" onClick={() => navigator.clipboard.writeText(user.id)}>Copier</Button>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
                         </div>
                     )}
 
                     {/* Language Tab */}
                     {activeTab === 'language' && (
-                        <div className="animate-in fade-in duration-300">
-                            <div className="p-6 md:p-8 border-b border-slate-100">
-                                <h2 className="text-lg font-bold text-slate-900 mb-1">Langue & Région</h2>
-                                <p className="text-sm text-slate-500">Personnalisez votre confort d'utilisation.</p>
-                            </div>
-
-                            <div className="p-6 md:p-8 space-y-8">
-                                <div className="space-y-3">
-                                    <label className="text-sm font-semibold text-slate-900">Langue de l'interface</label>
-                                    <div className="max-w-[280px]">
+                        <div className="space-y-6 animate-in fade-in duration-300">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Préférences Régionales</CardTitle>
+                                    <CardDescription>Personnalisez la langue et les formats d'affichage pour votre tableau de bord.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-6">
+                                    <div className="grid gap-2">
+                                        <label className="text-sm font-semibold text-slate-900">Langue de l'interface</label>
                                         <Select value={language} onValueChange={(val) => setLanguage(val as Language)}>
-                                            <SelectTrigger>
+                                            <SelectTrigger className="max-w-[280px]">
                                                 <SelectValue placeholder="Choisir une langue" />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {languages.map(lang => (
                                                     <SelectItem key={lang.code} value={lang.code}>
-                                                        {lang.name} - {lang.locale}
+                                                        {lang.name}
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
+                                        <p className="text-xs text-slate-500 mt-1">La modification s'applique immédiatement à tous les menus.</p>
                                     </div>
-                                    <p className="text-xs text-slate-500">La langue de votre tableau de bord modifie immédiatement tous les textes affichés.</p>
-                                </div>
-
-                                <div className="space-y-3 border-t border-slate-100 pt-8">
-                                    <label className="text-sm font-semibold text-slate-900">Format d'heure et de Date</label>
-                                    <div className="max-w-[280px]">
-                                        <Select defaultValue="system">
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Format" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="system">Selon le système</SelectItem>
-                                                <SelectItem value="24h">24 Heures (14:00)</SelectItem>
-                                                <SelectItem value="12h">12 Heures (2:00 PM)</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                </div>
-                            </div>
+                                </CardContent>
+                            </Card>
                         </div>
                     )}
 
-                    {/* Subscription Tab */}
+                    {/* Subscription Tab Offline Payments */}
                     {activeTab === 'subscription' && (
-                        <div className="animate-in fade-in duration-300">
-                            <div className="p-6 md:p-8 border-b border-slate-100">
-                                <h2 className="text-lg font-bold text-slate-900 mb-1">Abonnement & Facturation</h2>
-                                <p className="text-sm text-slate-500">Gérez votre formule, observez vos limites et mettez à jour votre paiement.</p>
-                            </div>
-
-                            <div className="p-6 md:p-8">
-                                {/* Plan Card Minimal */}
-                                <div className="border border-indigo-100 bg-indigo-50/50 rounded-xl p-5 mb-8">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <div className="flex items-center gap-3">
-                                            <span className="text-lg font-bold text-slate-900 tracking-tight">PRO Plan</span>
-                                            <span className="px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-700 text-xs font-bold uppercase tracking-wider">Actif</span>
-                                        </div>
-                                        <Button size="sm" variant="outline" className="bg-white">Modifier</Button>
-                                    </div>
-                                    <p className="text-sm text-slate-600">Renouvellement le 28 Février 2026 pour 49.00€</p>
-                                </div>
-
-                                {/* Usage Limits */}
-                                <div className="space-y-4 mb-8">
-                                    <label className="text-sm font-semibold text-slate-900 block">Utilisation ce mois-ci</label>
-
-                                    <div>
-                                        <div className="flex justify-between items-end mb-2">
-                                            <span className="text-sm text-slate-600 font-medium">Commandes Totales</span>
-                                            <span className="text-sm font-mono text-slate-900 font-semibold">824 <span className="text-slate-400 font-normal">/ 1000</span></span>
-                                        </div>
-                                        <div className="w-full h-2.5 rounded-full bg-slate-100 overflow-hidden">
-                                            <div className="h-full bg-slate-900 rounded-full" style={{ width: '82%' }} />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-6 border-t border-slate-100 pt-8">
-                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="space-y-6 animate-in fade-in duration-300">
+                            <Card className="border-indigo-100 bg-indigo-50/20 shadow-none">
+                                <CardHeader className="pb-4">
+                                    <div className="flex items-center justify-between">
                                         <div>
-                                            <label className="text-sm font-semibold text-slate-900 block mb-1">Moyen de paiement</label>
-                                            <p className="text-sm text-slate-500">Mastercard se terminant par •••• 4242</p>
+                                            <CardTitle className="text-indigo-950">Abonnement Actuel</CardTitle>
+                                            <CardDescription className="text-indigo-900/60 mt-1">Votre accès premium à Final Form.</CardDescription>
                                         </div>
-                                        <Button variant="secondary" size="sm">Mettre à jour</Button>
+                                        <div className="px-3 py-1 rounded-full bg-emerald-100 border border-emerald-200 text-emerald-700 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                            Actif
+                                        </div>
                                     </div>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="flex items-baseline gap-2 mb-1">
+                                        <h2 className="text-3xl font-black text-slate-900">PRO Plan</h2>
+                                    </div>
+                                    <p className="text-sm font-medium text-slate-600">
+                                        Paiement hors ligne valide du <strong className="text-slate-900">28 Février 2025</strong> au <strong className="text-slate-900">28 Février 2026</strong>.
+                                    </p>
+                                </CardContent>
+                            </Card>
 
-                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                        <div>
-                                            <label className="text-sm font-semibold text-slate-900 block mb-1">Factures</label>
-                                            <p className="text-sm text-slate-500">Téléchargez vos factures passées.</p>
-                                        </div>
-                                        <Button variant="secondary" size="sm">Historique</Button>
-                                    </div>
-                                </div>
-                            </div>
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Historique des Paiements</CardTitle>
+                                    <CardDescription>Consultez vos reçus et transactions traitées hors ligne par notre équipe.</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>N° Transaction</TableHead>
+                                                <TableHead>Forfait</TableHead>
+                                                <TableHead>Période</TableHead>
+                                                <TableHead>Montant</TableHead>
+                                                <TableHead className="text-right">Statut</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {transactions.map((trx) => (
+                                                <TableRow key={trx.id}>
+                                                    <TableCell className="font-mono text-xs">{trx.id}</TableCell>
+                                                    <TableCell className="font-semibold text-slate-900">{trx.plan}</TableCell>
+                                                    <TableCell className="text-slate-500 text-xs">
+                                                        {trx.start} <br /> {trx.end}
+                                                    </TableCell>
+                                                    <TableCell className="font-semibold">{trx.amount}</TableCell>
+                                                    <TableCell className="text-right">
+                                                        <span className={cn(
+                                                            "px-2 py-1 flex items-center justify-center max-w-[80px] ml-auto rounded-md text-[10px] font-bold uppercase tracking-wider",
+                                                            trx.status === 'Actif'
+                                                                ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                                                                : "bg-slate-100 text-slate-600 border border-slate-200"
+                                                        )}>
+                                                            {trx.status}
+                                                        </span>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </CardContent>
+                            </Card>
                         </div>
                     )}
                 </div>
