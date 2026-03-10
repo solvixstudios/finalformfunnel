@@ -66,7 +66,9 @@ async function fetchConfigFromBackend(shop: string, productId?: string, productH
             cache: 'no-store',
             headers: {
                 'Cache-Control': 'no-cache, no-store, must-revalidate',
-                'Pragma': 'no-cache'
+                'Pragma': 'no-cache',
+                'ngrok-skip-browser-warning': 'true',
+                'Accept': 'application/json'
             }
         });
 
@@ -172,9 +174,20 @@ async function initLoader() {
     // 1.5. Remove Tailwind CDN Injection (We rely on built CSS now)
 
     // 2. Identify Product Context
-    let productId = (window as any).meta?.product?.id?.toString();
-    if (!productId && (window as any).ShopifyAnalytics?.meta?.product?.id) {
-        productId = (window as any).ShopifyAnalytics.meta.product.id.toString();
+    let productId: string | undefined;
+
+    // Attempt 1: Standard Shopify meta
+    const metaProductId = (window as any).meta?.product?.id;
+    if (metaProductId) {
+        productId = metaProductId.toString();
+    }
+
+    // Attempt 2: Shopify Analytics
+    if (!productId) {
+        const analyticsProductId = (window as any).ShopifyAnalytics?.meta?.product?.id;
+        if (analyticsProductId) {
+            productId = analyticsProductId.toString();
+        }
     }
 
     // Normalize handle
@@ -485,7 +498,7 @@ share-button {
         if (spinner) spinner.remove();
 
         const offers = config.offers || [];
-        const shipping = config.shipping || { standard: { home: 0, desk: 0 } };
+        const shipping = config.shipping || { standard: { home: 0, desk: 0 }, exceptions: [] };
 
         const root = createRoot(shadowRoot);
         root.render(

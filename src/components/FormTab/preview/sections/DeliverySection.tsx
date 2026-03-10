@@ -154,7 +154,9 @@ export const DeliverySection: React.FC<DeliverySectionProps> = ({
                                                 : (config.textColor || '#64748b'),
                                         }}
                                     >
-                                        {isDisabled ? txt('unavailable') : formatCurrency(price)}
+                                        {isDisabled ? txt('unavailable') : price === 0 ? (
+                                            <span className="text-emerald-600">{txt('free') || 'GRATUIT'}</span>
+                                        ) : formatCurrency(price)}
                                     </div>
                                 )}
                             </div>

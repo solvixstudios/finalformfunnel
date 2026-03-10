@@ -28,16 +28,18 @@ export const BuilderPreview = ({
             const rule = (offerRules as OfferRule[]).find(r => r.id === formConfig.offerRuleId);
             if (rule?.offers) return rule.offers;
         }
-        return formConfig.offers || [];
-    }, [formConfig.offerRuleId, formConfig.offers, offerRules]);
+        // No rule assigned = no offers (user must assign an offers rule to show offers)
+        return [];
+    }, [formConfig.offerRuleId, offerRules]);
 
     const resolvedShipping = useMemo(() => {
         if (formConfig.shippingRuleId) {
             const rule = (shippingRules as ShippingRule[]).find(r => r.id === formConfig.shippingRuleId);
             if (rule?.shipping) return rule.shipping;
         }
-        return formConfig.shipping;
-    }, [formConfig.shippingRuleId, formConfig.shipping, shippingRules]);
+        // No rule assigned = free shipping
+        return { standard: { home: 0, desk: 0 }, exceptions: [] as any };
+    }, [formConfig.shippingRuleId, shippingRules]);
 
     const resolvedConfig = useMemo(() => {
         let config = { ...formConfig };

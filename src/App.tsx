@@ -29,6 +29,7 @@ const OffersPage = lazy(() => import("./pages/rules/OffersPage"));
 const ShippingPage = lazy(() => import("./pages/rules/ShippingPage"));
 const CouponsPage = lazy(() => import("./pages/rules/CouponsPage"));
 const IntegrationsPage = lazy(() => import("./pages/IntegrationsPage"));
+const StoresPage = lazy(() => import("./pages/StoresPage"));
 
 // Loading component
 const LoadingSpinner = () => (
@@ -160,6 +161,10 @@ const AppContent = () => {
                       <Route
                         path="orders"
                         element={<OrdersPage userId={user.id} />}
+                      />
+                      <Route
+                        path="stores"
+                        element={<StoresPage userId={user.id} />}
                       />
                       <Route path="rules/offers" element={<OffersPage userId={user.id} />} />
                       <Route path="rules/shipping" element={<ShippingPage userId={user.id} />} />

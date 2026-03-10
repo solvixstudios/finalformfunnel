@@ -114,7 +114,7 @@ export const syncProductsFromShopify = async (
   const backendHost = import.meta.env.VITE_BACKEND_URL;
   while (hasMore) {
     const response = await fetch(
-      `${backendHost}/webhook/shopify/products`,
+      `${backendHost}/webhook/shopify/get-products`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

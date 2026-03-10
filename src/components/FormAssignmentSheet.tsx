@@ -30,7 +30,7 @@ export function FormAssignmentSheet({
 }: FormAssignmentSheetProps) {
     const { forms, loading: formsLoading } = useSavedForms(userId);
     const { stores } = useConnectedStores(userId);
-    const { assignments, assignForm, deleteAssignment, refetch } = useFormAssignments(userId);
+    const { assignments, assignForm, deleteAssignment } = useFormAssignments(userId);
 
     const [step, setStep] = useState<'form' | 'confirm'>('form');
     const [selectedFormId, setSelectedFormId] = useState<string>('');
@@ -43,7 +43,6 @@ export function FormAssignmentSheet({
 
     const availableForms = useMemo(() => {
         return forms.filter(f =>
-            f.status !== 'draft' &&
             f.name.toLowerCase().includes(formSearch.toLowerCase())
         );
     }, [forms, formSearch]);
@@ -74,18 +73,33 @@ export function FormAssignmentSheet({
 
             const formConfig = { formId: form.id, name: form.name, ...form.config };
 
+            // Always clean up any existing assignments for this form+store
+            // regardless of type — prevents stale assignments when switching scope
+            const existingForThisForm = assignments.filter(a =>
+                a.storeId === storeId && a.formId === selectedFormId && a.isActive
+            );
+
             if (scope === 'store') {
                 // Delete existing store-level assignment if different form
-                const existing = assignments.find(a =>
+                const existingStoreLevel = assignments.find(a =>
                     a.storeId === storeId && a.assignmentType === 'store' && a.isActive
                 );
-                if (existing) {
-                    if (existing.formId === selectedFormId) {
+                if (existingStoreLevel) {
+                    if (existingStoreLevel.formId === selectedFormId) {
                         toast.info("This form is already assigned to the store");
                         setIsSubmitting(false);
                         return;
                     }
-                    await deleteAssignment(existing.id!);
+                    await deleteAssignment(existingStoreLevel.id!);
+                }
+
+                // Also clean up any product-level assignments for the same form
+                // (switching from product→store should remove stale product assignments)
+                const staleProductAssignments = existingForThisForm.filter(a =>
+                    a.assignmentType === 'product'
+                );
+                for (const stale of staleProductAssignments) {
+                    await deleteAssignment(stale.id!);
                 }
 
                 // assignForm handles: adapter push to backend + refetch for UI sync
@@ -103,6 +117,15 @@ export function FormAssignmentSheet({
                     toast.error("No products selected");
                     setIsSubmitting(false);
                     return;
+                }
+
+                // Clean up any existing store-level assignment for the same form
+                // (switching from store→product should remove stale store assignment)
+                const staleStoreAssignment = existingForThisForm.find(a =>
+                    a.assignmentType === 'store'
+                );
+                if (staleStoreAssignment) {
+                    await deleteAssignment(staleStoreAssignment.id!);
                 }
 
                 // Delete existing product-level assignments for these products (prevents duplicates)
@@ -144,11 +167,9 @@ export function FormAssignmentSheet({
                         formName: form.name,
                         formConfig,
                         shopifyDomain: store.url,
-                        skipRefetch: true,
                     });
                 }
 
-                await refetch();
                 toast.success(`Assigned "${form.name}" to ${newProductIds.length} products`);
             }
             onOpenChange(false);

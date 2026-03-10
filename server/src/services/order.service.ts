@@ -4,7 +4,6 @@
  * Handles phone normalization, address building, and Google Sheets triggers.
  */
 
-import axios from 'axios';
 import * as shopifyApi from './shopify-api.service';
 
 // ── Phone Normalization ─────────────────────────────────────────
@@ -186,14 +185,4 @@ export async function createShopifyOrder(
     };
 }
 
-// ── Google Sheets Trigger ───────────────────────────────────────
 
-export function triggerGoogleSheet(
-    config: { scriptUrl: string; sheetName?: string; abandonedSheetName?: string },
-    payload: Record<string, unknown>
-) {
-    // Fire-and-forget, don't block the response
-    axios.post(config.scriptUrl, payload).catch((err) => {
-        console.error('Google Sheet trigger error:', err.message);
-    });
-}

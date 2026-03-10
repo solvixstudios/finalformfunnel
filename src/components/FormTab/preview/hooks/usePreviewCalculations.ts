@@ -74,7 +74,7 @@ export function usePreviewCalculations({
     const currentRates = (() => {
       if (!shipping) return { home: 0, desk: 0 };
       if (selectedWilaya) {
-        const exception = shipping.exceptions.find(
+        const exception = (shipping.exceptions || []).find(
           (e) => String(e.id) === String(selectedWilaya),
         );
         if (exception) return { home: exception.home, desk: exception.desk };

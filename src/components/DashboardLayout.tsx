@@ -16,11 +16,14 @@ import {
   Loader2,
   Menu,
   Save,
+  Settings,
   ShoppingCart,
+  Store,
   Tag,
   Ticket,
   Truck,
-  Plug
+  Plug,
+  X
 } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 import { HeaderActionsProvider, useHeaderActions } from '../contexts/HeaderActionsContext';
@@ -29,11 +32,18 @@ import { useI18n } from '../lib/i18n/i18nContext';
 import { useFormStore } from '../stores';
 import { DesktopSidebar, MobileMenu } from './Sidebar';
 
-interface NavItem {
+export interface NavItem {
   id: string;
   label: string;
   icon: React.ReactNode;
   path: string;
+}
+
+export interface NavGroup {
+  title: string;
+  collapsible?: boolean;
+  defaultExpanded?: boolean;
+  items: NavItem[];
 }
 
 interface DashboardLayoutProps {
@@ -107,49 +117,42 @@ const DashboardLayoutContent = ({
     }
   };
 
-  const navItems: NavItem[] = useMemo(() => [
+  const navGroups: NavGroup[] = useMemo(() => [
     {
-      id: 'home',
-      label: 'Home',
-      icon: <LayoutGrid size={20} />,
-      path: '/dashboard/home',
+      title: "YOUR SPACE",
+      items: [
+        { id: 'home', label: 'Home', icon: <LayoutGrid size={20} />, path: '/dashboard/home' },
+        { id: 'forms', label: 'Forms', icon: <FolderOpen size={20} />, path: '/dashboard/forms' },
+        { id: 'orders', label: 'Orders', icon: <ShoppingCart size={20} />, path: '/dashboard/orders' },
+        { id: 'stores', label: 'Stores', icon: <Store size={20} />, path: '/dashboard/stores' },
+      ]
     },
     {
-      id: 'forms',
-      label: 'Forms',
-      icon: <FolderOpen size={20} />,
-      path: '/dashboard/forms',
+      title: "RULES",
+      collapsible: true,
+      defaultExpanded: true,
+      items: [
+        { id: 'offers', label: 'Offers', icon: <Tag size={20} />, path: '/dashboard/rules/offers' },
+        { id: 'shipping', label: 'Shipping', icon: <Truck size={20} />, path: '/dashboard/rules/shipping' },
+        { id: 'coupons', label: 'Coupons', icon: <Ticket size={20} />, path: '/dashboard/rules/coupons' },
+      ]
     },
     {
-      id: 'orders',
-      label: 'Orders',
-      icon: <ShoppingCart size={20} />,
-      path: '/dashboard/orders',
+      title: "EXTENSIONS",
+      collapsible: true,
+      defaultExpanded: true,
+      items: [
+        { id: 'integrations', label: 'Integrations', icon: <Plug size={20} />, path: '/dashboard/integrations' },
+      ]
     },
     {
-      id: 'offers',
-      label: 'Offers',
-      icon: <Tag size={20} />,
-      path: '/dashboard/rules/offers',
-    },
-    {
-      id: 'shipping',
-      label: 'Shipping',
-      icon: <Truck size={20} />,
-      path: '/dashboard/rules/shipping',
-    },
-    {
-      id: 'coupons',
-      label: 'Coupons',
-      icon: <Ticket size={20} />,
-      path: '/dashboard/rules/coupons',
-    },
-    {
-      id: 'integrations',
-      label: 'Integrations',
-      icon: <Plug size={20} />,
-      path: '/dashboard/integrations',
-    },
+      title: "ADMIN",
+      collapsible: true,
+      defaultExpanded: false,
+      items: [
+        { id: 'settings', label: 'Settings', icon: <Settings size={20} />, path: '/dashboard/settings' },
+      ]
+    }
   ], []);
 
   return (
@@ -161,6 +164,7 @@ const DashboardLayoutContent = ({
         currentPage={currentPage}
         onNavigate={protectedNavigate}
         onLogout={onLogout}
+        navGroups={navGroups}
       />
 
       <div className="flex-1 flex flex-col overflow-hidden relative">
@@ -197,7 +201,7 @@ const DashboardLayoutContent = ({
         <MobileMenu
           isOpen={mobileMenuOpen}
           onClose={() => setMobileMenuOpen(false)}
-          navItems={navItems}
+          navGroups={navGroups}
           currentPage={currentPage}
           onNavigate={(path) => protectedNavigate(path, () => setMobileMenuOpen(false))}
           onLogout={onLogout}
@@ -216,14 +220,21 @@ const DashboardLayoutContent = ({
         {/* Unsaved Changes Dialog */}
         <AlertDialog open={showUnsavedDialog} onOpenChange={(open) => { if (!isSavingBeforeLeave) setShowUnsavedDialog(open); }}>
           <AlertDialogContent>
+            <button
+              onClick={() => setShowUnsavedDialog(false)}
+              disabled={isSavingBeforeLeave}
+              className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
+            >
+              <X className="h-4 w-4" />
+              <span className="sr-only">Close</span>
+            </button>
             <AlertDialogHeader>
               <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
               <AlertDialogDescription>
-                You have unsaved changes. What would you like to do?
+                You have unsaved changes. Do you want to save them before leaving?
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-2">
-              <AlertDialogCancel disabled={isSavingBeforeLeave}>Stay</AlertDialogCancel>
+            <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-2 sm:justify-end mt-4">
               <AlertDialogAction
                 disabled={isSavingBeforeLeave}
                 onClick={() => {
@@ -231,9 +242,9 @@ const DashboardLayoutContent = ({
                   setShowUnsavedDialog(false);
                   pendingActionRef.current = null;
                 }}
-                className="bg-red-600 hover:bg-red-700"
+                className="bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 border border-red-200"
               >
-                Leave & Discard
+                Discard
               </AlertDialogAction>
               {onSaveBeforeLeave && (
                 <button

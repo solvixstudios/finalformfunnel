@@ -8,20 +8,24 @@ import { AppError } from '../middleware/errorHandler';
 import * as storeService from '../services/store.service';
 import * as shopifyApi from '../services/shopify-api.service';
 
-// ── GET /products ───────────────────────────────────────────────
+// ── POST /get-products ───────────────────────────────────────────
 
 export async function getProducts(req: Request, res: Response) {
-    const { subdomain, search, limit, page_info, userId } = req.query;
+    const { subdomain, clientId, clientSecret, search, limit, page_info } = req.body;
 
-    if (!subdomain || !userId) {
-        throw AppError.badRequest('Missing subdomain or userId');
+    if (!subdomain || !clientId || !clientSecret) {
+        throw AppError.badRequest('Missing subdomain, clientId or clientSecret');
     }
 
     const cleanSubdomain = storeService.sanitizeSubdomain(String(subdomain));
     const shopDomain = `${cleanSubdomain}.myshopify.com`;
 
-    const store = await storeService.getStoreCredentials(String(userId), shopDomain);
-    const accessToken = store.data.accessToken;
+    let accessToken: string;
+    try {
+        accessToken = await shopifyApi.getAccessToken(shopDomain, clientId, clientSecret);
+    } catch (e: any) {
+        throw AppError.unauthorized('Invalid Shopify credentials');
+    }
 
     // Build query params
     const queryParams: any = {

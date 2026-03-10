@@ -109,12 +109,10 @@ export const FormsPage = () => {
 
     const stats = useMemo(() => {
         const total = forms.length;
-        const live = forms.filter(f =>
-            allAssignments.some(a => a.formId === f.id && a.isActive)
-        ).length;
+        const live = forms.filter(f => f.status === 'published').length;
         const drafts = total - live;
         return { total, live, drafts };
-    }, [forms, allAssignments]);
+    }, [forms]);
 
     const filteredForms = useMemo(() => {
         let filtered = [...forms];
@@ -128,13 +126,9 @@ export const FormsPage = () => {
         }
 
         if (filter === 'published') {
-            filtered = filtered.filter(form =>
-                allAssignments.some(a => a.formId === form.id && a.isActive)
-            );
+            filtered = filtered.filter(form => form.status === 'published');
         } else if (filter === 'draft') {
-            filtered = filtered.filter(form =>
-                !allAssignments.some(a => a.formId === form.id && a.isActive)
-            );
+            filtered = filtered.filter(form => form.status !== 'published');
         }
 
         return filtered.sort((a, b) => {
@@ -327,7 +321,7 @@ export const FormsPage = () => {
                                 </TableHeader>
                                 <TableBody>
                                     {paginatedForms.map((form) => {
-                                        const isPublished = allAssignments.some(a => a.formId === form.id && a.isActive);
+                                        const isPublished = form.status === 'published';
                                         const store = storeAssignments[form.id];
                                         const formConfig = form.config || {};
                                         const accentColor = formConfig.accentColor || '#7C3AED';
@@ -367,7 +361,7 @@ export const FormsPage = () => {
                                                     {isPublished ? (
                                                         <Badge className="h-5 px-2 text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200/60 font-semibold uppercase tracking-wider shadow-none hover:bg-emerald-50 rounded-md">
                                                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5" />
-                                                            Live
+                                                            Published
                                                         </Badge>
                                                     ) : (
                                                         <Badge variant="secondary" className="h-5 px-2 text-[10px] font-semibold uppercase tracking-wider shadow-none rounded-md">

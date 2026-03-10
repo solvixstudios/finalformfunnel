@@ -135,12 +135,12 @@ export const DEFAULT_FORM_CONFIG = {
     "trustBadges",
   ],
 
-  // Embedded offers
-  offers: DEFAULT_OFFERS,
+  // Embedded offers (empty by default — user must assign an offers rule)
+  offers: [] as typeof DEFAULT_OFFERS,
 
-  // Embedded shipping
+  // Embedded shipping (free by default — user must assign a shipping rule)
   shipping: {
-    standard: { home: 600, desk: 400 },
+    standard: { home: 0, desk: 0 },
     exceptions: [] as { id: string; home: number; desk: number }[],
   },
 

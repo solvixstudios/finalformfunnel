@@ -9,6 +9,7 @@ import * as storeController from '../controllers/store.controller';
 import * as loaderController from '../controllers/loader.controller';
 import * as orderController from '../controllers/order.controller';
 import * as productController from '../controllers/product.controller';
+import * as syncController from '../controllers/sync.controller';
 
 const router = Router();
 
@@ -18,9 +19,11 @@ router.post('/disconnect', asyncHandler(storeController.disconnect));
 
 // ── Config (read-only — source of truth is Firebase assignments + forms) ──
 router.get('/config', asyncHandler(storeController.getConfig));
+router.post('/master-sync', asyncHandler(syncController.masterSync));
+router.post('/assignments', asyncHandler(storeController.getAssignments));
 
 // ── Products ────────────────────────────────────────────────────
-router.get('/products', asyncHandler(productController.getProducts));
+router.post('/get-products', asyncHandler(productController.getProducts));
 
 // ── Loader ──────────────────────────────────────────────────────
 router.post('/enable-loader', asyncHandler(loaderController.enableLoader));

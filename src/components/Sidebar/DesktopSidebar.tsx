@@ -19,22 +19,22 @@ import {
     Zap,
     Plug
 } from 'lucide-react';
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
+import { NavGroup } from '../DashboardLayout';
+import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import { GoogleUser } from '../../lib/authGoogle';
 import { useI18n } from '../../lib/i18n/i18nContext';
-
-interface NavItem {
-    id: string;
-    label: string;
-    icon: React.ReactNode;
-    path: string;
-}
 
 interface DesktopSidebarProps {
     user: GoogleUser;
     currentPage: string;
     onNavigate: (path: string) => void;
     onLogout: () => void;
+    navGroups: NavGroup[];
 }
 
 const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
@@ -42,39 +42,9 @@ const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
     currentPage,
     onNavigate,
     onLogout,
+    navGroups,
 }) => {
     const { language } = useI18n();
-
-    const navGroups = [
-        {
-            title: "YOUR SPACE",
-            items: [
-                { id: 'home', label: 'Home', icon: <LayoutGrid size={17} strokeWidth={2.5} />, path: '/dashboard/home' },
-                { id: 'forms', label: 'Forms', icon: <FolderOpen size={17} strokeWidth={2.5} />, path: '/dashboard/forms' },
-                { id: 'orders', label: 'Orders', icon: <ShoppingCart size={17} strokeWidth={2.5} />, path: '/dashboard/orders' },
-            ]
-        },
-        {
-            title: "RULES",
-            items: [
-                { id: 'offers', label: 'Offers', icon: <Tag size={17} strokeWidth={2.5} />, path: '/dashboard/rules/offers' },
-                { id: 'shipping', label: 'Shipping', icon: <Truck size={17} strokeWidth={2.5} />, path: '/dashboard/rules/shipping' },
-                { id: 'coupons', label: 'Coupons', icon: <Ticket size={17} strokeWidth={2.5} />, path: '/dashboard/rules/coupons' },
-            ]
-        },
-        {
-            title: "EXTENSIONS",
-            items: [
-                { id: 'integrations', label: 'Integrations', icon: <Plug size={17} strokeWidth={2.5} />, path: '/dashboard/integrations' },
-            ]
-        },
-        {
-            title: "ADMIN",
-            items: [
-                { id: 'settings', label: 'Settings', icon: <Settings size={17} strokeWidth={2.5} />, path: '/dashboard/settings' },
-            ]
-        }
-    ];
 
     const isActive = (path: string) => {
         if (path === '/dashboard/forms') return currentPage.startsWith('/dashboard/forms');
@@ -98,38 +68,82 @@ const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
 
             {/* Nav */}
             <nav className="flex-1 flex flex-col px-4 pt-5 pb-2 overflow-y-auto scrollbar-hide">
-                {navGroups.map((group, idx) => (
-                    <div key={idx} className={cn("flex flex-col", idx > 0 && "mt-2 pt-2 border-t border-[#DDD7C8]")}>
-                        <h4 className="text-[9px] font-bold text-[#A69D8A] tracking-[0.12em] uppercase mb-1.5 px-2.5">
-                            {group.title}
-                        </h4>
-                        <div className="flex flex-col gap-0.5">
-                            {group.items.map((item) => {
-                                const active = isActive(item.path);
-                                return (
-                                    <button
-                                        key={item.id}
-                                        onClick={() => onNavigate(item.path)}
-                                        className={cn(
-                                            "group flex items-center gap-2.5 px-2.5 py-[7px] text-[13px] font-semibold transition-all w-full relative text-left rounded-lg",
-                                            active
-                                                ? "bg-[#E6E0D3] text-[#FF5A1F]"
-                                                : "text-[#908878] hover:bg-[#E6E0D3]/60 hover:text-[#FF5A1F]"
-                                        )}
-                                    >
-                                        <span className={cn(
-                                            "shrink-0 transition-colors",
-                                            active ? "text-[#FF5A1F]" : "text-[#B4AD9E] group-hover:text-[#FF5A1F]"
-                                        )}>
-                                            {item.icon}
-                                        </span>
-                                        <span>{item.label}</span>
-                                    </button>
-                                );
-                            })}
+                {navGroups.map((group, idx) => {
+                    const groupHasActiveItem = group.items.some(item => isActive(item.path));
+
+                    return (
+                        <div key={idx} className={cn("flex flex-col", idx > 0 && "mt-2 pt-2 border-t border-[#DDD7C8]")}>
+                            {group.collapsible ? (
+                                <Collapsible defaultOpen={groupHasActiveItem || group.defaultExpanded} className="w-full">
+                                    <CollapsibleTrigger className="flex w-full items-center justify-between mb-1.5 px-2.5 hover:opacity-80 transition-opacity [&[data-state=open]>svg]:rotate-90">
+                                        <h4 className="text-[9px] font-bold text-[#A69D8A] tracking-[0.12em] uppercase">
+                                            {group.title}
+                                        </h4>
+                                        <ChevronRight size={14} className="text-[#A69D8A] transition-transform duration-200" strokeWidth={2.5} />
+                                    </CollapsibleTrigger>
+                                    <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
+                                        <div className="flex flex-col gap-0.5">
+                                            {group.items.map((item) => {
+                                                const active = isActive(item.path);
+                                                return (
+                                                    <button
+                                                        key={item.id}
+                                                        onClick={() => onNavigate(item.path)}
+                                                        className={cn(
+                                                            "group flex items-center gap-2.5 px-2.5 py-[7px] text-[13px] font-semibold transition-all w-full relative text-left rounded-lg",
+                                                            active
+                                                                ? "bg-[#E6E0D3] text-[#FF5A1F]"
+                                                                : "text-[#908878] hover:bg-[#E6E0D3]/60 hover:text-[#FF5A1F]"
+                                                        )}
+                                                    >
+                                                        <span className={cn(
+                                                            "shrink-0 transition-colors",
+                                                            active ? "text-[#FF5A1F]" : "text-[#B4AD9E] group-hover:text-[#FF5A1F]"
+                                                        )}>
+                                                            {React.cloneElement(item.icon as React.ReactElement, { size: 17, strokeWidth: 2.5 })}
+                                                        </span>
+                                                        <span>{item.label}</span>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </CollapsibleContent>
+                                </Collapsible>
+                            ) : (
+                                <>
+                                    <h4 className="text-[9px] font-bold text-[#A69D8A] tracking-[0.12em] uppercase mb-1.5 px-2.5">
+                                        {group.title}
+                                    </h4>
+                                    <div className="flex flex-col gap-0.5">
+                                        {group.items.map((item) => {
+                                            const active = isActive(item.path);
+                                            return (
+                                                <button
+                                                    key={item.id}
+                                                    onClick={() => onNavigate(item.path)}
+                                                    className={cn(
+                                                        "group flex items-center gap-2.5 px-2.5 py-[7px] text-[13px] font-semibold transition-all w-full relative text-left rounded-lg",
+                                                        active
+                                                            ? "bg-[#E6E0D3] text-[#FF5A1F]"
+                                                            : "text-[#908878] hover:bg-[#E6E0D3]/60 hover:text-[#FF5A1F]"
+                                                    )}
+                                                >
+                                                    <span className={cn(
+                                                        "shrink-0 transition-colors",
+                                                        active ? "text-[#FF5A1F]" : "text-[#B4AD9E] group-hover:text-[#FF5A1F]"
+                                                    )}>
+                                                        {React.cloneElement(item.icon as React.ReactElement, { size: 17, strokeWidth: 2.5 })}
+                                                    </span>
+                                                    <span>{item.label}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </>
+                            )}
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </nav>
 
             {/* Bottom: User */}

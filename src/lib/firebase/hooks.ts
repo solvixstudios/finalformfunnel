@@ -21,7 +21,6 @@ import {
   releaseStoreOwnership,
 } from "./storeOwnership";
 import { ConnectedStore, FormAssignment, SavedForm } from "./types";
-import { propagateFormUpdate } from "./backendSync";
 
 // ===== FORMS HOOKS =====
 
@@ -97,15 +96,6 @@ export const useSavedForms = (userId: string) => {
           ...updates,
           updatedAt: new Date().toISOString(),
         });
-
-        // Trigger background sync to backend if config or name changed
-        if (updates.config || updates.name) {
-          const snap = await getDoc(formRef);
-          if (snap.exists()) {
-            const data = snap.data();
-            await propagateFormUpdate(userId, formId, data.name, data.config);
-          }
-        }
       } catch (err: unknown) {
         setError((err as Error).message);
         throw err;
@@ -129,29 +119,7 @@ export const useSavedForms = (userId: string) => {
         const assignmentsQuery = query(collection(db, "users", userId, "assignments"), where("formId", "==", formId));
         const assignmentsSnapshot = await getDocs(assignmentsQuery);
 
-        // 2.5 Clean up backend store_configs for each assignment (fire-and-forget)
-        for (const assignDoc of assignmentsSnapshot.docs) {
-          const assignment = assignDoc.data();
-          if (assignment.storeId) {
-            try {
-              const storeSnap = await getDoc(doc(db, "users", userId, "stores", assignment.storeId));
-              if (storeSnap.exists()) {
-                const storeData = storeSnap.data();
-                if (storeData.clientId && storeData.clientSecret) {
-                  const { getAdapter } = await import("../integrations");
-                  const adapter = getAdapter(storeData.platform || 'shopify');
-                  const subdomain = storeData.url?.replace('.myshopify.com', '').replace(/https?:\/\//, '') || '';
-                  await adapter.removeForm(subdomain, {
-                    clientId: storeData.clientId,
-                    clientSecret: storeData.clientSecret
-                  }, assignment.productId || undefined).catch(() => { });
-                }
-              }
-            } catch (e) {
-              console.warn("Failed to clean backend config for assignment:", e);
-            }
-          }
-        }
+
 
         assignmentsSnapshot.forEach((doc) => {
           batch.delete(doc.ref);
@@ -242,7 +210,7 @@ export const useConnectedStores = (userId: string) => {
 
       // Check if this user already has this store connected
       const existingStore = stores.find(
-        (s) => normalizeShopifyDomain(s.url) === shopifyDomain,
+        (s) => normalizeShopifyDomain(s.url || s.shopifyDomain || "") === shopifyDomain,
       );
       if (existingStore) {
         throw new Error("STORE_ALREADY_CONNECTED");
@@ -331,7 +299,7 @@ export const useConnectedStores = (userId: string) => {
               await adapter.disableLoader(subdomain, {
                 clientId: storeToDelete.clientId,
                 clientSecret: storeToDelete.clientSecret
-              });
+              }, userId);
             }
           } catch (err) {
             // Don't block disconnect if disableLoader fails - log and continue
@@ -339,40 +307,7 @@ export const useConnectedStores = (userId: string) => {
           }
         }
 
-        // 0.5 Clean up backend store_configs for all assignments of this store
-        // IMPORTANT: This must happen BEFORE disconnectStore, because removeForm
-        // needs the store row to still exist in backend's stores table.
         const subdomain = storeToDelete?.url?.replace('.myshopify.com', '').replace(/https?:\/\//, '') || '';
-        if (storeToDelete?.clientId && storeToDelete?.clientSecret) {
-          try {
-            const configAssignmentsQuery = query(
-              collection(db, "users", userId, "assignments"),
-              where("storeId", "==", storeId)
-            );
-            const configSnap = await getDocs(configAssignmentsQuery);
-            const { getAdapter } = await import("../integrations");
-            const adapter = getAdapter(storeToDelete.platform || 'shopify');
-
-            // Delete each config from backend (don't block disconnect)
-            const cleanupPromises = configSnap.docs.map(d => {
-              const data = d.data();
-              return adapter.removeForm(subdomain, {
-                clientId: storeToDelete.clientId!,
-                clientSecret: storeToDelete.clientSecret!
-              }, data.productId || undefined).catch(() => { });
-            });
-            // Also delete the store-level config (ownerId = null)
-            cleanupPromises.push(
-              adapter.removeForm(subdomain, {
-                clientId: storeToDelete.clientId!,
-                clientSecret: storeToDelete.clientSecret!
-              }).catch(() => { })
-            );
-            await Promise.allSettled(cleanupPromises);
-          } catch (err) {
-            console.warn("Failed to clean up backend configs during disconnect:", err);
-          }
-        }
 
         // 0.9 NOW disconnect store from backend (removes the stores row)
         // This is AFTER config cleanup so removeForm can still find the store.
@@ -464,7 +399,6 @@ export const useFormAssignments = (userId: string) => {
       shopifyDomain?: string;
       formName?: string;
       formConfig?: Record<string, any>;
-      skipRefetch?: boolean;
     }) => {
       if (!userId) throw new Error("User not authenticated");
 
@@ -491,38 +425,48 @@ export const useFormAssignments = (userId: string) => {
         }
       }
 
-      // Push to backend via adapter (single source of truth)
-      const { getAdapter } = await import("../integrations");
-      const adapter = getAdapter(store.platform || 'shopify');
-      await adapter.assignForm(subdomain, {
-        clientId: store.clientId,
-        clientSecret: store.clientSecret,
-      }, formConfig, {
-        formId,
-        formName: assignmentData.formName || formConfig.name || 'Untitled Form',
-        storeId,
-        assignmentType: type,
-        productId: type === 'product' ? (productId || undefined) : undefined,
-        productHandle: type === 'product' ? (productHandle || undefined) : undefined,
-      });
+      // No adapter call needed — backend reads config fresh from Firestore on each request
 
       // 2. Persist to Firestore (restore persistence for sync logic and legacy support)
       // Check for existing assignment to avoid duplicates
       try {
-        const q = query(
+        // Query 1: Remove existing assignments for this specific target
+        // (same storeId + same type + same productId if product-level)
+        const targetQuery = query(
           collection(db, "users", userId, "assignments"),
           where("storeId", "==", storeId),
           where("assignmentType", "==", type),
           ...(type === 'product' && productId ? [where("productId", "==", productId)] : [])
         );
 
-        const snapshot = await getDocs(q);
-        const batch = writeBatch(db);
+        // Query 2: Remove any existing assignments for this formId+storeId
+        // regardless of type — handles switching from store→product or product→store
+        const formStoreQuery = query(
+          collection(db, "users", userId, "assignments"),
+          where("storeId", "==", storeId),
+          where("formId", "==", formId)
+        );
 
-        // Remove ANY existing assignments for this target (even if different formId)
-        // This ensures one-form-per-target consistency in Firestore
-        snapshot.forEach(doc => {
-          batch.delete(doc.ref);
+        const [targetSnap, formStoreSnap] = await Promise.all([
+          getDocs(targetQuery),
+          getDocs(formStoreQuery),
+        ]);
+
+        const batch = writeBatch(db);
+        const deletedIds = new Set<string>();
+
+        // Remove conflicting assignments from both queries (deduplicated)
+        targetSnap.forEach(doc => {
+          if (!deletedIds.has(doc.id)) {
+            batch.delete(doc.ref);
+            deletedIds.add(doc.id);
+          }
+        });
+        formStoreSnap.forEach(doc => {
+          if (!deletedIds.has(doc.id)) {
+            batch.delete(doc.ref);
+            deletedIds.add(doc.id);
+          }
         });
 
         const newAssignmentDoc = {
@@ -541,16 +485,20 @@ export const useFormAssignments = (userId: string) => {
         const newDocRef = doc(collection(db, "users", userId, "assignments"));
         batch.set(newDocRef, newAssignmentDoc);
 
+        // Also ensure form is published since it's now assigned!
+        const formRef = doc(db, "users", userId, "forms", formId);
+        batch.update(formRef, {
+          status: 'published',
+          updatedAt: new Date().toISOString()
+        });
+
         await batch.commit();
       } catch (e) {
         console.error("[assignForm] Failed to persist to Firestore:", e);
         // Don't throw - backend sync succeeded, that's what matters most
       }
 
-      // Refetch from backend to sync UI state (unless skipped for batch ops)
-      if (!assignmentData.skipRefetch) {
-        await refetch();
-      }
+      // No longer need to refetch since AssignmentsContext uses a real-time onSnapshot listener
 
       // Return a FormAssignment shape for compatibility
       const newAssignment: FormAssignment = {
@@ -591,13 +539,7 @@ export const useFormAssignments = (userId: string) => {
 
         const subdomain = (store.shopifyDomain || store.url || '').replace(/https?:\/\//, '').replace('.myshopify.com', '');
 
-        // 1. Call adapter to remove from backend
-        const { getAdapter } = await import("../integrations");
-        const adapter = getAdapter(store.platform || 'shopify');
-        await adapter.removeForm(subdomain, {
-          clientId: store.clientId,
-          clientSecret: store.clientSecret,
-        }, assignment.productId || undefined);
+        // No adapter call needed — backend reads config fresh from Firestore on each request
 
         // 2. Remove from Firestore assignments collection (to keep sync logic working)
         // Since we identify by synthetic ID, we must query by properties

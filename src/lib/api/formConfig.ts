@@ -188,6 +188,9 @@ export async function getFormConfig(
             config.shipping = ruleData.shipping;
           }
         }
+      } else {
+        // No rule assigned = free shipping (ignore any embedded legacy defaults)
+        config.shipping = { standard: { home: 0, desk: 0 }, exceptions: [] as any };
       }
 
       // 2. Inject Offers Profile
@@ -200,8 +203,9 @@ export async function getFormConfig(
             config.offers = ruleData.offers;
           }
         }
-      } else if (!config.offers) {
-        config.offers = []; // Initial fallback if no profile and no local offers 
+      } else {
+        // No rule assigned = no offers (ignore any embedded legacy defaults)
+        config.offers = [];
       }
 
       // 3. Inject Coupons Profile

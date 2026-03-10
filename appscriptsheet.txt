@@ -3,99 +3,228 @@ function doPost(e) {
   lock.tryLock(10000);
 
   try {
+    var output = ContentService.createTextOutput();
+    output.setMimeType(ContentService.MimeType.JSON);
+
+    if (!e || !e.postData) {
+      return output.setContent(JSON.stringify({ result: "error", message: "No data" }));
+    }
+
     var data = JSON.parse(e.postData.contents);
+    var sheetName = data.sheetName || "Orders";
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    
-    // 1. IDENTIFY TABS
-    var sheetName = data.sheetName || "Sheet1";
-    var action = data.action || "order"; // 'order' or 'abandoned'
-    
-    // 2. AUTO-CREATE SHEETS IF MISSING
-    var sheet = ensureSheetExists(ss, sheetName, getHeaders(action));
-    
-    // 3. PREPARE ROW DATA
-    var timestamp = new Date();
-    var rowData = [];
-    
-    if (action === 'abandoned') {
-      // Columns: OrderID, Date, Phone, Name, Product, Price, Wilaya
-      rowData = [
-        data.orderId || '',
-        timestamp,
-        data.phone || '',
-        data.name || '',
-        data.productTitle || '',
-        data.totalPrice || '',
-        data.wilaya || ''
-      ];
+    var sheet = ss.getSheetByName(sheetName);
+
+    var isNewSheet = false;
+    if (!sheet) {
+      sheet = ss.insertSheet(sheetName);
+      isNewSheet = true;
+    }
+
+    // --- METADATA KEYS (never shown as columns) ---
+    var metaKeys = ['sheetName', 'abandonedSheetName', '_orderedColumns', '_updateExistingOrderId', '_pinnedCount', 'orderStatus', 'submittedAt'];
+
+    // --- DETERMINE COLUMN ORDER & LABELS ---
+    var orderedCols = data._orderedColumns || null;
+    var colIds = [];
+    var colLabels = {};
+
+    if (orderedCols && orderedCols.length > 0) {
+      for (var i = 0; i < orderedCols.length; i++) {
+        var col = orderedCols[i];
+        if (typeof col === 'object' && col.id) {
+          colIds.push(col.id);
+          colLabels[col.id] = col.label || col.id;
+        } else {
+          colIds.push(col);
+          colLabels[col] = col;
+        }
+      }
     } else {
-      // Columns: OrderID, Date, Name, Phone, Wilaya, Commune, Product, Qty, Price, Total, Note
-      rowData = [
-        data.orderId || '',
-        timestamp,
-        data.name || '',
-        data.phone || '',
-        data.wilaya || '',
-        data.commune || '',
-        data.productTitle || '',
-        data.quantity || 1,
-        data.price || '',
-        data.totalPrice || '',
-        data.note || ''
-      ];
+      colIds = Object.keys(data).filter(function(k) {
+        return metaKeys.indexOf(k) === -1;
+      });
+      for (var j = 0; j < colIds.length; j++) {
+        colLabels[colIds[j]] = colIds[j];
+      }
     }
 
-    // 4. APPEND DATA
-    sheet.appendRow(rowData);
-    
-    // 5. CLEANUP ABANDONED (If Order)
-    if (action === 'order' && data.abandonedSheetName) {
-       try {
-         var abSheet = ss.getSheetByName(data.abandonedSheetName);
-         if (abSheet) {
-            var abData = abSheet.getDataRange().getValues();
-            // Assuming OrderID is Column 1 (Index 0)
-            if (data.orderId) {
-               for (var i = abData.length - 1; i >= 1; i--) {
-                  if (String(abData[i][0]) === String(data.orderId)) {
-                     abSheet.deleteRow(i + 1);
-                  }
-               }
-            }
-         }
-       } catch(e) {
-         // Ignore cleanup errors
-         console.log("Cleanup error: " + e);
-       }
+    // --- HEADER MANAGEMENT ---
+    var lastCol = sheet.getLastColumn();
+    var headers = []; 
+    var headerIds = []; 
+    if (lastCol > 0) {
+      headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(function(h) { return h.toString(); });
+      headerIds = headers.slice();
     }
 
-    return ContentService.createTextOutput(JSON.stringify({ "result": "success", "row": sheet.getLastRow() }))
-      .setMimeType(ContentService.MimeType.JSON);
+    if (headers.length === 0 || isNewSheet) {
+      headers = colIds.map(function(id) { return colLabels[id]; });
+      headerIds = colIds.slice();
+      sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+      formatHeaderRow(sheet, headers.length, data._pinnedCount || 3);
+    } else {
+      var newHeaderLabels = [];
+      var newHeaderIds = [];
+      for (var k = 0; k < colIds.length; k++) {
+        var label = colLabels[colIds[k]];
+        if (headers.indexOf(label) === -1) {
+          newHeaderLabels.push(label);
+          newHeaderIds.push(colIds[k]);
+        }
+      }
+      if (newHeaderLabels.length > 0) {
+        sheet.getRange(1, headers.length + 1, 1, newHeaderLabels.length).setValues([newHeaderLabels]);
+        headers = headers.concat(newHeaderLabels);
+        headerIds = headerIds.concat(newHeaderIds);
+        formatHeaderRow(sheet, headers.length, data._pinnedCount || 3);
+      }
+    }
 
-  } catch (e) {
-    return ContentService.createTextOutput(JSON.stringify({ "result": "error", "error": e.toString() }))
-      .setMimeType(ContentService.MimeType.JSON);
+    var labelToId = {};
+    for (var m = 0; m < colIds.length; m++) {
+      labelToId[colLabels[colIds[m]]] = colIds[m];
+    }
+
+    // --- BUILD ROW VALUES ---
+    var row = headers.map(function(header) {
+      var id = labelToId[header] || header;
+      var val = data[id];
+      if (val && typeof val === 'object') return JSON.stringify(val);
+      return val !== undefined && val !== null ? val : "";
+    });
+
+    // --- UPDATE EXISTING OR APPEND ---
+    var updateId = data._updateExistingOrderId || null;
+    var targetRow = -1;
+
+    if (updateId) {
+      var orderIdLabel = colLabels['orderId'] || 'orderId';
+      var orderIdCol = headers.indexOf(orderIdLabel);
+      if (orderIdCol > -1 && sheet.getLastRow() > 1) {
+        var allData = sheet.getRange(2, orderIdCol + 1, sheet.getLastRow() - 1, 1).getValues();
+        for (var r = 0; r < allData.length; r++) {
+          if (allData[r][0].toString() == updateId.toString()) {
+            targetRow = r + 2; 
+            break;
+          }
+        }
+      }
+    }
+
+    if (targetRow > 0) {
+      sheet.getRange(targetRow, 1, 1, row.length).setValues([row]);
+      formatDataRow(sheet, targetRow, headers, labelToId);
+    } else {
+      var newRow = sheet.getLastRow() + 1;
+      sheet.getRange(newRow, 1, 1, row.length).setValues([row]);
+      formatDataRow(sheet, newRow, headers, labelToId);
+    }
+
+    return output.setContent(JSON.stringify({ result: "success" }));
+
+  } catch (err) {
+    return ContentService.createTextOutput(
+      JSON.stringify({ result: "error", error: err.toString() })
+    ).setMimeType(ContentService.MimeType.JSON);
   } finally {
     lock.releaseLock();
   }
 }
 
-// HELPER: Ensure sheet exists and has headers
-function ensureSheetExists(ss, sheetName, headers) {
-  var sheet = ss.getSheetByName(sheetName);
-  if (!sheet) {
-    sheet = ss.insertSheet(sheetName);
-    if (headers && headers.length > 0) {
-      sheet.appendRow(headers);
-      sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold");
-    }
+// FORMATTING STATUS
+var STATUS_LIST = [
+  'Nouvelle commande', 'En attente', 'Confirmée', 'En préparation', 'Expédiée', 'Livrée',
+  'Échouée 1', 'Échouée 2', 'Échouée 3', 'Annulée', 'Retournée', 'Panier abandonné'
+];
+
+var STATUS_COLORS = {
+  'Nouvelle commande':  { bg: '#dbeafe', fg: '#1d4ed8' },
+  'En attente':         { bg: '#e0f2fe', fg: '#0369a1' },
+  'Panier abandonné':   { bg: '#f1f5f9', fg: '#64748b' },
+  'Confirmée':          { bg: '#dcfce7', fg: '#15803d' },
+  'Livrée':             { bg: '#bbf7d0', fg: '#166534' },
+  'En préparation':     { bg: '#fef3c7', fg: '#b45309' },
+  'Expédiée':           { bg: '#ffedd5', fg: '#c2410c' },
+  'Échouée 1':          { bg: '#fef2f2', fg: '#dc2626' },
+  'Échouée 2':          { bg: '#fee2e2', fg: '#b91c1c' },
+  'Échouée 3':          { bg: '#fecaca', fg: '#991b1b' },
+  'Annulée':            { bg: '#f5f5f4', fg: '#78716c' },
+  'Retournée':          { bg: '#fae8ff', fg: '#a21caf' }
+};
+
+function formatHeaderRow(sheet, colCount, pinnedCount) {
+  var hr = sheet.getRange(1, 1, 1, colCount);
+  hr.setBackground('#0f172a').setFontColor('#f8fafc').setFontWeight('bold').setFontSize(10)
+    .setFontFamily('Inter, Arial, sans-serif').setHorizontalAlignment('center').setVerticalAlignment('middle').setWrap(true);
+  hr.setBorder(null, null, true, null, null, null, '#334155', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+  sheet.setRowHeight(1, 38);
+  sheet.setFrozenRows(1);
+  sheet.setFrozenColumns(pinnedCount || 3);
+  for (var i = 1; i <= colCount; i++) {
+    sheet.autoResizeColumn(i);
+    var w = sheet.getColumnWidth(i);
+    if (w < 110) sheet.setColumnWidth(i, 110);
+    if (w > 250) sheet.setColumnWidth(i, 250);
   }
-  return sheet;
 }
 
-function getHeaders(action) {
-  if (action === 'abandoned') {
-    return ["Order ID", "Date", "Phone", "Name", "Product", "Total", "Wilaya"];
+function formatDataRow(sheet, rowNum, headers, labelToId) {
+  var colCount = headers.length;
+  var rowRange = sheet.getRange(rowNum, 1, 1, colCount);
+  var statusLabel = null;
+  for (var key in labelToId) if (labelToId[key] === 'status') { statusLabel = key; break; }
+  var statusIdx = statusLabel ? headers.indexOf(statusLabel) : -1;
+  var statusVal = statusIdx > -1 ? sheet.getRange(rowNum, statusIdx + 1).getValue().toString() : '';
+
+  var rowColor = STATUS_COLORS[statusVal];
+  rowRange.setBackground(rowColor ? rowColor.bg : (rowNum % 2 === 0 ? '#f8fafc' : '#ffffff'));
+  rowRange.setFontSize(10).setFontFamily('Inter, Arial, sans-serif').setVerticalAlignment('middle').setWrap(false);
+  sheet.setRowHeight(rowNum, 32);
+  rowRange.setBorder(null, null, true, null, null, null, '#e2e8f0', SpreadsheetApp.BorderStyle.SOLID);
+
+  var phoneLabel = null;
+  for (var pk in labelToId) if (labelToId[pk] === 'phone') { phoneLabel = pk; break; }
+  var phoneIdx = phoneLabel ? headers.indexOf(phoneLabel) : -1;
+  if (phoneIdx > -1) {
+    var phoneCell = sheet.getRange(rowNum, phoneIdx + 1);
+    phoneCell.setNumberFormat('@');
+    var phoneVal = phoneCell.getValue().toString();
+    if (phoneVal && !isNaN(phoneVal)) phoneCell.setValue(phoneVal);
   }
-  return ["Order ID", "Date", "Customer Name", "Phone", "Wilaya", "Commune", "Product", "Quantity", "Unit Price", "Total Price", "Note"];
+
+  if (statusIdx > -1) {
+    var statusCell = sheet.getRange(rowNum, statusIdx + 1);
+    var rule = SpreadsheetApp.newDataValidation().requireValueInList(STATUS_LIST, true).setAllowInvalid(false).build();
+    statusCell.setDataValidation(rule);
+    statusCell.setFontWeight('bold').setHorizontalAlignment('center');
+    if (rowColor) statusCell.setFontColor(rowColor.fg);
+  }
+}
+
+function onEdit(e) {
+  if (!e || !e.range) return;
+  var sheet = e.range.getSheet();
+  var row = e.range.getRow();
+  var col = e.range.getColumn();
+  if (row <= 1) return;
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var headerVal = headers[col - 1];
+  if (!headerVal) return;
+  var statusLabels = ['Statut', 'Status', 'statut', 'status'];
+  if (statusLabels.indexOf(headerVal.toString()) === -1) return;
+
+  var newStatus = e.range.getValue().toString();
+  var colCount = headers.length;
+  var rowRange = sheet.getRange(row, 1, 1, colCount);
+  var statusCell = e.range;
+
+  var match = STATUS_COLORS[newStatus];
+  if (match) {
+    rowRange.setBackground(match.bg);
+    statusCell.setFontWeight('bold').setFontColor(match.fg);
+  } else {
+    rowRange.setBackground(row % 2 === 0 ? '#f8fafc' : '#ffffff');
+    statusCell.setFontWeight('bold').setFontColor('#334155');
+  }
 }

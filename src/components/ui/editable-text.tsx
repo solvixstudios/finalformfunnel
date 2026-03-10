@@ -11,6 +11,7 @@ interface EditableTextProps {
     inputClassName?: string;
     placeholder?: string;
     doubleClickToEdit?: boolean;
+    onClick?: (e: React.MouseEvent) => void;
 }
 
 export const EditableText: React.FC<EditableTextProps> = ({
@@ -20,7 +21,8 @@ export const EditableText: React.FC<EditableTextProps> = ({
     className,
     inputClassName,
     placeholder = "Untitled",
-    doubleClickToEdit = false
+    doubleClickToEdit = false,
+    onClick
 }) => {
     const [isEditing, setIsEditing] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -32,6 +34,9 @@ export const EditableText: React.FC<EditableTextProps> = ({
     const handleClick = (e: React.MouseEvent) => {
         if (!doubleClickToEdit) {
             startEditing();
+        }
+        if (onClick) {
+            onClick(e);
         }
     };
 

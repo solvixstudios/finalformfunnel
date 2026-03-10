@@ -467,7 +467,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                         }
 
                         // Offers
-                        if (sectionId === 'offers' && config.type !== 'store') {
+                        if (sectionId === 'offers' && config.type !== 'store' && offers.length > 0) {
                             return renderSectionBlock(
                                 sectionId,
                                 <OffersSection

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMeta } from '@fortawesome/free-brands-svg-icons';
 import { Badge } from '@/components/ui/badge';
@@ -34,6 +35,7 @@ import { useFormStore } from '../../stores';
 interface MetaPixelIntegrationProps {
     userId: string;
     onBack?: () => void;
+    hideTrigger?: boolean;
 }
 
 interface PixelData {
@@ -43,7 +45,7 @@ interface PixelData {
     showAdvanced: boolean;
 }
 
-export function MetaPixelIntegration({ userId, onBack }: MetaPixelIntegrationProps) {
+export function MetaPixelIntegration({ userId, onBack, hideTrigger }: MetaPixelIntegrationProps) {
     const {
         pixels: profiles,
         addPixel,
@@ -59,6 +61,21 @@ export function MetaPixelIntegration({ userId, onBack }: MetaPixelIntegrationPro
 
     const formConfig = useFormStore(state => state.formConfig);
     const setFormConfig = useFormStore(state => state.setFormConfig);
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    useEffect(() => {
+        if (searchParams.get('open') === 'meta-pixel') {
+            const profileId = searchParams.get('profileId');
+            if (profileId === 'new' && view !== 'add') {
+                startAddProfile();
+            } else if (profileId && profileId !== 'new' && view !== 'edit') {
+                const profile = profiles.find(p => p.id === profileId);
+                if (profile) {
+                    startEditProfile(profile);
+                }
+            }
+        }
+    }, [searchParams, profiles, view]);
 
     const startAddProfile = () => {
         setEditingProfileId(null);
@@ -96,6 +113,14 @@ export function MetaPixelIntegration({ userId, onBack }: MetaPixelIntegrationPro
     };
 
     const handleCancel = () => {
+        if (searchParams.get('open') === 'meta-pixel') {
+            setSearchParams(prev => {
+                const next = new URLSearchParams(prev);
+                next.delete('open');
+                next.delete('profileId');
+                return next;
+            });
+        }
         setView('list');
         setEditingProfileId(null);
         setProfileName('');
@@ -440,6 +465,8 @@ export function MetaPixelIntegration({ userId, onBack }: MetaPixelIntegrationPro
     }
 
     // --- LIST VIEW ---
+    if (hideTrigger) return null;
+
     const headerActions = (
         <Button
             size="sm"

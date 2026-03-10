@@ -24,7 +24,7 @@ const INTEGRATIONS_LIST = [
     { id: 'meta', title: 'Meta Pixel', icon: <FontAwesomeIcon icon={faMeta} className="text-lg" />, color: 'text-blue-600', bg: 'bg-blue-50' },
     { id: 'tiktok', title: 'TikTok Pixel', icon: <FontAwesomeIcon icon={faTiktok} className="text-lg" />, color: 'text-zinc-800', bg: 'bg-zinc-100' },
     { id: 'shopify', title: 'Shopify', icon: <FontAwesomeIcon icon={faShopify} className="text-lg" />, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-    { id: 'woocommerce', title: 'WooCommerce', icon: <FontAwesomeIcon icon={faBoxOpen} className="text-sm" />, color: 'text-[#96588a]', bg: 'bg-[#96588a]/10' },
+    { id: 'woocommerce', title: 'WooCommerce', icon: <FontAwesomeIcon icon={faBoxOpen} className="text-sm" />, color: 'text-[#96588a]', bg: 'bg-[#96588a]/10', comingSoon: true },
     { id: 'google_sheets', title: 'Google Sheets', icon: <FontAwesomeIcon icon={faTable} className="text-base" />, color: 'text-emerald-600', bg: 'bg-emerald-50' },
 ];
 
@@ -71,18 +71,25 @@ const IntegrationsPage: React.FC<IntegrationsPageProps> = ({ userId }) => {
                         {INTEGRATIONS_LIST.map((int) => (
                             <button
                                 key={int.id}
-                                onClick={() => setActiveIntegration(int.id as IntegrationId)}
+                                disabled={int.comingSoon}
+                                onClick={() => !int.comingSoon && setActiveIntegration(int.id as IntegrationId)}
                                 className={cn(
-                                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 text-left",
-                                    activeIntegration === int.id
+                                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 text-left relative",
+                                    int.comingSoon && "opacity-60 cursor-not-allowed grayscale-[50%]",
+                                    !int.comingSoon && activeIntegration === int.id
                                         ? "bg-slate-100/80 text-slate-900 shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)] border border-slate-200"
-                                        : "text-slate-600 hover:bg-slate-50 border border-transparent hover:border-slate-200"
+                                        : (!int.comingSoon ? "text-slate-600 hover:bg-slate-50 border border-transparent hover:border-slate-200" : "text-slate-500 bg-slate-50/50 border border-transparent")
                                 )}
                             >
-                                <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shadow-sm", int.bg, int.color)}>
+                                <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shadow-sm shrink-0", int.bg, int.color)}>
                                     {int.icon}
                                 </div>
                                 <span className="flex-1 truncate">{int.title}</span>
+                                {int.comingSoon && (
+                                    <span className="text-[9px] font-black uppercase tracking-widest bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-md shrink-0 shadow-sm border border-slate-300">
+                                        Bientôt
+                                    </span>
+                                )}
                             </button>
                         ))}
                     </div>

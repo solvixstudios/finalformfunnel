@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTiktok } from '@fortawesome/free-brands-svg-icons';
 import { Badge } from '@/components/ui/badge';
@@ -34,6 +35,7 @@ import { useFormStore } from '../../stores';
 interface TikTokIntegrationProps {
     userId: string;
     onBack?: () => void;
+    hideTrigger?: boolean;
 }
 
 interface PixelData {
@@ -43,7 +45,7 @@ interface PixelData {
     showAdvanced: boolean;
 }
 
-export function TikTokIntegration({ userId, onBack }: TikTokIntegrationProps) {
+export function TikTokIntegration({ userId, onBack, hideTrigger }: TikTokIntegrationProps) {
     const {
         pixels: profiles,
         addPixel,
@@ -59,6 +61,21 @@ export function TikTokIntegration({ userId, onBack }: TikTokIntegrationProps) {
 
     const formConfig = useFormStore(state => state.formConfig);
     const setFormConfig = useFormStore(state => state.setFormConfig);
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    useEffect(() => {
+        if (searchParams.get('open') === 'tiktok-pixel') {
+            const profileId = searchParams.get('profileId');
+            if (profileId === 'new' && view !== 'add') {
+                startAddProfile();
+            } else if (profileId && profileId !== 'new' && view !== 'edit') {
+                const profile = profiles.find(p => p.id === profileId);
+                if (profile) {
+                    startEditProfile(profile);
+                }
+            }
+        }
+    }, [searchParams, profiles, view]);
 
     const startAddProfile = () => {
         setEditingProfileId(null);
@@ -87,6 +104,14 @@ export function TikTokIntegration({ userId, onBack }: TikTokIntegrationProps) {
     };
 
     const handleCancel = () => {
+        if (searchParams.get('open') === 'tiktok-pixel') {
+            setSearchParams(prev => {
+                const next = new URLSearchParams(prev);
+                next.delete('open');
+                next.delete('profileId');
+                return next;
+            });
+        }
         setView('list');
         setEditingProfileId(null);
         setProfileName('');
@@ -428,6 +453,8 @@ export function TikTokIntegration({ userId, onBack }: TikTokIntegrationProps) {
     }
 
     // --- LIST VIEW ---
+    if (hideTrigger) return null;
+
     const headerActions = (
         <Button
             size="sm"

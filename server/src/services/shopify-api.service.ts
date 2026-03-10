@@ -32,6 +32,7 @@ export async function getAccessToken(
         return response.data.access_token;
     } catch (e: any) {
         const detail = e?.response?.data || e.message;
+        console.error('[ShopifyAPI] getAccessToken Error details:', detail);
         throw new Error(`Failed to get Shopify access token: ${JSON.stringify(detail)}`);
     }
 }

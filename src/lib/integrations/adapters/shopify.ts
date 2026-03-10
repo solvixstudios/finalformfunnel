@@ -87,10 +87,17 @@ export class ShopifyAdapter implements PlatformAdapter {
       return { success: false, error: 'Shopify requires clientId and clientSecret' };
     }
 
+    console.log('[Shopify Adapter] connect() called with:', {
+      subdomain,
+      userId,
+      clientIdLen: clientId?.length,
+      clientSecretLen: clientSecret?.length
+    });
+
     try {
       // The provided snippet has a different URL and console.log, applying that specific change.
-      console.log(`[Shopify Adapter] Sending config to webhook ${BACKEND_URL}/webhook/shopify/config...`);
-      const response = await fetch(`${BACKEND_URL}/webhook/shopify/config`, {
+      console.log(`[Shopify Adapter] Sending config to webhook ${BACKEND_URL}/webhook/shopify/connect...`);
+      const response = await fetch(`${BACKEND_URL}/webhook/shopify/connect`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ subdomain, clientId, clientSecret, userId }),
@@ -124,19 +131,20 @@ export class ShopifyAdapter implements PlatformAdapter {
           version: data.loaderVersion,
           scriptId: data.loaderScriptTagId,
         },
+        firebaseStoreId: data.storeId,
       };
     } catch (error: unknown) {
       return { success: false, error: (error as Error).message || 'Failed to connect to Shopify' };
     }
   }
 
-  async enableLoader(subdomain: string, credentials: PlatformCredentials): Promise<EnableLoaderResult> {
+  async enableLoader(subdomain: string, credentials: PlatformCredentials, userId?: string): Promise<EnableLoaderResult> {
     const { clientId, clientSecret } = credentials;
 
     const response = await fetch(`${BACKEND_URL}/${WEBHOOK_ENV}/shopify/enable-loader`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subdomain, clientId, clientSecret }),
+      body: JSON.stringify({ subdomain, clientId, clientSecret, userId }),
     });
 
     if (!response.ok) {
@@ -151,14 +159,14 @@ export class ShopifyAdapter implements PlatformAdapter {
     };
   }
 
-  async disableLoader(subdomain: string, credentials: PlatformCredentials): Promise<void> {
+  async disableLoader(subdomain: string, credentials: PlatformCredentials, userId?: string): Promise<void> {
     const { clientId, clientSecret } = credentials;
 
     // Disable the loader script tag ONLY (don't remove store from backend yet)
     const response = await fetch(`${BACKEND_URL}/${WEBHOOK_ENV}/shopify/disable-loader`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subdomain, clientId, clientSecret }),
+      body: JSON.stringify({ subdomain, clientId, clientSecret, userId }),
     });
 
     if (!response.ok) {
@@ -166,18 +174,11 @@ export class ShopifyAdapter implements PlatformAdapter {
     }
   }
 
-  async disconnectStore(subdomain: string): Promise<void> {
+  async disconnectStore(subdomain: string, credentials?: PlatformCredentials, userId?: string): Promise<void> {
     const shopDomain = `${subdomain}.myshopify.com`;
-    try {
-      // The provided snippet has a different URL, applying that specific change.
-      await fetch(`${BACKEND_URL}/webhook/shopify/orders`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shopDomain }),
-      });
-    } catch (e: unknown) {
-      console.warn('Failed to remove store from backend:', (e as Error).message);
-    }
+    // Disconnect is handled by the frontend deleting the store from Firestore.
+    // We don't need to call the backend here, since the loader will 404 naturally when the store is gone.
+    console.log(`[Shopify Adapter] Disconnecting store ${shopDomain}`);
   }
 
   async assignForm(
@@ -186,82 +187,15 @@ export class ShopifyAdapter implements PlatformAdapter {
     formConfig: Record<string, unknown>,
     context?: AssignmentContext
   ): Promise<unknown> {
-    const { clientId, clientSecret } = credentials;
-
-    // Validate required fields
-    if (!context?.formId && !formConfig.formId) {
-      throw new Error('formId is required for assignForm');
-    }
-    if (!context?.storeId) {
-      throw new Error('storeId is required for assignForm');
-    }
-
-    // Build shopDomain from subdomain
-    const shopDomain = `${subdomain}.myshopify.com`;
-
-    const payload: Record<string, unknown> = {
-      shopDomain,
-      clientId,
-      clientSecret,
-      formId: context?.formId || formConfig.formId,
-      formName: context?.formName || formConfig.name || 'Untitled Form',
-      formData: formConfig,
-      productId: context?.productId ? String(context.productId) : null,
-    };
-
-    // DEBUG: Trace final payload to backend
-    console.log('[ShopifyAdapter] Sending payload to backend:', {
-      shopDomain,
-      formId: payload.formId,
-      hasFormData: !!payload.formData,
-      addonData: {
-        pixels: (payload.formData as { addons?: { pixelData?: unknown[] } })?.addons?.pixelData?.length || 0,
-        tiktok: (payload.formData as { addons?: { tiktokPixelData?: unknown[] } })?.addons?.tiktokPixelData?.length || 0,
-        sheets: (payload.formData as { addons?: { sheets?: unknown[] } })?.addons?.sheets?.length || 0
-      }
-    });
-
-    const response = await fetch(`${BACKEND_URL}/${WEBHOOK_ENV}/shopify/save-config`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
-    const responseData = await response.json().catch(() => ({}));
-    const result = normalizeResponse(responseData);
-
-    console.log('[ShopifyAdapter] assignForm response:', { status: response.status, result });
-
-    if (!response.ok || result.error || result.success === false) {
-      throw new Error(result.error || result.message || 'Failed to save config to Shopify');
-    }
-
-    return result;
+    // Backend architecture changed: assignments are managed in Firestore by the client.
+    // The server reads them fresh on each /config request. No backend sync needed.
+    console.log('[ShopifyAdapter] assignForm: form saved to Firestore by client.');
+    return { success: true };
   }
 
   async removeForm(subdomain: string, credentials: PlatformCredentials, productId?: string): Promise<void> {
-    const { clientId, clientSecret } = credentials;
-
-    // Build shopDomain from subdomain
-    const shopDomain = `${subdomain}.myshopify.com`;
-
-    const payload: Record<string, unknown> = {
-      shopDomain,
-      clientId,
-      clientSecret,
-      productId: productId ? String(productId) : null,
-    };
-
-    const response = await fetch(`${BACKEND_URL}/${WEBHOOK_ENV}/shopify/delete-config`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error(err.error || 'Failed to remove config from Shopify');
-    }
+    // Backend architecture changed: assignments are managed in Firestore by the client.
+    console.log('[ShopifyAdapter] removeForm: form removed from Firestore by client.');
   }
 
   async getAssignments(subdomain: string, credentials: PlatformCredentials): Promise<{ type: string; formId: string; productId?: string; storeId: string }[]> {

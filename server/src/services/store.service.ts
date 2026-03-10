@@ -92,10 +92,11 @@ export async function upsertStore(
         await doc.ref.update({
             accessToken: data.accessToken,
             shopName: data.shopName,
+            name: data.shopName,
             updatedAt: new Date().toISOString(),
         });
     } else {
-        // Create new
+        // Create new — include all fields the client expects (ConnectedStore type)
         storeId = crypto.randomUUID();
         await storesRef.doc(storeId).set({
             storeId,
@@ -106,6 +107,11 @@ export async function upsertStore(
             accessToken: data.accessToken,
             shopName: data.shopName,
             userId,
+            // Client-compatible fields (ConnectedStore type)
+            name: data.shopName,
+            platform: 'shopify',
+            url: shopDomain,
+            status: 'connected',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
         });
@@ -153,3 +159,28 @@ export async function getStoreCredentials(userId: string, shopDomain: string) {
 }
 
 export { sanitizeSubdomain };
+
+// ── Assignments ─────────────────────────────────────────────────
+
+/**
+ * Fetch all active assignments for a given user and store.
+ */
+export async function getAssignmentsForStore(userId: string, storeId: string) {
+    const assignmentsSnap = await db
+        .collection('users')
+        .doc(userId)
+        .collection('assignments')
+        .where('storeId', '==', storeId)
+        .where('isActive', '==', true)
+        .get();
+
+    return assignmentsSnap.docs.map(doc => {
+        const data = doc.data();
+        return {
+            type: data.assignmentType,
+            formId: data.formId,
+            productId: data.productId,
+            storeId: data.storeId
+        };
+    });
+}

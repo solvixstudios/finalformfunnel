@@ -40,6 +40,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useConnectedStores } from '@/lib/firebase/hooks';
+import { claimStoreOwnership } from '@/lib/firebase/storeOwnership';
 import { getAdapter, LOADER_VERSION } from '@/lib/integrations';
 import { cn } from '@/lib/utils';
 import { notifyProductSyncComplete, syncProductsFromShopify } from '@/lib/products';
@@ -215,28 +216,25 @@ export function ShopifyIntegration({ userId, onBack }: ShopifyIntegrationProps) 
                 const shopifyDomain = result.store.domain || `${cleanDomain}.myshopify.com`;
 
                 try {
-                    const newStore = await addStore({
-                        name: result.store.name,
-                        platform: 'shopify',
-                        url: shopifyDomain,
-                        shopifyDomain: shopifyDomain,
-                        clientId: shopifyForm.clientId.trim(),
-                        clientSecret: shopifyForm.clientSecret.trim(),
-                        loaderInstalled: result.loader?.installed || false,
-                        loaderVersion: result.loader?.version,
-                        loaderScriptTagId: result.loader?.scriptId,
-                        loaderInstalledAt: result.loader?.installed ? new Date().toISOString() : undefined,
-                    });
+                    // The server's connect endpoint already creates/updates the store doc
+                    // in Firestore via upsertStore(). The onSnapshot listener will pick it up.
+                    // Use the server's storeId so assignments match what store_domains lookup returns.
+                    const newStoreId = result.firebaseStoreId;
+
+                    // Claim ownership via client-side storeOwners collection
+                    if (newStoreId) {
+                        await claimStoreOwnership(shopifyDomain, userId, newStoreId);
+                    }
 
                     if (!result.loader?.installed) {
                         try {
                             const loaderResult = await shopifyAdapter.enableLoader(cleanDomain, {
                                 clientId: shopifyForm.clientId.trim(),
                                 clientSecret: shopifyForm.clientSecret.trim(),
-                            });
+                            }, userId);
 
-                            if (loaderResult.success) {
-                                await updateStore(newStore.id, {
+                            if (loaderResult.success && newStoreId) {
+                                await updateStore(newStoreId, {
                                     loaderInstalled: true,
                                     loaderVersion: loaderResult.version || LOADER_VERSION,
                                     loaderScriptTagId: loaderResult.scriptId,
@@ -257,8 +255,18 @@ export function ShopifyIntegration({ userId, onBack }: ShopifyIntegrationProps) 
                     // Auto-sync products
                     toast.info("Synchronisation des produits en cours...");
                     try {
-                        const syncedProducts = await syncProductsFromShopify(newStore);
-                        notifyProductSyncComplete(newStore.id, syncedProducts);
+                        const tempStoreForSync = {
+                            id: newStoreId,
+                            platform: 'shopify' as const,
+                            url: shopifyDomain,
+                            shopifyDomain: shopifyDomain,
+                            clientId: shopifyForm.clientId.trim(),
+                            clientSecret: shopifyForm.clientSecret.trim()
+                        };
+                        const syncedProducts = await syncProductsFromShopify(tempStoreForSync as any);
+                        if (newStoreId) {
+                            notifyProductSyncComplete(newStoreId, syncedProducts);
+                        }
                         toast.success(`${syncedProducts.length} produits synchronisés.`);
                     } catch (syncErr) {
                         console.error("Auto-sync failed", syncErr);
@@ -266,14 +274,9 @@ export function ShopifyIntegration({ userId, onBack }: ShopifyIntegrationProps) 
                     }
 
                     setView('list');
-                } catch (addError: any) {
-                    if (addError.message === 'STORE_ALREADY_OWNED') {
-                        toast.error('Cette boutique est déjà liée à un autre compte.');
-                    } else if (addError.message === 'STORE_ALREADY_CONNECTED') {
-                        toast.error('Cette boutique est déjà connectée à votre compte.');
-                    } else {
-                        throw addError;
-                    }
+                } catch (err: any) {
+                    console.error('Post-connect error:', err);
+                    throw err;
                 }
             } else {
                 toast.error(result.error || 'La connexion a échoué. Veuillez vérifier vos accès.');
@@ -300,7 +303,7 @@ export function ShopifyIntegration({ userId, onBack }: ShopifyIntegrationProps) 
             const result = await shopifyAdapter.enableLoader(subdomain, {
                 clientId: store.clientId,
                 clientSecret: store.clientSecret
-            });
+            }, userId);
 
             toast.dismiss(loadingToast);
 
@@ -341,43 +344,7 @@ export function ShopifyIntegration({ userId, onBack }: ShopifyIntegrationProps) 
         }
     };
 
-    const handleSyncAssignments = async (store: any) => {
-        setProcessingStoreId(store.id);
-        const loadingToast = toast.loading('Synchronisation des formulaires...');
 
-        try {
-            const { collection, query, where, getDocs, writeBatch, doc } = await import('firebase/firestore');
-            const { db } = await import('@/lib/firebase');
-
-            const q = query(collection(db, "assignments"), where("storeId", "==", store.id));
-            const snapshot = await getDocs(q);
-
-            const batch = writeBatch(db);
-            let updates = 0;
-            const domain = store.url;
-
-            snapshot.docs.forEach(d => {
-                const data = d.data();
-                if (!data.shopifyDomain || data.shopifyDomain !== domain) {
-                    batch.update(doc(db, "assignments", d.id), { shopifyDomain: domain });
-                    updates++;
-                }
-            });
-
-            if (updates > 0) {
-                await batch.commit();
-                toast.success(`${updates} formulaires synchronisés.`);
-            } else {
-                toast.info('Tous les formulaires sont déjà à jour.');
-            }
-        } catch (e) {
-            console.error(e);
-            toast.error('La synchronisation a échoué.');
-        } finally {
-            toast.dismiss(loadingToast);
-            setProcessingStoreId(null);
-        }
-    };
 
     const handleDeleteStore = async (storeId: string) => {
         if (confirm('Voulez-vous vraiment déconnecter cette boutique ? Toutes les configurations liées seront perdues.')) {
@@ -447,7 +414,7 @@ export function ShopifyIntegration({ userId, onBack }: ShopifyIntegrationProps) 
                                             const result = await shopifyAdapter.connect(cleanDomain, {
                                                 clientId: shopifyForm.clientId.trim(),
                                                 clientSecret: shopifyForm.clientSecret.trim(),
-                                            });
+                                            }, userId);
                                             return result.success === true;
                                         } catch {
                                             return false;
@@ -659,9 +626,7 @@ export function ShopifyIntegration({ userId, onBack }: ShopifyIntegrationProps) 
                                                         <DropdownMenuItem className="text-xs font-medium" onClick={() => handleRefreshProducts(store)}>
                                                             <RotateCw size={14} className="mr-2" /> Actualiser les produits
                                                         </DropdownMenuItem>
-                                                        <DropdownMenuItem className="text-xs font-medium" onClick={() => handleSyncAssignments(store)}>
-                                                            <Activity size={14} className="mr-2" /> Synchroniser les assignations
-                                                        </DropdownMenuItem>
+
                                                         <DropdownMenuSeparator />
                                                         <DropdownMenuItem
                                                             className="text-red-600 focus:text-red-700 focus:bg-red-50 text-xs font-medium"

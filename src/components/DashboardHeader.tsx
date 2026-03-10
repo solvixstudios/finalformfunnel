@@ -40,24 +40,28 @@ function getGreeting(): string {
 
 const colorMap = {
     violet: {
-        bg: 'bg-black',
+        bg: 'bg-slate-900',
         text: 'text-white',
-        ring: 'ring-slate-900',
+        ring: 'ring-slate-800',
+        glow: 'shadow-slate-900/10',
     },
     emerald: {
-        bg: 'bg-[#FF5A1F]/10',
-        text: 'text-[#FF5A1F]',
-        ring: 'ring-[#FF5A1F]',
+        bg: 'bg-gradient-to-br from-[#FF5A1F] to-[#E04812]',
+        text: 'text-white',
+        ring: 'ring-[#FF5A1F]/30',
+        glow: 'shadow-[#FF5A1F]/10',
     },
     blue: {
-        bg: 'bg-rose-50',
-        text: 'text-rose-600',
-        ring: 'ring-rose-100',
+        bg: 'bg-gradient-to-br from-rose-500 to-pink-600',
+        text: 'text-white',
+        ring: 'ring-rose-200',
+        glow: 'shadow-rose-500/10',
     },
     amber: {
-        bg: 'bg-amber-50',
-        text: 'text-amber-600',
-        ring: 'ring-amber-100',
+        bg: 'bg-gradient-to-br from-amber-400 to-orange-500',
+        text: 'text-white',
+        ring: 'ring-amber-200',
+        glow: 'shadow-amber-400/10',
     },
 };
 
@@ -154,20 +158,23 @@ export function DashboardHeader({ userName, stats, plan, onPlanClick, greeting =
                         return (
                             <div
                                 key={stat.label}
-                                className="snap-start shrink-0 w-[200px] group flex items-center justify-between gap-4 bg-white rounded-xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow duration-200 border border-slate-200"
+                                className={cn(
+                                    "snap-start shrink-0 w-[210px] group flex items-center gap-4 bg-white rounded-2xl p-5 shadow-sm hover:shadow-lg transition-all duration-300 border border-slate-100 hover:border-slate-200 hover:-translate-y-0.5",
+                                    colors.glow
+                                )}
                             >
-                                <div className="flex items-center gap-3">
-                                    <div className={cn("w-10 h-10 rounded-lg flex flex-shrink-0 items-center justify-center", colors.bg, colors.text)}>
+                                <div className="flex items-center gap-3.5">
+                                    <div className={cn("w-11 h-11 rounded-xl flex flex-shrink-0 items-center justify-center shadow-sm", colors.bg, colors.text)}>
                                         {stat.icon}
                                     </div>
                                     <div>
-                                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none mb-1 whitespace-nowrap overflow-hidden text-ellipsis">{stat.label}</p>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1.5 whitespace-nowrap overflow-hidden text-ellipsis">{stat.label}</p>
                                         <p className="text-xl sm:text-2xl font-black text-slate-900 tabular-nums tracking-tight leading-none">
                                             <AnimatedNumber
                                                 value={stat.value}
                                                 format={stat.format || ((n) => n.toLocaleString())}
                                             />
-                                            {stat.suffix && <span className="text-sm font-bold text-slate-500 ml-1">{stat.suffix}</span>}
+                                            {stat.suffix && <span className="text-sm font-bold text-slate-400 ml-1">{stat.suffix}</span>}
                                         </p>
                                     </div>
                                 </div>
@@ -183,34 +190,34 @@ export function DashboardHeader({ userName, stats, plan, onPlanClick, greeting =
                             <DropdownMenuTrigger asChild>
                                 <button
                                     title="Customize Dashboard"
-                                    className="w-12 flex items-center justify-center bg-white hover:bg-slate-50 rounded-xl border border-slate-200 shadow-sm transition-all duration-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 group"
+                                    className="w-12 flex items-center justify-center bg-white hover:bg-slate-50 rounded-2xl border border-slate-100 shadow-sm transition-all duration-300 text-slate-400 hover:text-[#FF5A1F] hover:border-[#FF5A1F]/20 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#FF5A1F]/20 group"
                                 >
-                                    <Settings2 size={20} className="transition-transform duration-300 group-hover:rotate-90" />
+                                    <Settings2 size={20} className="transition-transform duration-500 group-hover:rotate-180" />
                                 </button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-56 bg-white/95 backdrop-blur-xl border border-slate-200/60 p-2 shadow-2xl shadow-slate-900/10 rounded-2xl">
-                                <div className="px-2 py-1.5 mb-1">
-                                    <p className="text-xs font-bold text-slate-900 uppercase tracking-wider">Dashboard Metrics</p>
-                                    <p className="text-[10px] font-medium text-slate-500 mt-0.5">Toggle visibility of your core stats.</p>
+                            <DropdownMenuContent align="end" className="w-60 bg-white/98 backdrop-blur-2xl border border-slate-100 p-2.5 shadow-2xl shadow-slate-900/8 rounded-2xl">
+                                <div className="px-2.5 py-2 mb-1">
+                                    <p className="text-xs font-black text-slate-900 uppercase tracking-wider">Dashboard Metrics</p>
+                                    <p className="text-[10px] font-medium text-slate-400 mt-0.5">Toggle visibility of your core stats.</p>
                                 </div>
-                                <div className="h-px bg-slate-100 my-1 mx-1" />
-                                <div className="max-h-[300px] overflow-y-auto">
+                                <div className="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent my-1.5" />
+                                <div className="max-h-[300px] overflow-y-auto space-y-0.5">
                                     {stats.map(stat => (
                                         <DropdownMenuCheckboxItem
                                             key={stat.label}
                                             checked={visibleStats[stat.label] !== false}
                                             onCheckedChange={() => toggleStat(stat.label)}
-                                            className="text-xs font-semibold text-slate-700 py-2.5 px-3 focus:bg-indigo-50 focus:text-indigo-700 rounded-xl cursor-pointer transition-colors"
+                                            className="text-xs font-semibold text-slate-700 py-3 px-3 focus:bg-[#FF5A1F]/5 focus:text-[#FF5A1F] rounded-xl cursor-pointer transition-colors"
                                         >
                                             {/* Premium iOS-style Switch implementation */}
                                             <div className="flex-1 flex items-center justify-between w-full">
                                                 <span className="truncate">{stat.label}</span>
                                                 <div className={cn(
-                                                    "w-8 h-4.5 rounded-full flex items-center px-0.5 transition-colors duration-200 border",
-                                                    visibleStats[stat.label] !== false ? "bg-indigo-500 border-indigo-500" : "bg-slate-200 border-slate-300"
+                                                    "w-9 h-5 rounded-full flex items-center px-0.5 transition-all duration-300 border",
+                                                    visibleStats[stat.label] !== false ? "bg-[#FF5A1F] border-[#FF5A1F] shadow-sm shadow-[#FF5A1F]/30" : "bg-slate-200 border-slate-300"
                                                 )}>
                                                     <div className={cn(
-                                                        "w-3.5 h-3.5 bg-white rounded-full shadow-sm transition-transform duration-200",
+                                                        "w-4 h-4 bg-white rounded-full shadow-sm transition-all duration-300",
                                                         visibleStats[stat.label] !== false ? "translate-x-3.5" : "translate-x-0"
                                                     )} />
                                                 </div>
@@ -218,14 +225,14 @@ export function DashboardHeader({ userName, stats, plan, onPlanClick, greeting =
                                         </DropdownMenuCheckboxItem>
                                     ))}
                                 </div>
-                                <div className="h-px bg-slate-100 my-1 mx-1" />
+                                <div className="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent my-1.5" />
                                 <div className="p-1">
                                     <button
                                         onClick={(e) => {
                                             e.preventDefault();
                                             setVisibleStats(stats.reduce((acc, s) => ({ ...acc, [s.label]: true }), {}));
                                         }}
-                                        className="w-full text-left px-2 py-2 text-[11px] font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded-lg transition-colors"
+                                        className="w-full text-left px-3 py-2.5 text-[11px] font-bold text-slate-400 hover:text-[#FF5A1F] hover:bg-[#FF5A1F]/5 rounded-xl transition-all duration-200"
                                     >
                                         Show All Metrics
                                     </button>

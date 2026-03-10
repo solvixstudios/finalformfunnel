@@ -15,14 +15,15 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/sonner';
 import { useWhatsAppProfiles } from '@/lib/firebase/whatsappHooks';
 import { useGoogleSheets } from '@/lib/firebase/sheetsHooks';
-import { FolderOpen, RotateCcw, RotateCw, Save } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { FolderOpen, RotateCcw, RotateCw, Save, Globe } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import FormTab from '../components/FormTab';
-import { syncFormChanges } from '../lib/sync';
+
 
 import { useConnectedStores, useFormAssignments, useSavedForms } from '../lib/firebase/hooks';
 import { getExportData, loadFormWithValidation, normalizeImportedConfig, validateFormConfig } from '../lib/formManagement';
+import { Switch } from '@/components/ui/switch';
 import { useI18n } from '../lib/i18n/i18nContext';
 import { useFormStore } from '../stores';
 import { BuilderProvider } from '../components/FormTab/contexts/BuilderContext';
@@ -119,13 +120,19 @@ const EditFormPage = ({ userId }: EditFormPageProps) => {
         navigate('/dashboard/forms/edit/new');
       }
     } else if (routeFormId === 'new') {
-      if (formId) {
-        useFormStore.getState().resetToNewForm();
+      const state = useFormStore.getState();
+      if (formId || !state.isNewForm || state.isDirty) {
+        state.resetToNewForm();
       }
-
-
     }
   }, [routeFormId, forms, formsLoading, formId, navigate, searchParams]);
+
+  // Clean up global unsaved state when leaving the builder entirely
+  useEffect(() => {
+    return () => {
+      useFormStore.getState().markClean();
+    };
+  }, []);
 
   // Block rendering until context is ready
   if (!isContextReady && !formsLoading) {
@@ -412,26 +419,51 @@ const EditFormPage = ({ userId }: EditFormPageProps) => {
       // SHOPIFY STORE LINKS: Sync local link selections to real assignments
       if (savedFormId) {
         const freshFormConfig = useFormStore.getState().formConfig;
-        const desiredLinks: { storeId: string; type: 'store' | 'product' }[] = freshFormConfig.addons?.shopifyStoreLinks || [];
+        const desiredLinks: { storeId: string; type: 'store' | 'product'; productIds?: string[] }[] = freshFormConfig.addons?.shopifyStoreLinks || [];
         const currentAssignments = assignments.filter(a => a.formId === savedFormId);
 
         // Create new assignments for links that don't exist yet
         for (const link of desiredLinks) {
-          const exists = currentAssignments.some(a =>
-            a.storeId === link.storeId && a.assignmentType === link.type
-          );
-          if (!exists) {
-            try {
-              await assignForm({
-                formId: savedFormId,
-                storeId: link.storeId,
-                type: link.type,
-                formName: formName.trim(),
-                formConfig: { formId: savedFormId, name: formName.trim(), ...freshFormConfig },
-                skipRefetch: true,
-              });
-            } catch (e) {
-              console.error('[ShopifySync] Failed to create assignment:', e);
+          if (link.type === 'store') {
+            // Store-level: one assignment per store
+            const exists = currentAssignments.some(a =>
+              a.storeId === link.storeId && a.assignmentType === 'store'
+            );
+            if (!exists) {
+              try {
+                await assignForm({
+                  formId: savedFormId,
+                  storeId: link.storeId,
+                  type: 'store',
+                  formName: formName.trim(),
+                  formConfig: { formId: savedFormId, name: formName.trim(), ...freshFormConfig },
+                });
+              } catch (e) {
+                console.error('[ShopifySync] Failed to create store assignment:', e);
+              }
+            }
+          } else if (link.type === 'product' && link.productIds?.length) {
+            // Product-level: one assignment per product ID
+            for (const productId of link.productIds) {
+              const exists = currentAssignments.some(a =>
+                a.storeId === link.storeId &&
+                a.assignmentType === 'product' &&
+                String(a.productId) === String(productId)
+              );
+              if (!exists) {
+                try {
+                  await assignForm({
+                    formId: savedFormId,
+                    storeId: link.storeId,
+                    type: 'product',
+                    productId: String(productId),
+                    formName: formName.trim(),
+                    formConfig: { formId: savedFormId, name: formName.trim(), ...freshFormConfig },
+                  });
+                } catch (e) {
+                  console.error('[ShopifySync] Failed to create product assignment:', e);
+                }
+              }
             }
           }
         }
@@ -449,42 +481,8 @@ const EditFormPage = ({ userId }: EditFormPageProps) => {
         }
       }
 
-      // AUTO-SYNC: Sync changes to active Shopify assignments via centralized service
-      if (savedFormId) {
-        const activeAssignments = assignments.filter(a => a.formId === savedFormId && a.isActive);
 
-        if (activeAssignments.length > 0) {
-          const toastId = toast.loading(`Syncing to ${activeAssignments.length} destination(s)...`);
 
-          // CRITICAL: Read fresh config from store to avoid stale useCallback closure
-          // exportDataMemoized() could capture a previous render's formConfig
-          const freshConfig = getExportData(useFormStore.getState().formConfig, waProfiles, gsSheets);
-
-          console.log('[SyncDebug] Syncing config with addons:', {
-            pixelData: freshConfig.addons?.pixelData?.length || 0,
-            tiktokPixelData: freshConfig.addons?.tiktokPixelData?.length || 0,
-            sheets: freshConfig.addons?.sheets?.length || 0,
-          });
-
-          const result = await syncFormChanges({
-            formId: savedFormId,
-            formName: formName.trim(),
-            formConfig: freshConfig,
-            assignments,
-            stores,
-          });
-
-          toast.dismiss(toastId);
-
-          if (result.failedCount === 0 && result.successCount > 0) {
-            toast.success(`✓ Synced to ${result.successCount} destination(s)`);
-          } else if (result.successCount > 0) {
-            toast.warning(`Synced ${result.successCount}/${result.totalCount} (${result.failedCount} failed)`);
-          } else if (result.failedCount > 0) {
-            toast.error(`Failed to sync to Shopify`);
-          }
-        }
-      }
 
       // Show success indicator briefly
       setShowSaveSuccess(true);
@@ -516,7 +514,7 @@ const EditFormPage = ({ userId }: EditFormPageProps) => {
 
   // titleComponent is now handled by editable breadcrumb
 
-  const headerActions = (
+  const headerActions = useMemo(() => (
     <div className="flex items-center gap-4">
       {/* History Controls - Only visible when there's history to navigate */}
       {(canUndo() || canRedo()) && (
@@ -547,23 +545,23 @@ const EditFormPage = ({ userId }: EditFormPageProps) => {
           <Button
             onClick={handleSaveForm}
             size="sm"
-            className="gap-2 transition-all hover:shadow-md active:scale-95 bg-[#FF5A1F] hover:bg-[#E04D1A] text-white border-0"
+            className="gap-2 transition-all hover:shadow-md active:scale-95 bg-[#FF5A1F] hover:bg-[#E04D1A] text-white border-0 px-6 h-9"
           >
             {isSaving ? (
               <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             ) : (
-              <Save size={14} />
+              <Save size={16} />
             )}
-            <span className="font-bold text-xs tracking-wide">Save</span>
+            <span className="font-bold text-sm tracking-wide">Save</span>
           </Button>
         </div>
       ) : (
         /* Saved/Live State */
         <div className="flex items-center gap-4 animate-in fade-in duration-300">
           {(storeCount > 0 || productCount > 0) && (
-            <div className="flex flex-col items-end text-xs">
-              <span className="font-bold text-slate-800">Live on</span>
-              <div className="flex gap-1 text-slate-500 font-medium">
+            <div className="flex flex-col items-end text-xs mr-2">
+              <span className="font-bold text-emerald-700">Live on</span>
+              <div className="flex gap-1 text-emerald-600/80 font-medium">
                 {storeCount > 0 && <span>{storeCount} Store{storeCount !== 1 ? 's' : ''}</span>}
                 {storeCount > 0 && productCount > 0 && <span>•</span>}
                 {productCount > 0 && <span>{productCount} Product{productCount !== 1 ? 's' : ''}</span>}
@@ -572,38 +570,47 @@ const EditFormPage = ({ userId }: EditFormPageProps) => {
           )}
 
           {showSaveSuccess && (
-            <span className="text-xs font-bold text-green-600 bg-green-50 border border-green-100 px-3 py-1 rounded-full animate-in fade-in">
-              Saved
-            </span>
+            <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 px-3 py-1.5 rounded-full shadow-sm animate-in fade-in">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-xs font-semibold">Saved</span>
+            </div>
           )}
-
-
         </div>
       )}
-      {/* Publish Toggle Switch */}
-      <div className={`flex items-center gap-2 ${!formId ? 'opacity-30 pointer-events-none' : ''}`}>
-        <span className={`text-[10px] font-bold uppercase tracking-wider transition-colors ${formStatus === 'published' ? 'text-emerald-600' : 'text-slate-400'}`}>
-          {formStatus === 'published' ? 'Live' : 'Draft'}
-        </span>
-        <button
-          onClick={() => {
-            const newStatus = formStatus === 'published' ? 'draft' : 'published';
+
+      {/* Divider */}
+      <div className="w-px h-6 bg-slate-200 mx-2" />
+
+      {/* Publish Toggle */}
+      <div className={`flex items-center gap-3 ${!formId ? 'opacity-30 pointer-events-none' : ''}`}>
+        <div className="flex flex-col items-end justify-center">
+          <span className={`text-[10px] uppercase tracking-wider font-bold transition-colors ${formStatus === 'published' ? 'text-emerald-600' : 'text-slate-400'}`}>
+            {formStatus === 'published' ? 'Published' : 'Draft'}
+          </span>
+        </div>
+
+        <Switch
+          checked={formStatus === 'published'}
+          onCheckedChange={(checked) => {
+            const newStatus = checked ? 'published' : 'draft';
             setFormStatus(newStatus);
             if (formId) {
               updateForm(formId, { status: newStatus }).then(() => {
-                toast.success(newStatus === 'published' ? '✓ Form published' : 'Form set to draft');
+                toast.success(newStatus === 'published' ? '🎉 Form goes live!' : 'Form is now a draft');
               });
             }
           }}
           disabled={!formId}
-          className={`relative w-9 h-5 rounded-full transition-colors ${formStatus === 'published' ? 'bg-emerald-500' : 'bg-slate-200'}`}
-          title={formId ? (formStatus === 'published' ? 'Click to unpublish' : 'Click to publish') : 'Save form first'}
-        >
-          <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform shadow-sm ${formStatus === 'published' ? 'translate-x-4' : ''}`} />
-        </button>
+          className="data-[state=checked]:bg-emerald-500"
+        />
       </div>
     </div>
-  );
+  ), [
+    canUndo, canRedo, undo, redo,
+    canSave, isSaving, handleSaveForm,
+    storeCount, productCount, showSaveSuccess,
+    formId, formStatus, setFormStatus, updateForm
+  ]);
 
 
 
@@ -658,16 +665,14 @@ const EditFormPage = ({ userId }: EditFormPageProps) => {
   const setEditingSection = useFormStore((state) => state.setEditingSection);
 
   // Sections that belong to "Sections Editor"
-  const SECTION_EDITOR_SUBSECTIONS = [
+  const SECTION_EDITOR_SUBSECTIONS = useMemo(() => [
     'header', 'variants', 'offers', 'shipping', 'delivery',
     'promoCode', 'summary', 'cta', 'urgencyText', 'urgencyQuantity',
     'urgencyTimer', 'trustBadges'
-  ];
-
-  const breadcrumbs: import('@/components/GlobalHeader/PageHeader').BreadcrumbItemType[] = [];
+  ], []);
 
   // Smart back button handler - navigates up one level at a time
-  const handleBackClick = () => {
+  const handleBackClick = useCallback(() => {
     if (editingSection) {
       // If we are in a subsection of Sections Editor, go back to Sections Editor
       if (SECTION_EDITOR_SUBSECTIONS.includes(editingSection)) {
@@ -680,38 +685,51 @@ const EditFormPage = ({ userId }: EditFormPageProps) => {
       // At root - go back to forms list
       navigate('/dashboard/forms');
     }
-  };
+  }, [editingSection, navigate, setEditingSection, SECTION_EDITOR_SUBSECTIONS]);
 
-  // 1. Form Name (Root Builder Home) - single click to edit, consistent with rules pages
-  breadcrumbs.push({
-    label: formName,
-    editable: true,
-    onEdit: (value: string) => {
-      setFormName(value);
-    },
-    onBlur: () => {
-      if (!formName.trim()) {
-        const savedName = useFormStore.getState().savedState.name;
-        setFormName(savedName || 'Untitled Form');
+  const breadcrumbs = useMemo(() => {
+    const items: import('@/components/GlobalHeader/PageHeader').BreadcrumbItemType[] = [];
+
+    // 1. Form Name (Root Builder Home) - double click to edit, single click to navigate home
+    items.push({
+      label: formName,
+      editable: true,
+      doubleClickToEdit: true,
+      onClick: () => {
+        // Small UX improvement: only navigate to root if already editing a section
+        if (editingSection) {
+          setEditingSection(null);
+        }
+      },
+      onEdit: (value: string) => {
+        setFormName(value);
+      },
+      onBlur: () => {
+        if (!formName.trim()) {
+          const savedName = useFormStore.getState().savedState.name;
+          setFormName(savedName || 'Untitled Form');
+        }
       }
+    });
+
+    // 2. Intermediate: Sections Editor (if applicable)
+    if (editingSection && SECTION_EDITOR_SUBSECTIONS.includes(editingSection)) {
+      items.push({
+        label: sectionLabels['sections_list'],
+        onClick: () => setEditingSection('sections_list')
+      });
     }
-  });
 
-  // 3. Intermediate: Sections Editor (if applicable)
-  if (editingSection && SECTION_EDITOR_SUBSECTIONS.includes(editingSection)) {
-    breadcrumbs.push({
-      label: sectionLabels['sections_list'],
-      onClick: () => setEditingSection('sections_list')
-    });
-  }
+    // 3. Current Section
+    if (editingSection) {
+      items.push({
+        label: sectionLabels[editingSection] || 'Editor',
+        editable: false
+      });
+    }
 
-  // 4. Current Section
-  if (editingSection) {
-    breadcrumbs.push({
-      label: sectionLabels[editingSection] || 'Editor',
-      editable: false
-    });
-  }
+    return items;
+  }, [formName, editingSection, setEditingSection, setFormName, sectionLabels, SECTION_EDITOR_SUBSECTIONS]);
 
   return (
     <div className="h-full flex flex-col" dir={dir}>

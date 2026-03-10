@@ -10,6 +10,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { AnimatePresence, motion } from 'framer-motion';
 
 interface HomePageProps {
     userId: string;
@@ -183,84 +184,98 @@ export default function HomePage({ userId }: HomePageProps) {
                     </div>
 
                     {/* Getting Started Applet */}
-                    {!hideGettingStarted && (
-                        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm relative group overflow-hidden">
-                            <button
-                                onClick={dismissGettingStarted}
-                                className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1 rounded-md transition-colors opacity-0 group-hover:opacity-100"
-                                title="Dismiss"
+                    <AnimatePresence>
+                        {!hideGettingStarted && (
+                            <motion.div
+                                initial={{ opacity: 1, height: 'auto', scale: 1 }}
+                                exit={{ opacity: 0, height: 0, scale: 0.95, marginTop: 0, marginBottom: 0, paddingTop: 0, paddingBottom: 0 }}
+                                transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+                                className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm relative group overflow-hidden"
                             >
-                                <X size={16} />
-                            </button>
+                                <button
+                                    onClick={dismissGettingStarted}
+                                    className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1.5 rounded-lg transition-all duration-200 opacity-0 group-hover:opacity-100"
+                                    title="Dismiss"
+                                >
+                                    <X size={14} />
+                                </button>
 
-                            <h3 className="text-xl font-bold text-slate-900 mb-1 tracking-tight">Getting Started</h3>
-                            <p className="text-sm font-medium text-slate-500 mb-5">Complete these steps to unlock the full power of Final Form.</p>
+                                <h3 className="text-xl font-black text-slate-900 mb-1 tracking-tight">Getting Started</h3>
+                                <p className="text-sm font-medium text-slate-400 mb-5">Complete these steps to unlock the full power of Final Form.</p>
 
-                            {/* Interactive Progress Bar */}
-                            <div className="mb-6">
-                                <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-2 uppercase tracking-wide">
-                                    <span>Task Progress</span>
-                                    <span>{
-                                        [stores.length > 0, forms.length > 0, stats.liveForms > 0, orders.length > 0].filter(Boolean).length
-                                    } / 4</span>
+                                {/* Interactive Progress Bar */}
+                                <div className="mb-6">
+                                    <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-2 uppercase tracking-wide">
+                                        <span>Task Progress</span>
+                                        <span className="text-[#FF5A1F]">
+                                            {[stores.length > 0, forms.length > 0, stats.liveForms > 0, orders.length > 0].filter(Boolean).length} / 4
+                                        </span>
+                                    </div>
+                                    <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                                        <motion.div
+                                            className="h-full bg-gradient-to-r from-[#FF5A1F] to-[#E04812] rounded-full"
+                                            initial={{ width: 0 }}
+                                            animate={{ width: `${([stores.length > 0, forms.length > 0, stats.liveForms > 0, orders.length > 0].filter(Boolean).length / 4) * 100}%` }}
+                                            transition={{ duration: 1, ease: 'easeOut', delay: 0.3 }}
+                                        />
+                                    </div>
                                 </div>
-                                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                                    <div
-                                        className="h-full bg-indigo-500 transition-all duration-1000 ease-out rounded-full"
-                                        style={{ width: `${([stores.length > 0, forms.length > 0, stats.liveForms > 0, orders.length > 0].filter(Boolean).length / 4) * 100}%` }}
-                                    />
-                                </div>
-                            </div>
 
-                            <ul className="space-y-1.5 relative">
-                                {[
-                                    { text: 'Connect your store domain', done: stores.length > 0, action: () => navigate('/dashboard/settings') },
-                                    { text: 'Create your first form', done: forms.length > 0, action: () => navigate('/dashboard/forms') },
-                                    { text: 'Launch a campaign', done: stats.liveForms > 0, action: () => navigate('/dashboard/forms') },
-                                    { text: 'Receive your first order', done: orders.length > 0, action: () => navigate('/dashboard/orders') },
-                                ]
-                                    .sort((a, b) => (a.done === b.done) ? 0 : a.done ? 1 : -1)
-                                    .map((task, i, arr) => {
-                                        const isNextTask = !task.done && (i === 0 || arr[i - 1]?.done);
+                                <ul className="space-y-1 relative">
+                                    {[
+                                        { text: 'Connect your store domain', done: stores.length > 0, action: () => navigate('/dashboard/settings') },
+                                        { text: 'Create your first form', done: forms.length > 0, action: () => navigate('/dashboard/forms') },
+                                        { text: 'Launch a campaign', done: stats.liveForms > 0, action: () => navigate('/dashboard/forms') },
+                                        { text: 'Receive your first order', done: orders.length > 0, action: () => navigate('/dashboard/orders') },
+                                    ]
+                                        .sort((a, b) => (a.done === b.done) ? 0 : a.done ? 1 : -1)
+                                        .map((task, i, arr) => {
+                                            const isNextTask = !task.done && (i === 0 || arr[i - 1]?.done);
 
-                                        return (
-                                            <li
-                                                key={task.text}
-                                                className={cn(
-                                                    "flex items-center gap-3.5 text-sm font-medium group/item cursor-pointer p-2.5 -mx-2.5 rounded-xl transition-all duration-300",
-                                                    task.done ? "opacity-60 hover:opacity-100 hover:bg-slate-50" : "hover:bg-indigo-50/50"
-                                                )}
-                                                onClick={task.action}
-                                            >
-                                                <div className={cn(
-                                                    "shrink-0 w-5 h-5 rounded-md border flex items-center justify-center transition-all duration-300 shadow-sm",
-                                                    task.done
-                                                        ? "bg-slate-100 border-slate-200 text-slate-400 scale-95"
-                                                        : "bg-white border-slate-300 text-transparent group-hover/item:border-indigo-400 group-hover/item:shadow-md group-hover/item:scale-105"
-                                                )}>
-                                                    <CheckCircle2 size={12} className={cn("stroke-[3px]", task.done && "text-slate-400")} />
-                                                </div>
-
-                                                <div className="flex-1 flex items-center justify-between">
-                                                    <span className={cn(
-                                                        "transition-colors",
-                                                        task.done ? "text-slate-500 line-through decoration-slate-300" : "text-slate-700 group-hover/item:text-indigo-700"
-                                                    )}>
-                                                        {task.text}
-                                                    </span>
-
-                                                    {isNextTask && (
-                                                        <span className="text-[10px] font-bold uppercase tracking-wider bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded border border-indigo-200 shadow-sm opacity-0 group-hover/item:opacity-100 transition-all translate-x-1 group-hover/item:translate-x-0">
-                                                            Start Step
-                                                        </span>
+                                            return (
+                                                <motion.li
+                                                    key={task.text}
+                                                    initial={{ opacity: 0, x: -8 }}
+                                                    animate={{ opacity: 1, x: 0 }}
+                                                    transition={{ duration: 0.3, delay: i * 0.08 }}
+                                                    className={cn(
+                                                        "flex items-center gap-3.5 text-sm font-medium group/item cursor-pointer p-3 -mx-3 rounded-xl transition-all duration-300",
+                                                        task.done ? "opacity-50 hover:opacity-80 hover:bg-slate-50" : "hover:bg-[#FF5A1F]/5"
                                                     )}
-                                                </div>
-                                            </li>
-                                        );
-                                    })}
-                            </ul>
-                        </div>
-                    )}
+                                                    onClick={task.action}
+                                                >
+                                                    <div className={cn(
+                                                        "shrink-0 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-300",
+                                                        task.done
+                                                            ? "bg-slate-100 border-slate-200 text-slate-400 scale-90"
+                                                            : isNextTask
+                                                                ? "bg-[#FF5A1F]/10 border-[#FF5A1F]/30 text-[#FF5A1F] group-hover/item:border-[#FF5A1F] group-hover/item:shadow-md group-hover/item:scale-110"
+                                                                : "bg-white border-slate-200 text-transparent group-hover/item:border-slate-300 group-hover/item:scale-105"
+                                                    )}>
+                                                        <CheckCircle2 size={12} className={cn("stroke-[3px]", task.done && "text-slate-400")} />
+                                                    </div>
+
+                                                    <div className="flex-1 flex items-center justify-between">
+                                                        <span className={cn(
+                                                            "transition-colors duration-200",
+                                                            task.done ? "text-slate-400 line-through decoration-slate-300" : "text-slate-700 group-hover/item:text-[#FF5A1F]"
+                                                        )}>
+                                                            {task.text}
+                                                        </span>
+
+                                                        {isNextTask && (
+                                                            <span className="text-[10px] font-bold uppercase tracking-wider bg-[#FF5A1F]/10 text-[#FF5A1F] px-2.5 py-1 rounded-lg border border-[#FF5A1F]/20 shadow-sm opacity-0 group-hover/item:opacity-100 transition-all duration-300 translate-x-2 group-hover/item:translate-x-0">
+                                                                Start Step
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </motion.li>
+                                            );
+                                        })}
+                                </ul>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
 
             </div>

@@ -248,7 +248,7 @@ export const normalizeImportedConfig = (config: Record<string, unknown>): Record
   // Normalize shipping: ensure exceptions have proper structure
   if (normalized.shipping) {
     if (!(normalized.shipping as any).standard) {
-      (normalized.shipping as any).standard = { home: 600, desk: 400 };
+      (normalized.shipping as any).standard = { home: 0, desk: 0 };
     }
     if (!(normalized.shipping as any).exceptions) {
       (normalized.shipping as any).exceptions = [];

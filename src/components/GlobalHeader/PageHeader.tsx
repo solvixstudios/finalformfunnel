@@ -109,6 +109,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
                                                             onChange={crumb.onEdit}
                                                             onBlur={crumb.onBlur}
                                                             doubleClickToEdit={crumb.doubleClickToEdit}
+                                                            onClick={crumb.onClick}
                                                             className={cn(isLast && "font-black tracking-tight text-slate-900")}
                                                         />
                                                     </BreadcrumbPage>
@@ -158,7 +159,15 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
             setActions(null);
             setTitleActions(null);
         };
-    }, [setCenterContent, setActions, setTitleActions, title, breadcrumbs, count, actions, children, Icon, onBack, backHref, navigate]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [
+        setCenterContent, setActions, setTitleActions,
+        title, count, Icon, onBack, backHref, navigate,
+        actions, children,
+        breadcrumbs.length,
+        breadcrumbs[0]?.label,
+        breadcrumbs[breadcrumbs.length - 1]?.label
+    ]);
 
     return null;
 };

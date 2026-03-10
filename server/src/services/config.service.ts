@@ -197,21 +197,83 @@ async function resolveFormConfig(
         }
     }
 
-    // Resolve WhatsApp profiles
-    if (Array.isArray(addons.whatsappProfileIds) && addons.whatsappProfileIds.length > 0) {
+    // Resolve WhatsApp profile
+    if (addons.selectedWhatsappProfileId) {
         try {
-            const waDocs = await Promise.all(
-                addons.whatsappProfileIds.map((id: string) =>
-                    db.collection('users').doc(userId).collection('whatsapp_profiles').doc(id).get()
-                )
-            );
+            const waDoc = await db.collection('users')
+                .doc(userId)
+                .collection('whatsapp_profiles')
+                .doc(addons.selectedWhatsappProfileId as string)
+                .get();
 
-            addons.whatsappProfiles = waDocs
-                .filter(w => w.exists)
-                .map(w => ({ id: w.id, ...w.data() }));
+            if (waDoc.exists) {
+                const waData = waDoc.data();
+                addons.whatsappProfile = { id: waDoc.id, ...waData };
+
+                // Inject the phone number into the thankYou config for the frontend loader
+                if (config.thankYou && typeof config.thankYou === 'object') {
+                    (config.thankYou as any).whatsappNumber = waData?.phoneNumber;
+                }
+            }
         } catch (e) {
-            console.warn('[configService] Failed to resolve WhatsApp profiles:', e);
+            console.warn('[configService] Failed to resolve WhatsApp profile:', e);
         }
+    }
+
+    // Resolve Offers Rule (or fallback to empty array to wipe legacy data)
+    if (config.offerRuleId) {
+        try {
+            const offerRuleSnap = await db.collection('users').doc(userId).collection('offerRules').doc(config.offerRuleId as string).get();
+            if (offerRuleSnap.exists) {
+                const ruleData = offerRuleSnap.data();
+                if (ruleData?.offers && Array.isArray(ruleData.offers)) {
+                    config.offers = ruleData.offers;
+                }
+            }
+        } catch (e) {
+            console.warn('[configService] Failed to resolve Offers rule:', e);
+        }
+    } else {
+        // Force empty array to purge legacy defaults from old Firestore docs
+        config.offers = [];
+    }
+
+    // Resolve Shipping Rule (or fallback to free shipping to wipe legacy data)
+    if (config.shippingRuleId) {
+        try {
+            const shippingRuleSnap = await db.collection('users').doc(userId).collection('shippingRules').doc(config.shippingRuleId as string).get();
+            if (shippingRuleSnap.exists) {
+                const ruleData = shippingRuleSnap.data();
+                if (ruleData?.shipping) {
+                    config.shipping = ruleData.shipping;
+                }
+            }
+        } catch (e) {
+            console.warn('[configService] Failed to resolve Shipping rule:', e);
+        }
+    } else {
+        // Force free shipping to purge legacy defaults from old Firestore docs
+        config.shipping = { standard: { home: 0, desk: 0 }, exceptions: [] };
+    }
+
+    // Resolve Coupons Rule
+    if (config.couponRuleId) {
+        try {
+            const couponRuleSnap = await db.collection('users').doc(userId).collection('couponRules').doc(config.couponRuleId as string).get();
+            if (couponRuleSnap.exists) {
+                const ruleData = couponRuleSnap.data();
+                if (ruleData?.coupons && Array.isArray(ruleData.coupons)) {
+                    config.promoCode = {
+                        enabled: ruleData.config?.enabled || false,
+                        codes: ruleData.coupons
+                    };
+                }
+            }
+        } catch (e) {
+            console.warn('[configService] Failed to resolve Coupons rule:', e);
+        }
+    } else if (!config.promoCode) {
+        config.promoCode = { enabled: false, codes: [] };
     }
 
     config.addons = addons;

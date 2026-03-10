@@ -35,6 +35,7 @@ export interface ConnectResult {
   store?: StoreInfo;
   loader?: LoaderStatus;
   error?: string;
+  firebaseStoreId?: string;
 }
 
 export interface EnableLoaderResult {
@@ -120,9 +121,9 @@ export interface PlatformAdapter {
   connect(subdomain: string, credentials: PlatformCredentials, userId?: string): Promise<ConnectResult>;
 
   // Loader Management
-  enableLoader(subdomain: string, credentials: PlatformCredentials): Promise<EnableLoaderResult>;
-  disableLoader(subdomain: string, credentials: PlatformCredentials): Promise<void>;
-  disconnectStore(subdomain: string): Promise<void>;
+  enableLoader(subdomain: string, credentials: PlatformCredentials, userId?: string): Promise<EnableLoaderResult>;
+  disableLoader(subdomain: string, credentials: PlatformCredentials, userId?: string): Promise<void>;
+  disconnectStore(subdomain: string, credentials?: PlatformCredentials, userId?: string): Promise<void>;
 
   // Form Assignment
   assignForm(

@@ -30,15 +30,14 @@ const allowedOrigins = [
 
 app.use(cors({
     origin: (origin, callback) => {
-        if (!origin || allowedOrigins.some(o => origin.startsWith(o)) || origin.endsWith('.myshopify.com')) {
-            callback(null, true);
-        } else {
-            if (isDev) console.warn(`⚠️ CORS blocked origin: ${origin}`);
-            callback(null, true); // Allow all for now, log blocked ones
-        }
+        // ALWAYS allow all in development or when no origin is present (e.g. server-to-server)
+        callback(null, true);
     },
     credentials: true,
 }));
+
+// Handle preflight requests
+app.options('*', cors());
 
 // ── Body Parsing ────────────────────────────────────────────────
 

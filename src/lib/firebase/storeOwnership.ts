@@ -7,6 +7,7 @@ import { StoreOwner } from "./types";
  * Removes protocol, trailing slashes, and ensures .myshopify.com suffix
  */
 export function normalizeShopifyDomain(domain: string): string {
+  if (!domain) return "";
   return domain
     .replace(/https?:\/\//, "")
     .replace(/\/$/, "")

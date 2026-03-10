@@ -135,3 +135,26 @@ export async function getConfig(req: Request, res: Response) {
         res.json({});
     }
 }
+
+// ── GET /assignments ────────────────────────────────────────────
+
+export async function getAssignments(req: Request, res: Response) {
+    const { shopDomain, clientId, clientSecret } = req.body;
+
+    if (!shopDomain) {
+        throw AppError.badRequest('Missing shopDomain');
+    }
+
+    // 1. Find store via global lookup to get userId & storeId
+    const lookup = await storeService.findStoreByDomainGlobal(String(shopDomain));
+    if (!lookup) {
+        return res.json({ assignments: [] });
+    }
+
+    const { userId, storeId } = lookup;
+
+    // 2. Fetch assignments via service
+    const assignments = await storeService.getAssignmentsForStore(userId, storeId);
+
+    res.json({ assignments });
+}
