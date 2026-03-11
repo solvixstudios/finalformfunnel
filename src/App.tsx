@@ -133,6 +133,7 @@ const AppContent = () => {
                 currentPage={location.pathname}
                 onNavigate={handleNavigate}
                 onLogout={handleLogout}
+                onUserUpdate={setUser}
               >
                 <AssignmentsProvider userId={user.id}>
                   <Suspense fallback={<LoadingSpinner />}>
@@ -170,7 +171,7 @@ const AppContent = () => {
                       <Route path="rules/shipping" element={<ShippingPage userId={user.id} />} />
                       <Route path="rules/coupons" element={<CouponsPage userId={user.id} />} />
                       <Route path="profile" element={<ProfilePage user={user} />} />
-                      <Route path="settings" element={<SettingsPage user={user} />} />
+                      <Route path="settings" element={<SettingsPage user={user} onUserUpdate={setUser} />} />
                       <Route path="" element={<Navigate to="/dashboard/home" replace />} />
                       <Route path="*" element={<Navigate to="/dashboard/home" replace />} />
                     </Routes>

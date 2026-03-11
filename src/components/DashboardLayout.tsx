@@ -51,6 +51,7 @@ interface DashboardLayoutProps {
   currentPage: string;
   onNavigate: (path: string) => void;
   onLogout: () => void;
+  onUserUpdate?: (user: GoogleUser) => void;
   children: React.ReactNode;
 }
 
@@ -59,6 +60,7 @@ const DashboardLayoutContent = ({
   currentPage,
   onNavigate,
   onLogout,
+  onUserUpdate,
   children,
 }: DashboardLayoutProps) => {
 
@@ -213,7 +215,9 @@ const DashboardLayoutContent = ({
           isBuilderPage ? "overflow-hidden" : "overflow-y-auto px-4 py-6 sm:px-6 lg:px-8 lg:py-8"
         )}>
           <div className={cn("animate-fade-up", isBuilderPage && "h-full")}>
-            {children}
+            {React.isValidElement(children) && typeof children.type !== 'string'
+              ? React.cloneElement(children as React.ReactElement<any>, { ...(onUserUpdate ? { onUserUpdate } : {}) })
+              : children}
           </div>
         </main>
 

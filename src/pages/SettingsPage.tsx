@@ -16,7 +16,7 @@ import { Camera, Save, Trash2, User as UserIcon, Copy } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { GoogleUser } from '../lib/authGoogle';
+import { GoogleUser, storeUser } from '../lib/authGoogle';
 import { useI18n } from '../lib/i18n/i18nContext';
 import { Language } from '../lib/i18n/translations';
 
@@ -25,11 +25,12 @@ declare const __APP_VERSION__: string;
 
 interface SettingsPageProps {
     user: GoogleUser;
+    onUserUpdate?: (user: GoogleUser) => void;
 }
 
 type SettingsTab = 'profile' | 'language' | 'subscription';
 
-const SettingsPage = ({ user }: SettingsPageProps) => {
+const SettingsPage = ({ user, onUserUpdate }: SettingsPageProps) => {
     const [searchParams, setSearchParams] = useSearchParams();
     const initialTab = (searchParams.get('tab') as SettingsTab) || 'profile';
     const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab);
@@ -72,7 +73,18 @@ const SettingsPage = ({ user }: SettingsPageProps) => {
     };
 
     const handleSave = () => {
-        console.log('Saved settings:', { displayName, photoUrl, language });
+        const updatedUser: GoogleUser = {
+            ...user,
+            displayName,
+            photoURL: photoUrl || user.photoURL
+        };
+
+        // Persist local profile edits immediately
+        storeUser(updatedUser);
+        if (onUserUpdate) {
+            onUserUpdate(updatedUser);
+        }
+
         toast.success('Paramètres enregistrés', {
             description: "Vos modifications ont été sauvegardées avec succès."
         });
