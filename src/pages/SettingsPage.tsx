@@ -12,7 +12,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { cn } from '@/lib/utils';
-import { Camera, Save, Trash2, User as UserIcon, Copy } from 'lucide-react';
+import { Camera, Save, Trash2, User as UserIcon, Copy, Loader2 } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -67,27 +67,42 @@ const SettingsPage = ({ user, onUserUpdate }: SettingsPageProps) => {
         { id: 'TRX-4421', plan: 'STARTER Plan', status: 'Expiré', start: '2024-02-28', end: '2025-02-28', amount: '29.00 USD' },
     ];
 
+    const [isSaving, setIsSaving] = useState(false);
+
     const handleTabChange = (tab: SettingsTab) => {
         setActiveTab(tab);
         setSearchParams({ tab });
     };
 
-    const handleSave = () => {
-        const updatedUser: GoogleUser = {
-            ...user,
-            displayName,
-            photoURL: photoUrl || user.photoURL
-        };
+    const handleSave = async () => {
+        setIsSaving(true);
+        try {
+            // Update Google User in Firebase Auth
+            await import('../lib/authGoogle').then(m => m.updateUserProfile(displayName, photoUrl || user.photoURL));
 
-        // Persist local profile edits immediately
-        storeUser(updatedUser);
-        if (onUserUpdate) {
-            onUserUpdate(updatedUser);
+            const updatedUser: GoogleUser = {
+                ...user,
+                displayName,
+                photoURL: photoUrl || user.photoURL
+            };
+
+            // Persist local profile edits immediately
+            import('../lib/authGoogle').then(m => m.storeUser(updatedUser));
+            if (onUserUpdate) {
+                onUserUpdate(updatedUser);
+            }
+
+            toast.success('Paramètres enregistrés', {
+                description: "Vos modifications ont été sauvegardées avec succès."
+            });
+        } catch (error: any) {
+            console.error("Failed to save user settings:", error);
+            toast.error('Erreur', {
+                description: "Impossible d'enregistrer vos paramètres : " + (error.message || "Erreur inconnue")
+            });
+        } finally {
+            setIsSaving(false);
         }
-
-        toast.success('Paramètres enregistrés', {
-            description: "Vos modifications ont été sauvegardées avec succès."
-        });
     };
 
     const handleAvatarClick = () => {
@@ -97,6 +112,8 @@ const SettingsPage = ({ user, onUserUpdate }: SettingsPageProps) => {
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
+            // NOTE: For a full CRUD backend, you would upload this file to a Storage Bucket (e.g. Firebase Storage or AWS S3)
+            // and then pass the resulting public URL to setPhotoUrl. Here we create a local object URL which only works locally.
             const url = URL.createObjectURL(file);
             setPhotoUrl(url);
         }
@@ -117,11 +134,11 @@ const SettingsPage = ({ user, onUserUpdate }: SettingsPageProps) => {
 
     const headerActions = (
         <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" className="text-[#908878] hover:text-[#4A443A] hover:bg-[#E6E0D3]/50">
+            <Button disabled={isSaving} variant="ghost" size="sm" className="text-[#908878] hover:text-[#4A443A] hover:bg-[#E6E0D3]/50">
                 Annuler
             </Button>
-            <Button onClick={handleSave} size="sm" className="gap-2 bg-[#FF5A1F] hover:bg-[#E04D1A] text-white rounded-md shadow-sm border-0 font-semibold">
-                <Save size={14} />
+            <Button disabled={isSaving} onClick={handleSave} size="sm" className="gap-2 bg-[#FF5A1F] hover:bg-[#E04D1A] text-white rounded-md shadow-sm border-0 font-semibold">
+                {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
                 Enregistrer
             </Button>
         </div>

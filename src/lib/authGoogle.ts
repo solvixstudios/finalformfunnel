@@ -6,6 +6,7 @@ import {
   User,
   setPersistence,
   browserLocalPersistence,
+  updateProfile
 } from 'firebase/auth';
 import { auth } from './firebase';
 
@@ -63,7 +64,7 @@ export const signInWithGoogle = async (): Promise<GoogleUser> => {
 
     storeUser(user);
     return user;
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('Google sign-in error:', error);
     throw new Error(error.message || 'Failed to sign in with Google');
   }
@@ -73,7 +74,7 @@ export const signOutUser = async (): Promise<void> => {
   try {
     await signOut(auth);
     clearUser();
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('Sign out error:', error);
     throw new Error(error.message || 'Failed to sign out');
   }
@@ -96,4 +97,17 @@ export const onAuthStateChange = (callback: (user: GoogleUser | null) => void) =
       callback(null);
     }
   });
+};
+
+export const updateUserProfile = async (displayName: string, photoURL: string | null): Promise<void> => {
+  if (!auth.currentUser) throw new Error('No authenticated user');
+  try {
+    await updateProfile(auth.currentUser, {
+      displayName,
+      photoURL
+    });
+  } catch (error: any) {
+    console.error('Update profile error:', error);
+    throw new Error(error.message || 'Failed to update user profile');
+  }
 };
