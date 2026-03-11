@@ -8,6 +8,7 @@
     "dev": "ts-node src/index.ts --dev",
     "build": "tsc",
     "clean-db": "ts-node scripts/clean-db.ts --dev",
+    "clean-prod": "ts-node scripts/clean-db.ts --force-prod",
     "clone-db": "ts-node scripts/clone-db.ts"
   },
   "keywords": [],

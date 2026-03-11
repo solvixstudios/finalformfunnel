@@ -10,8 +10,6 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
-*.local
-
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -22,7 +20,13 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Secrets & Environment Variables
 .env
+.env.*
+*.local
+*service-account*.json
+firebase-adminsdk-*.json
 
 # Firebase
 .firebase

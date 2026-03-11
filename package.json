@@ -11,6 +11,7 @@
     "build": "node scripts/env-router.js build",
     "deploy": "node scripts/env-router.js deploy",
     "clean": "npm run clean-db",
+    "clean-prod": "cd server && npm run clean-prod",
     "clone-db": "cd server && npm run clone-db",
     "goto-dev": "git checkout dev",
     "goto-prod": "git checkout main",
