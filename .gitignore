@@ -25,7 +25,7 @@ dist-ssr
 .env
 .env.*
 *.local
-*service-account*.json
+*service-account.json
 firebase-adminsdk-*.json
 
 # Firebase
