@@ -7,6 +7,17 @@ export interface UserProfile {
   createdAt: string;
   updatedAt: string;
   language: "ar" | "en" | "fr";
+  onboardingCompleted?: boolean;
+}
+
+// Survey response (onboarding, NPS, feedback, etc.)
+export interface SurveyResponse {
+  id: string;
+  surveyType: string;       // "onboarding" | "nps" | "feature_feedback" | etc.
+  version: number;           // Schema version for this survey type
+  responses: Record<string, string>; // Flexible key-value map
+  completedAt: string;
+  createdAt: string;
 }
 
 // Form configuration

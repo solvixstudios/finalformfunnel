@@ -88,14 +88,14 @@ export const ConnectionStatusBanner = () => {
         >
             <div
                 className={`
-          mx-auto max-w-lg mt-3
+          mx-auto max-w-[280px] mt-3
           bg-gradient-to-r ${config.bg}
           backdrop-blur-xl
           border ${config.border}
-          rounded-2xl
-          px-4 py-2.5
-          shadow-2xl ${config.glow}
-          flex items-center gap-3
+          rounded-xl
+          px-3 py-2
+          shadow-lg ${config.glow}
+          flex items-center gap-2
           text-white
         `}
             >

@@ -43,11 +43,9 @@ export const clearUser = (): void => {
 
 export const signInWithGoogle = async (): Promise<GoogleUser> => {
   try {
-    // Enable persistence
     await setPersistence(auth, browserLocalPersistence);
 
     const provider = new GoogleAuthProvider();
-    // Request additional scopes if needed
     provider.addScope('profile');
     provider.addScope('email');
 

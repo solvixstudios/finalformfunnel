@@ -74,6 +74,11 @@ service cloud.firestore {
       match /couponRules/{ruleId} {
         allow read, write: if isOwner(userId);
       }
+
+      // Survey responses (onboarding, NPS, feedback, etc.)
+      match /surveys/{surveyId} {
+        allow read, write: if isOwner(userId);
+      }
     }
     
     // Support for collectionGroup queries used in the loader

@@ -1,87 +1,68 @@
-import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { PartyPopper, Rocket, ShieldCheck, Sparkles, Wrench } from 'lucide-react';
+import { PartyPopper } from 'lucide-react';
 import { useChangelog } from '@/hooks/useChangelog';
 
 export function ChangelogModal() {
-    const { showChangelog, dismissChangelog, currentVersion } = useChangelog();
+    const { showChangelog, dismissChangelog, currentVersion, entries } = useChangelog();
 
-    // In a real app, this could be fetched from a markdown file or backend API. 
-    // We'll hardcode the latest release notes here for v1.x.
-    const releaseNotes = [
-        {
-            version: "1.0.3",
-            date: "Aujourd'hui",
-            title: "Votre expérience, améliorée !",
-            features: [
-                {
-                    icon: <Rocket className="w-5 h-5 text-[#FF5A1F]" />,
-                    title: "Boutiques parfaitement synchronisées",
-                    desc: "La connexion à votre boutique Shopify est désormais plus fluide et plus intelligente. Les mises à jour se déploient en un éclair !"
-                },
-                {
-                    icon: <ShieldCheck className="w-5 h-5 text-emerald-500" />,
-                    title: "Fiabilité des commandes",
-                    desc: "Nous avons renforcé notre système de traitement. Chaque commande passée atterrit dans votre tableau de bord sans accroc."
-                },
-                {
-                    icon: <Wrench className="w-5 h-5 text-indigo-500" />,
-                    title: "Livraison en direct",
-                    desc: "Vos clients verront toujours les frais de livraison parfaits en temps réel. Finies les mauvaises surprises !"
-                }
-            ]
-        },
-    ];
-
-    // Get the most recent notes, or fallback
-    const latestNotes = releaseNotes[0];
+    // Show only the latest entry (most recent release)
+    const latest = entries[0];
 
     return (
         <Dialog open={showChangelog} onOpenChange={(open) => !open && dismissChangelog()}>
-            <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden bg-white gap-0 rounded-2xl border-0 shadow-2xl">
-                <div className="bg-gradient-to-br from-indigo-500 via-indigo-600 to-purple-700 p-8 text-center relative overflow-hidden">
-                    <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay"></div>
+            <DialogContent className="sm:max-w-[460px] p-0 overflow-hidden bg-white gap-0 rounded-2xl border-0 shadow-2xl">
+                {/* Header */}
+                <div className="bg-gradient-to-br from-[#FF5A1F] to-[#E04812] px-6 py-6 text-center relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-[200px] h-[200px] bg-white/10 rounded-full blur-[40px] pointer-events-none -translate-y-1/2 translate-x-1/4" />
                     <div className="relative z-10">
-                        <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/20 shadow-inner">
-                            <PartyPopper className="w-8 h-8 text-white" />
+                        <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center mx-auto mb-3 border border-white/10">
+                            <PartyPopper className="w-6 h-6 text-white" />
                         </div>
-                        <DialogTitle className="text-2xl font-bold text-white mb-2">
-                            Quoi de neuf ? (v{currentVersion})
+                        <DialogTitle className="text-lg font-black text-white">
+                            What's New (v{currentVersion})
                         </DialogTitle>
-                        <DialogDescription className="text-indigo-100 font-medium">
-                            {latestNotes?.title || 'Découvrez les dernières améliorations de Final Form.'}
+                        <DialogDescription className="text-white/50 text-sm font-medium mt-1">
+                            {latest?.date || 'Latest improvements'}
                         </DialogDescription>
                     </div>
                 </div>
 
-                <div className="p-6">
-                    <ScrollArea className="h-[280px] pr-4 custom-scroll">
-                        <div className="space-y-6">
-                            {latestNotes?.features.map((feature, idx) => (
-                                <div key={idx} className="flex gap-4">
-                                    <div className="w-10 h-10 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0 shadow-sm mt-0.5">
-                                        {feature.icon}
+                {/* Content */}
+                <div className="p-5">
+                    <ScrollArea className="max-h-[300px] pr-2">
+                        {latest ? (
+                            <div className="space-y-5">
+                                {latest.categories.map((cat, cIdx) => (
+                                    <div key={cIdx}>
+                                        <div className="flex items-center gap-1.5 mb-2">
+                                            <span className="text-sm">{cat.emoji}</span>
+                                            <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{cat.type}</h4>
+                                        </div>
+                                        <ul className="space-y-1.5">
+                                            {cat.items.map((item, iIdx) => (
+                                                <li key={iIdx} className="text-sm text-slate-600 leading-relaxed pl-4 relative before:content-[''] before:absolute before:left-0 before:top-[9px] before:w-1.5 before:h-1.5 before:rounded-full before:bg-slate-200">
+                                                    <span dangerouslySetInnerHTML={{ __html: item.replace(/\*\*(.+?)\*\*/g, '<strong class="text-slate-900 font-semibold">$1</strong>') }} />
+                                                </li>
+                                            ))}
+                                        </ul>
                                     </div>
-                                    <div>
-                                        <h4 className="text-sm font-bold text-slate-900 mb-1">{feature.title}</h4>
-                                        <p className="text-xs text-slate-500 leading-relaxed">
-                                            {feature.desc}
-                                        </p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-sm text-slate-400 text-center py-8">No release notes available.</p>
+                        )}
                     </ScrollArea>
                 </div>
 
-                <DialogFooter className="p-6 pt-0 border-t border-slate-100">
+                {/* Footer */}
+                <DialogFooter className="px-5 pb-5 pt-0">
                     <Button
                         onClick={dismissChangelog}
-                        className="w-full h-11 bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-lg shadow-slate-200 font-semibold"
+                        className="w-full h-11 bg-gradient-to-br from-[#FF5A1F] to-[#E04812] hover:from-[#E04812] hover:to-[#CC3D0D] text-white rounded-xl font-bold text-sm shadow-sm transition-all"
                     >
-                        Super, fermer
+                        Got it
                     </Button>
                 </DialogFooter>
             </DialogContent>

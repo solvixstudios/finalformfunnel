@@ -12,13 +12,14 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { cn } from '@/lib/utils';
-import { Camera, Save, Trash2, User as UserIcon, Copy, Loader2, Crown, Download, CheckCircle2 } from 'lucide-react';
+import { Camera, Save, Trash2, User as UserIcon, Copy, Loader2, Crown, Download, CheckCircle2, FileText } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { GoogleUser, storeUser } from '../lib/authGoogle';
 import { useI18n } from '../lib/i18n/i18nContext';
 import { Language } from '../lib/i18n/translations';
+import { useChangelog } from '../hooks/useChangelog';
+import { GoogleUser, storeUser } from '../lib/authGoogle';
 
 // __APP_VERSION__ is injected by Vite during build
 declare const __APP_VERSION__: string;
@@ -28,7 +29,7 @@ interface SettingsPageProps {
     onUserUpdate?: (user: GoogleUser) => void;
 }
 
-type SettingsTab = 'profile' | 'language' | 'subscription';
+export type SettingsTab = 'profile' | 'language' | 'subscription' | 'integrations' | 'billing' | 'changelog';
 
 const SettingsPage = ({ user, onUserUpdate }: SettingsPageProps) => {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -36,6 +37,7 @@ const SettingsPage = ({ user, onUserUpdate }: SettingsPageProps) => {
     const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab);
     const { setLanguage, language } = useI18n();
     const appVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.0';
+    const { entries } = useChangelog();
 
     // Form state
     const [displayName, setDisplayName] = useState(user.displayName || '');
@@ -50,9 +52,10 @@ const SettingsPage = ({ user, onUserUpdate }: SettingsPageProps) => {
     }, [searchParams, activeTab]);
 
     const tabs = [
-        { id: 'profile' as const, label: 'Général', desc: 'Vos infos personnelles' },
+        { id: 'profile' as const, label: 'Profile', desc: 'Gérer vos informations personnelles' },
         { id: 'language' as const, label: 'Langue & Localisation', desc: 'Affichage et régionalisation' },
         { id: 'subscription' as const, label: 'Abonnement', desc: 'Historique des paiements' },
+        { id: 'changelog' as const, label: 'Changelog', desc: 'App updates & version history' },
     ];
 
     const languages: { code: Language; name: string; locale: string }[] = [
@@ -169,8 +172,8 @@ const SettingsPage = ({ user, onUserUpdate }: SettingsPageProps) => {
                                     className={cn(
                                         "group flex flex-col items-start px-3 py-2 text-[13px] font-semibold transition-all w-full relative text-left rounded-lg whitespace-nowrap overflow-hidden",
                                         isActive
-                                            ? "bg-[#E6E0D3] text-[#FF5A1F]"
-                                            : "text-[#908878] hover:bg-[#E6E0D3]/60 hover:text-[#FF5A1F]"
+                                            ? "bg-[#FF5A1F]/10 text-[#FF5A1F]"
+                                            : "text-[#908878] hover:bg-[#E6E0D3]/60 hover:text-[#4A443A]"
                                     )}
                                 >
                                     <span className={isActive ? "text-[#FF5A1F]" : "text-[#4A443A] group-hover:text-[#FF5A1F] transition-colors"}>
@@ -178,7 +181,7 @@ const SettingsPage = ({ user, onUserUpdate }: SettingsPageProps) => {
                                     </span>
                                     <span className={cn(
                                         "text-[10px] font-medium mt-0.5 hidden md:block truncate w-full transition-colors",
-                                        isActive ? "text-[#FF5A1F]/70" : "text-[#908878]"
+                                        isActive ? "text-[#FF5A1F]/80" : "text-[#908878] group-hover:text-[#7A7365]"
                                     )}>
                                         {tab.desc}
                                     </span>
@@ -412,6 +415,80 @@ const SettingsPage = ({ user, onUserUpdate }: SettingsPageProps) => {
                                                 ))}
                                             </TableBody>
                                         </Table>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    )}
+
+                    {/* Changelog Tab */}
+                    {activeTab === 'changelog' && (
+                        <div className="space-y-6 animate-fade-in">
+                            <Card className="rounded-xl border-[#E2DCCF] shadow-sm bg-white overflow-hidden">
+                                <CardContent className="p-0">
+                                    <div className="bg-gradient-to-br from-[#FF5A1F] to-[#E04812] px-8 py-10 relative overflow-hidden">
+                                        <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-white/10 rounded-full blur-[60px] pointer-events-none -translate-y-1/2 translate-x-1/4" />
+                                        <div className="relative z-10 max-w-2xl">
+                                            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-white text-[11px] font-bold tracking-widest uppercase mb-4">
+                                                <FileText size={12} /> Version History
+                                            </div>
+                                            <h2 className="text-3xl font-black text-white tracking-tight leading-tight">
+                                                What's New in Final Form
+                                            </h2>
+                                            <p className="text-white/80 font-medium mt-2 max-w-lg">
+                                                Discover the latest updates, improvements, and bug fixes. We're constantly working to make your experience better.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-8 max-w-3xl">
+                                        {entries.length > 0 ? (
+                                            <div className="space-y-12">
+                                                {entries.map((entry, idx) => (
+                                                    <div key={idx} className="relative pl-8 before:content-[''] before:absolute before:left-[11px] before:top-2 before:bottom-[-48px] before:w-[2px] last:before:hidden before:bg-slate-100">
+                                                        <div className="absolute left-0 top-1.5 w-6 h-6 rounded-full bg-white border-4 border-slate-100 flex items-center justify-center shadow-sm z-10" />
+                                                        
+                                                        <div className="mb-6">
+                                                            <div className="flex items-center gap-3">
+                                                                <h3 className="text-xl font-black text-slate-900 tracking-tight">v{entry.version}</h3>
+                                                                <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-md">{entry.date}</span>
+                                                            </div>
+                                                            {idx === 0 && (
+                                                                <span className="inline-block mt-2 text-[10px] font-bold text-[#FF5A1F] bg-[#FF5A1F]/10 border border-[#FF5A1F]/20 px-2 flex-col items-start px-2 py-0.5 rounded-md uppercase tracking-widest">
+                                                                    Latest Release
+                                                                </span>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="space-y-6">
+                                                            {entry.categories.map((cat, cIdx) => (
+                                                                <div key={cIdx} className="bg-[#F8F5F1] rounded-2xl p-5 border border-slate-200/60">
+                                                                    <div className="flex items-center gap-2 mb-3">
+                                                                        <span className="text-base">{cat.emoji}</span>
+                                                                        <h4 className="text-xs font-bold text-slate-700 uppercase tracking-widest">{cat.type}</h4>
+                                                                    </div>
+                                                                    <ul className="space-y-2.5">
+                                                                        {cat.items.map((item, iIdx) => (
+                                                                            <li key={iIdx} className="text-[13px] font-medium text-slate-600 leading-relaxed pl-5 relative before:content-[''] before:absolute before:left-0 before:top-[9px] before:w-1.5 before:h-1.5 before:rounded-full before:bg-[#FF5A1F]/40">
+                                                                                <span dangerouslySetInnerHTML={{ __html: item.replace(/\*\*(.+?)\*\*/g, '<strong class="text-slate-900 font-bold">$1</strong>') }} />
+                                                                            </li>
+                                                                        ))}
+                                                                    </ul>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="text-center py-12">
+                                                <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-100">
+                                                    <FileText className="text-slate-300" />
+                                                </div>
+                                                <h3 className="text-sm font-bold text-slate-900">No release notes found</h3>
+                                                <p className="text-xs text-slate-500 mt-1">Check back later for updates.</p>
+                                            </div>
+                                        )}
                                     </div>
                                 </CardContent>
                             </Card>

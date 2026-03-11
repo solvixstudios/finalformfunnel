@@ -25,6 +25,8 @@ const allowedOrigins = [
     'http://localhost:3000',
     'https://finalformfunnel.web.app',
     'https://finalformfunnel.firebaseapp.com',
+    'https://finalformfunnel-beta.web.app',
+    'https://finalformfunnel-beta.firebaseapp.com',
     process.env.FRONTEND_URL,
 ].filter(Boolean) as string[];
 

@@ -99,11 +99,9 @@ export default function HomePage({ userId }: HomePageProps) {
                 stats={[
                     { label: 'Total Revenue', value: stats.totalRevenue, icon: <DollarSign size={16} />, color: 'amber', format: (n) => n.toLocaleString(), suffix: 'DZD' },
                     { label: 'Total Orders', value: stats.totalOrders, icon: <ShoppingCart size={16} />, color: 'blue' },
-                    { label: 'AOV', value: stats.aov, icon: <TrendingUp size={16} />, color: 'emerald', format: (n) => n.toLocaleString(), suffix: 'DZD' },
                     { label: 'Abandoned Carts', value: stats.abandonedCheckouts, icon: <ShoppingCart size={16} />, color: 'amber' },
                     { label: 'Unique Customers', value: stats.uniqueCustomers, icon: <Users size={16} />, color: 'violet' },
                     { label: 'Total Forms', value: stats.totalForms, icon: <FolderOpen size={16} />, color: 'violet' },
-                    { label: 'Active Funnels', value: stats.liveForms, icon: <Globe2 size={16} />, color: 'emerald' },
                 ]}
                 plan={{ name: 'Pro Plan', daysLeft: 28, totalDays: 30 }}
                 onPlanClick={() => navigate('/dashboard/settings?tab=subscription')}

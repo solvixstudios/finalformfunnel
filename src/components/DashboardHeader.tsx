@@ -190,53 +190,48 @@ export function DashboardHeader({ userName, stats, plan, onPlanClick, greeting =
                             <DropdownMenuTrigger asChild>
                                 <button
                                     title="Customize Dashboard"
-                                    className="w-12 flex items-center justify-center bg-white hover:bg-slate-50 rounded-2xl border border-slate-100 shadow-sm transition-all duration-300 text-slate-400 hover:text-[#FF5A1F] hover:border-[#FF5A1F]/20 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#FF5A1F]/20 group"
+                                    className="w-10 h-10 flex items-center justify-center bg-white hover:bg-slate-50 rounded-xl border border-slate-100 shadow-sm transition-all duration-200 text-slate-400 hover:text-slate-600 focus:outline-none group"
                                 >
-                                    <Settings2 size={20} className="transition-transform duration-500 group-hover:rotate-180" />
+                                    <Settings2 size={16} className="transition-transform duration-500 group-hover:rotate-90" />
                                 </button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-60 bg-white/98 backdrop-blur-2xl border border-slate-100 p-2.5 shadow-2xl shadow-slate-900/8 rounded-2xl">
-                                <div className="px-2.5 py-2 mb-1">
-                                    <p className="text-xs font-black text-slate-900 uppercase tracking-wider">Dashboard Metrics</p>
-                                    <p className="text-[10px] font-medium text-slate-400 mt-0.5">Toggle visibility of your core stats.</p>
+                            <DropdownMenuContent align="end" className="w-52 bg-white border border-slate-100 p-1.5 shadow-xl rounded-xl">
+                                <div className="px-2.5 py-2">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Visible Metrics</p>
                                 </div>
-                                <div className="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent my-1.5" />
-                                <div className="max-h-[300px] overflow-y-auto space-y-0.5">
+                                <div className="max-h-[240px] overflow-y-auto space-y-0.5">
                                     {stats.map(stat => (
                                         <DropdownMenuCheckboxItem
                                             key={stat.label}
                                             checked={visibleStats[stat.label] !== false}
                                             onCheckedChange={() => toggleStat(stat.label)}
-                                            className="text-xs font-semibold text-slate-700 py-3 px-3 focus:bg-[#FF5A1F]/5 focus:text-[#FF5A1F] rounded-xl cursor-pointer transition-colors"
+                                            className="text-xs font-medium text-slate-600 py-2 px-2.5 focus:bg-slate-50 focus:text-slate-900 rounded-lg cursor-pointer transition-colors"
                                         >
-                                            {/* Premium iOS-style Switch implementation */}
                                             <div className="flex-1 flex items-center justify-between w-full">
                                                 <span className="truncate">{stat.label}</span>
                                                 <div className={cn(
-                                                    "w-9 h-5 rounded-full flex items-center px-0.5 transition-all duration-300 border",
-                                                    visibleStats[stat.label] !== false ? "bg-[#FF5A1F] border-[#FF5A1F] shadow-sm shadow-[#FF5A1F]/30" : "bg-slate-200 border-slate-300"
+                                                    "w-7 h-4 rounded-full flex items-center px-0.5 transition-all duration-200 border",
+                                                    visibleStats[stat.label] !== false ? "bg-slate-900 border-slate-900" : "bg-slate-200 border-slate-200"
                                                 )}>
                                                     <div className={cn(
-                                                        "w-4 h-4 bg-white rounded-full shadow-sm transition-all duration-300",
-                                                        visibleStats[stat.label] !== false ? "translate-x-3.5" : "translate-x-0"
+                                                        "w-3 h-3 bg-white rounded-full shadow-sm transition-all duration-200",
+                                                        visibleStats[stat.label] !== false ? "translate-x-3" : "translate-x-0"
                                                     )} />
                                                 </div>
                                             </div>
                                         </DropdownMenuCheckboxItem>
                                     ))}
                                 </div>
-                                <div className="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent my-1.5" />
-                                <div className="p-1">
-                                    <button
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            setVisibleStats(stats.reduce((acc, s) => ({ ...acc, [s.label]: true }), {}));
-                                        }}
-                                        className="w-full text-left px-3 py-2.5 text-[11px] font-bold text-slate-400 hover:text-[#FF5A1F] hover:bg-[#FF5A1F]/5 rounded-xl transition-all duration-200"
-                                    >
-                                        Show All Metrics
-                                    </button>
-                                </div>
+                                <div className="h-px bg-slate-100 my-1" />
+                                <button
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        setVisibleStats(stats.reduce((acc, s) => ({ ...acc, [s.label]: true }), {}));
+                                    }}
+                                    className="w-full text-left px-2.5 py-2 text-[11px] font-semibold text-slate-400 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-all"
+                                >
+                                    Show All
+                                </button>
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </div>

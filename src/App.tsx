@@ -9,6 +9,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { getStoredUser, GoogleUser, onAuthStateChange, signOutUser } from "./lib/authGoogle";
+import { checkOnboardingStatus } from "./hooks/useOnboarding";
 import { I18nProvider } from "./lib/i18n/i18nContext";
 import { useFormStore } from "./stores";
 import { AssignmentsProvider } from "./contexts/AssignmentsContext";
@@ -24,6 +25,7 @@ const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const DashboardLayout = lazy(() => import("./components/DashboardLayout"));
 const GoogleLoginPage = lazy(() => import("./components/GoogleLoginPage"));
+const OnboardingPage = lazy(() => import("./pages/OnboardingPage"));
 const FormConfigAPI = lazy(() => import("./pages/api/FormConfigAPI"));
 const OffersPage = lazy(() => import("./pages/rules/OffersPage"));
 const ShippingPage = lazy(() => import("./pages/rules/ShippingPage"));
@@ -53,15 +55,22 @@ const queryClient = new QueryClient({
 const AppContent = () => {
   const [user, setUser] = useState<GoogleUser | null>(getStoredUser());
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
   // Form config is now managed in Zustand store (useFormStore)
   const navigate = useNavigate();
   const location = useLocation();
 
   // Monitor auth state changes
   useEffect(() => {
-    const unsubscribe = onAuthStateChange((authUser) => {
+    const unsubscribe = onAuthStateChange(async (authUser) => {
       setUser(authUser);
       setIsCheckingAuth(false);
+
+      // Check onboarding status for authenticated users
+      if (authUser) {
+        const completed = await checkOnboardingStatus(authUser.id);
+        setNeedsOnboarding(!completed);
+      }
     });
 
     return () => unsubscribe();
@@ -86,9 +95,15 @@ const AppContent = () => {
     }
   }, [navigate]);
 
-  const handleLoginSuccess = useCallback((newUser: GoogleUser) => {
+  const handleLoginSuccess = useCallback(async (newUser: GoogleUser) => {
     setUser(newUser);
-    navigate("/dashboard/forms");
+    const completed = await checkOnboardingStatus(newUser.id);
+    if (!completed) {
+      setNeedsOnboarding(true);
+      navigate('/onboarding');
+    } else {
+      navigate('/dashboard');
+    }
   }, [navigate]);
 
   const handleNavigate = useCallback((path: string) => {
@@ -116,9 +131,27 @@ const AppContent = () => {
           path="/auth"
           element={
             user ? (
-              <Navigate to="/dashboard/forms" replace />
+              needsOnboarding ? <Navigate to="/onboarding" replace /> : <Navigate to="/dashboard" replace />
             ) : (
               <GoogleLoginPage onLoginSuccess={handleLoginSuccess} />
+            )
+          }
+        />
+
+        {/* Onboarding route — only for authenticated users who haven't completed it */}
+        <Route
+          path="/onboarding"
+          element={
+            !user ? (
+              <Navigate to="/auth" replace />
+            ) : (
+              <OnboardingPage
+                userId={user.id}
+                onComplete={() => {
+                  setNeedsOnboarding(false);
+                  navigate('/dashboard');
+                }}
+              />
             )
           }
         />
@@ -128,56 +161,60 @@ const AppContent = () => {
           <Route
             path="/dashboard/*"
             element={
-              <DashboardLayout
-                user={user}
-                currentPage={location.pathname}
-                onNavigate={handleNavigate}
-                onLogout={handleLogout}
-                onUserUpdate={setUser}
-              >
-                <AssignmentsProvider userId={user.id}>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <Routes>
-                      <Route
-                        path="home"
-                        element={<HomePage userId={user.id} />}
-                      />
-                      <Route
-                        path="forms"
-                        element={<FormsPage />}
-                      />
-                      <Route
-                        path="forms/edit"
-                        element={<Navigate to="/dashboard/forms" replace />}
-                      />
-                      <Route
-                        path="forms/edit/:formId"
-                        element={<EditFormPage userId={user.id} />}
-                      />
-                      <Route
-                        path="integrations"
-                        element={<IntegrationsPage userId={user.id} />}
-                      />
+              needsOnboarding ? (
+                <Navigate to="/onboarding" replace />
+              ) : (
+                <DashboardLayout
+                  user={user}
+                  currentPage={location.pathname}
+                  onNavigate={handleNavigate}
+                  onLogout={handleLogout}
+                  onUserUpdate={setUser}
+                >
+                  <AssignmentsProvider userId={user.id}>
+                    <Suspense fallback={<LoadingSpinner />}>
+                      <Routes>
+                        <Route
+                          path="home"
+                          element={<HomePage userId={user.id} />}
+                        />
+                        <Route
+                          path="forms"
+                          element={<FormsPage />}
+                        />
+                        <Route
+                          path="forms/edit"
+                          element={<Navigate to="/dashboard/forms" replace />}
+                        />
+                        <Route
+                          path="forms/edit/:formId"
+                          element={<EditFormPage userId={user.id} />}
+                        />
+                        <Route
+                          path="integrations"
+                          element={<IntegrationsPage userId={user.id} />}
+                        />
 
-                      <Route
-                        path="orders"
-                        element={<OrdersPage userId={user.id} />}
-                      />
-                      <Route
-                        path="stores"
-                        element={<StoresPage userId={user.id} />}
-                      />
-                      <Route path="rules/offers" element={<OffersPage userId={user.id} />} />
-                      <Route path="rules/shipping" element={<ShippingPage userId={user.id} />} />
-                      <Route path="rules/coupons" element={<CouponsPage userId={user.id} />} />
-                      <Route path="profile" element={<ProfilePage user={user} />} />
-                      <Route path="settings" element={<SettingsPage user={user} onUserUpdate={setUser} />} />
-                      <Route path="" element={<Navigate to="/dashboard/home" replace />} />
-                      <Route path="*" element={<Navigate to="/dashboard/home" replace />} />
-                    </Routes>
-                  </Suspense>
-                </AssignmentsProvider>
-              </DashboardLayout>
+                        <Route
+                          path="orders"
+                          element={<OrdersPage userId={user.id} />}
+                        />
+                        <Route
+                          path="stores"
+                          element={<StoresPage userId={user.id} />}
+                        />
+                        <Route path="rules/offers" element={<OffersPage userId={user.id} />} />
+                        <Route path="rules/shipping" element={<ShippingPage userId={user.id} />} />
+                        <Route path="rules/coupons" element={<CouponsPage userId={user.id} />} />
+                        <Route path="profile" element={<ProfilePage user={user} />} />
+                        <Route path="settings" element={<SettingsPage user={user} onUserUpdate={setUser} />} />
+                        <Route path="" element={<Navigate to="/dashboard/home" replace />} />
+                        <Route path="*" element={<Navigate to="/dashboard/home" replace />} />
+                      </Routes>
+                    </Suspense>
+                  </AssignmentsProvider>
+                </DashboardLayout>
+              )
             }
           />
         )}
@@ -197,7 +234,7 @@ const AppContent = () => {
   );
 };
 
-import { ChangelogModal } from "./components/ChangelogModal";
+
 
 const App = () => {
   return (
@@ -207,7 +244,6 @@ const App = () => {
           <BrowserRouter>
             <Sonner />
             <ConnectionStatusBanner />
-            <ChangelogModal />
             <AppContent />
           </BrowserRouter>
         </TooltipProvider>

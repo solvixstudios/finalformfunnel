@@ -107,25 +107,30 @@ export const ShopifyEditor = () => {
 
   // ─── Sub-components ───
 
-  const ConnectStoreBtn = ({ title, subtitle }: { title: string; subtitle: string }) => (
+  const ConnectStoreBtn = ({ title, variant = "ghost" }: { title: string, variant?: "primary" | "ghost" }) => (
     <button
       type="button"
-      onClick={() => window.open("/dashboard/integrations?open=shopify&add=true", "_blank")}
-      className="w-full text-left p-4 rounded-xl border border-dashed border-emerald-300 bg-gradient-to-r from-emerald-50/50 to-white hover:border-emerald-400 hover:from-emerald-50 hover:to-emerald-50/80 transition-all duration-200 cursor-pointer flex items-center gap-3 group shadow-sm hover:shadow-md outline-none"
+      onClick={() => window.open("/dashboard/settings?tab=integrations&open=shopify", "_blank")}
+      className={`w-full text-left px-4 py-3 rounded-xl border flex items-center justify-between group transition-all duration-200 outline-none
+        ${variant === 'primary' 
+          ? 'bg-[#FF5A1F] border-[#FF5A1F] hover:bg-[#E04812] shadow-sm hover:shadow-md' 
+          : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-[#F8F5F1] shadow-sm'
+        }`}
     >
-      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100 border border-emerald-200/60 flex items-center justify-center shadow-sm shrink-0 transition-all group-hover:scale-105">
-        <Store size={18} className="text-emerald-600" />
+      <div className="flex items-center gap-3">
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors
+          ${variant === 'primary' ? 'bg-white/20' : 'bg-[#F8F5F1] group-hover:bg-white border border-slate-200'}`}>
+          <Store size={14} className={variant === 'primary' ? 'text-white' : 'text-slate-600'} />
+        </div>
+        <div>
+          <h4 className={`text-[13px] font-bold leading-tight ${variant === 'primary' ? 'text-white' : 'text-slate-900'}`}>
+            {title}
+          </h4>
+        </div>
       </div>
-      <div className="flex-1">
-        <h4 className="text-sm font-bold text-slate-900 leading-tight group-hover:text-emerald-700 transition-colors">
-          {title}
-        </h4>
-        <p className="text-[11px] text-slate-500 font-medium mt-0.5 group-hover:text-slate-600 transition-colors">
-          {subtitle}
-        </p>
-      </div>
-      <div className="w-6 h-6 rounded-full bg-emerald-100/50 group-hover:bg-emerald-200 flex items-center justify-center transition-colors">
-        <Plus size={14} className="text-emerald-600" />
+      <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-transform group-hover:translate-x-0.5
+        ${variant === 'primary' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500 group-hover:bg-[#FF5A1F] group-hover:text-white'}`}>
+        <ChevronRight size={14} />
       </div>
     </button>
   );
@@ -136,26 +141,24 @@ export const ShopifyEditor = () => {
         <Store size={14} className="text-emerald-500" /> Shopify
       </h3>
 
-      <div className="bg-white border border-slate-200 shadow-sm rounded-2xl">
+      <div className="bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
         {/* Header */}
-        <div className="p-4 border-b border-slate-100 bg-gradient-to-r from-slate-50/80 to-white flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100 border border-emerald-200/60 flex items-center justify-center shadow-sm shrink-0">
-            <Link2 size={18} className="text-emerald-600" />
+        <div className="p-4 border-b border-slate-100 bg-[#F8F5F1] flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-white border border-slate-200 flex items-center justify-center shadow-sm shrink-0">
+            <Link2 size={16} className="text-[#FF5A1F]" />
           </div>
           <div className="flex-1">
-            <h4 className="text-sm font-bold text-slate-900 leading-tight">
-              Store Links
+            <h4 className="text-[13px] font-black text-slate-900 tracking-tight leading-tight">
+              Store Deployments
             </h4>
-            <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">
               {storeLinks.length > 0
-                ? `${storeLinks.length} store${storeLinks.length !== 1 ? "s" : ""} linked`
-                : "Link a store to deploy this form"}
+                ? `${storeLinks.length} active link${storeLinks.length !== 1 ? "s" : ""}`
+                : "No stores linked"}
             </p>
           </div>
           {storeLinks.length > 0 && (
-            <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center">
-              <Check size={12} className="text-emerald-600" />
-            </div>
+            <div className="w-2 h-2 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20 animate-pulse" />
           )}
         </div>
 
@@ -167,52 +170,49 @@ export const ShopifyEditor = () => {
               <div className="h-14 bg-slate-50 rounded-xl animate-pulse opacity-60" />
             </div>
           ) : shopifyStores.length === 0 ? (
-            <ConnectStoreBtn
-              title="Connect Store"
-              subtitle="Add a Shopify store to deploy this form"
-            />
+            <ConnectStoreBtn title="Connect a Shopify Store" variant="primary" />
           ) : (
             <div className="space-y-2">
               {/* Linked stores */}
               {storeLinks.map((link) => {
                 const store = shopifyStores.find((s) => s.id === link.storeId);
                 return (
-                  <div key={link.storeId} className="flex items-center gap-3 p-3 rounded-xl border border-emerald-200/80 bg-gradient-to-r from-emerald-50/60 to-white transition-all duration-300">
-                    <div className="w-9 h-9 rounded-lg bg-emerald-100 border border-emerald-200 flex items-center justify-center shrink-0">
-                      <Check size={16} className="text-emerald-600" />
+                  <div key={link.storeId} className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-white hover:border-[#FF5A1F]/30 hover:shadow-sm transition-all duration-300 group">
+                    <div className="w-9 h-9 rounded-lg bg-[#FF5A1F]/5 border border-[#FF5A1F]/10 flex items-center justify-center shrink-0">
+                      <Check size={16} className="text-[#FF5A1F]" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-slate-900 truncate">
+                      <p className="text-[13px] font-bold text-slate-900 truncate">
                         {store?.name || "Store"}
                       </p>
                       <div className="flex items-center gap-1.5 mt-0.5">
                         {link.type === "store" ? (
-                          <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-blue-600 bg-blue-50 border border-blue-100 px-1.5 py-px rounded-full">
-                            <Globe size={8} /> All Products
+                          <span className="inline-flex items-center gap-1 text-[9px] font-bold text-slate-500 uppercase tracking-widest bg-slate-100 px-1.5 py-0.5 rounded-md">
+                            <Globe size={10} /> Entire Store
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 px-1.5 py-px rounded-full">
-                            <Package size={8} /> {link.productIds?.length || 0} product{(link.productIds?.length || 0) !== 1 ? "s" : ""} linked
+                          <span className="inline-flex items-center gap-1 text-[9px] font-bold text-[#FF5A1F] uppercase tracking-widest bg-[#FF5A1F]/10 px-1.5 py-0.5 rounded-md">
+                            <Package size={10} /> {link.productIds?.length || 0} product{(link.productIds?.length || 0) !== 1 ? "s" : ""}
                           </span>
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 shrink-0">
+                    <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                       {link.type === "product" && (
                         <button
-                          className="flex items-center gap-1 h-7 px-2.5 text-[10px] font-bold text-indigo-600 hover:text-white hover:bg-indigo-500 border border-indigo-200 hover:border-indigo-500 rounded-lg transition-all duration-200"
+                          className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
                           onClick={() => openProductPicker(link.storeId)}
+                          title="Edit Products"
                         >
-                          <Package size={10} />
-                          Edit
+                          <Package size={14} />
                         </button>
                       )}
                       <button
-                        className="flex items-center gap-1 h-7 px-2.5 text-[10px] font-bold text-red-500 hover:text-white hover:bg-red-500 border border-red-200 hover:border-red-500 rounded-lg transition-all duration-200"
+                        className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                         onClick={() => unlinkStore(link.storeId)}
+                        title="Unlink Store"
                       >
-                        <Unlink size={10} />
-                        Unlink
+                        <Unlink size={14} />
                       </button>
                     </div>
                   </div>
@@ -226,10 +226,10 @@ export const ShopifyEditor = () => {
                     <div className="relative z-10 pointer-events-auto bg-gradient-to-br from-slate-50 to-white border border-slate-200 rounded-xl p-3.5 shadow-sm animate-in fade-in zoom-in-95 duration-200">
                       <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
                         <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-md bg-emerald-100 flex items-center justify-center">
-                            <Store size={12} className="text-emerald-600" />
+                          <div className="w-8 h-8 rounded-lg bg-[#FF5A1F]/10 border border-[#FF5A1F]/20 flex items-center justify-center">
+                            <Store size={14} className="text-[#FF5A1F]" />
                           </div>
-                          <span className="text-xs font-bold text-slate-800 truncate">
+                          <span className="text-[13px] font-bold text-slate-900 truncate">
                             {store.name}
                           </span>
                         </div>
@@ -245,27 +245,25 @@ export const ShopifyEditor = () => {
                       </p>
                       <div className="grid grid-cols-2 gap-2">
                         <button
-                          className="group relative flex flex-col items-center gap-2 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md"
+                          className="group relative flex flex-col items-center gap-2 p-3 rounded-xl border border-slate-200 bg-white hover:border-[#FF5A1F] hover:bg-[#FF5A1F]/5 transition-all duration-200 cursor-pointer shadow-sm"
                           onClick={() => linkStore(store.id, "store")}
                         >
-                          <div className="w-10 h-10 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center group-hover:bg-blue-500 transition-colors">
-                            <Globe size={18} className="text-blue-500 group-hover:text-white transition-colors" />
+                          <div className="w-10 h-10 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center group-hover:bg-white group-hover:border-[#FF5A1F]/30 transition-colors">
+                            <Globe size={18} className="text-slate-400 group-hover:text-[#FF5A1F] transition-colors" />
                           </div>
                           <div className="text-center">
-                            <p className="text-[12px] font-bold text-slate-800 group-hover:text-blue-700">All Products</p>
-                            <p className="text-[9px] text-slate-500 mt-0.5 font-medium">Entire store</p>
+                            <p className="text-[11px] font-bold text-slate-900 group-hover:text-[#FF5A1F]">Entire Store</p>
                           </div>
                         </button>
                         <button
-                          className="group relative flex flex-col items-center gap-2 p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-indigo-500 hover:bg-indigo-50 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md"
+                          className="group relative flex flex-col items-center gap-2 p-3 rounded-xl border border-slate-200 bg-white hover:border-[#FF5A1F] hover:bg-[#FF5A1F]/5 transition-all duration-200 cursor-pointer shadow-sm"
                           onClick={() => openProductPicker(store.id)}
                         >
-                          <div className="w-10 h-10 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center group-hover:bg-indigo-500 transition-colors">
-                            <Package size={18} className="text-indigo-500 group-hover:text-white transition-colors" />
+                          <div className="w-10 h-10 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center group-hover:bg-white group-hover:border-[#FF5A1F]/30 transition-colors">
+                            <Package size={18} className="text-slate-400 group-hover:text-[#FF5A1F] transition-colors" />
                           </div>
                           <div className="text-center">
-                            <p className="text-[12px] font-bold text-slate-800 group-hover:text-indigo-700">Pick Products</p>
-                            <p className="text-[9px] text-slate-500 mt-0.5 font-medium">Specific items</p>
+                            <p className="text-[11px] font-bold text-slate-900 group-hover:text-[#FF5A1F]">Specific Items</p>
                           </div>
                         </button>
                       </div>
@@ -274,25 +272,19 @@ export const ShopifyEditor = () => {
                     <button
                       type="button"
                       onClick={() => setPickingLinkType(store.id)}
-                      className={`w-full flex items-center justify-between p-3 rounded-xl border ${storeLinks.length > 0
-                        ? "border-dashed border-slate-300 bg-slate-50"
-                        : "border-slate-200 bg-white shadow-sm"
-                        } hover:border-emerald-400 hover:bg-emerald-50 hover:shadow-md transition-all duration-200 cursor-pointer text-left active:scale-[0.98] outline-none focus:ring-2 focus:ring-emerald-500`}
+                      className={`w-full flex items-center justify-between p-3 rounded-xl border border-slate-200 hover:border-[#FF5A1F]/30 hover:bg-[#FF5A1F]/5 transition-all duration-200 cursor-pointer text-left active:scale-[0.98] outline-none group`}
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-colors ${storeLinks.length > 0
-                          ? "bg-white text-emerald-500 border border-slate-200"
-                          : "bg-emerald-100/50 text-emerald-600 border border-emerald-100"
-                          }`}>
-                          {storeLinks.length > 0 ? <Plus size={16} /> : <Store size={18} />}
+                        <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-slate-50 border border-slate-100 group-hover:bg-white group-hover:border-[#FF5A1F]/20 transition-colors">
+                          <Store size={14} className="text-slate-500 group-hover:text-[#FF5A1F] transition-colors" />
                         </div>
                         <div className="flex-1 min-w-0 pr-2">
-                          <p className="text-[13px] font-bold text-slate-900 truncate">{store.name}</p>
-                          <p className="text-[10px] font-medium text-slate-500 truncate mt-0.5">{store.url}</p>
+                          <p className="text-[12px] font-bold text-slate-900 group-hover:text-[#FF5A1F] truncate transition-colors">{store.name}</p>
+                          <p className="text-[10px] font-medium text-slate-400 truncate mt-0.5">{store.url}</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-200 font-bold text-[11px] shadow-sm hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-colors shrink-0">
-                        <Link2 size={12} strokeWidth={2.5} /> Link Store
+                      <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-[#FF5A1F] group-hover:text-white transition-colors shrink-0">
+                        <Link2 size={12} strokeWidth={2.5} />
                       </div>
                     </button>
                   )}
@@ -302,19 +294,13 @@ export const ShopifyEditor = () => {
               {/* All linked — offer to connect new */}
               {unlinkedStores.length === 0 && storeLinks.length > 0 && (
                 <div className="pt-2">
-                  <ConnectStoreBtn
-                    title="Connect Another Store"
-                    subtitle="Link an additional Shopify store"
-                  />
+                  <ConnectStoreBtn title="Connect Another Store" />
                 </div>
               )}
 
               {unlinkedStores.length > 0 && (
                 <div className="pt-2 border-t border-slate-100 mt-2">
-                  <ConnectStoreBtn
-                    title="Connect New Store"
-                    subtitle="Add another Shopify store to your account"
-                  />
+                  <ConnectStoreBtn title="Connect New Store" />
                 </div>
               )}
             </div>
