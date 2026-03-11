@@ -8,6 +8,7 @@
     "build": "node scripts/env-router.js build",
     "deploy": "node scripts/env-router.js deploy",
     "clean": "npm run clean-db",
+    "clone-db": "cd server && npm run clone-db",
     "goto-dev": "git checkout dev",
     "goto-prod": "git checkout main",
     "dev-ui": "vite",
@@ -18,8 +19,8 @@
     "build-loader-prod": "node scripts/bump-version.js && vite build --config vite.loader.config.ts && vite build --config vite.global.config.ts && node scripts/build-loader.js",
     "build-dev": "npm run build-ui -- --mode development && npm run build-loader-dev",
     "build-prod": "npm run build-ui && npm run build-loader-prod",
-    "deploy-dev": "npm run build-dev && firebase deploy --only hosting:dev",
-    "deploy-prod": "npm run build-prod && firebase deploy --only hosting:prod",
+    "deploy-dev": "npm run build-dev && firebase deploy --project finalformfunnel-beta",
+    "deploy-prod": "npm run build-prod && firebase deploy --project finalformfunnel",
     "lint": "eslint .",
     "preview": "vite preview",
     "clean-db": "cd server && npm run clean-db"

@@ -13,6 +13,18 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID || 'YOUR_APP_ID',
 };
 
+// 🛡️ ISOLATION GUARD: Ensure UI never cross-contaminates databases
+const isDev = import.meta.env.MODE === 'development';
+if (isDev && firebaseConfig.projectId !== 'finalformfunnel-beta') {
+  console.error('🚨 UI CRITICAL ERROR: Dev Mode loaded Production Project ID.');
+  console.error(`Expected: finalformfunnel-beta | Received: ${firebaseConfig.projectId}`);
+  // We don't throw an error here because it might block rendering for the user to see the issue in console
+  // but the console error string is loud and clear.
+} else if (!isDev && firebaseConfig.projectId !== 'finalformfunnel') {
+  console.error('🚨 UI CRITICAL ERROR: Prod Mode loaded Dev Project ID.');
+  console.error(`Expected: finalformfunnel | Received: ${firebaseConfig.projectId}`);
+}
+
 // Initialize Firebase
 export const app = initializeApp(firebaseConfig);
 

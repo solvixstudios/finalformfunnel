@@ -11,7 +11,7 @@ import capiRoutes from './routes/capi';
 import googleSheetsRoutes from './routes/googleSheets';
 import { globalErrorHandler } from './middleware/errorHandler';
 
-dotenv.config();
+dotenv.config({ path: process.argv.includes('--dev') ? '.env.development' : '.env' });
 
 const app = express();
 const port = process.env.PORT || 3000;

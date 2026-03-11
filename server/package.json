@@ -5,9 +5,10 @@
   "main": "dist/index.js",
   "scripts": {
     "start": "node dist/index.js",
-    "dev": "ts-node src/index.ts",
+    "dev": "ts-node src/index.ts --dev",
     "build": "tsc",
-    "clean-db": "ts-node scripts/clean-db.ts"
+    "clean-db": "ts-node scripts/clean-db.ts --dev",
+    "clone-db": "ts-node scripts/clone-db.ts"
   },
   "keywords": [],
   "author": "",

@@ -12,11 +12,19 @@ import * as dotenv from 'dotenv';
 import * as path from 'path';
 import * as readline from 'readline';
 
-dotenv.config();
+const isDev = process.argv.includes('--dev');
+dotenv.config({ path: isDev ? path.resolve(process.cwd(), '.env.development') : path.resolve(process.cwd(), '.env') });
 
-// ── Firebase Init ───────────────────────────────────────────────
 const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
 const projectId = process.env.FIREBASE_PROJECT_ID;
+
+if (!isDev && projectId === 'finalformfunnel' && !process.argv.includes('--force-prod')) {
+    console.error('');
+    console.error('🚨 PROTECTED: You are attempting to wipe the LIVE PRODUCTION database.');
+    console.error('If this is truly intended, you must manually run with --force-prod.');
+    console.error('');
+    process.exit(1);
+}
 
 let credential: admin.credential.Credential;
 if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
