@@ -24,8 +24,11 @@ dist-ssr
 # Secrets & Environment Variables
 .env
 .env.*
+!.env.example
+!.env.development.example
 *.local
-*service-account.json
+*service-account*.json
+!*service-account.example.json
 firebase-adminsdk-*.json
 
 # Firebase
