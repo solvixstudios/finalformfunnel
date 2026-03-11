@@ -2,6 +2,7 @@ import { PageHeader } from '@/components/GlobalHeader/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { StateWrapper } from '@/components/ui/StateWrapper';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
 import EmptyState from '@/components/ui/EmptyState';
 import { useConnectedStores, useFormAssignments, useSavedForms } from '@/lib/firebase/hooks';
@@ -151,7 +152,7 @@ export default function StoresPage({ userId }: { userId: string }) {
 
     // Navigate to form editor Publish tab
     const handleOpenForm = (formId: string) => {
-        navigate(`/dashboard/forms/edit/${formId}?tab=publish`);
+        navigate(`/ dashboard / forms / edit / ${formId} ? tab = publish`);
     };
 
     // ─── Filter & Sort ───
@@ -198,9 +199,9 @@ export default function StoresPage({ userId }: { userId: string }) {
 
     if (shopifyStores.length === 0) {
         return (
-            <div className="max-w-[1400px] mx-auto w-full pt-4 pb-8">
+            <div className="max-w-[1400px] mx-auto w-full flex-1 flex flex-col pt-2 md:pt-4 pb-8">
                 <PageHeader title="Stores Dashboard" breadcrumbs={[{ label: 'Stores' }]} icon={Store} />
-                <div className="flex items-center justify-center py-32">
+                <StateWrapper>
                     <EmptyState
                         icon={<Store size={32} />}
                         title="No stores connected"
@@ -208,25 +209,29 @@ export default function StoresPage({ userId }: { userId: string }) {
                         action={{ label: 'Connect Store', onClick: () => navigate('/dashboard/integrations?open=shopify&add=true') }}
                         variant="ghost"
                     />
-                </div>
+                </StateWrapper>
             </div>
         );
     }
 
+    const headerActions = (
+        <Link
+            to="/dashboard/integrations?open=shopify&add=true"
+            className="inline-flex items-center gap-2 h-9 px-4 rounded-lg text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition-all shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]"
+        >
+            <Store size={14} /> Connect New Store
+        </Link>
+    );
+
+    const breadcrumbs = [{ label: 'Stores' }];
+
     return (
-        <div className="max-w-[1400px] mx-auto w-full flex flex-col pt-2 md:pt-4 pb-8 h-[calc(100vh-theme(spacing.14))]">
+        <div className="max-w-[1400px] mx-auto w-full flex flex-col pt-2 md:pt-4 pb-8 flex-1">
             <PageHeader
                 title="Stores Dashboard"
-                breadcrumbs={[{ label: 'Stores' }]}
+                breadcrumbs={breadcrumbs}
                 icon={Store}
-                actions={
-                    <Link
-                        to="/dashboard/integrations?open=shopify&add=true"
-                        className="inline-flex items-center gap-2 h-9 px-4 rounded-lg text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition-all shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]"
-                    >
-                        <Store size={14} /> Connect New Store
-                    </Link>
-                }
+                actions={headerActions}
             />
 
             {shopifyStores.length > 1 && (
@@ -325,48 +330,46 @@ export default function StoresPage({ userId }: { userId: string }) {
                     </div>
 
                     {/* ─── Data Table ─── */}
-                    <div className="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-                        <div className="flex-1 overflow-auto custom-scroll min-h-[400px]">
-                            <table className="w-full text-left border-collapse min-w-[600px]">
-                                <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 shadow-sm">
-                                    <tr>
-                                        <th className="w-[80px] py-4 pl-6 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Image</th>
-                                        <th
-                                            className="text-[10px] font-bold text-slate-600 uppercase tracking-wider py-4 cursor-pointer hover:text-slate-900 transition-colors group"
-                                            onClick={() => toggleSort('name')}
-                                        >
-                                            <div className="flex items-center">Product <SortIcon field="name" /></div>
-                                        </th>
-                                        <th className="text-[10px] font-bold text-slate-600 uppercase tracking-wider py-4 text-right pr-6">Assigned Form Mapping</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100">
-                                    {paginatedProducts.length === 0 ? (
+                    {paginatedProducts.length === 0 ? (
+                        <StateWrapper className="bg-white rounded-xl border border-slate-200 shadow-sm mt-4">
+                            {isSyncing ? (
+                                <div className="w-full h-full opacity-50 pointer-events-none p-4"><TableSkeleton columns={3} rows={6} className="border-0 shadow-none bg-transparent" /></div>
+                            ) : activeProducts.length === 0 ? (
+                                <EmptyState
+                                    icon={<Package size={28} />}
+                                    title="No products found"
+                                    description="Your product catalog is empty. Run a sync to import products from Shopify."
+                                    action={{ label: 'Sync Catalog', onClick: () => syncStoreProducts(activeStore.id) }}
+                                    variant="ghost"
+                                />
+                            ) : (
+                                <EmptyState
+                                    icon={<Search size={28} />}
+                                    title="No match found"
+                                    description="Try adjusting your search criteria."
+                                    variant="ghost"
+                                    compact
+                                />
+                            )}
+                        </StateWrapper>
+                    ) : (
+                        <div className="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col mt-4">
+                            <div className="flex-1 overflow-auto custom-scroll min-h-[400px]">
+                                <table className="w-full text-left border-collapse min-w-[600px]">
+                                    <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 shadow-sm">
                                         <tr>
-                                            <td colSpan={3} className="h-[400px] p-0 align-middle">
-                                                {isSyncing ? (
-                                                    <div className="w-full opacity-50 pointer-events-none p-4"><TableSkeleton columns={3} rows={6} className="border-0 shadow-none bg-transparent" /></div>
-                                                ) : activeProducts.length === 0 ? (
-                                                    <EmptyState
-                                                        icon={<Package size={28} />}
-                                                        title="No products found"
-                                                        description="Your product catalog is empty. Run a sync to import products from Shopify."
-                                                        action={{ label: 'Sync Catalog', onClick: () => syncStoreProducts(activeStore.id) }}
-                                                        variant="ghost"
-                                                    />
-                                                ) : (
-                                                    <EmptyState
-                                                        icon={<Search size={28} />}
-                                                        title="No match found"
-                                                        description="Try adjusting your search criteria."
-                                                        variant="ghost"
-                                                        compact
-                                                    />
-                                                )}
-                                            </td>
+                                            <th className="w-[80px] py-4 pl-6 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Image</th>
+                                            <th
+                                                className="text-[10px] font-bold text-slate-600 uppercase tracking-wider py-4 cursor-pointer hover:text-slate-900 transition-colors group"
+                                                onClick={() => toggleSort('name')}
+                                            >
+                                                <div className="flex items-center">Product <SortIcon field="name" /></div>
+                                            </th>
+                                            <th className="text-[10px] font-bold text-slate-600 uppercase tracking-wider py-4 text-right pr-6">Assigned Form Mapping</th>
                                         </tr>
-                                    ) : (
-                                        paginatedProducts.map(product => {
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {paginatedProducts.map(product => {
                                             const pa = getProductAssignment(product.id);
                                             const effectiveForm = getEffectiveForm(product.id);
                                             const hasOwnForm = !!pa;
@@ -385,7 +388,7 @@ export default function StoresPage({ userId }: { userId: string }) {
                                                     <td className="py-4 pr-4 align-middle">
                                                         <div className="flex flex-col min-w-0">
                                                             <span className="text-sm font-bold text-slate-900 line-clamp-1 group-hover:text-indigo-600 transition-colors cursor-pointer">{product.title}</span>
-                                                            <span className="text-[11px] font-medium text-slate-500 mt-0.5">{product.vendor} {product.variants?.length ? `· ${product.variants.length} variant${product.variants.length > 1 ? 's' : ''}` : ''}</span>
+                                                            <span className="text-[11px] font-medium text-slate-500 mt-0.5">{product.vendor} {product.variants?.length ? `· ${product.variants.length} variant${product.variants.length > 1 ? 's' : ''} ` : ''}</span>
                                                         </div>
                                                     </td>
                                                     <td className="py-4 pr-6 align-middle text-right">
@@ -415,29 +418,29 @@ export default function StoresPage({ userId }: { userId: string }) {
                                                     </td>
                                                 </tr>
                                             );
-                                        })
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        {/* Pagination Footer */}
-                        {totalPages > 1 && (
-                            <div className="flex items-center justify-between px-6 py-3 border-t border-slate-100 bg-slate-50/50 shrink-0">
-                                <p className="text-xs text-slate-500 font-medium tabular-nums">
-                                    Showing {(safePage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(safePage * ITEMS_PER_PAGE, filteredProducts.length)} of {filteredProducts.length} items
-                                </p>
-                                <div className="flex items-center gap-1.5">
-                                    <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg shadow-sm bg-white" disabled={safePage === 1} onClick={() => setCurrentPage(p => p - 1)}>
-                                        <ChevronLeft size={14} />
-                                    </Button>
-                                    <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg shadow-sm bg-white" disabled={safePage === totalPages} onClick={() => setCurrentPage(p => p + 1)}>
-                                        <ChevronRight size={14} />
-                                    </Button>
-                                </div>
+                                        })}
+                                    </tbody>
+                                </table>
                             </div>
-                        )}
-                    </div>
+
+                            {/* Pagination Footer */}
+                            {totalPages > 1 && (
+                                <div className="flex items-center justify-between px-6 py-3 border-t border-slate-100 bg-slate-50/50 shrink-0">
+                                    <p className="text-xs text-slate-500 font-medium tabular-nums">
+                                        Showing {(safePage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(safePage * ITEMS_PER_PAGE, filteredProducts.length)} of {filteredProducts.length} items
+                                    </p>
+                                    <div className="flex items-center gap-1.5">
+                                        <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg shadow-sm bg-white" disabled={safePage === 1} onClick={() => setCurrentPage(p => p - 1)}>
+                                            <ChevronLeft size={14} />
+                                        </Button>
+                                        <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg shadow-sm bg-white" disabled={safePage === totalPages} onClick={() => setCurrentPage(p => p + 1)}>
+                                            <ChevronRight size={14} />
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             )}
         </div>

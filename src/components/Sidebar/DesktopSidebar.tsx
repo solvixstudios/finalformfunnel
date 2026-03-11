@@ -93,12 +93,12 @@ const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
                                                             "group flex items-center gap-2.5 px-2.5 py-[7px] text-[13px] font-semibold transition-all w-full relative text-left rounded-lg",
                                                             active
                                                                 ? "bg-[#E6E0D3] text-[#FF5A1F]"
-                                                                : "text-[#908878] hover:bg-[#E6E0D3]/60 hover:text-[#FF5A1F]"
+                                                                : "text-[#4A443A] hover:bg-[#E6E0D3]/60 hover:text-[#FF5A1F]"
                                                         )}
                                                     >
                                                         <span className={cn(
                                                             "shrink-0 transition-colors",
-                                                            active ? "text-[#FF5A1F]" : "text-[#B4AD9E] group-hover:text-[#FF5A1F]"
+                                                            active ? "text-[#FF5A1F]" : "text-[#7A7365] group-hover:text-[#FF5A1F]"
                                                         )}>
                                                             {React.cloneElement(item.icon as React.ReactElement, { size: 17, strokeWidth: 2.5 })}
                                                         </span>
@@ -125,12 +125,12 @@ const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
                                                         "group flex items-center gap-2.5 px-2.5 py-[7px] text-[13px] font-semibold transition-all w-full relative text-left rounded-lg",
                                                         active
                                                             ? "bg-[#E6E0D3] text-[#FF5A1F]"
-                                                            : "text-[#908878] hover:bg-[#E6E0D3]/60 hover:text-[#FF5A1F]"
+                                                            : "text-[#4A443A] hover:bg-[#E6E0D3]/60 hover:text-[#FF5A1F]"
                                                     )}
                                                 >
                                                     <span className={cn(
                                                         "shrink-0 transition-colors",
-                                                        active ? "text-[#FF5A1F]" : "text-[#B4AD9E] group-hover:text-[#FF5A1F]"
+                                                        active ? "text-[#FF5A1F]" : "text-[#7A7365] group-hover:text-[#FF5A1F]"
                                                     )}>
                                                         {React.cloneElement(item.icon as React.ReactElement, { size: 17, strokeWidth: 2.5 })}
                                                     </span>

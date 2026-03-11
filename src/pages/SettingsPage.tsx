@@ -12,7 +12,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { cn } from '@/lib/utils';
-import { Camera, Save, Trash2, User as UserIcon, Copy, Loader2 } from 'lucide-react';
+import { Camera, Save, Trash2, User as UserIcon, Copy, Loader2, Crown, Download, CheckCircle2 } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -308,67 +308,111 @@ const SettingsPage = ({ user, onUserUpdate }: SettingsPageProps) => {
                     {/* Subscription Tab Offline Payments */}
                     {activeTab === 'subscription' && (
                         <div className="space-y-6 animate-fade-in">
-                            <Card className="rounded-xl border-[#FF5A1F]/20 bg-[#FF5A1F]/5 shadow-none overflow-hidden">
-                                <CardHeader className="pb-4">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <CardTitle className="text-lg text-[#FF5A1F]">Abonnement Actuel</CardTitle>
-                                            <CardDescription className="text-[#4A443A]/70 mt-1">Votre accès premium à Final Form.</CardDescription>
+                            <Card className="relative rounded-2xl border-[#E2DCCF] bg-gradient-to-br from-[#FFF8F3] to-white shadow-sm overflow-hidden">
+                                <div className="absolute top-0 right-0 p-8 opacity-[0.03] pointer-events-none">
+                                    <Crown className="w-48 h-48 text-[#FF5A1F] -mr-8 -mt-8 rotate-12" />
+                                </div>
+                                <CardHeader className="pb-4 relative z-10">
+                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-xl bg-[#FF5A1F]/10 flex items-center justify-center shrink-0">
+                                                <Crown className="w-5 h-5 text-[#FF5A1F]" />
+                                            </div>
+                                            <div>
+                                                <CardTitle className="text-lg font-bold text-[#4A443A] leading-tight">Forfait Actuel</CardTitle>
+                                                <CardDescription className="text-[#908878] font-medium mt-0.5">Votre accès premium à Final Form.</CardDescription>
+                                            </div>
                                         </div>
-                                        <div className="px-3 py-1 rounded-full bg-[#FF5A1F] text-white text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-sm">
+                                        <div className="px-3 py-1.5 rounded-full bg-[#E6F4EA] text-[#137333] border border-[#137333]/20 text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-sm w-fit">
+                                            <CheckCircle2 size={14} strokeWidth={2.5} />
                                             Actif
                                         </div>
                                     </div>
                                 </CardHeader>
-                                <CardContent>
-                                    <div className="flex items-baseline gap-2 mb-1">
-                                        <h2 className="text-3xl font-black text-[#4A443A] tracking-tight">PRO Plan</h2>
+                                <CardContent className="relative z-10 border-t border-[#E2DCCF]/50 pt-6">
+                                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                                        <div>
+                                            <div className="flex items-baseline gap-2 mb-2">
+                                                <h2 className="text-4xl font-black text-[#4A443A] tracking-tight">PRO Plan</h2>
+                                            </div>
+                                            <p className="text-[13px] font-medium text-[#908878]">
+                                                Paiement hors ligne valide du <strong className="text-[#4A443A]">28 Fév 2025</strong> au <strong className="text-[#4A443A]">28 Fév 2026</strong>.
+                                            </p>
+                                        </div>
+                                        <div className="flex flex-col items-start md:items-end">
+                                            <p className="text-[11px] font-bold text-[#A69D8A] uppercase tracking-widest mb-1">Renouvellement</p>
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="w-2 h-2 rounded-full bg-[#137333] animate-pulse"></span>
+                                                <p className="text-sm font-semibold text-[#4A443A]">Dans 354 jours</p>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <p className="text-sm font-medium text-[#908878]">
-                                        Paiement hors ligne valide du <strong className="text-[#4A443A]">28 Février 2025</strong> au <strong className="text-[#4A443A]">28 Février 2026</strong>.
-                                    </p>
                                 </CardContent>
                             </Card>
 
-                            <Card className="rounded-xl border-[#E2DCCF] shadow-sm bg-white overflow-hidden">
-                                <CardHeader className="bg-[#FAF9F6] border-b border-[#E2DCCF] pb-4">
-                                    <CardTitle className="text-lg text-[#4A443A]">Historique des Paiements</CardTitle>
-                                    <CardDescription className="text-[#908878]">Consultez vos reçus et transactions traitées hors ligne par notre équipe.</CardDescription>
+                            <Card className="rounded-2xl border-[#E2DCCF] shadow-sm bg-white overflow-hidden">
+                                <CardHeader className="bg-white border-b border-[#E2DCCF] pb-5 pt-6 px-6">
+                                    <CardTitle className="text-lg font-bold text-[#4A443A]">Historique des Paiements</CardTitle>
+                                    <CardDescription className="text-[#908878] font-medium mt-1">Consultez vos reçus et transactions traitées par notre équipe.</CardDescription>
                                 </CardHeader>
                                 <CardContent className="p-0">
-                                    <Table>
-                                        <TableHeader className="bg-[#FAF9F6]">
-                                            <TableRow className="border-[#E2DCCF] hover:bg-transparent">
-                                                <TableHead className="font-semibold text-[#908878] pl-6">N° Transaction</TableHead>
-                                                <TableHead className="font-semibold text-[#908878]">Forfait</TableHead>
-                                                <TableHead className="font-semibold text-[#908878]">Période</TableHead>
-                                                <TableHead className="font-semibold text-[#908878]">Montant</TableHead>
-                                                <TableHead className="text-right font-semibold text-[#908878] pr-6">Statut</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {transactions.map((trx, idx) => (
-                                                <TableRow key={trx.id} className={cn("border-[#E2DCCF]", idx % 2 === 0 ? "bg-white" : "bg-[#FAF9F6]/50")}>
-                                                    <TableCell className="font-mono text-xs text-[#908878] pl-6">{trx.id}</TableCell>
-                                                    <TableCell className="font-semibold text-[#4A443A]">{trx.plan}</TableCell>
-                                                    <TableCell className="text-[#908878] text-xs">
-                                                        {trx.start} <br /> {trx.end}
-                                                    </TableCell>
-                                                    <TableCell className="font-bold text-[#4A443A]">{trx.amount}</TableCell>
-                                                    <TableCell className="text-right pr-6">
-                                                        <span className={cn(
-                                                            "px-2 py-1 flex items-center justify-center max-w-[80px] ml-auto rounded-md text-[10px] font-bold uppercase tracking-wider",
-                                                            trx.status === 'Actif'
-                                                                ? "bg-[#E6E0D3] text-[#4A443A] border border-[#D9D1C3]"
-                                                                : "bg-transparent text-[#A69D8A] border border-[#E2DCCF]"
-                                                        )}>
-                                                            {trx.status}
-                                                        </span>
-                                                    </TableCell>
+                                    <div className="overflow-x-auto">
+                                        <Table>
+                                            <TableHeader className="bg-[#FAF9F6]">
+                                                <TableRow className="border-[#E2DCCF] hover:bg-transparent">
+                                                    <TableHead className="font-bold text-[#A69D8A] text-[11px] tracking-wider uppercase pl-6 py-4">Transaction</TableHead>
+                                                    <TableHead className="font-bold text-[#A69D8A] text-[11px] tracking-wider uppercase py-4">Forfait</TableHead>
+                                                    <TableHead className="font-bold text-[#A69D8A] text-[11px] tracking-wider uppercase py-4">Période</TableHead>
+                                                    <TableHead className="font-bold text-[#A69D8A] text-[11px] tracking-wider uppercase py-4">Montant</TableHead>
+                                                    <TableHead className="font-bold text-[#A69D8A] text-[11px] tracking-wider uppercase py-4 text-center">Statut</TableHead>
+                                                    <TableHead className="font-bold text-[#A69D8A] text-[11px] tracking-wider uppercase pr-6 py-4 text-right">Facture</TableHead>
                                                 </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {transactions.map((trx, idx) => (
+                                                    <TableRow key={trx.id} className="border-b border-[#E2DCCF]/60 last:border-0 hover:bg-[#FAF9F6] transition-colors group">
+                                                        <TableCell className="pl-6 py-4">
+                                                            <div className="font-mono text-[13px] font-semibold text-[#4A443A]">{trx.id}</div>
+                                                        </TableCell>
+                                                        <TableCell className="py-4">
+                                                            <span className="inline-flex items-center px-2 py-1 rounded-md bg-[#F2EFE8] text-[#4A443A] text-xs font-bold border border-[#E2DCCF]">
+                                                                {trx.plan}
+                                                            </span>
+                                                        </TableCell>
+                                                        <TableCell className="py-4">
+                                                            <div className="flex flex-col gap-0.5 text-[13px] font-medium text-[#7A7365]">
+                                                                <span className="flex items-center gap-1.5"><span className="w-1 h-1 rounded-full bg-[#E2DCCF]"></span> {trx.start}</span>
+                                                                <span className="flex items-center gap-1.5"><span className="w-1 h-1 rounded-full bg-[#A69D8A]"></span> {trx.end}</span>
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell className="py-4">
+                                                            <div className="font-bold text-[#4A443A]">{trx.amount}</div>
+                                                        </TableCell>
+                                                        <TableCell className="py-4 text-center">
+                                                            <span className={cn(
+                                                                "inline-flex items-center justify-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest min-w-[70px]",
+                                                                trx.status === 'Actif'
+                                                                    ? "bg-[#E6F4EA] text-[#137333] border border-[#137333]/20 shadow-sm"
+                                                                    : "bg-transparent text-[#A69D8A] border border-[#E2DCCF]"
+                                                            )}>
+                                                                {trx.status}
+                                                            </span>
+                                                        </TableCell>
+                                                        <TableCell className="pr-6 py-4 text-right">
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="opacity-0 group-hover:opacity-100 transition-opacity text-[#908878] hover:text-[#FF5A1F] hover:bg-[#FF5A1F]/10 h-8 w-8"
+                                                                title="Télécharger la facture"
+                                                            >
+                                                                <Download size={16} strokeWidth={2.5} />
+                                                            </Button>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
                                 </CardContent>
                             </Card>
                         </div>

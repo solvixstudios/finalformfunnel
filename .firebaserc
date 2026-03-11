@@ -1,5 +1,18 @@
 {
   "projects": {
     "default": "finalformfunnel"
-  }
+  },
+  "targets": {
+    "finalformfunnel": {
+      "hosting": {
+        "dev": [
+          "finalformfunnel-dev"
+        ],
+        "prod": [
+          "finalformfunnel"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }

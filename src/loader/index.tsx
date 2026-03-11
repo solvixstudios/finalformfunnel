@@ -96,6 +96,13 @@ async function fetchConfigFromBackend(shop: string, productId?: string, productH
  * Initialize the loader
  */
 async function initLoader() {
+    // Guard against duplicate initialization (e.g. multiple script tags on the page)
+    if ((window as any).__FINALFORM_INITIALIZED__) {
+        console.log('FinalForm: Already initialized, skipping duplicate.');
+        return;
+    }
+    (window as any).__FINALFORM_INITIALIZED__ = true;
+
     const version = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'unknown';
     console.log(`FinalForm: Initializing v${version}...`);
 
@@ -169,9 +176,6 @@ async function initLoader() {
 
     const params = getScriptParams();
     const shop = params.shop || window.location.hostname;
-    // const sfToken = params.sf_token; // Deprecated with Firebase
-
-    // 1.5. Remove Tailwind CDN Injection (We rely on built CSS now)
 
     // 2. Identify Product Context
     let productId: string | undefined;
@@ -194,43 +198,147 @@ async function initLoader() {
     const productHandle = window.location.pathname.split('/products/')[1]?.split('/')[0];
 
     // Check if we are on a product page (required for product forms)
-    // If we can't find a product ID/handle, we continue to fetch config for Global Pixels
     if (!productId && !productHandle) {
         console.log('FinalForm: No product context found. Proceeding to fetch global config.');
+    } else {
+        console.log('FinalForm: Context', { shop, productId, productHandle });
     }
 
-    console.log('FinalForm: Context', { shop, productId, productHandle });
+    // --- EARLY SKELETON INJECTION (FAST FEEDBACK) ---
+    let container = document.getElementById(CONTAINER_ID);
+    let shadowRoot: ShadowRoot | null = null;
+    let fallbackCSSPath = '';
 
-    // 3. Resolve Config (backend)
-    // We pass shop, productId, productHandle to find the right assignment
-    const config = await fetchConfigFromBackend(shop, productId, productHandle);
+    // If we think we're on a product page, inject the container and skeleton IMMEDIATELY
+    if (productId || productHandle) {
+        if (!container) {
+            container = document.createElement('div');
+            container.id = CONTAINER_ID;
+            // CSS Reset for the container wrapper
+            container.style.display = 'block';
+            container.style.width = '100%';
+            container.style.all = 'initial';
+            container.style.display = 'block';
+
+            const cartForm = document.querySelector('form[action*="/cart/add"]');
+            if (cartForm && cartForm.parentNode) {
+                console.log('FinalForm: Injecting after cart form early');
+                cartForm.parentNode.insertBefore(container, cartForm.nextSibling);
+            } else {
+                console.log('FinalForm: Injecting to body early');
+                document.body.appendChild(container); // Fallback
+            }
+        }
+
+        shadowRoot = container.shadowRoot;
+        if (!shadowRoot) {
+            shadowRoot = container.attachShadow({ mode: 'open' });
+        }
+
+        // Helper to get CSS Path
+        const getCssPath = () => {
+            const scripts = document.querySelectorAll('script');
+            let basePath = 'https://finalformfunnel.web.app/';
+            for (let i = 0; i < scripts.length; i++) {
+                const src = scripts[i].src;
+                if (src && (src.includes('finalform-loader.prod.js') || src.includes('finalform-loader.js'))) {
+                    const lastSlash = src.lastIndexOf('/');
+                    if (lastSlash !== -1) basePath = src.substring(0, lastSlash + 1);
+                    break;
+                }
+            }
+            const version = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : Date.now();
+            return basePath + 'finalform-loader.css?v=' + version;
+        };
+
+        fallbackCSSPath = getCssPath();
+
+        const cssId = 'finalform-shadow-css';
+        if (!shadowRoot.getElementById(cssId)) {
+            const link = document.createElement('link');
+            link.id = cssId;
+            link.rel = 'stylesheet';
+            link.type = 'text/css';
+            link.href = fallbackCSSPath;
+            shadowRoot.appendChild(link);
+        }
+
+        // Inject Skeleton immediately (Fix FOUC & Loading perception)
+        if (!shadowRoot.getElementById('finalform-skeleton') && !shadowRoot.getElementById('finalform-shadow-wrapper')) {
+            const skeletonDiv = document.createElement('div');
+            skeletonDiv.id = 'finalform-skeleton';
+            skeletonDiv.innerHTML = `
+                <div class="animate-pulse space-y-4 p-4 opacity-60">
+                    <div class="h-8 bg-slate-200 rounded w-3/4 mx-auto"></div>
+                    <div class="h-64 bg-slate-100 rounded-xl"></div>
+                    <div class="space-y-3">
+                        <div class="h-12 bg-slate-200 rounded"></div>
+                        <div class="h-12 bg-slate-200 rounded"></div>
+                    </div>
+                    <div class="h-14 bg-slate-300 rounded-xl mt-4"></div>
+                </div>
+            `;
+            shadowRoot.appendChild(skeletonDiv);
+        }
+
+        // Setup Overlay Container early
+        const overlayContainerId = 'finalform-overlay-container';
+        let overlayContainer = document.getElementById(overlayContainerId);
+        if (!overlayContainer) {
+            overlayContainer = document.createElement('div');
+            overlayContainer.id = overlayContainerId;
+            overlayContainer.style.position = 'fixed';
+            overlayContainer.style.top = '0';
+            overlayContainer.style.left = '0';
+            overlayContainer.style.width = '100%';
+            overlayContainer.style.height = '100%';
+            overlayContainer.style.background = 'transparent'; // EXT: Fix blank screen issue
+            overlayContainer.style.pointerEvents = 'none'; // Allow clicks to pass through by default
+            overlayContainer.style.zIndex = '2147483647'; // Max Z-Index
+            document.body.appendChild(overlayContainer);
+
+            const dummy = document.createElement('div');
+            dummy.style.display = 'none';
+            overlayContainer.appendChild(dummy);
+
+            const overlayShadow = overlayContainer.attachShadow({ mode: 'open' });
+            const overlayLink = document.createElement('link');
+            overlayLink.rel = 'stylesheet';
+            overlayLink.type = 'text/css';
+            overlayLink.href = fallbackCSSPath;
+            overlayShadow.appendChild(overlayLink);
+
+            const portalRoot = document.createElement('div');
+            portalRoot.id = 'finalform-portal-root';
+            overlayShadow.appendChild(portalRoot);
+        }
+    }
+
+    // 3. Resolve Config & Fetch Product Data (IN PARALLEL)
+    console.log('FinalForm: Fetching config and product data concurrently...');
+    const [config, productData] = await Promise.all([
+        fetchConfigFromBackend(shop, productId, productHandle),
+        fetchShopifyProduct()
+    ]);
 
     if (!config) {
         console.warn('FinalForm: Config load failed or no assignment found. Aborting.');
         const s = document.getElementById(SPINNER_ID);
         if (s) s.remove();
+        if (container) container.style.display = 'none'; // Hide skeleton if config fails
         return;
     }
 
     console.log('FinalForm: Config loaded successfully.');
 
-    // 4. Fetch Product Data
-    // We fetch product data in parallel if possible, but for now sequential is fine or use Promise.all
-    // Actually config might dictate if we need product data, but usually we do.
-    const productData = await fetchShopifyProduct();
-
     // 4.5 Process Host Overrides (Auto Hide Theme Elements)
-    if (config) {
-        // Default to true if undefined for backward compatibility with older forms if desired, 
-        // but schema defaults to true.
-        const shouldHide = config.autoHideThemeElements !== false;
-
-        if (shouldHide) {
-            const styleId = 'finalform-host-overrides';
-            if (!document.getElementById(styleId)) {
-                const style = document.createElement('style');
-                style.id = styleId;
-                style.textContent = `
+    const shouldHide = config.autoHideThemeElements !== false;
+    if (shouldHide) {
+        const styleId = 'finalform-host-overrides';
+        if (!document.getElementById(styleId)) {
+            const style = document.createElement('style');
+            style.id = styleId;
+            style.textContent = `
 .product__text,
 .product__title,
 .price__container,
@@ -247,129 +355,12 @@ share-button {
 .product__info-wrapper {
   padding: 0 !important;
 }`;
-                document.head.appendChild(style);
-                console.log('FinalForm: Applied theme cleanup overrides');
-            }
+            document.head.appendChild(style);
+            console.log('FinalForm: Applied theme cleanup overrides');
         }
-    }
-
-    // 5. Inject Main Container (Form)
-    let container = document.getElementById(CONTAINER_ID);
-    if (!container) {
-        container = document.createElement('div');
-        container.id = CONTAINER_ID;
-        // CSS Reset for the container wrapper
-        container.style.display = 'block';
-        container.style.width = '100%';
-        container.style.all = 'initial';
-        container.style.display = 'block';
-
-        const cartForm = document.querySelector('form[action*="/cart/add"]');
-        if (cartForm && cartForm.parentNode) {
-            console.log('FinalForm: Injecting after cart form');
-            cartForm.parentNode.insertBefore(container, cartForm.nextSibling);
-        } else {
-            console.log('FinalForm: Injecting to body');
-            document.body.appendChild(container); // Fallback
-        }
-    }
-
-    // 6. Main Shadow DOM Setup
-    let shadowRoot = container.shadowRoot;
-    if (!shadowRoot) {
-        shadowRoot = container.attachShadow({ mode: 'open' });
-    }
-
-    // 7. Inject CSS into Main Shadow DOM
-    const cssId = 'finalform-shadow-css';
-
-    // Helper to get CSS Path
-    const getCssPath = () => {
-        const scripts = document.querySelectorAll('script');
-        let basePath = 'https://finalformfunnel.web.app/';
-        for (let i = 0; i < scripts.length; i++) {
-            const src = scripts[i].src;
-            if (src && (src.includes('finalform-loader.prod.js') || src.includes('finalform-loader.js'))) {
-                const lastSlash = src.lastIndexOf('/');
-                if (lastSlash !== -1) basePath = src.substring(0, lastSlash + 1);
-                break;
-            }
-        }
-        const version = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : Date.now();
-        return basePath + 'finalform-loader.css?v=' + version;
-    };
-
-    const cssPath = getCssPath();
-
-    if (!shadowRoot.getElementById(cssId)) {
-        const link = document.createElement('link');
-        link.id = cssId;
-        link.rel = 'stylesheet';
-        link.type = 'text/css';
-        link.href = cssPath;
-        shadowRoot.appendChild(link);
-    }
-
-    // 7.5. Inject Skeleton immediately (Fix FOUC)
-    // We check if React root already exists or is being created
-    if (!shadowRoot.getElementById('finalform-shadow-wrapper')) {
-        const skeletonDiv = document.createElement('div');
-        skeletonDiv.id = 'finalform-skeleton';
-        skeletonDiv.innerHTML = `
-            <div class="animate-pulse space-y-4 p-4 opacity-60">
-                <div class="h-8 bg-slate-200 rounded w-3/4 mx-auto"></div>
-                <div class="h-64 bg-slate-100 rounded-xl"></div>
-                <div class="space-y-3">
-                    <div class="h-12 bg-slate-200 rounded"></div>
-                    <div class="h-12 bg-slate-200 rounded"></div>
-                </div>
-                <div class="h-14 bg-slate-300 rounded-xl mt-4"></div>
-            </div>
-        `;
-        shadowRoot.appendChild(skeletonDiv);
-    }
-
-    // 7.5 Overlay Container (Top Level, Fixed)
-    const overlayContainerId = 'finalform-overlay-container';
-    let overlayContainer = document.getElementById(overlayContainerId);
-    if (!overlayContainer) {
-        overlayContainer = document.createElement('div');
-        overlayContainer.id = overlayContainerId;
-        // Apply Overlay Styles (Fixed to Viewport)
-        overlayContainer.style.position = 'fixed';
-        overlayContainer.style.top = '0';
-        overlayContainer.style.left = '0';
-        overlayContainer.style.width = '100%';
-        overlayContainer.style.height = '100%';
-        overlayContainer.style.background = 'transparent'; // EXT: Fix blank screen issue
-        overlayContainer.style.pointerEvents = 'none'; // Allow clicks to pass through by default
-        overlayContainer.style.zIndex = '2147483647'; // Max Z-Index
-
-        document.body.appendChild(overlayContainer);
-
-        // Add dummy element to prevent div:empty
-        const dummy = document.createElement('div');
-        dummy.style.display = 'none';
-        overlayContainer.appendChild(dummy);
-
-        const overlayShadow = overlayContainer.attachShadow({ mode: 'open' });
-
-        // Inject CSS here too so overlays have styles
-        const overlayLink = document.createElement('link');
-        overlayLink.rel = 'stylesheet';
-        overlayLink.type = 'text/css';
-        overlayLink.href = cssPath;
-        overlayShadow.appendChild(overlayLink);
-
-        // Create Portal Root inside Overlay Shadow
-        const portalRoot = document.createElement('div');
-        portalRoot.id = 'finalform-portal-root';
-        overlayShadow.appendChild(portalRoot);
     }
 
     // 7. Initialize Global Pixels (if not on product page)
-    // If we are on a product page, FormLoader handles this.
-    // If we are NOT on a product page, we must do it manually here.
     const initGlobalPixels = (config: Record<string, unknown>) => {
         const addons = config.addons as Record<string, unknown> | undefined;
         const pixelData = (addons?.pixelData || config.pixels || []) as { pixelId: string }[];
@@ -395,7 +386,7 @@ share-button {
                 t.async = true;
                 t.src = 'https://connect.facebook.net/en_US/fbevents.js';
                 const s = document.getElementsByTagName('script')[0];
-                s.parentNode!.insertBefore(t, s);
+                if (s && s.parentNode) s.parentNode.insertBefore(t, s);
             }
 
             // Init Pixels
@@ -469,7 +460,7 @@ share-button {
                         o.async = true;
                         o.src = r + "?sdkid=" + e + "&lib=" + t;
                         var a = d.getElementsByTagName("script")[0];
-                        a.parentNode!.insertBefore(o, a);
+                        if (a && a.parentNode) a.parentNode.insertBefore(o, a);
                     };
                 })(window, document, 'ttq');
             }
@@ -489,6 +480,38 @@ share-button {
 
     // 8. Render Form OR Init Global Pixels
     if (productData) {
+        // If container wasn't injected early (e.g. DOM wasn't ready)
+        if (!container || !shadowRoot) {
+            container = document.getElementById(CONTAINER_ID);
+            if (!container) {
+                container = document.createElement('div');
+                container.id = CONTAINER_ID;
+                container.style.display = 'block';
+                container.style.width = '100%';
+                container.style.all = 'initial';
+                container.style.display = 'block';
+
+                const cartForm = document.querySelector('form[action*="/cart/add"]');
+                if (cartForm && cartForm.parentNode) {
+                    cartForm.parentNode.insertBefore(container, cartForm.nextSibling);
+                } else {
+                    document.body.appendChild(container); // Fallback
+                }
+            }
+            shadowRoot = container.shadowRoot;
+            if (!shadowRoot) shadowRoot = container.attachShadow({ mode: 'open' });
+
+            const cssId = 'finalform-shadow-css';
+            if (!shadowRoot.getElementById(cssId)) {
+                const link = document.createElement('link');
+                link.id = cssId;
+                link.rel = 'stylesheet';
+                link.type = 'text/css';
+                link.href = fallbackCSSPath || 'https://finalformfunnel.web.app/finalform-loader.css';
+                shadowRoot.appendChild(link);
+            }
+        }
+
         // Remove Skeleton if exists
         const skel = shadowRoot.getElementById('finalform-skeleton');
         if (skel) skel.remove();
@@ -515,20 +538,11 @@ share-button {
         );
     } else {
         // No product data -> We are on a non-product page (Home, Collection, etc.)
-        // Just init pixels for global tracking
         console.log('FinalForm: No product context. Initializing Global Pixels only.');
         initGlobalPixels(config);
 
-        // Cleanup UI elements since we aren't rendering the form
         const s = document.getElementById(SPINNER_ID);
         if (s) s.remove();
-
-        // Remove container content if it was injected
-        // Actually, we might want to leave container invisible? 
-        // Better to just not render React.
-        // We can leave the container shell or remove it. 
-        // If we remove it, shadowRoot is gone.
-        // Let's just hide the container.
         if (container) container.style.display = 'none';
     }
 }

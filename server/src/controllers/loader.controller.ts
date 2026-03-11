@@ -10,6 +10,8 @@ import * as shopifyApi from '../services/shopify-api.service';
 
 const CURRENT_VERSION = '1.1.0';
 
+const installationLocks = new Set<string>();
+
 // ── POST /enable-loader ─────────────────────────────────────────
 
 export async function enableLoader(req: Request, res: Response) {
@@ -23,50 +25,60 @@ export async function enableLoader(req: Request, res: Response) {
     const cleanSubdomain = storeService.sanitizeSubdomain(subdomain);
     const shopDomain = `${cleanSubdomain}.myshopify.com`;
 
-    const store = await storeService.getStoreCredentials(userId, shopDomain);
-    const accessToken = store.data.accessToken;
-
-    // Check existing scripts
-    const scriptTags = await shopifyApi.getScriptTags(shopDomain, accessToken);
-    const loaderTags = shopifyApi.findAllLoaderTags(scriptTags);
-
-    let alreadyInstalledId: string | null = null;
-    let needsInstall = true;
-
-    // Aggressively clean up all old/mismatched tags
-    for (const tag of loaderTags) {
-        const existingVersion = shopifyApi.parseLoaderVersion(tag);
-
-        // If we found the exact version we want, keep this ONE tag and note it
-        if (existingVersion === requestedVersion && !alreadyInstalledId) {
-            alreadyInstalledId = String(tag.id);
-            needsInstall = false;
-        } else {
-            // Delete duplicates or outdated versions
-            await shopifyApi.deleteScriptTag(shopDomain, accessToken, tag.id);
-        }
+    if (installationLocks.has(shopDomain)) {
+        return res.status(429).json({ success: false, error: 'Installation already in progress. Please wait.' });
     }
 
-    if (!needsInstall && alreadyInstalledId) {
-        return res.json({
+    installationLocks.add(shopDomain);
+
+    try {
+        const store = await storeService.getStoreCredentials(userId, shopDomain);
+        const accessToken = store.data.accessToken;
+
+        // Check existing scripts
+        const scriptTags = await shopifyApi.getScriptTags(shopDomain, accessToken);
+        const loaderTags = shopifyApi.findAllLoaderTags(scriptTags);
+
+        let alreadyInstalledId: string | null = null;
+        let needsInstall = true;
+
+        // Aggressively clean up all old/mismatched tags
+        for (const tag of loaderTags) {
+            const existingVersion = shopifyApi.parseLoaderVersion(tag);
+
+            // If we found the exact version we want, keep this ONE tag and note it
+            if (existingVersion === requestedVersion && !alreadyInstalledId) {
+                alreadyInstalledId = String(tag.id);
+                needsInstall = false;
+            } else {
+                // Delete duplicates or outdated versions
+                await shopifyApi.deleteScriptTag(shopDomain, accessToken, tag.id);
+            }
+        }
+
+        if (!needsInstall && alreadyInstalledId) {
+            return res.json({
+                success: true,
+                version: requestedVersion,
+                alreadyInstalled: true,
+                scriptTagId: alreadyInstalledId,
+            });
+        }
+
+        // Install new loader
+        const sfToken = await shopifyApi.createStorefrontToken(shopDomain, accessToken);
+        const src = `https://finalformfunnel.web.app/finalform-loader.prod.js?sf_token=${sfToken}&v=${requestedVersion}`;
+        const newTag = await shopifyApi.createScriptTag(shopDomain, accessToken, src);
+
+        res.json({
             success: true,
             version: requestedVersion,
-            alreadyInstalled: true,
-            scriptTagId: alreadyInstalledId,
+            alreadyInstalled: false,
+            scriptTagId: String(newTag.id),
         });
+    } finally {
+        installationLocks.delete(shopDomain);
     }
-
-    // Install new loader
-    const sfToken = await shopifyApi.createStorefrontToken(shopDomain, accessToken);
-    const src = `https://finalformfunnel.web.app/finalform-loader.prod.js?sf_token=${sfToken}&v=${requestedVersion}`;
-    const newTag = await shopifyApi.createScriptTag(shopDomain, accessToken, src);
-
-    res.json({
-        success: true,
-        version: requestedVersion,
-        alreadyInstalled: false,
-        scriptTagId: String(newTag.id),
-    });
 }
 
 // ── POST /disable-loader ────────────────────────────────────────

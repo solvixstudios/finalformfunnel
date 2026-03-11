@@ -302,14 +302,14 @@ export function ShopifyIntegration({ userId, onBack }: ShopifyIntegrationProps) 
         }
     };
 
-    const handleEnableLoader = async (store: any) => {
+    const handleEnableLoader = async (store: any, silent = false) => {
         setProcessingStoreId(store.id);
-        const loadingToast = toast.loading('Activation du script en cours...');
+        const loadingToast = silent ? null : toast.loading('Activation du script en cours...');
 
         try {
             const subdomain = store.url.replace('.myshopify.com', '').replace(/https?:\/\//, '');
             if (!store.clientId || !store.clientSecret) {
-                toast.error('Identifiants manquants. Veuillez reconnecter la boutique.');
+                if (!silent) toast.error('Identifiants manquants. Veuillez reconnecter la boutique.');
                 return;
             }
             const shopifyAdapter = getAdapter('shopify');
@@ -318,7 +318,7 @@ export function ShopifyIntegration({ userId, onBack }: ShopifyIntegrationProps) 
                 clientSecret: store.clientSecret
             }, userId);
 
-            toast.dismiss(loadingToast);
+            if (loadingToast) toast.dismiss(loadingToast);
 
             if (result.success) {
                 await updateStore(store.id, {
@@ -327,13 +327,13 @@ export function ShopifyIntegration({ userId, onBack }: ShopifyIntegrationProps) 
                     loaderScriptTagId: result.scriptId,
                     loaderInstalledAt: new Date().toISOString()
                 });
-                toast.success(`Script (v${result.version || CURRENT_LOADER_VERSION}) activé avec succès !`);
+                if (!silent) toast.success(`Script (v${result.version || CURRENT_LOADER_VERSION}) activé avec succès !`);
             } else {
-                toast.error(result.error || "L'activation du script a échoué.");
+                if (!silent) toast.error(result.error || "L'activation du script a échoué.");
             }
         } catch (error) {
-            toast.dismiss(loadingToast);
-            toast.error("L'activation du script a échoué.");
+            if (loadingToast) toast.dismiss(loadingToast);
+            if (!silent) toast.error("L'activation du script a échoué.");
             console.error(error);
         } finally {
             setProcessingStoreId(null);
@@ -392,6 +392,16 @@ export function ShopifyIntegration({ userId, onBack }: ShopifyIntegrationProps) 
     const ShopifyIcon = () => (
         <FontAwesomeIcon icon={faShopify} className="text-[#95BF47] text-xl md:text-2xl" />
     );
+
+    // Auto-install script on connected stores if missing
+    React.useEffect(() => {
+        shopifyStores.forEach(store => {
+            if (!store.loaderInstalled && !processingStoreId) {
+                // Silently attempt to install the loader in the background
+                handleEnableLoader(store, true);
+            }
+        });
+    }, [shopifyStores]);
 
     // --- EDITOR VIEW (Add Store) ---
     if (view === 'add') {
@@ -528,7 +538,6 @@ export function ShopifyIntegration({ userId, onBack }: ShopifyIntegrationProps) 
         );
     }
 
-    // --- LIST VIEW ---
     const headerActions = (
         <Button
             size="sm"
@@ -653,21 +662,8 @@ export function ShopifyIntegration({ userId, onBack }: ShopifyIntegrationProps) 
                                                         </>
                                                     ) : (
                                                         <Badge variant="secondary" className="bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-200 font-semibold gap-1">
-                                                            Non installé
+                                                            Installation en cours...
                                                         </Badge>
-                                                    )}
-
-                                                    {!store.loaderInstalled && (
-                                                        <Button
-                                                            size="sm"
-                                                            variant="outline"
-                                                            className="h-7 text-[10px] px-3 font-semibold rounded-md border-slate-200 hover:bg-slate-50 shadow-sm whitespace-nowrap"
-                                                            onClick={() => handleEnableLoader(store)}
-                                                            disabled={processingStoreId === store.id}
-                                                        >
-                                                            {processingStoreId === store.id ? <Loader2 size={12} className="animate-spin mr-1" /> : null}
-                                                            Installer le script
-                                                        </Button>
                                                     )}
                                                 </div>
                                             </TableCell>

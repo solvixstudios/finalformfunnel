@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { formatDistanceToNow, subDays, isAfter, startOfDay } from 'date-fns';
 import EmptyState from '@/components/ui/EmptyState';
+import { StateWrapper } from '@/components/ui/StateWrapper';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
@@ -663,28 +664,28 @@ export default function OrdersPage({ userId }: OrdersPageProps) {
                 )}
             </div>
 
-            {/* Table */}
-            <div className="flex-1 pb-16 overflow-y-auto pr-1">
-                {(orders.length === 0) ? (
-                    <div className="flex items-center justify-center py-24">
-                        <EmptyState
-                            icon={<ShoppingCart size={32} />}
-                            title="No orders yet"
-                            description="When customers submit your forms, their orders will appear here automatically."
-                            variant="ghost"
-                        />
-                    </div>
-                ) : (filteredOrders.length === 0) ? (
-                    <div className="flex items-center justify-center py-24">
-                        <EmptyState
-                            icon={<Filter size={32} />}
-                            title="No matching orders"
-                            description="We couldn't find any orders matching your filters."
-                            action={{ label: 'Clear Filters', onClick: clearAllFilters }}
-                            variant="ghost"
-                        />
-                    </div>
-                ) : (
+            {/* Table or Empty State */}
+            {(orders.length === 0) ? (
+                <StateWrapper>
+                    <EmptyState
+                        icon={<ShoppingCart size={32} />}
+                        title="No orders yet"
+                        description="When customers submit your forms, their orders will appear here automatically."
+                        variant="ghost"
+                    />
+                </StateWrapper>
+            ) : (filteredOrders.length === 0) ? (
+                <StateWrapper>
+                    <EmptyState
+                        icon={<Filter size={32} />}
+                        title="No matching orders"
+                        description="We couldn't find any orders matching your filters."
+                        action={{ label: 'Clear Filters', onClick: clearAllFilters }}
+                        variant="ghost"
+                    />
+                </StateWrapper>
+            ) : (
+                <div className="flex-1 pb-16 overflow-y-auto pr-1 flex flex-col">
                     <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm animate-in fade-in duration-300">
                         <div className="overflow-auto custom-scroll">
                             <table className="w-full text-left border-collapse min-w-[800px]">
@@ -791,8 +792,8 @@ export default function OrdersPage({ userId }: OrdersPageProps) {
                             </table>
                         </div>
                     </div>
-                )}
-            </div>
+                </div>
+            )}
         </div>
     );
 }

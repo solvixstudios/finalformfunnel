@@ -1,0 +1,28 @@
+{
+  "status": "success",
+  "result": [
+    {
+      "projectId": "finalformfunnel",
+      "projectNumber": "568796332580",
+      "displayName": "finalformfunnel",
+      "name": "projects/finalformfunnel",
+      "resources": {
+        "hostingSite": "finalformfunnel",
+        "realtimeDatabaseInstance": "finalformfunnel-default-rtdb"
+      },
+      "state": "ACTIVE",
+      "etag": "1_333d9a87-3f6d-4b3d-8d41-5629017a81cd"
+    },
+    {
+      "projectId": "united-energy-8c414",
+      "projectNumber": "12062380862",
+      "displayName": "UNITED-ENERGY",
+      "name": "projects/united-energy-8c414",
+      "resources": {
+        "hostingSite": "united-energy-8c414"
+      },
+      "state": "ACTIVE",
+      "etag": "1_1ea22460-a4d8-4a55-9ee0-3c6303447930"
+    }
+  ]
+}

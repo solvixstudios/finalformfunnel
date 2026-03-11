@@ -1,5 +1,5 @@
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { Toaster } from "@/components/ui/toaster";
+import { ConnectionStatusBanner } from "@/components/ConnectionStatusBanner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "@fontsource/plus-jakarta-sans/400.css";
 import "@fontsource/plus-jakarta-sans/600.css";
@@ -205,8 +205,8 @@ const App = () => {
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <BrowserRouter>
-            <Toaster />
-            <Sonner position="bottom-right" />
+            <Sonner />
+            <ConnectionStatusBanner />
             <ChangelogModal />
             <AppContent />
           </BrowserRouter>

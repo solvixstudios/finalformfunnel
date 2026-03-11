@@ -211,10 +211,10 @@ const DashboardLayoutContent = ({
 
         {/* Page Content */}
         <main className={cn(
-          "flex-1 relative custom-scroll-thin bg-[#F8F5F1]",
+          "flex-1 relative custom-scroll-thin bg-[#F8F5F1] flex flex-col",
           isBuilderPage ? "overflow-hidden" : "overflow-y-auto px-4 py-6 sm:px-6 lg:px-8 lg:py-8"
         )}>
-          <div className={cn("animate-fade-up", isBuilderPage && "h-full")}>
+          <div className={cn("animate-fade-up flex-1 flex flex-col w-full min-h-full", isBuilderPage && "h-full")}>
             {React.isValidElement(children) && typeof children.type !== 'string'
               ? React.cloneElement(children as React.ReactElement<any>, { ...(onUserUpdate ? { onUserUpdate } : {}) })
               : children}

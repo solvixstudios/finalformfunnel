@@ -57,6 +57,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { cn } from '@/lib/utils';
 import { FormLoadingEmptyState } from '../components/FormLoading/FormLoadingCard';
 import PrebuiltConfigModal from '../components/PrebuiltConfigModal';
+import { StateWrapper } from '@/components/ui/StateWrapper';
 import { getStoredUser } from '../lib/authGoogle';
 import { useConnectedStores, useFormAssignments, useSavedForms } from '../lib/firebase/hooks';
 import { useFormStore } from '../stores';
@@ -298,15 +299,19 @@ export const FormsPage = () => {
                 </div>
 
                 {/* Table Content */}
-                <div className="flex-1 pb-16 overflow-y-auto pr-1">
-                    {isLoading ? (
-                        <TableSkeleton columns={5} rows={6} className="bg-white rounded-xl border border-slate-200 shadow-sm" />
-                    ) : paginatedForms.length === 0 ? (
+                {isLoading ? (
+                    <StateWrapper>
+                        <TableSkeleton columns={5} rows={6} className="bg-white rounded-xl border border-slate-200 shadow-sm w-full h-full" />
+                    </StateWrapper>
+                ) : paginatedForms.length === 0 ? (
+                    <StateWrapper>
                         <FormLoadingEmptyState hasSearchQuery={!!searchQuery} onClear={() => {
                             setSearchQuery('');
                             setFilter('all');
                         }} />
-                    ) : (
+                    </StateWrapper>
+                ) : (
+                    <div className="flex-1 pb-16 overflow-y-auto pr-1 flex flex-col">
                         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden animate-in fade-in duration-300">
                             <Table>
                                 <TableHeader>
@@ -438,28 +443,26 @@ export const FormsPage = () => {
                                 </TableBody>
                             </Table>
                         </div>
-                    )}
-
-                    {/* Pagination */}
-                    {totalPages > 1 && (
-                        <div className="flex items-center justify-between py-3 mt-2">
-                            <p className="text-xs text-slate-400">
-                                {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filteredForms.length)} of {filteredForms.length}
-                            </p>
-                            <div className="flex items-center gap-1">
-                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>
-                                    <ChevronLeft size={14} />
-                                </Button>
-                                <span className="text-xs font-medium text-slate-600 px-2 tabular-nums">
-                                    {currentPage} / {totalPages}
-                                </span>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)}>
-                                    <ChevronRight size={14} />
-                                </Button>
-                            </div>
+                    </div>
+                )}
+                {totalPages > 1 && (
+                    <div className="flex items-center justify-between py-3 mt-2">
+                        <p className="text-xs text-slate-400">
+                            {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filteredForms.length)} of {filteredForms.length}
+                        </p>
+                        <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>
+                                <ChevronLeft size={14} />
+                            </Button>
+                            <span className="text-xs font-medium text-slate-600 px-2 tabular-nums">
+                                {currentPage} / {totalPages}
+                            </span>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)}>
+                                <ChevronRight size={14} />
+                            </Button>
                         </div>
-                    )}
-                </div>
+                    </div>
+                )}
             </div>
 
             {/* ─── Modals ─── */}
@@ -469,8 +472,6 @@ export const FormsPage = () => {
                 onClose={() => setTemplateModalOpen(false)}
                 onLoad={handleTemplateSelect}
             />
-
-
 
             {/* Delete Dialog */}
             <AlertDialog open={!!formToDelete} onOpenChange={(open) => !open && setFormToDelete(null)}>
