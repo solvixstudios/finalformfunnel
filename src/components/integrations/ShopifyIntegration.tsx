@@ -272,7 +272,7 @@ export function ShopifyIntegration({ userId, onBack }: ShopifyIntegrationProps) 
                             id: newStoreId,
                             platform: 'shopify' as const,
                             url: shopifyDomain,
-                            shopifyDomain: shopifyDomain,
+                            storeDomain: shopifyDomain,
                             clientId: shopifyForm.clientId.trim(),
                             clientSecret: shopifyForm.clientSecret.trim()
                         };
@@ -471,7 +471,8 @@ export function ShopifyIntegration({ userId, onBack }: ShopifyIntegrationProps) 
                                     onClick={handleShopifyConnect}
                                     disabled={isConnecting}
                                     size="sm"
-                                    className="h-8 rounded-lg text-xs font-bold px-4 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
+                                    variant="default"
+                                    className="h-8 rounded-lg text-xs px-4 shadow-sm"
                                 >
                                     {isConnecting ? <Loader2 size={13} className="mr-1.5 animate-spin" /> : <Plus size={13} className="mr-1.5" />}
                                     {isConnecting ? 'Connexion...' : 'Connecter'}
@@ -612,7 +613,7 @@ export function ShopifyIntegration({ userId, onBack }: ShopifyIntegrationProps) 
                                                             rel="noopener noreferrer"
                                                             className="text-xs text-slate-500 hover:text-indigo-600 inline-flex items-center gap-1 group/link"
                                                         >
-                                                            {store.url || store.shopifyDomain}
+                                                            {store.url || store.storeDomain}
                                                             <ExternalLink size={10} className="opacity-0 group-hover/link:opacity-100 transition-opacity" />
                                                         </a>
                                                     </div>

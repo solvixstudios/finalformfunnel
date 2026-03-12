@@ -9,6 +9,7 @@ import * as storeService from '../services/store.service';
 import * as orderService from '../services/order.service';
 import * as capiService from '../services/capi.service';
 import * as googleSheetsService from '../services/googleSheets.service';
+import * as subscriptionService from '../services/subscription.service';
 
 // ── POST /submit-order ──────────────────────────────────────────
 
@@ -19,6 +20,18 @@ export async function submitOrder(req: Request, res: Response) {
 
     if (!shopDomain || !userId) {
         throw AppError.badRequest('Missing shopDomain or userId');
+    }
+
+    // Check plan order limit (skip for abandoned carts)
+    if (body.status !== 'abandoned') {
+        const limitCheck = await subscriptionService.checkOrderLimit(userId);
+        if (!limitCheck.allowed) {
+            return res.status(403).json({
+                success: false,
+                errorType: 'PLAN_LIMIT_EXCEEDED',
+                errors: [limitCheck.reason],
+            });
+        }
     }
 
     const cleanSubdomain = storeService.sanitizeSubdomain(shopDomain);

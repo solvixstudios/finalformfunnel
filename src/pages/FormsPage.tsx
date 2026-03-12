@@ -219,7 +219,7 @@ export const FormsPage = () => {
             <Button
                 size="sm"
                 onClick={handleCreateNew}
-                className="h-8 rounded-lg text-xs font-bold px-4 bg-[#FF5A1F] hover:bg-[#FF5A1F]/90 text-white shadow-sm"
+                className="h-8 rounded-lg text-xs font-bold px-4 shadow-sm"
                 disabled={isCreating}
             >
                 {isCreating ? <Loader2 size={13} className="mr-1.5 animate-spin" /> : <Plus size={13} className="mr-1.5" />}

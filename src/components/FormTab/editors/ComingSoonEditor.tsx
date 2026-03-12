@@ -3,7 +3,6 @@ import { CollapsibleSection } from "../components/CollapsibleSection";
 import { Sparkles } from "lucide-react";
 
 export const COMING_SOON_INTEGRATIONS: Record<string, { name: string, emoji: string, description: string }> = {
-    woocommerce: { name: 'WooCommerce', emoji: '📦', description: 'Connect directly to your WooCommerce store.' },
     webhook: { name: 'Webhook', emoji: '⚡', description: 'Send data to any URL or Zapier/Make flow.' },
 };
 

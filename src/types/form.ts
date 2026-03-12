@@ -273,7 +273,8 @@ export interface FormConfig {
 
   // Contextual store properties usually injected via backend
   storeName?: string;
-  shopifyDomain?: string;
+  storeDomain?: string;
+  platform?: 'shopify' | 'woocommerce';
 
   // Extensions
   addons?: FormAddons;

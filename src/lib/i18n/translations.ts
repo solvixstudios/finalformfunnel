@@ -11,18 +11,22 @@ export const translations = {
     },
     // Landing Page
     landing: {
-      tagline: "نموذج نهائي احترافي",
-      title: "بناء نماذج تحويل",
-      subtitle: "بسهولة وبدون أي متطلبات برمجية",
-      description:
-        "Final Form هو أسهل طريقة لإنشاء نماذج محسّنة للتحويل لمتجرك الإلكتروني. يعمل مع Shopify و WooCommerce والمزيد.",
+      tagline: "النظام المتكامل للتجارة الإلكترونية",
+      title: "حوّل زوارك إلى",
+      subtitle: "مبيعات حقيقية",
+      description: "المنصة الأولى في الجزائر المصممة خصيصاً لزيادة معدلات الدفع عند الاستلام (COD). اربط متجرك، وتتبع كل بيكسل، وضاعف مبيعاتك بدون أي تعقيدات تقنية.",
       getStarted: "ابدأ مجاناً",
       viewDemo: "عرض توضيحي",
-      features: "الميزات الرئيسية",
-      everything: "كل ما تحتاجه",
-      ready: "هل أنت مستعد للبدء؟",
-      subtitle2: "انضم إلى مئات الشركات التي تستخدم Final Form",
-      startFreeNow: "ابدأ الآن مجاناً",
+      trustedBy: "مدمج بسلاسة مع البنية التحتية المحلية",
+      featureZigzag1Title: "سرعة تحميل خيالية للطلبيات",
+      featureZigzag1Desc: "في الجزائر، كل ثانية تأخير تكلفك مبيعات. تم هندسة نماذجنا للتحميل في أقل من ثانية واحدة حتى على شبكات الجيل الثالث (3G)، مما يضمن عدم تراجع أي زبون أثناء الدفع.",
+      featureZigzag2Title: "لا تفقد أي حدث تحويل أبداً",
+      featureZigzag2Desc: "اربط Meta Pixel و TikTok API وغيرها في ثوانٍ. نقوم بإرسال أحداث الشراء من السيرفر (CAPI) بدقة تامة لتسريع تحسين إعلاناتك وتخفيض تكلفة الاستحواذ (CAC).",
+      featureZigzag3Title: "مدمج مع أدواتك المفضلة",
+      featureZigzag3Desc: "سواء كنت تستخدم Shopify أو WooCommerce، تشحن عبر Yalidine أو Maystro، أو تتابع طلباتك عبر Google Sheets — منصتنا تتكامل مع كل شيء بنقرة واحدة.",
+      testimonialTitle: "تجارب مؤسسي المتاجر",
+      ctaHeading: "أوقف نزيف المبيعات وابدأ في التوسع",
+      noCreditCard: "التسجيل مجاني، لا يتطلب بطاقة ائتمان"
     },
     // Auth Pages
     auth: {
@@ -130,6 +134,7 @@ export const translations = {
       copy: "نسخ",
       close: "إغلاق",
       description: "الوصف",
+      change: "تغيير",
     },
     // Form Editor
     editor: {
@@ -174,18 +179,22 @@ export const translations = {
     },
     // Landing Page
     landing: {
-      tagline: "Constructeur de formulaires Final Form professionnel",
-      title: "Créez des formulaires de conversion",
-      subtitle: "Facilement et sans aucune compétence en codage",
-      description:
-        "Final Form est le moyen le plus simple de créer des formulaires optimisés pour la conversion pour votre boutique en ligne. Compatible avec Shopify, WooCommerce et plus.",
+      tagline: "Le moteur de votre E-commerce",
+      title: "Convertissez vos clics en",
+      subtitle: "Ventes réelles",
+      description: "La plateforme n°1 en Algérie conçue pour maximiser vos taux de paiement à la livraison (COD). Connectez votre boutique, suivez vos pixels et faites exploser vos ventes sans complexité technique.",
       getStarted: "Commencer gratuitement",
       viewDemo: "Voir la démo",
-      features: "Fonctionnalités principales",
-      everything: "Tout ce dont vous avez besoin",
-      ready: "Prêt à commencer?",
-      subtitle2: "Rejoignez des centaines d'entreprises utilisant Final Form",
-      startFreeNow: "Commencer maintenant gratuitement",
+      trustedBy: "Intégration parfaite avec l'infrastructure locale",
+      featureZigzag1Title: "Une vitesse de passage en caisse fulgurante",
+      featureZigzag1Desc: "En Algérie, chaque seconde compte. Nos formulaires sont conçus pour s'afficher en moins d'une seconde, même en 3G, garantissant qu'aucun client ne vous échappe au moment de payer.",
+      featureZigzag2Title: "Ne perdez plus aucune conversion",
+      featureZigzag2Desc: "Intégrez le pixel Meta, l'API TikTok et bien plus en quelques secondes. Nos événements server-side (CAPI) sont envoyés avec une précision chirurgicale pour optimiser vos publicités et réduire votre CAC.",
+      featureZigzag3Title: "Connecté à vos outils quotidiens",
+      featureZigzag3Desc: "Que vous utilisiez Shopify ou WooCommerce, que vous livriez avec Yalidine ou Maystro, ou que vous gériez via Google Sheets — notre plateforme s'intègre à tout en un clic.",
+      testimonialTitle: "Conçu pour une croissance rapide",
+      ctaHeading: "Arrêtez de perdre des ventes à la caisse",
+      noCreditCard: "Aucune carte de crédit requise"
     },
     // Auth Pages
     auth: {
@@ -296,6 +305,7 @@ export const translations = {
       copy: "Copier",
       close: "Fermer",
       description: "Description",
+      change: "Modifier",
     },
     // Form Editor
     editor: {
@@ -340,18 +350,22 @@ export const translations = {
     },
     // Landing Page
     landing: {
-      tagline: "Professional Final Form builder",
-      title: "Build Conversion Forms",
-      subtitle: "Easily and without any coding skills",
-      description:
-        "Final Form is the easiest way to create conversion-optimized forms for your e-commerce store. Works with Shopify, WooCommerce, and more.",
-      getStarted: "Get Started Free",
+      tagline: "The E-commerce OS",
+      title: "Turn your traffic into",
+      subtitle: "Actual Sales",
+      description: "Algeria's #1 platform designed specifically to maximize Cash on Delivery (COD) rates. Connect your store, track every pixel perfectly, and double your sales with zero technical headache.",
+      getStarted: "Start for Free",
       viewDemo: "View Demo",
-      features: "Key Features",
-      everything: "Everything You Need",
-      ready: "Ready to Build Better Forms?",
-      subtitle2: "Join hundreds of e-commerce businesses using Final Form",
-      startFreeNow: "Start Free Now",
+      trustedBy: "Seamlessly integrated with local infrastructure",
+      featureZigzag1Title: "Lightning fast checkout that converts.",
+      featureZigzag1Desc: "Every millisecond counts in Algerian e-commerce. Final Form is engineered to load instantly on 3G and 4G mobile networks, guaranteeing zero drops at checkout.",
+      featureZigzag2Title: "Never lose a single conversion event.",
+      featureZigzag2Desc: "Integrate Meta Pixel, TikTok API, and more in seconds. We fire server-side events (CAPI) precisely so your ad accounts optimize faster and scale harder.",
+      featureZigzag3Title: "Connects with the tools you already use.",
+      featureZigzag3Desc: "Whether you use Shopify or WooCommerce, ship with Yalidine or Maystro, and track orders via Google Sheets — Final Form integrates seamlessly.",
+      testimonialTitle: "Built for scaling brands",
+      ctaHeading: "Stop losing sales at checkout.",
+      noCreditCard: "No credit card required"
     },
     // Auth Pages
     auth: {
@@ -462,6 +476,7 @@ export const translations = {
       copy: "Copy",
       close: "Close",
       description: "Description",
+      change: "Change",
     },
     // Form Editor
     editor: {

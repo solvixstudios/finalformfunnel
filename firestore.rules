@@ -12,6 +12,11 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
 
+    // Helper function to check if user is the platform admin
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email == 'solvixalgerie@gmail.com';
+    }
+
     // New structure: collections nested under users/{userId}
     match /users/{userId} {
       // Allow read/write to the user document itself
@@ -79,6 +84,14 @@ service cloud.firestore {
       match /surveys/{surveyId} {
         allow read, write: if isOwner(userId);
       }
+
+      // Subscriptions — owner can read, admin can read/write
+      match /subscriptions/{subId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow write: if isAdmin();
+        // Allow the owner to create a pending subscription
+        allow create: if isOwner(userId) && request.resource.data.status == 'pending';
+      }
     }
     
     // Support for collectionGroup queries used in the loader
@@ -87,6 +100,18 @@ service cloud.firestore {
     }
     match /{path=**}/assignments/{assignmentId} {
       allow read: if true;
+    }
+
+    // Subscription requests — root collection for admin queries
+    match /subscription_requests/{requestId} {
+      // Users can create their own requests
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      // Users can read their own requests
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      // Only admin can update/delete (approve/reject)
+      allow update, delete: if isAdmin();
+      // Allow admin to list all requests
+      allow list: if isAdmin();
     }
 
     // Store owners root collection
@@ -119,5 +144,17 @@ service cloud.firestore {
       allow create: if true;
       allow read, update, delete: if isAuthenticated() && isOwner(resource.data.userId);
     }
+    
+    // Global admin settings (plans, payment methods, etc)
+    match /admin_settings/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    match /plans/{planId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
   }
 }

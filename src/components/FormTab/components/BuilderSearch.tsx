@@ -26,6 +26,7 @@ import {
     faFacebookF,
     faGoogle,
     faShopify,
+    faWordpress,
 } from '@fortawesome/free-brands-svg-icons';
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 
@@ -168,6 +169,15 @@ export const SEARCHABLE_ITEMS: SearchableItem[] = [
         description: 'Connecter boutique Shopify',
         aliases: ['shopify', 'store', 'boutique', 'magasin', 'e-commerce', 'ecommerce', 'shop'],
         subProperties: ['connecter', 'connect', 'boutique', 'store', 'produits', 'products', 'assigner', 'assign', 'domaine', 'domain', 'api key', 'access token', 'synchronisation', 'sync'],
+    },
+    {
+        id: 'woocommerce',
+        label: 'WooCommerce',
+        icon: faWordpress,
+        accentClass: 'from-purple-500 to-indigo-600',
+        description: 'Connecter boutique WooCommerce',
+        aliases: ['woocommerce', 'woo', 'wordpress', 'wp', 'store', 'boutique', 'e-commerce', 'ecommerce'],
+        subProperties: ['connecter', 'connect', 'boutique', 'store', 'produits', 'products', 'assigner', 'assign', 'domaine', 'domain', 'installation key', 'plugin', 'synchronisation', 'sync'],
     },
     {
         id: 'urgencyText',

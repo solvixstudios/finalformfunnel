@@ -183,3 +183,47 @@ export const notifyProductSyncComplete = (storeId: string, products: Product[]) 
     }),
   );
 };
+
+// --- WooCommerce Sync (stub — Phase 3) ---
+
+export const syncProductsFromWoocommerce = async (
+  store: { id: string; url: string; accessToken?: string },
+  options?: SyncOptions,
+): Promise<Product[]> => {
+  // TODO: Phase 3 — call backend's /webhook/woocommerce/get-products
+  // which proxies to the WP plugin's /finalform/v1/products endpoint
+  const backendHost = import.meta.env.VITE_BACKEND_URL;
+  const response = await fetch(
+    `${backendHost}/webhook/woocommerce/get-products`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        domain: store.url,
+        accessToken: store.accessToken,
+      }),
+    },
+  );
+
+  if (!response.ok) throw new Error("WooCommerce product fetch failed");
+
+  const data = await response.json();
+  const products: Product[] = data.products || [];
+
+  await saveProductsToCache(store.id, products);
+  options?.onComplete?.(products);
+
+  return products;
+};
+
+// --- Platform-aware sync dispatcher ---
+
+export const syncProductsFromStore = async (
+  store: { id: string; url: string; platform?: string; clientId?: string; clientSecret?: string; accessToken?: string },
+  options?: SyncOptions,
+): Promise<Product[]> => {
+  if (store.platform === 'woocommerce') {
+    return syncProductsFromWoocommerce(store, options);
+  }
+  return syncProductsFromShopify(store, options);
+};

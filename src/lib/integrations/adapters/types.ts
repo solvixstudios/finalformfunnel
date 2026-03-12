@@ -18,6 +18,7 @@ export interface StoreInfo {
   id: number | string;
   name: string;
   domain: string;
+  platform?: PlatformType;
   email?: string;
   currency?: string;
   timezone?: string;
@@ -31,7 +32,7 @@ export interface LoaderStatus {
 }
 
 export interface ConnectResult {
-  success: boolean;
+  success?: boolean;
   store?: StoreInfo;
   loader?: LoaderStatus;
   error?: string;
@@ -39,7 +40,7 @@ export interface ConnectResult {
 }
 
 export interface EnableLoaderResult {
-  success: boolean;
+  success?: boolean;
   scriptId?: string;
   version?: string;
   error?: string;
@@ -69,7 +70,7 @@ export interface AssignmentContext {
   assignmentType?: 'store' | 'product';
   storeId?: string;
   storeName?: string;
-  shopifyDomain?: string;
+  storeDomain?: string;
   productId?: string;
   productHandle?: string;
 }

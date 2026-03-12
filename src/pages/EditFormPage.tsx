@@ -419,7 +419,7 @@ const EditFormPage = ({ userId }: EditFormPageProps) => {
       // SHOPIFY STORE LINKS: Sync local link selections to real assignments
       if (savedFormId) {
         const freshFormConfig = useFormStore.getState().formConfig;
-        const desiredLinks: { storeId: string; type: 'store' | 'product'; productIds?: string[] }[] = freshFormConfig.addons?.shopifyStoreLinks || [];
+        const desiredLinks: { storeId: string; type: 'store' | 'product'; productIds?: string[] }[] = freshFormConfig.addons?.storeLinks || [];
         const currentAssignments = assignments.filter(a => a.formId === savedFormId);
 
         // Create new assignments for links that don't exist yet
@@ -545,7 +545,7 @@ const EditFormPage = ({ userId }: EditFormPageProps) => {
           <Button
             onClick={handleSaveForm}
             size="sm"
-            className="gap-2 transition-all hover:shadow-md active:scale-95 bg-[#FF5A1F] hover:bg-[#E04D1A] text-white border-0 px-6 h-9"
+            className="gap-2 transition-all hover:shadow-md active:scale-95 border-0 px-6 h-9"
           >
             {isSaving ? (
               <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />

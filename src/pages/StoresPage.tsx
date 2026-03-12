@@ -8,7 +8,7 @@ import EmptyState from '@/components/ui/EmptyState';
 import { useConnectedStores, useFormAssignments, useSavedForms } from '@/lib/firebase/hooks';
 import {
     getProductsFromCache,
-    syncProductsFromShopify,
+    syncProductsFromStore,
     subscribeToProductSync,
     Product,
 } from '@/lib/products';
@@ -45,7 +45,7 @@ export default function StoresPage({ userId }: { userId: string }) {
     const { assignments } = useFormAssignments(userId);
     const { forms } = useSavedForms(userId);
 
-    const shopifyStores = useMemo(() => stores.filter(s => s.platform === 'shopify'), [stores]);
+    const allStores = useMemo(() => stores.filter(s => s.platform === 'shopify' || s.platform === 'woocommerce'), [stores]);
     const [activeStoreId, setActiveStoreId] = useState<string>('');
 
     // Product state per store
@@ -62,14 +62,14 @@ export default function StoresPage({ userId }: { userId: string }) {
 
     // Auto-select first store
     useEffect(() => {
-        if (shopifyStores.length > 0 && !activeStoreId) {
-            setActiveStoreId(shopifyStores[0].id);
+        if (allStores.length > 0 && !activeStoreId) {
+            setActiveStoreId(allStores[0].id);
         }
-    }, [shopifyStores, activeStoreId]);
+    }, [allStores, activeStoreId]);
 
     // Cache load
     useEffect(() => {
-        shopifyStores.forEach(async (store) => {
+        allStores.forEach(async (store) => {
             try {
                 const cached = await getProductsFromCache(store.id);
                 if (cached) {
@@ -78,7 +78,7 @@ export default function StoresPage({ userId }: { userId: string }) {
                 }
             } catch (e) { console.error('Cache load failed', e); }
         });
-    }, [shopifyStores]);
+    }, [allStores]);
 
     // Subscriptions
     useEffect(() => {
@@ -95,7 +95,7 @@ export default function StoresPage({ userId }: { userId: string }) {
         setSearchTerm('');
     }, [activeStoreId]);
 
-    const activeStore = shopifyStores.find(s => s.id === activeStoreId);
+    const activeStore = allStores.find(s => s.id === activeStoreId);
     const activeProducts = productMap[activeStoreId] || [];
     const isSyncing = syncingMap[activeStoreId] || false;
     const syncProgress = syncProgressMap[activeStoreId] || 0;
@@ -103,7 +103,7 @@ export default function StoresPage({ userId }: { userId: string }) {
 
     // ─── Sync ───
     const syncStoreProducts = useCallback(async (storeId: string) => {
-        const store = shopifyStores.find(s => s.id === storeId);
+        const store = allStores.find(s => s.id === storeId);
         if (!store) return;
 
         setSyncingMap(prev => ({ ...prev, [storeId]: true }));
@@ -111,7 +111,7 @@ export default function StoresPage({ userId }: { userId: string }) {
         toast.info(`Syncing ${store.name}...`);
 
         try {
-            const products = await syncProductsFromShopify(store, {
+            const products = await syncProductsFromStore(store, {
                 onProgress: (count) => setSyncProgressMap(prev => ({ ...prev, [storeId]: count })),
             });
             setProductMap(prev => ({ ...prev, [storeId]: products }));
@@ -124,7 +124,7 @@ export default function StoresPage({ userId }: { userId: string }) {
             setSyncingMap(prev => ({ ...prev, [storeId]: false }));
             setSyncProgressMap(prev => ({ ...prev, [storeId]: 0 }));
         }
-    }, [shopifyStores]);
+    }, [allStores]);
 
     // ─── Assignments ───
     const storeAssignment = useMemo(() =>
@@ -197,7 +197,7 @@ export default function StoresPage({ userId }: { userId: string }) {
         );
     }
 
-    if (shopifyStores.length === 0) {
+    if (allStores.length === 0) {
         return (
             <div className="max-w-[1400px] mx-auto w-full flex-1 flex flex-col pt-2 md:pt-4 pb-8">
                 <PageHeader title="Stores Dashboard" breadcrumbs={[{ label: 'Stores' }]} icon={Store} />
@@ -205,8 +205,8 @@ export default function StoresPage({ userId }: { userId: string }) {
                     <EmptyState
                         icon={<Store size={32} />}
                         title="No stores connected"
-                        description="Connect your Shopify store using the extension to see product mappings."
-                        action={{ label: 'Connect Store', onClick: () => navigate('/dashboard/integrations?open=shopify&add=true') }}
+                        description="Connect your store using the integrations page to see product mappings."
+                        action={{ label: 'Connect Store', onClick: () => navigate('/dashboard/integrations') }}
                         variant="ghost"
                     />
                 </StateWrapper>
@@ -216,7 +216,7 @@ export default function StoresPage({ userId }: { userId: string }) {
 
     const headerActions = (
         <Link
-            to="/dashboard/integrations?open=shopify&add=true"
+            to="/dashboard/integrations"
             className="inline-flex items-center gap-2 h-9 px-4 rounded-lg text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition-all shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]"
         >
             <Store size={14} /> Connect New Store
@@ -234,11 +234,11 @@ export default function StoresPage({ userId }: { userId: string }) {
                 actions={headerActions}
             />
 
-            {shopifyStores.length > 1 && (
+            {allStores.length > 1 && (
                 <div className="mt-4 mb-2">
                     <Tabs value={activeStoreId} onValueChange={setActiveStoreId} className="w-fit">
                         <TabsList className="bg-slate-100/80 p-1 border border-slate-200 shadow-sm rounded-lg h-10">
-                            {shopifyStores.map(store => (
+                            {allStores.map(store => (
                                 <TabsTrigger
                                     key={store.id}
                                     value={store.id}
@@ -338,7 +338,7 @@ export default function StoresPage({ userId }: { userId: string }) {
                                 <EmptyState
                                     icon={<Package size={28} />}
                                     title="No products found"
-                                    description="Your product catalog is empty. Run a sync to import products from Shopify."
+                                    description="Your product catalog is empty. Run a sync to import products from your store."
                                     action={{ label: 'Sync Catalog', onClick: () => syncStoreProducts(activeStore.id) }}
                                     variant="ghost"
                                 />

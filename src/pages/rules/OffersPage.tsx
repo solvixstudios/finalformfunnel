@@ -119,7 +119,7 @@ const OffersPage: React.FC<OffersPageProps> = ({ userId }) => {
                             onClick={handleSave}
                             disabled={isSaving}
                             size="sm"
-                            className="h-8 rounded-lg text-xs font-bold px-4 bg-[#FF5A1F] hover:bg-[#E04D1A] text-white shadow-sm"
+                            className="h-8 rounded-lg text-xs font-bold px-4 shadow-sm"
                         >
                             {isSaving ? <Loader2 size={13} className="mr-1.5 animate-spin" /> : <Save size={13} className="mr-1.5" />}
                             Enregistrer
@@ -170,14 +170,14 @@ const OffersPage: React.FC<OffersPageProps> = ({ userId }) => {
                             <div className="flex bg-white rounded-lg p-0.5 border border-slate-200 shadow-sm">
                                 <button
                                     onClick={() => setPreviewLang('fr')}
-                                    className={`px-3 py-1 rounded-md text-[10px] font-bold transition-all ${previewLang === 'fr' ? 'bg-[#FF5A1F] text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                                    className={`px-3 py-1 rounded-md text-[10px] font-bold transition-all ${previewLang === 'fr' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
                                         }`}
                                 >
                                     FR
                                 </button>
                                 <button
                                     onClick={() => setPreviewLang('ar')}
-                                    className={`px-3 py-1 rounded-md text-[10px] font-bold transition-all ${previewLang === 'ar' ? 'bg-[#FF5A1F] text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                                    className={`px-3 py-1 rounded-md text-[10px] font-bold transition-all ${previewLang === 'ar' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
                                         }`}
                                 >
                                     AR
@@ -229,7 +229,7 @@ const OffersPage: React.FC<OffersPageProps> = ({ userId }) => {
         <Button
             size="sm"
             onClick={handleCreateNew}
-            className="h-8 rounded-lg text-xs font-bold px-4 bg-[#FF5A1F] hover:bg-[#FF5A1F]/90 text-white shadow-sm"
+            className="h-8 rounded-lg text-xs font-bold px-4 shadow-sm"
         >
             <Plus size={13} className="mr-1.5" />
             Nouveau Profil
@@ -257,7 +257,7 @@ const OffersPage: React.FC<OffersPageProps> = ({ userId }) => {
                     </div>
                     <h3 className="text-sm font-bold text-slate-700 mb-1">Aucun profil d'offres</h3>
                     <p className="text-xs text-slate-400 mb-5">Créez votre premier profil pour commencer.</p>
-                    <Button onClick={handleCreateNew} size="sm" className="h-8 rounded-lg text-xs font-bold px-4 bg-[#FF5A1F] hover:bg-[#FF5A1F]/90 text-white">
+                    <Button onClick={handleCreateNew} size="sm" className="h-8 rounded-lg text-xs font-bold px-4 shadow-sm">
                         <Plus size={13} className="mr-1.5" /> Créer un profil
                     </Button>
                 </div>

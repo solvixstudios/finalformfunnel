@@ -109,7 +109,7 @@ export function FormAssignmentSheet({
                     type: 'store',
                     formName: form.name,
                     formConfig,
-                    shopifyDomain: store.url,
+                    storeDomain: store.url,
                 });
                 toast.success(`Assigned "${form.name}" to entire store`);
             } else {
@@ -166,7 +166,7 @@ export function FormAssignmentSheet({
                         productHandle: products.find(p => String(p.id) === productId)?.handle,
                         formName: form.name,
                         formConfig,
-                        shopifyDomain: store.url,
+                        storeDomain: store.url,
                     });
                 }
 

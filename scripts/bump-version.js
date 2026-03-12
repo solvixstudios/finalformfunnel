@@ -10,6 +10,10 @@ const filesToSync = [
   join(__dirname, "..", "src", "lib", "integrations", "adapters", "shopify.ts")
 ];
 
+// WooCommerce plugin files
+const wcPluginFile = join(__dirname, "..", "plugins", "finalform-woocommerce", "finalform-woocommerce.php");
+const wcInfoJson = join(__dirname, "..", "public", "plugin-info.json");
+
 function updateLoaderVersionInFile(filePath, newVersion) {
   try {
     let content = readFileSync(filePath, "utf8");
@@ -55,6 +59,37 @@ try {
 
   // Sync the TS files
   filesToSync.forEach(file => updateLoaderVersionInFile(file, newVersion));
+
+  // Sync WooCommerce plugin
+  try {
+    let wcContent = readFileSync(wcPluginFile, "utf8");
+    // Update Plugin Header Version
+    wcContent = wcContent.replace(/(\* Version:\s+)([^\n]+)/, `$1${newVersion}`);
+    // Update constant definition
+    wcContent = wcContent.replace(/(define\(\s*'FINALFORM_WC_VERSION',\s*')([^']+)('\s*\);)/, `$1${newVersion}$3`);
+    writeFileSync(wcPluginFile, wcContent, "utf8");
+    console.log(`✅ Synced version to ${newVersion} in finalform-woocommerce.php`);
+
+    // Generate info.json for Plugin Update Checker
+    const infoJson = {
+      name: "Final Form for WooCommerce",
+      version: newVersion,
+      slug: "finalform-woocommerce",
+      download_url: "https://finalform.app/finalform-woocommerce.zip",
+      requires: "5.8",
+      tested: "6.4",
+      requires_php: "7.4",
+      last_updated: new Date().toISOString().replace('T', ' ').substring(0, 19),
+      sections: {
+        description: "Connect your WooCommerce store to Final Form — the premium order form builder for e-commerce."
+      }
+    };
+    writeFileSync(wcInfoJson, JSON.stringify(infoJson, null, 2) + "\n", "utf8");
+    console.log(`✅ Generated ${wcInfoJson}`);
+
+  } catch (err) {
+    console.warn(`⚠️ Could not process WooCommerce files: ${err.message}`);
+  }
 
 } catch (e) {
   console.error("Failed to bump version", e);

@@ -1,0 +1,216 @@
+/* Final Form WooCommerce — Admin Styles */
+
+.finalform-settings {
+    max-width: 720px;
+    margin: 20px auto;
+}
+
+.finalform-settings h1 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 24px;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 24px;
+}
+
+.finalform-logo {
+    font-size: 28px;
+}
+
+.finalform-version {
+    font-size: 12px;
+    font-weight: 500;
+    color: #94a3b8;
+    background: #f1f5f9;
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-left: 4px;
+}
+
+/* Status badge */
+.finalform-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 24px;
+}
+
+.finalform-status--connected {
+    background: #f0fdf4;
+    color: #16a34a;
+    border: 1px solid #bbf7d0;
+}
+
+.finalform-status--disconnected {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+}
+
+.finalform-status__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.finalform-status--connected .finalform-status__dot {
+    background: #16a34a;
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.2);
+}
+
+.finalform-status--disconnected .finalform-status__dot {
+    background: #dc2626;
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2);
+}
+
+/* Cards */
+.finalform-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.finalform-card h2 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0 0 8px 0;
+    padding: 0;
+}
+
+.finalform-card .description {
+    color: #64748b;
+    font-size: 13px;
+    margin-bottom: 16px;
+}
+
+.finalform-card--info {
+    background: #f8fafc;
+}
+
+/* Input */
+.finalform-input {
+    width: 100%;
+    max-width: 100%;
+    padding: 10px 14px;
+    font-size: 14px;
+    font-family: 'SF Mono', Monaco, Consolas, monospace;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #f8fafc;
+    color: #1e293b;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    box-sizing: border-box;
+}
+
+.finalform-input:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.finalform-input::placeholder {
+    color: #94a3b8;
+}
+
+/* Toggle */
+.finalform-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.finalform-toggle input {
+    display: none;
+}
+
+.finalform-toggle__slider {
+    width: 44px;
+    height: 24px;
+    background: #cbd5e1;
+    border-radius: 12px;
+    position: relative;
+    transition: background 0.2s ease;
+    flex-shrink: 0;
+}
+
+.finalform-toggle__slider::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.finalform-toggle input:checked + .finalform-toggle__slider {
+    background: #6366f1;
+}
+
+.finalform-toggle input:checked + .finalform-toggle__slider::after {
+    transform: translateX(20px);
+}
+
+.finalform-toggle__label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #475569;
+}
+
+/* Info table */
+.finalform-info-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.finalform-info-table td {
+    padding: 8px 0;
+    font-size: 14px;
+    color: #475569;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.finalform-info-table tr:last-child td {
+    border-bottom: none;
+}
+
+.finalform-info-table td:first-child {
+    width: 150px;
+    color: #1e293b;
+}
+
+/* Submit button override */
+.finalform-settings .button-primary {
+    background: #6366f1 !important;
+    border-color: #4f46e5 !important;
+    border-radius: 8px !important;
+    padding: 6px 20px !important;
+    font-weight: 600 !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 2px rgba(99, 102, 241, 0.3) !important;
+}
+
+.finalform-settings .button-primary:hover {
+    background: #4f46e5 !important;
+}
+
+.finalform-settings .button-secondary {
+    border-radius: 8px !important;
+    font-weight: 500 !important;
+}

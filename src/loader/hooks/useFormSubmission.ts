@@ -86,7 +86,7 @@ export function useFormSubmission({
             productHandle: (product as any).handle || '',
             productTitle: product.title,
             shopName: config.storeName || window.location.hostname,
-            shopDomain: config.shopifyDomain || window.location.hostname,
+            shopDomain: config.storeDomain || window.location.hostname,
             promo: appliedPromoCode?.code || '',
             promoDiscount: appliedPromoCode?.discountValue || 0,
             shippingPrice: calculations.shippingCost,
@@ -273,7 +273,7 @@ export function useFormSubmission({
                     }
                 }
 
-                const adapter = getAdapter('shopify');
+                const adapter = getAdapter((config as any).platform || 'shopify');
                 await adapter.submitOrder(payload as unknown as Parameters<typeof adapter.submitOrder>[0]);
 
                 if (import.meta.env.DEV) {
@@ -328,7 +328,7 @@ export function useFormSubmission({
                 console.log("Logging abandoned order to backend...", payload);
             }
 
-            const adapter = getAdapter('shopify');
+            const adapter = getAdapter((config as any).platform || 'shopify');
             adapter.submitOrder(payload as unknown as Parameters<typeof adapter.submitOrder>[0]).catch(err => console.error("Abandoned log failed", err));
 
             // Direct write abandoned to Firebase Orders collection

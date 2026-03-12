@@ -40,6 +40,64 @@ async function fetchShopifyProduct() {
 }
 
 /**
+ * Fetch product data from WooCommerce page globals
+ */
+function fetchWooCommerceProduct() {
+    try {
+        // WC injects product data via various globals
+        const wcParams = (window as any).wc_single_product_params || (window as any).wc_product_params;
+        
+        // Try JSON-LD structured data (most reliable across WC themes)
+        const jsonLd = document.querySelector('script[type="application/ld+json"]');
+        if (jsonLd) {
+            try {
+                const data = JSON.parse(jsonLd.textContent || '');
+                if (data['@type'] === 'Product' && data.name) {
+                    return {
+                        id: data.sku || data.productID || window.location.pathname.split('/product/')[1]?.replace(/\/$/, ''),
+                        title: data.name,
+                        handle: window.location.pathname.split('/product/')[1]?.replace(/\/$/, '') || '',
+                        body_html: data.description || '',
+                        variants: data.offers ? [{
+                            id: data.sku || 'default',
+                            title: 'Default',
+                            price: data.offers.price || data.offers.lowPrice || '0',
+                        }] : [{ id: 'default', title: 'Default', price: '0' }],
+                        images: data.image ? [{ src: Array.isArray(data.image) ? data.image[0] : data.image }] : [],
+                        image: data.image ? { src: Array.isArray(data.image) ? data.image[0] : data.image } : null,
+                    };
+                }
+            } catch { /* ignore parse errors */ }
+        }
+
+        // Fallback: check for WC variation form data
+        const variationForm = document.querySelector('.variations_form');
+        if (variationForm) {
+            const productData = variationForm.getAttribute('data-product_variations');
+            const productId = variationForm.getAttribute('data-product_id');
+            const titleEl = document.querySelector('.product_title, h1.entry-title');
+            if (productId && titleEl) {
+                return {
+                    id: productId,
+                    title: titleEl.textContent?.trim() || '',
+                    handle: window.location.pathname.split('/product/')[1]?.replace(/\/$/, '') || '',
+                    variants: productData ? JSON.parse(productData).map((v: any) => ({
+                        id: v.variation_id,
+                        title: Object.values(v.attributes || {}).join(' / ') || 'Default',
+                        price: v.display_price,
+                    })) : [{ id: productId, title: 'Default', price: '0' }],
+                    images: [],
+                    image: null,
+                };
+            }
+        }
+    } catch (e) {
+        console.warn('FinalForm: WooCommerce product detection failed', e);
+    }
+    return null;
+}
+
+/**
  * Fetch config from backend webhook (Source of Truth)
  */
 async function fetchConfigFromBackend(shop: string, productId?: string, productHandle?: string) {
@@ -162,12 +220,21 @@ async function initLoader() {
         const scripts = document.querySelectorAll('script');
         for (let i = 0; i < scripts.length; i++) {
             const src = scripts[i].src;
-            if (src && (src.includes('finalform-loader.prod.js') || src.includes('finalform-loader.js'))) {
+            if (src && (src.includes('finalform-loader.prod.js') || src.includes('finalform-loader.js') || src.includes('loader.js'))) {
+                // Check data attributes first (WooCommerce plugin injects these)
+                const dataStore = scripts[i].getAttribute('data-store');
+                const dataPlatform = scripts[i].getAttribute('data-platform');
+                const result: Record<string, string> = {};
+                if (dataStore) result.shop = dataStore;
+                if (dataPlatform) result.platform = dataPlatform;
+
+                // Also check query params (Shopify uses these)
                 try {
                     const url = new URL(src);
-                    return Object.fromEntries(url.searchParams.entries());
+                    const entries = Object.fromEntries(url.searchParams.entries());
+                    return { ...entries, ...result }; // data attributes take priority
                 } catch (e) {
-                    // Ignore parsing errors
+                    if (Object.keys(result).length > 0) return result;
                 }
             }
         }
@@ -176,32 +243,53 @@ async function initLoader() {
 
     const params = getScriptParams();
     const shop = params.shop || window.location.hostname;
+    const detectedPlatform = params.platform || 'shopify';
 
     // 2. Identify Product Context
     let productId: string | undefined;
+    let productHandle: string | undefined;
 
-    // Attempt 1: Standard Shopify meta
-    const metaProductId = (window as any).meta?.product?.id;
-    if (metaProductId) {
-        productId = metaProductId.toString();
-    }
-
-    // Attempt 2: Shopify Analytics
-    if (!productId) {
-        const analyticsProductId = (window as any).ShopifyAnalytics?.meta?.product?.id;
-        if (analyticsProductId) {
-            productId = analyticsProductId.toString();
+    if (detectedPlatform === 'woocommerce') {
+        // WooCommerce product detection
+        const isWcProductPage = window.location.pathname.includes('/product/') || document.querySelector('.single-product') !== null;
+        if (isWcProductPage) {
+            productHandle = window.location.pathname.split('/product/')[1]?.replace(/\/$/, '');
+            // Try to get ID from variation form or body class
+            const variationForm = document.querySelector('.variations_form');
+            if (variationForm) {
+                productId = variationForm.getAttribute('data-product_id') || undefined;
+            }
+            if (!productId) {
+                const bodyClasses = document.body.className;
+                const match = bodyClasses.match(/postid-(\d+)/);
+                if (match) productId = match[1];
+            }
         }
-    }
+    } else {
+        // Shopify product detection
+        // Attempt 1: Standard Shopify meta
+        const metaProductId = (window as any).meta?.product?.id;
+        if (metaProductId) {
+            productId = metaProductId.toString();
+        }
 
-    // Normalize handle
-    const productHandle = window.location.pathname.split('/products/')[1]?.split('/')[0];
+        // Attempt 2: Shopify Analytics
+        if (!productId) {
+            const analyticsProductId = (window as any).ShopifyAnalytics?.meta?.product?.id;
+            if (analyticsProductId) {
+                productId = analyticsProductId.toString();
+            }
+        }
+
+        // Normalize handle
+        productHandle = window.location.pathname.split('/products/')[1]?.split('/')[0];
+    }
 
     // Check if we are on a product page (required for product forms)
     if (!productId && !productHandle) {
         console.log('FinalForm: No product context found. Proceeding to fetch global config.');
     } else {
-        console.log('FinalForm: Context', { shop, productId, productHandle });
+        console.log('FinalForm: Context', { shop, productId, productHandle, platform: detectedPlatform });
     }
 
     // --- EARLY SKELETON INJECTION (FAST FEEDBACK) ---
@@ -318,7 +406,9 @@ async function initLoader() {
     console.log('FinalForm: Fetching config and product data concurrently...');
     const [config, productData] = await Promise.all([
         fetchConfigFromBackend(shop, productId, productHandle),
-        fetchShopifyProduct()
+        detectedPlatform === 'woocommerce'
+            ? Promise.resolve(fetchWooCommerceProduct())
+            : fetchShopifyProduct()
     ]);
 
     if (!config) {

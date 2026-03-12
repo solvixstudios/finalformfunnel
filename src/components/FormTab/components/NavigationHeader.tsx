@@ -19,6 +19,7 @@ const MENU_LEVEL_SECTIONS = new Set([
     'meta_pixel',
     'tiktok_pixel',
     'shopify',
+    'woocommerce',
 ]);
 
 /**
@@ -37,6 +38,7 @@ const EDITOR_TITLES: Record<string, string> = {
     meta_pixel: 'Meta Pixel',
     tiktok_pixel: 'TikTok Pixel',
     shopify: 'Shopify',
+    woocommerce: 'WooCommerce',
     urgencyText: 'Urgence — Texte',
     urgencyQuantity: 'Urgence — Stock',
     urgencyTimer: 'Urgence — Timer',

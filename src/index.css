@@ -16,10 +16,10 @@
     --sidebar-width-collapsed: 5rem;
 
     /* Brand */
-    --brand: 263 70% 58%;
+    --brand: 16 100% 55%;         /* #FF5A1F */
     --brand-foreground: 0 0% 100%;
-    --brand-light: 263 85% 75%;
-    --brand-dark: 263 70% 45%;
+    --brand-light: 16 100% 65%;
+    --brand-dark: 16 100% 45%;
 
     /* Surfaces */
     --background: 40 20% 98%;
@@ -32,7 +32,7 @@
     --popover-foreground: 220 25% 12%;
 
     /* Primary Actions */
-    --primary: 263 70% 58%;
+    --primary: 240 10% 8%;        /* slate-900 */
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 14% 96%;
@@ -41,8 +41,8 @@
     --muted: 220 14% 96%;
     --muted-foreground: 220 10% 46%;
 
-    --accent: 263 70% 58%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 220 14% 96%;        /* subtle hover — used by ghost/outline buttons */
+    --accent-foreground: 220 25% 12%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
@@ -63,7 +63,7 @@
     /* Borders & Rings */
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 263 70% 58%;
+    --ring: 220 25% 12%;          /* slate-900 focus ring */
 
     --radius: 12px;
 
@@ -74,12 +74,12 @@
     /* Sidebar */
     --sidebar-background: 240 15% 8%;
     --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 263 70% 58%;
+    --sidebar-primary: 16 100% 55%;       /* brand orange for active item */
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 263 70% 58%;
-    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-accent: 240 10% 14%;         /* dark hover */
+    --sidebar-accent-foreground: 0 0% 95%;
     --sidebar-border: 240 10% 14%;
-    --sidebar-ring: 263 70% 58%;
+    --sidebar-ring: 16 100% 55%;
   }
 
   .dark {
@@ -92,8 +92,8 @@
     --popover: 240 10% 8%;
     --popover-foreground: 220 14% 96%;
 
-    --primary: 263 85% 75%;
-    --primary-foreground: 240 10% 5%;
+    --primary: 220 14% 96%;
+    --primary-foreground: 240 10% 8%;
 
     --secondary: 240 10% 14%;
     --secondary-foreground: 220 14% 96%;
@@ -101,8 +101,8 @@
     --muted: 240 10% 14%;
     --muted-foreground: 220 10% 65%;
 
-    --accent: 263 85% 75%;
-    --accent-foreground: 240 10% 5%;
+    --accent: 220 14% 96%;
+    --accent-foreground: 240 10% 8%;
 
     --destructive: 0 62% 30%;
     --destructive-foreground: 220 14% 96%;
@@ -126,7 +126,7 @@
 
     --border: 240 10% 14%;
     --input: 240 10% 14%;
-    --ring: 263 85% 75%;
+    --ring: 16 100% 55%;
 
     --shopify: 85 51% 51%;
     --shopify-foreground: 0 0% 100%;

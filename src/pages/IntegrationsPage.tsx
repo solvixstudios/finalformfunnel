@@ -18,13 +18,13 @@ interface IntegrationsPageProps {
 
 type IntegrationId = 'whatsapp' | 'delivery' | 'meta' | 'tiktok' | 'shopify' | 'woocommerce' | 'google_sheets' | null;
 
-const INTEGRATIONS_LIST = [
+const INTEGRATIONS_LIST: { id: string; title: string; icon: React.ReactNode; color: string; bg: string; comingSoon?: boolean }[] = [
     { id: 'whatsapp', title: 'WhatsApp', icon: <FontAwesomeIcon icon={faWhatsapp} className="text-lg" />, color: 'text-green-600', bg: 'bg-green-50' },
     { id: 'delivery', title: 'Livraison', icon: <FontAwesomeIcon icon={faTruck} className="text-sm" />, color: 'text-orange-600', bg: 'bg-orange-50' },
     { id: 'meta', title: 'Meta Pixel', icon: <FontAwesomeIcon icon={faMeta} className="text-lg" />, color: 'text-blue-600', bg: 'bg-blue-50' },
     { id: 'tiktok', title: 'TikTok Pixel', icon: <FontAwesomeIcon icon={faTiktok} className="text-lg" />, color: 'text-zinc-800', bg: 'bg-zinc-100' },
     { id: 'shopify', title: 'Shopify', icon: <FontAwesomeIcon icon={faShopify} className="text-lg" />, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-    { id: 'woocommerce', title: 'WooCommerce', icon: <FontAwesomeIcon icon={faBoxOpen} className="text-sm" />, color: 'text-[#96588a]', bg: 'bg-[#96588a]/10', comingSoon: true },
+    { id: 'woocommerce', title: 'WooCommerce', icon: <FontAwesomeIcon icon={faBoxOpen} className="text-sm" />, color: 'text-[#96588a]', bg: 'bg-[#96588a]/10' },
     { id: 'google_sheets', title: 'Google Sheets', icon: <FontAwesomeIcon icon={faTable} className="text-base" />, color: 'text-emerald-600', bg: 'bg-emerald-50' },
 ];
 

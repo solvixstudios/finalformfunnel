@@ -256,7 +256,6 @@ export const MainMenu = ({ onLoadClick }: { onLoadClick?: () => void }) => {
                 icon={faWordpress}
                 label="WooCommerce"
                 accentClass="from-purple-500 to-indigo-600"
-                comingSoon={true}
                 onClick={() => setEditingSection("woocommerce")}
               />
               <MenuCard

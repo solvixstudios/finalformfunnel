@@ -2,9 +2,17 @@
 trigger: always_on
 ---
 
-never test in browser, never build or deploy
-i do those by myself
+stricly comply to those ALL rules:
+- never test in browser
+- never build
+- never deploy
+- never commit
+- never push to git
+- never pull from git
 
-always make sure you're imports are present and correct
+i do those by myself manaully in any case, i'm the only resposible to do this manually
 
-never commit or push to git or pull in any case, i'm the only resposible to do this manually
+- always make sure you're imports are present and correct
+- never omit code or features
+
+those are very strict rules you MUST follow 

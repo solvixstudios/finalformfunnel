@@ -393,8 +393,8 @@ export const DEFAULT_FORM_CONFIG = {
     selectedWhatsappProfileId: null as string | null, // ID of selected WhatsApp profile (single-select)
     tiktokPixelIds: [] as string[], // IDs of selected TikTok Pixel profiles (multi-select)
     tiktokPixelData: [] as unknown[], // Embedded TikTok Pixel Data
-    // Shopify store links — stored locally, synced on save
-    shopifyStoreLinks: [] as { storeId: string; type: 'store' | 'product'; productIds?: string[] }[],
+    // Store links — stored locally, synced on save
+    storeLinks: [] as { storeId: string; type: 'store' | 'product'; productIds?: string[] }[],
     // Ordered columns for Google Sheets
     sheetColumns: [
       { id: 'date', label: 'Date', enabled: true },

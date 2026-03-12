@@ -104,7 +104,7 @@ export default function HomePage({ userId }: HomePageProps) {
                     { label: 'Total Forms', value: stats.totalForms, icon: <FolderOpen size={16} />, color: 'violet' },
                 ]}
                 plan={{ name: 'Pro Plan', daysLeft: 28, totalDays: 30 }}
-                onPlanClick={() => navigate('/dashboard/settings?tab=subscription')}
+                onPlanClick={() => navigate('/dashboard/subscription')}
             />
 
             {/* Main Content Area */}

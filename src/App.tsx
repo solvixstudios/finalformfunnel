@@ -21,6 +21,7 @@ const FormsPage = lazy(() => import("./pages/FormsPage"));
 const HomePage = lazy(() => import("./pages/HomePage"));
 const OrdersPage = lazy(() => import("./pages/OrdersPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const SubscriptionPage = lazy(() => import("./pages/SubscriptionPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const DashboardLayout = lazy(() => import("./components/DashboardLayout"));
@@ -32,6 +33,10 @@ const ShippingPage = lazy(() => import("./pages/rules/ShippingPage"));
 const CouponsPage = lazy(() => import("./pages/rules/CouponsPage"));
 const IntegrationsPage = lazy(() => import("./pages/IntegrationsPage"));
 const StoresPage = lazy(() => import("./pages/StoresPage"));
+const AdminLayout = lazy(() => import("./components/AdminLayout"));
+const AdminDashboardPage = lazy(() => import("./pages/AdminDashboardPage"));
+const AdminUsersPage = lazy(() => import("./pages/AdminUsersPage"));
+const AdminSettingsPage = lazy(() => import("./pages/AdminSettingsPage"));
 
 // Loading component
 const LoadingSpinner = () => (
@@ -208,6 +213,7 @@ const AppContent = () => {
                         <Route path="rules/coupons" element={<CouponsPage userId={user.id} />} />
                         <Route path="profile" element={<ProfilePage user={user} />} />
                         <Route path="settings" element={<SettingsPage user={user} onUserUpdate={setUser} />} />
+                        <Route path="subscription" element={<SubscriptionPage user={user} />} />
                         <Route path="" element={<Navigate to="/dashboard/home" replace />} />
                         <Route path="*" element={<Navigate to="/dashboard/home" replace />} />
                       </Routes>
@@ -223,6 +229,31 @@ const AppContent = () => {
         {!user && (
           <Route
             path="/dashboard/*"
+            element={<Navigate to="/auth" replace />}
+          />
+        )}
+
+        {/* Admin Routes — separate from user dashboard */}
+        {user && (
+          <Route
+            path="/admin/*"
+            element={
+              <AdminLayout user={user} onLogout={handleLogout}>
+                <Suspense fallback={<LoadingSpinner />}>
+                  <Routes>
+                    <Route path="" element={<AdminDashboardPage />} />
+                    <Route path="users" element={<AdminUsersPage />} />
+                    <Route path="settings" element={<AdminSettingsPage />} />
+                    <Route path="*" element={<Navigate to="/admin" replace />} />
+                  </Routes>
+                </Suspense>
+              </AdminLayout>
+            }
+          />
+        )}
+        {!user && (
+          <Route
+            path="/admin/*"
             element={<Navigate to="/auth" replace />}
           />
         )}

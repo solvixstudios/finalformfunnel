@@ -3,10 +3,10 @@ import { db } from "../firebase";
 import { StoreOwner } from "./types";
 
 /**
- * Normalize a Shopify domain to a consistent format
- * Removes protocol, trailing slashes, and ensures .myshopify.com suffix
+ * Normalize a store domain to a consistent format.
+ * Removes protocol, trailing slashes, lowercases — safe for ALL platforms.
  */
-export function normalizeShopifyDomain(domain: string): string {
+export function normalizeStoreDomain(domain: string): string {
   if (!domain) return "";
   return domain
     .replace(/https?:\/\//, "")
@@ -16,25 +16,39 @@ export function normalizeShopifyDomain(domain: string): string {
 }
 
 /**
+ * Extract the subdomain/identifier the backend expects, based on platform.
+ * - Shopify: strips `.myshopify.com` → returns "my-store"
+ * - WooCommerce: returns the full domain "example.com"
+ */
+export function getSubdomain(url: string, platform: 'shopify' | 'woocommerce' = 'shopify'): string {
+  const clean = normalizeStoreDomain(url);
+  if (platform === 'shopify') {
+    return clean.replace('.myshopify.com', '');
+  }
+  // WooCommerce: backend expects the full domain
+  return clean;
+}
+
+/**
  * Convert a domain to a safe document ID (Firebase doesn't allow slashes)
  * Replaces dots with underscores for the document ID
  */
 function domainToDocId(domain: string): string {
-  return normalizeShopifyDomain(domain).replace(/\./g, "_");
+  return normalizeStoreDomain(domain).replace(/\./g, "_");
 }
 
 /**
- * Check if a Shopify domain is already owned by another user
- * @param shopifyDomain The Shopify domain to check (e.g., "my-store.myshopify.com")
+ * Check if a store domain is already owned by another user
+ * @param storeDomain The store domain to check
  * @returns Object with ownership status and owner info if owned
  */
-export async function checkStoreOwnership(shopifyDomain: string): Promise<{
+export async function checkStoreOwnership(storeDomain: string): Promise<{
   isOwned: boolean;
   ownerId?: string;
   storeId?: string;
 }> {
   try {
-    const docId = domainToDocId(shopifyDomain);
+    const docId = domainToDocId(storeDomain);
     const ownerDoc = await getDoc(doc(db, "storeOwners", docId));
 
     if (ownerDoc.exists()) {
@@ -58,20 +72,20 @@ export async function checkStoreOwnership(shopifyDomain: string): Promise<{
 /**
  * Claim ownership of a store for a user
  * Creates or updates the storeOwners document
- * @param shopifyDomain The Shopify domain to claim
+ * @param storeDomain The store domain to claim
  * @param userId The user's Firebase UID
  * @param storeId The store document ID in the stores collection
  */
 export async function claimStoreOwnership(
-  shopifyDomain: string,
+  storeDomain: string,
   userId: string,
   storeId: string,
 ): Promise<void> {
-  const docId = domainToDocId(shopifyDomain);
-  const normalizedDomain = normalizeShopifyDomain(shopifyDomain);
+  const docId = domainToDocId(storeDomain);
+  const normalizedDomain = normalizeStoreDomain(storeDomain);
 
   const ownerData: StoreOwner = {
-    shopifyDomain: normalizedDomain,
+    storeDomain: normalizedDomain,
     userId,
     storeId,
     connectedAt: new Date().toISOString(),
@@ -83,10 +97,10 @@ export async function claimStoreOwnership(
 /**
  * Release ownership of a store (when disconnecting)
  * Deletes the storeOwners document
- * @param shopifyDomain The Shopify domain to release
+ * @param storeDomain The store domain to release
  */
-export async function releaseStoreOwnership(shopifyDomain: string): Promise<void> {
-  const docId = domainToDocId(shopifyDomain);
+export async function releaseStoreOwnership(storeDomain: string): Promise<void> {
+  const docId = domainToDocId(storeDomain);
   await deleteDoc(doc(db, "storeOwners", docId));
 }
 
@@ -95,9 +109,9 @@ export async function releaseStoreOwnership(shopifyDomain: string): Promise<void
  * Useful for validation before operations
  */
 export async function isStoreOwnedByUser(
-  shopifyDomain: string,
+  storeDomain: string,
   userId: string,
 ): Promise<boolean> {
-  const ownership = await checkStoreOwnership(shopifyDomain);
+  const ownership = await checkStoreOwnership(storeDomain);
   return ownership.isOwned && ownership.ownerId === userId;
 }

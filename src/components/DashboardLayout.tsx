@@ -8,8 +8,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
+  Crown,
   FileText,
   FolderOpen,
   LayoutGrid,
@@ -25,12 +27,16 @@ import {
   Plug,
   X
 } from 'lucide-react';
-import React, { useMemo, useState } from 'react';
+import React, { lazy, useMemo, useState } from 'react';
 import { HeaderActionsProvider, useHeaderActions } from '../contexts/HeaderActionsContext';
 import { GoogleUser } from '../lib/authGoogle';
 import { useI18n } from '../lib/i18n/i18nContext';
 import { useFormStore } from '../stores';
+import { useSubscription } from '../hooks/useSubscription';
 import { DesktopSidebar, MobileMenu } from './Sidebar';
+import PlanPickerDialog from './PlanPickerDialog';
+
+const PlanUpgradeBanner = lazy(() => import('./PlanUpgradeBanner'));
 
 export interface NavItem {
   id: string;
@@ -43,6 +49,7 @@ export interface NavGroup {
   title: string;
   collapsible?: boolean;
   defaultExpanded?: boolean;
+  pinBottom?: boolean;
   items: NavItem[];
 }
 
@@ -65,15 +72,21 @@ const DashboardLayoutContent = ({
 }: DashboardLayoutProps) => {
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showPlanPicker, setShowPlanPicker] = useState(false);
   const { dir } = useI18n();
   const { actions, centerContent, onSaveBeforeLeave } = useHeaderActions();
   const hasUnsavedChanges = useFormStore((state) => state.hasUnsavedChanges);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
   const [isSavingBeforeLeave, setIsSavingBeforeLeave] = useState(false);
   const pendingActionRef = React.useRef<(() => void) | null>(null);
+  const sub = useSubscription(user.id, user.email, user.displayName);
 
   // Determine if we are in the Builder view
   const isBuilderPage = currentPage === '/dashboard/forms/edit/new' || (currentPage.startsWith('/dashboard/forms/edit/') && currentPage.length > 22);
+
+  // Check if user is on free plan to show the upgrade banner
+  const isFreePlan = !user.email; // placeholder: real check happens in the lazy-loaded banner
+  // We always render the banner and let it handle its own visibility via useSubscription
 
   const protectedNavigate = (path: string, action?: () => void) => {
     if (path === currentPage && !action) return;
@@ -148,10 +161,10 @@ const DashboardLayoutContent = ({
       ]
     },
     {
-      title: "ADMIN",
-      collapsible: true,
-      defaultExpanded: false,
+      title: "",
+      pinBottom: true,
       items: [
+        { id: 'subscription', label: 'Subscription', icon: <Crown size={20} />, path: '/dashboard/subscription' },
         { id: 'settings', label: 'Settings', icon: <Settings size={20} />, path: '/dashboard/settings' },
       ]
     }
@@ -209,6 +222,13 @@ const DashboardLayoutContent = ({
           onLogout={onLogout}
         />
 
+        {/* Plan Upgrade Banner — shown for all users, self-hides if not on free plan */}
+        {!isBuilderPage && (
+          <React.Suspense fallback={null}>
+            <PlanUpgradeBanner onUpgrade={() => setShowPlanPicker(true)} />
+          </React.Suspense>
+        )}
+
         {/* Page Content */}
         <main className={cn(
           "flex-1 relative custom-scroll-thin bg-[#F8F5F1] flex flex-col",
@@ -251,10 +271,10 @@ const DashboardLayoutContent = ({
                 Discard
               </AlertDialogAction>
               {onSaveBeforeLeave && (
-                <button
+                <Button
                   onClick={handleSaveAndLeave}
                   disabled={isSavingBeforeLeave}
-                  className="inline-flex items-center justify-center gap-2 rounded-md text-sm font-semibold h-10 px-4 bg-[#FF5A1F] text-white hover:bg-[#E04D1A] transition-colors disabled:opacity-50"
+                  className="h-10 px-4 font-semibold gap-2"
                 >
                   {isSavingBeforeLeave ? (
                     <Loader2 size={14} className="animate-spin" />
@@ -262,11 +282,22 @@ const DashboardLayoutContent = ({
                     <Save size={14} />
                   )}
                   Save & Leave
-                </button>
+                </Button>
               )}
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Plan Picker Popup — triggered from upgrade banner */}
+        <PlanPickerDialog
+          open={showPlanPicker}
+          onClose={() => setShowPlanPicker(false)}
+          currentPlanId={sub.currentPlan.id}
+          subscriptionStatus={sub.subscription?.status}
+          ordersThisMonth={sub.ordersThisMonth}
+          monthlyOrderLimit={sub.currentPlan.monthlyOrders}
+          onSubmitPlanRequest={sub.submitPlanRequest}
+        />
 
       </div>
     </div>

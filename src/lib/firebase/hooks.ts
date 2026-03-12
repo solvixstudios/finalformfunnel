@@ -17,7 +17,8 @@ import { db } from "../firebase";
 import {
   checkStoreOwnership,
   claimStoreOwnership,
-  normalizeShopifyDomain,
+  getSubdomain,
+  normalizeStoreDomain,
   releaseStoreOwnership,
 } from "./storeOwnership";
 import { ConnectedStore, FormAssignment, SavedForm } from "./types";
@@ -186,7 +187,8 @@ export const useConnectedStores = (userId: string) => {
       name: string;
       platform: "shopify" | "woocommerce";
       url: string;
-      shopifyDomain?: string;
+      storeDomain?: string;
+      accessToken?: string;
       clientId?: string;
       clientSecret?: string;
       initialSync?: boolean;
@@ -197,23 +199,28 @@ export const useConnectedStores = (userId: string) => {
     }) => {
       if (!userId) throw new Error("User not authenticated");
 
-      // Normalize the Shopify domain for ownership tracking
-      const shopifyDomain = storeData.shopifyDomain
-        ? normalizeShopifyDomain(storeData.shopifyDomain)
-        : normalizeShopifyDomain(storeData.url);
+      // Normalize the store domain for ownership tracking
+      const storeDomain = storeData.storeDomain
+        ? normalizeStoreDomain(storeData.storeDomain)
+        : normalizeStoreDomain(storeData.url);
 
-      // Check if this store is already owned by another user
-      const ownership = await checkStoreOwnership(shopifyDomain);
-      if (ownership.isOwned && ownership.ownerId !== userId) {
-        throw new Error("STORE_ALREADY_OWNED");
-      }
+      // WooCommerce pending stores (no URL yet) skip ownership/dup checks
+      const isPending = !storeData.url || storeData.url.trim() === '';
 
-      // Check if this user already has this store connected
-      const existingStore = stores.find(
-        (s) => normalizeShopifyDomain(s.url || s.shopifyDomain || "") === shopifyDomain,
-      );
-      if (existingStore) {
-        throw new Error("STORE_ALREADY_CONNECTED");
+      if (!isPending) {
+        // Check if this store is already owned by another user
+        const ownership = await checkStoreOwnership(storeDomain);
+        if (ownership.isOwned && ownership.ownerId !== userId) {
+          throw new Error("STORE_ALREADY_OWNED");
+        }
+
+        // Check if this user already has this store connected
+        const existingStore = stores.find(
+          (s) => normalizeStoreDomain(s.url || s.storeDomain || "") === storeDomain,
+        );
+        if (existingStore) {
+          throw new Error("STORE_ALREADY_CONNECTED");
+        }
       }
 
       try {
@@ -222,8 +229,9 @@ export const useConnectedStores = (userId: string) => {
           name: storeData.name,
           platform: storeData.platform,
           url: storeData.url,
-          shopifyDomain,
-          status: "connected" as const,
+          storeDomain,
+          ...(storeData.accessToken && { accessToken: storeData.accessToken }),
+          status: isPending ? ("pending" as const) : ("connected" as const),
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           ...(storeData.clientId && { clientId: storeData.clientId }),
@@ -242,8 +250,10 @@ export const useConnectedStores = (userId: string) => {
         const docRef = await addDoc(collection(db, "users", userId, "stores"), newStore);
         const savedStore: ConnectedStore = { id: docRef.id, ...newStore };
 
-        // Claim ownership of this store
-        await claimStoreOwnership(shopifyDomain, userId, docRef.id);
+        // Claim ownership of this store (skip for pending stores with no domain)
+        if (storeDomain) {
+          await claimStoreOwnership(storeDomain, userId, docRef.id);
+        }
 
         // No need to manually update state, onSnapshot will handle it
         return savedStore;
@@ -285,20 +295,22 @@ export const useConnectedStores = (userId: string) => {
           console.warn("Store not found in local state during deletion, checking Firestore...");
         }
 
-        const shopifyDomain =
-          storeToDelete?.shopifyDomain ||
-          (storeToDelete?.url ? normalizeShopifyDomain(storeToDelete.url) : null);
+        const storeDomain =
+          storeToDelete?.storeDomain ||
+          (storeToDelete?.url ? normalizeStoreDomain(storeToDelete.url) : null);
 
-        // 0. Disable the loader script on Shopify (remove ScriptTag ONLY, don't disconnect yet)
-        if (storeToDelete?.loaderInstalled && storeToDelete?.clientId && storeToDelete?.clientSecret) {
+        // 0. Disable the loader script (remove ScriptTag for Shopify, no-op for WooCommerce)
+        const platform = storeToDelete?.platform || 'shopify';
+        if (storeToDelete?.loaderInstalled && (platform === 'woocommerce' ? storeToDelete?.accessToken : (storeToDelete?.clientId && storeToDelete?.clientSecret))) {
           try {
             const { getAdapter } = await import("../integrations");
-            const adapter = getAdapter(storeToDelete.platform || 'shopify');
-            const subdomain = storeToDelete.url?.replace('.myshopify.com', '').replace(/https?:\/\//, '') || '';
+            const adapter = getAdapter(platform);
+            const subdomain = getSubdomain(storeToDelete.url || '', platform);
             if (subdomain) {
               await adapter.disableLoader(subdomain, {
                 clientId: storeToDelete.clientId,
-                clientSecret: storeToDelete.clientSecret
+                clientSecret: storeToDelete.clientSecret,
+                accessToken: storeToDelete.accessToken,
               }, userId);
             }
           } catch (err) {
@@ -307,14 +319,14 @@ export const useConnectedStores = (userId: string) => {
           }
         }
 
-        const subdomain = storeToDelete?.url?.replace('.myshopify.com', '').replace(/https?:\/\//, '') || '';
+        const subdomain = getSubdomain(storeToDelete?.url || '', platform);
 
         // 0.9 NOW disconnect store from backend (removes the stores row)
         // This is AFTER config cleanup so removeForm can still find the store.
         if (subdomain) {
           try {
             const { getAdapter } = await import("../integrations");
-            const adapter = getAdapter(storeToDelete?.platform || 'shopify');
+            const adapter = getAdapter(platform);
             await adapter.disconnectStore(subdomain);
           } catch (err) {
             console.warn("Failed to disconnect store from backend:", err);
@@ -338,8 +350,8 @@ export const useConnectedStores = (userId: string) => {
         await batch.commit();
 
         // 3. Release ownership of this store
-        if (shopifyDomain) {
-          await releaseStoreOwnership(shopifyDomain);
+        if (storeDomain) {
+          await releaseStoreOwnership(storeDomain);
         }
 
         // No manual state update - listener handles it
@@ -382,7 +394,7 @@ export const useFormAssignments = (userId: string) => {
       assignmentType: a.type,
       priority: a.type === 'product' ? 10 : 1,
       isActive: true,
-      shopifyDomain: '',
+      storeDomain: '',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     })),
@@ -396,7 +408,7 @@ export const useFormAssignments = (userId: string) => {
       type: "store" | "product";
       productId?: string;
       productHandle?: string;
-      shopifyDomain?: string;
+      storeDomain?: string;
       formName?: string;
       formConfig?: Record<string, any>;
     }) => {
@@ -406,11 +418,13 @@ export const useFormAssignments = (userId: string) => {
 
       // Find the store to get credentials
       const store = stores.find(s => s.id === storeId);
-      if (!store || !store.clientId || !store.clientSecret) {
-        throw new Error("Store not found or missing credentials");
-      }
+      if (!store) throw new Error("Store not found");
+      const hasCredentials = store.platform === 'woocommerce'
+        ? !!store.accessToken
+        : !!(store.clientId && store.clientSecret);
+      if (!hasCredentials) throw new Error("Store missing credentials");
 
-      const subdomain = (store.shopifyDomain || store.url || '').replace(/https?:\/\//, '').replace('.myshopify.com', '');
+      const subdomain = getSubdomain(store.storeDomain || store.url || '', store.platform || 'shopify');
 
       // Build form config — use provided or fetch from Firebase
       let formConfig: Record<string, any> = assignmentData.formConfig || { formId };
@@ -479,7 +493,7 @@ export const useFormAssignments = (userId: string) => {
           isActive: true,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-          shopifyDomain: subdomain,
+          storeDomain: subdomain,
         };
 
         const newDocRef = doc(collection(db, "users", userId, "assignments"));
@@ -511,7 +525,7 @@ export const useFormAssignments = (userId: string) => {
         assignmentType: type,
         priority: type === "product" ? 10 : 1,
         isActive: true,
-        shopifyDomain: '',
+        storeDomain: '',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -533,11 +547,13 @@ export const useFormAssignments = (userId: string) => {
         }
 
         const store = stores.find(s => s.id === assignment.storeId);
-        if (!store || !store.clientId || !store.clientSecret) {
-          throw new Error("Store not found or missing credentials");
-        }
+        if (!store) throw new Error("Store not found");
+        const hasCredentials = store.platform === 'woocommerce'
+          ? !!store.accessToken
+          : !!(store.clientId && store.clientSecret);
+        if (!hasCredentials) throw new Error("Store missing credentials");
 
-        const subdomain = (store.shopifyDomain || store.url || '').replace(/https?:\/\//, '').replace('.myshopify.com', '');
+        const subdomain = getSubdomain(store.storeDomain || store.url || '', store.platform || 'shopify');
 
         // No adapter call needed — backend reads config fresh from Firestore on each request
 

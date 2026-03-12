@@ -155,8 +155,8 @@ export function ShopifyManager({ userId, onAddStore, showHeader = true, viewMode
 
             snapshot.docs.forEach(d => {
                 const data = d.data();
-                if (!data.shopifyDomain || data.shopifyDomain !== domain) {
-                    batch.update(doc(db, "assignments", d.id), { shopifyDomain: domain });
+                if (!data.storeDomain || data.storeDomain !== domain) {
+                    batch.update(doc(db, "assignments", d.id), { storeDomain: domain });
                     updates++;
                 }
             });
@@ -353,7 +353,7 @@ export function ShopifyManager({ userId, onAddStore, showHeader = true, viewMode
                                             rel="noopener noreferrer"
                                             className="text-xs text-slate-500 hover:text-indigo-600 truncate max-w-[200px] block mt-0.5"
                                         >
-                                            {store.url || store.shopifyDomain}
+                                            {store.url || store.storeDomain}
                                         </a>
                                     </div>
                                 </div>

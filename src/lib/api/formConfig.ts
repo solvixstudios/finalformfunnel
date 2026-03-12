@@ -84,11 +84,12 @@ export async function getFormConfig(
         .replace(/^https?:\/\//, "")
         .replace(/\/$/, "");
 
-      // Check if domain matches (with or without myshopify.com)
+      // Generic domain matching (works for both Shopify and WooCommerce)
       if (
         storeUrl === normalizedDomain ||
-        storeUrl === normalizedDomain.replace(".myshopify.com", "") ||
-        `${storeUrl}.myshopify.com` === normalizedDomain
+        storeUrl.replace(".myshopify.com", "") === normalizedDomain.replace(".myshopify.com", "") ||
+        `${storeUrl}.myshopify.com` === normalizedDomain ||
+        normalizedDomain === `${storeUrl}.myshopify.com`
       ) {
         storeDoc = { id: doc.id, ...storeData };
         break;

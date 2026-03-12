@@ -39,7 +39,7 @@ export const ShopifyEditor = () => {
     storeId: string;
     type: "store" | "product";
     productIds?: string[];
-  }[] = formConfig.addons?.shopifyStoreLinks || [];
+  }[] = formConfig.addons?.storeLinks || [];
 
   const linkedStoreIds = useMemo(
     () => new Set(storeLinks.map((l) => l.storeId)),
@@ -53,7 +53,7 @@ export const ShopifyEditor = () => {
     (newLinks: typeof storeLinks) => {
       setFormConfig({
         ...formConfig,
-        addons: { ...formConfig.addons, shopifyStoreLinks: newLinks },
+        addons: { ...formConfig.addons, storeLinks: newLinks },
       });
     },
     [formConfig, setFormConfig],
@@ -108,31 +108,29 @@ export const ShopifyEditor = () => {
   // ─── Sub-components ───
 
   const ConnectStoreBtn = ({ title, variant = "ghost" }: { title: string, variant?: "primary" | "ghost" }) => (
-    <button
-      type="button"
-      onClick={() => window.open("/dashboard/settings?tab=integrations&open=shopify", "_blank")}
-      className={`w-full text-left px-4 py-3 rounded-xl border flex items-center justify-between group transition-all duration-200 outline-none
-        ${variant === 'primary' 
-          ? 'bg-[#FF5A1F] border-[#FF5A1F] hover:bg-[#E04812] shadow-sm hover:shadow-md' 
-          : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-[#F8F5F1] shadow-sm'
-        }`}
+    <Button
+      variant={variant === 'primary' ? 'default' : 'outline'}
+      className={`w-full h-auto justify-between group transition-all duration-200 ${variant === 'primary' ? 'p-3' : 'px-4 py-3 bg-white text-slate-700 hover:bg-slate-50 border-slate-200'}`}
+      asChild
     >
-      <div className="flex items-center gap-3">
-        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors
-          ${variant === 'primary' ? 'bg-white/20' : 'bg-[#F8F5F1] group-hover:bg-white border border-slate-200'}`}>
-          <Store size={14} className={variant === 'primary' ? 'text-white' : 'text-slate-600'} />
+      <a href="/dashboard/settings?tab=integrations&open=shopify" target="_blank" rel="noopener noreferrer">
+        <div className="flex items-center gap-3">
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors
+            ${variant === 'primary' ? 'bg-white/20' : 'bg-slate-100 group-hover:bg-white border border-slate-200'}`}>
+            <Store size={14} className={variant === 'primary' ? 'text-white' : 'text-slate-600'} />
+          </div>
+          <div>
+            <h4 className={`text-[13px] font-bold leading-tight ${variant === 'primary' ? 'text-white' : 'text-slate-900'}`}>
+              {title}
+            </h4>
+          </div>
         </div>
-        <div>
-          <h4 className={`text-[13px] font-bold leading-tight ${variant === 'primary' ? 'text-white' : 'text-slate-900'}`}>
-            {title}
-          </h4>
+        <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-transform group-hover:translate-x-0.5
+          ${variant === 'primary' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500 group-hover:bg-slate-900 group-hover:text-white'}`}>
+          <ChevronRight size={14} />
         </div>
-      </div>
-      <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-transform group-hover:translate-x-0.5
-        ${variant === 'primary' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500 group-hover:bg-[#FF5A1F] group-hover:text-white'}`}>
-        <ChevronRight size={14} />
-      </div>
-    </button>
+      </a>
+    </Button>
   );
 
   return (

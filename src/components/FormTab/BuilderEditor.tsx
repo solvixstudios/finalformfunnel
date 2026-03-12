@@ -25,6 +25,7 @@ import { UrgencyTextEditor } from './editors/UrgencyTextEditor';
 import { UrgencyTimerEditor } from './editors/UrgencyTimerEditor';
 import { VariantsEditor } from './editors/VariantsEditor';
 import { ShopifyEditor } from './editors/ShopifyEditor';
+import { WoocommerceEditor } from './editors/WoocommerceEditor';
 import { ComingSoonEditor } from './editors/ComingSoonEditor';
 
 // Configuration map for editors
@@ -49,7 +50,7 @@ const EDITORS_MAP: Record<string, React.FC<unknown>> = {
     tiktok_pixel: TikTokPixelEditor,
     urgencyQuantity: UrgencyQuantityEditor,
     shopify: ShopifyEditor,
-    woocommerce: ComingSoonEditor,
+    woocommerce: WoocommerceEditor,
     webhook: ComingSoonEditor,
 };
 
