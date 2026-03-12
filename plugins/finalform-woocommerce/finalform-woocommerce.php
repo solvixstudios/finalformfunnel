@@ -3,7 +3,7 @@
  * Plugin Name: Final Form for WooCommerce
  * Plugin URI: https://finalform.app
  * Description: Connect your WooCommerce store to Final Form — the premium order form builder for e-commerce.
- * Version: 1.4.3
+ * Version: 1.4.4
  * Author: Solvix Studios
  * Author URI: https://solvixstudios.com
  * Requires at least: 5.8
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // ─── Constants ───────────────────────────────────────────────────────────────
-define( 'FINALFORM_WC_VERSION', '1.4.3' );
+define( 'FINALFORM_WC_VERSION', '1.4.4' );
 define( 'FINALFORM_WC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'FINALFORM_WC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'FINALFORM_WC_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
