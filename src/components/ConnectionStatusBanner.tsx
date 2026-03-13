@@ -1,6 +1,7 @@
 import { useConnectionStatus } from '@/hooks/useConnectionStatus';
 import { WifiOff, ServerCrash, Zap, CheckCircle2, Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 
 /**
  * Animated banner that slides in from the top when connection issues are detected.
@@ -10,6 +11,10 @@ export const ConnectionStatusBanner = () => {
     const { status, justReconnected, latency } = useConnectionStatus();
     const [visible, setVisible] = useState(false);
     const [displayState, setDisplayState] = useState(status);
+    const location = useLocation();
+
+    // Only show on dashboard
+    const isDashboard = location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/admin');
 
     // Debounce visibility: only show after issue persists for 2s
     useEffect(() => {
@@ -34,7 +39,7 @@ export const ConnectionStatusBanner = () => {
         return () => clearTimeout(timer);
     }, [status, justReconnected]);
 
-    if (!visible && !justReconnected) return null;
+    if ((!visible && !justReconnected) || !isDashboard) return null;
 
     const configs = {
         offline: {
@@ -81,14 +86,14 @@ export const ConnectionStatusBanner = () => {
     return (
         <div
             className={`
-        fixed top-0 left-0 right-0 z-[9999]
+        fixed bottom-4 right-4 z-[9999]
         transition-all duration-500 ease-out
-        ${visible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}
+        ${visible ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-4 opacity-0 scale-95'}
       `}
         >
             <div
                 className={`
-          mx-auto max-w-[280px] mt-3
+          max-w-[280px]
           bg-gradient-to-r ${config.bg}
           backdrop-blur-xl
           border ${config.border}
@@ -100,7 +105,7 @@ export const ConnectionStatusBanner = () => {
         `}
             >
                 {/* Status Dot */}
-                <div className="relative flex items-center justify-center">
+                <div className="relative flex items-center justify-center shrink-0">
                     <div className={`w-2 h-2 rounded-full ${config.dot}`} />
                     {config.dot.includes('animate') && (
                         <div className={`absolute w-2 h-2 rounded-full ${config.dot} opacity-50 scale-150`} />
@@ -111,14 +116,14 @@ export const ConnectionStatusBanner = () => {
                 {config.icon}
 
                 {/* Text */}
-                <div className="flex-1 min-w-0">
-                    <p className="text-[12px] font-bold leading-tight tracking-wide">{config.title}</p>
-                    <p className="text-[10px] font-medium opacity-80 leading-tight mt-0.5">{config.subtitle}</p>
+                <div className="flex-1 min-w-0 pr-1">
+                    <p className="text-[11px] font-bold leading-tight tracking-wide">{config.title}</p>
+                    <p className="text-[9px] font-medium opacity-80 leading-tight mt-0.5">{config.subtitle}</p>
                 </div>
 
                 {/* Spinner for server-down */}
                 {'spinner' in config && config.spinner && (
-                    <Loader2 size={14} className="animate-spin opacity-70 shrink-0" />
+                    <Loader2 size={12} className="animate-spin opacity-70 shrink-0" />
                 )}
             </div>
         </div>
