@@ -293,9 +293,14 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
     // --- RENDER ---
     return (
         <div
-            className="ff-root w-full font-sans relative flex flex-col shadow-2xl select-none rounded-2xl overflow-hidden border border-slate-200/50"
+            className="ff-root w-full font-sans relative flex flex-col select-none overflow-hidden"
             dir={lang === 'ar' ? 'rtl' : 'ltr'}
-            style={buildRootStyles(config as any, lang)}
+            style={{
+                ...buildRootStyles(config as any, lang),
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                border: '1px solid rgba(226, 232, 240, 0.5)',
+                borderRadius: '16px'
+            }}
         >
             <style>{`
                 .custom-input::placeholder {

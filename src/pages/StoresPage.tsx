@@ -214,14 +214,14 @@ export default function StoresPage({ userId }: { userId: string }) {
         );
     }
 
-    const headerActions = (
+    const headerActions = useMemo(() => (
         <Link
             to="/dashboard/integrations"
             className="inline-flex items-center gap-2 h-9 px-4 rounded-lg text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition-all shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]"
         >
             <Store size={14} /> Connect New Store
         </Link>
-    );
+    ), []);
 
     const breadcrumbs = [{ label: 'Stores' }];
 

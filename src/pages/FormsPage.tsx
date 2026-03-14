@@ -146,7 +146,9 @@ export const FormsPage = () => {
         currentPage * ITEMS_PER_PAGE
     );
 
-    useMemo(() => setCurrentPage(1), [searchQuery, filter, sortBy]);
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, filter, sortBy]);
 
     // Handlers
     const handleCreateNew = () => {
@@ -205,7 +207,7 @@ export const FormsPage = () => {
 
 
     // Header actions
-    const headerActions = (
+    const headerActions = useMemo(() => (
         <div className="flex items-center gap-2">
             <Button
                 variant="outline"
@@ -226,7 +228,7 @@ export const FormsPage = () => {
                 New Form
             </Button>
         </div>
-    );
+    ), [isCreating]);
 
     return (
         <>
@@ -522,6 +524,7 @@ export const FormsPage = () => {
             </Dialog>
         </>
     );
+
 };
 
 export default FormsPage;

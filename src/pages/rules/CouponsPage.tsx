@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Plus, Trash2, Save, Ticket, MoreHorizontal, Pencil, Loader2, X } from 'lucide-react';
 import { useFormRules, CouponRule } from '@/hooks/useFormRules';
 import PromoCodeManager, { PromoCode } from '@/components/managers/PromoCodeManager';
@@ -65,14 +65,14 @@ const CouponsPage: React.FC<CouponsPageProps> = ({ userId }) => {
     const [ruleLabels, setRuleLabels] = useState<string[]>([]);
     const [labelInput, setLabelInput] = useState('');
 
-    const handleCreateNew = () => {
+    const handleCreateNew = useCallback(() => {
         setEditingRule({ id: '', name: 'Nouveaux Codes Promo', createdAt: 0, updatedAt: 0, coupons: [], config: { enabled: true, required: false } });
         setLocalCoupons([]);
         setRuleName('Nouveaux Codes Promo');
         resetPreview();
         setRuleLabels([]);
         setLabelInput('');
-    };
+    }, []);
 
     const handleEdit = (rule: CouponRule) => {
         setEditingRule(rule);
@@ -106,7 +106,7 @@ const CouponsPage: React.FC<CouponsPageProps> = ({ userId }) => {
 
     const handlePreviewRemove = () => resetPreview();
 
-    const handleSave = async () => {
+    const handleSave = useCallback(async () => {
         if (!editingRule) return;
         setIsSaving(true);
         try {
@@ -117,7 +117,7 @@ const CouponsPage: React.FC<CouponsPageProps> = ({ userId }) => {
         } finally {
             setIsSaving(false);
         }
-    };
+    }, [editingRule, ruleName, ruleLabels, localCoupons, saveRule]);
 
     const handleDelete = async (ruleId: string) => {
         if (confirm("Voulez-vous vraiment supprimer ce profil de codes promo ?")) {
@@ -125,7 +125,18 @@ const CouponsPage: React.FC<CouponsPageProps> = ({ userId }) => {
         }
     };
 
-    // --- EDITOR VIEW ---
+    const editorActions = useMemo(() => (
+        <Button
+            onClick={handleSave}
+            disabled={isSaving}
+            size="sm"
+            className="h-8 rounded-lg text-xs font-bold px-4 shadow-sm"
+        >
+            {isSaving ? <Loader2 size={13} className="mr-1.5 animate-spin" /> : <Save size={13} className="mr-1.5" />}
+            Enregistrer
+        </Button>
+    ), [isSaving, handleSave]);
+
     if (editingRule) {
         const previewConfig = buildPreviewConfig(localCoupons);
         const subtotal = 3500;
@@ -153,17 +164,7 @@ const CouponsPage: React.FC<CouponsPageProps> = ({ userId }) => {
                     icon={Ticket}
                     backHref="/dashboard/rules/coupons"
                     onBack={() => setEditingRule(null)}
-                    actions={
-                        <Button
-                            onClick={handleSave}
-                            disabled={isSaving}
-                            size="sm"
-                            className="h-8 rounded-lg text-xs font-bold px-4 shadow-sm"
-                        >
-                            {isSaving ? <Loader2 size={13} className="mr-1.5 animate-spin" /> : <Save size={13} className="mr-1.5" />}
-                            Enregistrer
-                        </Button>
-                    }
+                    actions={editorActions}
                 />
 
                 {/* Labels Editor */}
@@ -274,7 +275,7 @@ const CouponsPage: React.FC<CouponsPageProps> = ({ userId }) => {
     }
 
     // --- LIST VIEW ---
-    const headerActions = (
+    const headerActions = useMemo(() => (
         <Button
             size="sm"
             onClick={handleCreateNew}
@@ -283,7 +284,7 @@ const CouponsPage: React.FC<CouponsPageProps> = ({ userId }) => {
             <Plus size={13} className="mr-1.5" />
             Nouveau Profil
         </Button>
-    );
+    ), [handleCreateNew]);
 
     return (
         <div className="max-w-[1600px] mx-auto w-full space-y-5 flex flex-col pt-2 md:pt-4 pb-8">

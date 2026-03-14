@@ -16,7 +16,7 @@ const installationLocks = new Set<string>();
 
 export async function enableLoader(req: Request, res: Response) {
     const { subdomain, userId, version } = req.body;
-    const requestedVersion = version || '1.0.2'; // Fallback if client didn't supply it
+    const requestedVersion = version || '2.2.1'; // Fallback if client didn't supply it
 
     if (!subdomain || !userId) {
         throw AppError.badRequest('Missing subdomain or userId');
@@ -66,8 +66,9 @@ export async function enableLoader(req: Request, res: Response) {
         }
 
         // Install new loader
+        const origin = req.headers.origin || 'https://finalformfunnel.web.app';
         const sfToken = await shopifyApi.createStorefrontToken(shopDomain, accessToken);
-        const src = `https://finalformfunnel.web.app/finalform-loader.prod.js?sf_token=${sfToken}&v=${requestedVersion}`;
+        const src = `${origin}/finalform-loader.prod.js?sf_token=${sfToken}&v=${requestedVersion}`;
         const newTag = await shopifyApi.createScriptTag(shopDomain, accessToken, src);
 
         res.json({
@@ -113,3 +114,4 @@ export async function disableLoader(req: Request, res: Response) {
 
     res.json({ success: true, removed: false, message: 'Loader was not installed.' });
 }
+

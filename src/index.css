@@ -1,6 +1,5 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@config "../tailwind.config.ts";
 
 /* ============================================
    MIDNIGHT EDGE DESIGN SYSTEM
@@ -9,7 +8,8 @@
    ============================================ */
 
 @layer base {
-  :root {
+  :root,
+  :host {
     /* Layout variables */
     --header-height: 4rem;
     --sidebar-width-expanded: 16rem;
@@ -82,7 +82,8 @@
     --sidebar-ring: 16 100% 55%;
   }
 
-  .dark {
+  .dark,
+  :host(.dark) {
     --background: 240 10% 5%;
     --foreground: 220 14% 96%;
 

@@ -62,6 +62,105 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
+// --- Extracted Context Consumers ---
+// By extracting these, we prevent DashboardLayoutContent from re-rendering
+// (and cloning children) every time the header actions change.
+
+const HeaderActionsRenderer = () => {
+  const { actions } = useHeaderActions();
+  return <>{actions}</>;
+};
+
+const HeaderCenterRenderer = () => {
+  const { centerContent } = useHeaderActions();
+  return <>{centerContent}</>;
+};
+
+const UnsavedChangesDialog = ({ 
+  show, 
+  onClose, 
+  pendingActionRef,
+  isSavingBeforeLeave,
+  setIsSavingBeforeLeave 
+}: { 
+  show: boolean; 
+  onClose: () => void;
+  pendingActionRef: React.MutableRefObject<(() => void) | null>;
+  isSavingBeforeLeave: boolean;
+  setIsSavingBeforeLeave: (saving: boolean) => void;
+}) => {
+  const { onSaveBeforeLeave } = useHeaderActions();
+
+  const handleSaveAndLeave = async () => {
+    if (!onSaveBeforeLeave) return;
+    setIsSavingBeforeLeave(true);
+    try {
+      await onSaveBeforeLeave();
+      if (pendingActionRef.current) {
+        const markClean = useFormStore.getState().markClean;
+        markClean();
+        const setFormId = useFormStore.getState().setFormId;
+        setFormId(null);
+        pendingActionRef.current();
+      }
+      onClose();
+      pendingActionRef.current = null;
+    } catch (error) {
+      console.error("Save before leave failed:", error);
+    } finally {
+      setIsSavingBeforeLeave(false);
+    }
+  };
+
+  return (
+    <AlertDialog open={show} onOpenChange={(open) => { if (!isSavingBeforeLeave) onClose(); }}>
+      <AlertDialogContent>
+        <button
+          onClick={onClose}
+          disabled={isSavingBeforeLeave}
+          className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
+        >
+          <X className="h-4 w-4" />
+          <span className="sr-only">Close</span>
+        </button>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
+          <AlertDialogDescription>
+            You have unsaved changes. Do you want to save them before leaving?
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-2 sm:justify-end mt-4">
+          <AlertDialogAction
+            disabled={isSavingBeforeLeave}
+            onClick={() => {
+              if (pendingActionRef.current) pendingActionRef.current();
+              onClose();
+              pendingActionRef.current = null;
+            }}
+            className="bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 border border-red-200"
+          >
+            Discard
+          </AlertDialogAction>
+          {onSaveBeforeLeave && (
+            <Button
+              onClick={handleSaveAndLeave}
+              disabled={isSavingBeforeLeave}
+              className="h-10 px-4 font-semibold gap-2"
+            >
+              {isSavingBeforeLeave ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <Save size={14} />
+              )}
+              Save & Leave
+            </Button>
+          )}
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+};
+
 const DashboardLayoutContent = ({
   user,
   currentPage,
@@ -74,7 +173,6 @@ const DashboardLayoutContent = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showPlanPicker, setShowPlanPicker] = useState(false);
   const { dir } = useI18n();
-  const { actions, centerContent, onSaveBeforeLeave } = useHeaderActions();
   const hasUnsavedChanges = useFormStore((state) => state.hasUnsavedChanges);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
   const [isSavingBeforeLeave, setIsSavingBeforeLeave] = useState(false);
@@ -91,7 +189,7 @@ const DashboardLayoutContent = ({
   const protectedNavigate = (path: string, action?: () => void) => {
     if (path === currentPage && !action) return;
 
-    if (hasUnsavedChanges()) {
+    if (isBuilderPage && hasUnsavedChanges()) {
       pendingActionRef.current = () => {
         const markClean = useFormStore.getState().markClean;
         const setFormId = useFormStore.getState().setFormId;
@@ -107,30 +205,7 @@ const DashboardLayoutContent = ({
     }
   };
 
-  const handleSaveAndLeave = async () => {
-    if (!onSaveBeforeLeave) return;
-    setIsSavingBeforeLeave(true);
-    try {
-      await onSaveBeforeLeave();
-      // After save, navigate
-      if (pendingActionRef.current) {
-        // Don't clear form — it was saved. Just navigate.
-        const markClean = useFormStore.getState().markClean;
-        markClean();
-        // Extract only the navigate call from the pending action
-        const setFormId = useFormStore.getState().setFormId;
-        setFormId(null);
-        pendingActionRef.current();
-      }
-      setShowUnsavedDialog(false);
-      pendingActionRef.current = null;
-    } catch (error) {
-      console.error("Save before leave failed:", error);
-      // Keep dialog open so user can choose another option
-    } finally {
-      setIsSavingBeforeLeave(false);
-    }
-  };
+  // handleSaveAndLeave moved to UnsavedChangesDialog
 
   const navGroups: NavGroup[] = useMemo(() => [
     {
@@ -193,7 +268,7 @@ const DashboardLayoutContent = ({
             <span className="font-bold text-slate-900 text-sm">Final Form</span>
           </div>
           <div className="flex items-center gap-2">
-            {actions}
+            <HeaderActionsRenderer />
           </div>
         </header>
 
@@ -202,13 +277,13 @@ const DashboardLayoutContent = ({
           {/* Left Side: Breadcrumbs */}
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <div className="flex-1 min-w-0 truncate">
-              {centerContent}
+              <HeaderCenterRenderer />
             </div>
           </div>
 
           {/* Right Actions */}
           <div className="flex items-center gap-3 shrink-0">
-            {actions}
+            <HeaderActionsRenderer />
           </div>
         </header>
 
@@ -242,51 +317,13 @@ const DashboardLayoutContent = ({
         </main>
 
         {/* Unsaved Changes Dialog */}
-        <AlertDialog open={showUnsavedDialog} onOpenChange={(open) => { if (!isSavingBeforeLeave) setShowUnsavedDialog(open); }}>
-          <AlertDialogContent>
-            <button
-              onClick={() => setShowUnsavedDialog(false)}
-              disabled={isSavingBeforeLeave}
-              className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
-            >
-              <X className="h-4 w-4" />
-              <span className="sr-only">Close</span>
-            </button>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
-              <AlertDialogDescription>
-                You have unsaved changes. Do you want to save them before leaving?
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-2 sm:justify-end mt-4">
-              <AlertDialogAction
-                disabled={isSavingBeforeLeave}
-                onClick={() => {
-                  if (pendingActionRef.current) pendingActionRef.current();
-                  setShowUnsavedDialog(false);
-                  pendingActionRef.current = null;
-                }}
-                className="bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 border border-red-200"
-              >
-                Discard
-              </AlertDialogAction>
-              {onSaveBeforeLeave && (
-                <Button
-                  onClick={handleSaveAndLeave}
-                  disabled={isSavingBeforeLeave}
-                  className="h-10 px-4 font-semibold gap-2"
-                >
-                  {isSavingBeforeLeave ? (
-                    <Loader2 size={14} className="animate-spin" />
-                  ) : (
-                    <Save size={14} />
-                  )}
-                  Save & Leave
-                </Button>
-              )}
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <UnsavedChangesDialog
+          show={showUnsavedDialog}
+          onClose={() => setShowUnsavedDialog(false)}
+          pendingActionRef={pendingActionRef}
+          isSavingBeforeLeave={isSavingBeforeLeave}
+          setIsSavingBeforeLeave={setIsSavingBeforeLeave}
+        />
 
         {/* Plan Picker Popup — triggered from upgrade banner */}
         <PlanPickerDialog

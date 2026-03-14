@@ -41,11 +41,12 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
 
         return (
             <div
-                className="w-12 h-12 rounded-xl border-2 flex items-center justify-center shadow-sm relative overflow-hidden bg-white"
+                className="w-12 h-12 rounded-xl flex items-center justify-center relative overflow-hidden bg-white shrink-0"
                 style={{
                     color: config.accentColor,
-                    borderColor: config.inputBorderColor || '#e2e8f0',
+                    border: `2px solid ${config.inputBorderColor || '#e2e8f0'}`,
                     backgroundColor: config.formBackground || '#ffffff',
+                    boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
                 }}
             >
                 {imageUrl ? (
@@ -145,13 +146,17 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
             <button
                 type="button"
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); onLanguageToggle(); }}
-                className={`w-9 h-9 text-[11px] font-black border-2 transition-all flex items-center justify-center hover:opacity-80 shadow-sm shrink-0 ${isBanner ? 'rounded-lg border-white/30 text-white/90 hover:bg-white/10' : 'rounded-lg'
+                className={`w-9 h-9 text-[11px] font-black transition-all flex items-center justify-center hover:opacity-80 shrink-0 ${isBanner ? 'rounded-lg text-white/90 hover:bg-white/10' : 'rounded-lg'
                     }`}
                 style={!isBanner ? {
-                    borderColor: config.inputBorderColor || '#e2e8f0',
+                    border: `2px solid ${config.inputBorderColor || '#e2e8f0'}`,
                     color: config.textColor || '#64748b',
                     backgroundColor: config.formBackground || '#ffffff',
-                } : {}}
+                    boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
+                } : {
+                    border: '2px solid rgba(255,255,255,0.3)',
+                    boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
+                }}
             >
                 {lang === 'fr' ? 'ع' : 'FR'}
             </button>
@@ -162,8 +167,12 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
     if (headerStyle === 'classic') {
         return (
             <div
-                className="relative z-20 flex items-center gap-4 p-5 border-b shadow-sm"
-                style={headerBaseStyles}
+                className="relative z-20 flex items-center gap-4 p-5"
+                style={{
+                    ...headerBaseStyles,
+                    borderBottom: `1px solid ${config.inputBorderColor || '#e2e8f0'}`,
+                    boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
+                }}
             >
                 <div className="flex items-center gap-4 flex-row w-full">
                     {productImage}
@@ -178,7 +187,14 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
     // Centered style
     if (headerStyle === 'centered') {
         return (
-            <div className="relative z-20 p-6 border-b shadow-sm" style={headerBaseStyles}>
+            <div 
+                className="relative z-20 p-6" 
+                style={{
+                    ...headerBaseStyles,
+                    borderBottom: `1px solid ${config.inputBorderColor || '#e2e8f0'}`,
+                    boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
+                }}
+            >
                 <div className="absolute top-4 right-4 z-30">
                     {renderLangSwitcher(false)}
                 </div>
@@ -216,8 +232,11 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
     if (headerStyle === 'minimal') {
         return (
             <div
-                className="relative z-20 flex items-center justify-between p-5 border-b"
-                style={headerBaseStyles}
+                className="relative z-20 flex items-center justify-between p-5"
+                style={{
+                    ...headerBaseStyles,
+                    borderBottom: `1px solid ${config.inputBorderColor || '#e2e8f0'}`
+                }}
             >
                 <div className="flex-1 min-w-0 pr-4">
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -292,8 +311,11 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
     if (headerStyle === 'compact') {
         return (
             <div
-                className="relative z-20 flex items-center justify-between px-4 py-3 border-b bg-slate-50/50"
-                style={headerBaseStyles}
+                className="relative z-20 flex items-center justify-between px-4 py-3 bg-slate-50/50"
+                style={{
+                    ...headerBaseStyles,
+                    borderBottom: `1px solid ${config.inputBorderColor || '#e2e8f0'}`
+                }}
             >
                 <div className="flex items-center gap-3 flex-1 min-w-0 pr-2">
                     {config.header?.showProductImage !== false && (
@@ -345,8 +367,12 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
     // Default fallback to classic
     return (
         <div
-            className="relative z-20 flex items-center gap-4 p-5 border-b shadow-sm"
-            style={headerBaseStyles}
+            className="relative z-20 flex items-center gap-4 p-5"
+            style={{
+                ...headerBaseStyles,
+                borderBottom: `1px solid ${config.inputBorderColor || '#e2e8f0'}`,
+                boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
+            }}
         >
             <div className="flex items-center gap-4 flex-row w-full pr-8">
                 {productImage}

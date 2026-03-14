@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Plus, Trash2, Save, Tag, MoreHorizontal, Pencil, Loader2, X } from 'lucide-react';
 import { useFormRules, OfferRule } from '@/hooks/useFormRules';
 import PacksManager from '@/components/managers/PacksManager';
@@ -52,14 +52,14 @@ const OffersPage: React.FC<OffersPageProps> = ({ userId }) => {
     const [ruleLabels, setRuleLabels] = useState<string[]>([]);
     const [labelInput, setLabelInput] = useState('');
 
-    const handleCreateNew = () => {
+    const handleCreateNew = useCallback(() => {
         setEditingRule({ id: '', name: 'Nouvelles Offres', createdAt: 0, updatedAt: 0, offers: [] });
         setLocalOffers([]);
         setRuleName('Nouvelles Offres');
         setPreviewSelectedOffer('');
         setRuleLabels([]);
         setLabelInput('');
-    };
+    }, []);
 
     const handleEdit = (rule: OfferRule) => {
         setEditingRule(rule);
@@ -70,7 +70,7 @@ const OffersPage: React.FC<OffersPageProps> = ({ userId }) => {
         setLabelInput('');
     };
 
-    const handleSave = async () => {
+    const handleSave = useCallback(async () => {
         if (!editingRule) return;
         setIsSaving(true);
         try {
@@ -81,7 +81,7 @@ const OffersPage: React.FC<OffersPageProps> = ({ userId }) => {
         } finally {
             setIsSaving(false);
         }
-    };
+    }, [editingRule, ruleName, ruleLabels, localOffers, saveRule]);
 
     const handleDelete = async (ruleId: string) => {
         if (confirm("Voulez-vous vraiment supprimer ce profil d'offres ?")) {
@@ -89,7 +89,18 @@ const OffersPage: React.FC<OffersPageProps> = ({ userId }) => {
         }
     };
 
-    // --- EDITOR VIEW ---
+    const editorActions = useMemo(() => (
+        <Button
+            onClick={handleSave}
+            disabled={isSaving}
+            size="sm"
+            className="h-8 rounded-lg text-xs font-bold px-4 shadow-sm"
+        >
+            {isSaving ? <Loader2 size={13} className="mr-1.5 animate-spin" /> : <Save size={13} className="mr-1.5" />}
+            Enregistrer
+        </Button>
+    ), [isSaving, handleSave]);
+
     if (editingRule) {
         const basePrice = 3500;
         const selectedOffer = localOffers.find(o => o.id === previewSelectedOffer);
@@ -114,17 +125,7 @@ const OffersPage: React.FC<OffersPageProps> = ({ userId }) => {
                     icon={Tag}
                     backHref="/dashboard/rules/offers"
                     onBack={() => setEditingRule(null)}
-                    actions={
-                        <Button
-                            onClick={handleSave}
-                            disabled={isSaving}
-                            size="sm"
-                            className="h-8 rounded-lg text-xs font-bold px-4 shadow-sm"
-                        >
-                            {isSaving ? <Loader2 size={13} className="mr-1.5 animate-spin" /> : <Save size={13} className="mr-1.5" />}
-                            Enregistrer
-                        </Button>
-                    }
+                    actions={editorActions}
                 />
 
                 {/* Labels Editor */}
@@ -225,7 +226,7 @@ const OffersPage: React.FC<OffersPageProps> = ({ userId }) => {
     }
 
     // --- LIST VIEW ---
-    const headerActions = (
+    const headerActions = useMemo(() => (
         <Button
             size="sm"
             onClick={handleCreateNew}
@@ -234,7 +235,7 @@ const OffersPage: React.FC<OffersPageProps> = ({ userId }) => {
             <Plus size={13} className="mr-1.5" />
             Nouveau Profil
         </Button>
-    );
+    ), [handleCreateNew]);
 
     return (
         <div className="max-w-[1600px] mx-auto w-full space-y-5 flex flex-col pt-2 md:pt-4 pb-8">

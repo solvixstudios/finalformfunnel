@@ -286,7 +286,7 @@ export default function OrdersPage({ userId }: OrdersPageProps) {
         setSelectedOrders([]);
     };
 
-    const headerActions = (
+    const headerActions = useMemo(() => (
         <div className="flex items-center gap-2">
             {selectedOrders.length > 0 && activeDevProfiles.length > 0 && (
                 <DropdownMenu>
@@ -320,7 +320,7 @@ export default function OrdersPage({ userId }: OrdersPageProps) {
                 Export CSV
             </Button>
         </div>
-    );
+    ), [selectedOrders.length, activeDevProfiles, filteredOrders.length, exportCSV, handleDispatch]);
 
     if (loading) {
         return (

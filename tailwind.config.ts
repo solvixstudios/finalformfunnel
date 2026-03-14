@@ -2,7 +2,7 @@ import type { Config } from "tailwindcss";
 import tailwindAnimate from "tailwindcss-animate";
 
 export default {
-  darkMode: ["class"],
+  darkMode: "class",
   content: [
     "./pages/**/*.{ts,tsx}",
     "./components/**/*.{ts,tsx}",
@@ -104,6 +104,25 @@ export default {
         },
         surface: "#F8F7F5",
         canvas: "#F4F3F1",
+        obsidian: "#0D0D0D",
+        zinc: {
+          DEFAULT: "#18181B",
+          50: "#FAFAFA",
+          100: "#F4F4F5",
+          200: "#E4E4E7",
+          300: "#D4D4D8",
+          400: "#A1A1AA",
+          500: "#71717A",
+          600: "#52525B",
+          700: "#3F3F46",
+          800: "#27272A",
+          900: "#18181B",
+          950: "#09090B",
+        },
+        neon: {
+          emerald: "#10B981",
+          violet: "#8B5CF6",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -127,6 +146,10 @@ export default {
         "float-gentle": "float-gentle 6s ease-in-out infinite",
         "brand-glow": "brand-glow-pulse 4s ease-in-out infinite",
         "pulse-subtle": "pulse-subtle 2.5s ease-in-out infinite",
+        "pulse-loop": "pulse-loop 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+        "spin-loop": "spin-loop 3s linear infinite",
+        "slide-loop": "slide-loop 2s linear infinite",
+        "float-loop": "float-loop 3s ease-in-out infinite",
       },
       keyframes: {
         "accordion-down": {
@@ -143,6 +166,22 @@ export default {
         "pulse-subtle": {
           "0%, 100%": { opacity: "1" },
           "50%": { opacity: "0.65" },
+        },
+        "pulse-loop": {
+          "0%, 100%": { opacity: "1", transform: "scale(1)" },
+          "50%": { opacity: "0.8", transform: "scale(1.05)" },
+        },
+        "spin-loop": {
+          "from": { strokeDashoffset: "20" },
+          "to": { strokeDashoffset: "0" },
+        },
+        "slide-loop": {
+          "from": { transform: "translateX(-100%)" },
+          "to": { transform: "translateX(400%)" },
+        },
+        "float-loop": {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-10px)" },
         },
       },
       backgroundImage: {

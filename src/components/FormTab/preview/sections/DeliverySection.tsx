@@ -44,10 +44,10 @@ export const DeliverySection: React.FC<DeliverySectionProps> = ({
     const isDeskEnabled = config.enableDeskDelivery !== false;
 
     // Config
-    const layout = config.sectionSettings?.delivery?.layout || 'cards';
+    const layout = (config.sectionSettings?.delivery as any)?.layout || 'cards';
     const isList = layout === 'list';
     const isCompact = layout === 'compact';
-    const showPrices = config.sectionSettings?.delivery?.showPrices ?? true;
+    const showPrices = (config.sectionSettings?.delivery as any)?.showPrices ?? true;
     const shouldShowPrice = showPrices && hasWilaya;
 
     const deliveryOptions = [
@@ -87,11 +87,11 @@ export const DeliverySection: React.FC<DeliverySectionProps> = ({
                             className={`relative border-2 transition-all duration-200 ${isList
                                 ? 'flex items-center p-3 gap-4 text-left'
                                 : isCompact
-                                    ? 'p-3 text-center block'
+                                    ? 'p-3 px-10 text-center block'
                                     : 'p-4 text-center block'
                                 } ${isDisabled ? 'opacity-60 cursor-not-allowed' : ''} ${isSelected && !isDisabled ? 'shadow-lg' : ''}`}
 
-                            style={buildOptionCardStyles(config as unknown, { selected: isSelected, disabled: isDisabled })}
+                            style={buildOptionCardStyles(config as any, { selected: isSelected, disabled: isDisabled })}
                         >
                             {/* Selection indicator */}
                             {!isDisabled && (
@@ -100,7 +100,7 @@ export const DeliverySection: React.FC<DeliverySectionProps> = ({
                                         } ${isList
                                             ? ''
                                             : isCompact
-                                                ? 'absolute top-1/2 -translate-y-1/2 right-3'
+                                                ? 'absolute top-2 right-2'
                                                 : 'absolute top-3 right-3'
                                         }`}
                                     style={{
@@ -134,7 +134,7 @@ export const DeliverySection: React.FC<DeliverySectionProps> = ({
                                 {/* Label */}
                                 <div
                                     className={`font-bold ${isList ? '' : 'mb-0.5'
-                                        } ${isDisabled ? 'line-through' : ''} ${isCompact ? 'text-sm' : 'text-sm'
+                                        } ${isDisabled ? 'line-through' : ''} ${isCompact ? 'text-[13px] leading-tight' : 'text-sm'
                                         }`}
                                     style={{
                                         color: isSelected && !isDisabled ? '#ffffff' : (config.textColor || '#334155'),
@@ -146,7 +146,7 @@ export const DeliverySection: React.FC<DeliverySectionProps> = ({
                                 {/* Price */}
                                 {shouldShowPrice && (
                                     <div
-                                        className={`font-semibold ${isCompact ? 'text-xs' : 'text-xs'
+                                        className={`font-semibold ${isCompact ? 'text-[11px]' : 'text-xs'
                                             }`}
                                         style={{
                                             color: isSelected && !isDisabled

@@ -156,5 +156,11 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
     
+    // The actual collection used by adminSettingsService.ts
+    match /appConfig/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
   }
 }

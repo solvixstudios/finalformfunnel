@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { Camera, Save, Trash2, User as UserIcon, Copy, Loader2, FileText } from 'lucide-react';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useI18n } from '../lib/i18n/i18nContext';
@@ -131,17 +131,19 @@ const SettingsPage = ({ user, onUserUpdate }: SettingsPageProps) => {
         </div>
     );
 
+    const memoizedActions = useMemo(() => (
+        <Button disabled={isSaving} onClick={handleSave} size="sm" className="gap-2 rounded-md shadow-sm font-semibold">
+            {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+            Save
+        </Button>
+    ), [isSaving, handleSave]);
+
     return (
         <div className="flex flex-col font-sans w-full pb-12">
             <PageHeader
                 title="Settings"
                 breadcrumbs={[{ label: 'Settings' }]}
-                actions={
-                    <Button disabled={isSaving} onClick={handleSave} size="sm" className="gap-2 rounded-md shadow-sm font-semibold">
-                        {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-                        Save
-                    </Button>
-                }
+                actions={memoizedActions}
             >
                 {headerTabs}
             </PageHeader>

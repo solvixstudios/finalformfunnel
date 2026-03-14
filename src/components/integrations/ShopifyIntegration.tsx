@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faShopify } from '@fortawesome/free-brands-svg-icons';
 import { Badge } from '@/components/ui/badge';
@@ -43,6 +43,7 @@ import { useConnectedStores } from '@/lib/firebase/hooks';
 import { claimStoreOwnership } from '@/lib/firebase/storeOwnership';
 import { getAdapter, LOADER_VERSION } from '@/lib/integrations';
 import { cn } from '@/lib/utils';
+import { useAssignmentsContext } from '@/contexts/AssignmentsContext';
 import { notifyProductSyncComplete, syncProductsFromShopify } from '@/lib/products';
 // @ts-ignore
 import feedData from '../../../feed.json';
@@ -172,21 +173,9 @@ interface ShopifyIntegrationProps {
     onBack?: () => void;
 }
 
-// Compare semantic versions. Returns -1 if v1 < v2, 0 if v1 === v2, 1 if v1 > v2.
-function compareVersions(v1: string, v2: string): number {
-    const parts1 = v1.split('.').map(Number);
-    const parts2 = v2.split('.').map(Number);
-    for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
-        const p1 = parts1[i] || 0;
-        const p2 = parts2[i] || 0;
-        if (p1 < p2) return -1;
-        if (p1 > p2) return 1;
-    }
-    return 0;
-}
-
 export function ShopifyIntegration({ userId, onBack }: ShopifyIntegrationProps) {
     const { stores, addStore, updateStore, deleteStore } = useConnectedStores(userId);
+    const { assignments } = useAssignmentsContext();
 
     const [view, setView] = useState<'list' | 'add'>('list');
     const [addTab, setAddTab] = useState<'setup' | 'guide'>('setup');
@@ -360,6 +349,15 @@ export function ShopifyIntegration({ userId, onBack }: ShopifyIntegrationProps) 
 
 
     const handleDeleteStore = async (storeId: string) => {
+        // Guard: check if the store is used in any form assignments
+        const linkedAssignments = assignments.filter(a => a.storeId === storeId);
+        if (linkedAssignments.length > 0) {
+            toast.error(
+                `Cette boutique est liée à ${linkedAssignments.length} formulaire(s). Veuillez d'abord délier la boutique de tous les formulaires avant de la déconnecter.`
+            );
+            return;
+        }
+
         if (confirm('Voulez-vous vraiment déconnecter cette boutique ? Toutes les configurations liées seront perdues.')) {
             setProcessingStoreId(storeId);
             try {
@@ -403,7 +401,82 @@ export function ShopifyIntegration({ userId, onBack }: ShopifyIntegrationProps) 
         });
     }, [shopifyStores]);
 
-    // --- EDITOR VIEW (Add Store) ---
+    const editorActions = useMemo(() => (
+        <div className="flex items-center gap-2">
+            <Sheet>
+                <SheetTrigger asChild>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 rounded-lg text-xs font-bold px-4 bg-white text-slate-700 shadow-sm border-slate-200"
+                    >
+                        <HelpCircle size={13} className="mr-1.5" />
+                        Guide d'intégration
+                    </Button>
+                </SheetTrigger>
+                <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+                    <SheetHeader className="mb-6">
+                        <SheetTitle className="text-xl font-bold text-slate-900">Guide d'intégration Shopify</SheetTitle>
+                        <p className="text-sm text-slate-500 mt-2 text-left">Suivez ces étapes pour générer les clés API de votre application personnalisée Shopify.</p>
+                    </SheetHeader>
+                    <ShopifyGuide />
+                </SheetContent>
+            </Sheet>
+            <TestConnectionButton
+                onTest={async () => {
+                    if (!shopifyForm.subdomain || !shopifyForm.clientId || !shopifyForm.clientSecret) {
+                        throw new Error("Veuillez remplir tous les champs avant de tester.");
+                    }
+                    const cleanDomain = shopifyForm.subdomain
+                        .replace(/https?:\/\//, '')
+                        .replace('.myshopify.com', '')
+                        .trim();
+                    try {
+                        const shopifyAdapter = getAdapter('shopify');
+                        const result = await shopifyAdapter.connect(cleanDomain, {
+                            clientId: shopifyForm.clientId.trim(),
+                            clientSecret: shopifyForm.clientSecret.trim(),
+                        }, userId);
+                        return result.success === true;
+                    } catch {
+                        return false;
+                    }
+                }}
+                label="Tester la connexion"
+            />
+            <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCancel}
+                className="h-8 rounded-lg text-xs font-bold px-4 bg-white text-slate-700 shadow-sm"
+            >
+                Annuler
+            </Button>
+            <Button
+                onClick={handleShopifyConnect}
+                disabled={isConnecting}
+                size="sm"
+                variant="default"
+                className="h-8 rounded-lg text-xs px-4 shadow-sm"
+            >
+                {isConnecting ? <Loader2 size={13} className="mr-1.5 animate-spin" /> : <Plus size={13} className="mr-1.5" />}
+                {isConnecting ? 'Connexion...' : 'Connecter'}
+            </Button>
+        </div>
+    ), [shopifyForm, isConnecting, userId]);
+
+    // IMPORTANT: headerActions must be declared BEFORE any early return to satisfy React's rules of hooks
+    const headerActions = useMemo(() => (
+        <Button
+            size="sm"
+            onClick={() => setView('add')}
+            className="h-8 rounded-lg text-xs font-bold px-4 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
+        >
+            <Plus size={13} className="mr-1.5" />
+            Connecter une boutique
+        </Button>
+    ), []);
+
     if (view === 'add') {
         return (
             <div className="flex-1 flex flex-col h-full bg-slate-50/50">
@@ -416,69 +489,7 @@ export function ShopifyIntegration({ userId, onBack }: ShopifyIntegrationProps) 
                         ]}
                         icon={ShopifyIcon}
                         onBack={handleCancel}
-                        actions={
-                            <div className="flex items-center gap-2">
-                                <Sheet>
-                                    <SheetTrigger asChild>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className="h-8 rounded-lg text-xs font-bold px-4 bg-white text-slate-700 shadow-sm border-slate-200"
-                                        >
-                                            <HelpCircle size={13} className="mr-1.5" />
-                                            Guide d'intégration
-                                        </Button>
-                                    </SheetTrigger>
-                                    <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
-                                        <SheetHeader className="mb-6">
-                                            <SheetTitle className="text-xl font-bold text-slate-900">Guide d'intégration Shopify</SheetTitle>
-                                            <p className="text-sm text-slate-500 mt-2 text-left">Suivez ces étapes pour générer les clés API de votre application personnalisée Shopify.</p>
-                                        </SheetHeader>
-                                        <ShopifyGuide />
-                                    </SheetContent>
-                                </Sheet>
-                                <TestConnectionButton
-                                    onTest={async () => {
-                                        if (!shopifyForm.subdomain || !shopifyForm.clientId || !shopifyForm.clientSecret) {
-                                            throw new Error("Veuillez remplir tous les champs avant de tester.");
-                                        }
-                                        const cleanDomain = shopifyForm.subdomain
-                                            .replace(/https?:\/\//, '')
-                                            .replace('.myshopify.com', '')
-                                            .trim();
-                                        try {
-                                            const shopifyAdapter = getAdapter('shopify');
-                                            const result = await shopifyAdapter.connect(cleanDomain, {
-                                                clientId: shopifyForm.clientId.trim(),
-                                                clientSecret: shopifyForm.clientSecret.trim(),
-                                            }, userId);
-                                            return result.success === true;
-                                        } catch {
-                                            return false;
-                                        }
-                                    }}
-                                    label="Tester la connexion"
-                                />
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={handleCancel}
-                                    className="h-8 rounded-lg text-xs font-bold px-4 bg-white text-slate-700 shadow-sm"
-                                >
-                                    Annuler
-                                </Button>
-                                <Button
-                                    onClick={handleShopifyConnect}
-                                    disabled={isConnecting}
-                                    size="sm"
-                                    variant="default"
-                                    className="h-8 rounded-lg text-xs px-4 shadow-sm"
-                                >
-                                    {isConnecting ? <Loader2 size={13} className="mr-1.5 animate-spin" /> : <Plus size={13} className="mr-1.5" />}
-                                    {isConnecting ? 'Connexion...' : 'Connecter'}
-                                </Button>
-                            </div>
-                        }
+                        actions={editorActions}
                     />
                 </div>
 
@@ -539,16 +550,7 @@ export function ShopifyIntegration({ userId, onBack }: ShopifyIntegrationProps) 
         );
     }
 
-    const headerActions = (
-        <Button
-            size="sm"
-            onClick={() => setView('add')}
-            className="h-8 rounded-lg text-xs font-bold px-4 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
-        >
-            <Plus size={13} className="mr-1.5" />
-            Connecter une boutique
-        </Button>
-    );
+    // headerActions is now declared before the early return above
 
     return (
         <div className="flex-1 flex flex-col h-full bg-slate-50/50">
@@ -622,45 +624,9 @@ export function ShopifyIntegration({ userId, onBack }: ShopifyIntegrationProps) 
                                             <TableCell className="py-4">
                                                 <div className="flex items-center gap-3">
                                                     {store.loaderInstalled ? (
-                                                        <>
-                                                            {!store.loaderVersion || compareVersions(store.loaderVersion, CURRENT_LOADER_VERSION) === 0 ? (
-                                                                <Badge variant="secondary" className="bg-green-50 text-green-700 hover:bg-green-100 border-green-200 font-semibold gap-1">
-                                                                    <Check size={12} /> Installé (v{store.loaderVersion || CURRENT_LOADER_VERSION})
-                                                                </Badge>
-                                                            ) : compareVersions(store.loaderVersion, CURRENT_LOADER_VERSION) < 0 ? (
-                                                                <div className="flex items-center gap-2">
-                                                                    <Badge variant="secondary" className="bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-200 font-semibold gap-1">
-                                                                        Ancienne version (v{store.loaderVersion})
-                                                                    </Badge>
-                                                                    <Button
-                                                                        size="sm"
-                                                                        variant="outline"
-                                                                        className="h-7 text-[10px] px-3 font-semibold rounded-md border-indigo-200 text-indigo-700 hover:bg-indigo-50 shadow-sm whitespace-nowrap"
-                                                                        onClick={() => handleEnableLoader(store)}
-                                                                        disabled={processingStoreId === store.id}
-                                                                    >
-                                                                        {processingStoreId === store.id ? <Loader2 size={12} className="animate-spin mr-1" /> : <RotateCw size={12} className="mr-1" />}
-                                                                        Mettre à jour (v{CURRENT_LOADER_VERSION})
-                                                                    </Button>
-                                                                </div>
-                                                            ) : (
-                                                                <div className="flex items-center gap-2">
-                                                                    <Badge variant="secondary" className="bg-purple-50 text-purple-700 hover:bg-purple-100 border-purple-200 font-semibold gap-1">
-                                                                        Version future (v{store.loaderVersion})
-                                                                    </Badge>
-                                                                    <Button
-                                                                        size="sm"
-                                                                        variant="outline"
-                                                                        className="h-7 text-[10px] px-3 font-semibold rounded-md border-indigo-200 text-indigo-700 hover:bg-indigo-50 shadow-sm whitespace-nowrap"
-                                                                        onClick={() => handleEnableLoader(store)}
-                                                                        disabled={processingStoreId === store.id}
-                                                                    >
-                                                                        {processingStoreId === store.id ? <Loader2 size={12} className="animate-spin mr-1" /> : <RotateCw size={12} className="mr-1" />}
-                                                                        Rétrograder (v{CURRENT_LOADER_VERSION})
-                                                                    </Button>
-                                                                </div>
-                                                            )}
-                                                        </>
+                                                        <Badge variant="secondary" className="bg-green-50 text-green-700 hover:bg-green-100 border-green-200 font-semibold gap-1">
+                                                            <Check size={12} /> Installé (v{CURRENT_LOADER_VERSION})
+                                                        </Badge>
                                                     ) : (
                                                         <Badge variant="secondary" className="bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-200 font-semibold gap-1">
                                                             Installation en cours...

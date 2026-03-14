@@ -18,5 +18,5 @@
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["vite.config.ts"]
+  "include": ["vite.config.ts", "vite.loader.config.ts", "vite.global.config.ts", "tailwind.config.ts", "postcss-rem-to-pixel.d.ts"]
 }

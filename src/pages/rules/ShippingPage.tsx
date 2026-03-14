@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Plus, Trash2, Save, Truck, MoreHorizontal, Pencil, Loader2, ChevronDown, MapPin, X } from 'lucide-react';
 import { useFormRules, ShippingRule } from '@/hooks/useFormRules';
 import ShippingManager, { ShippingConfig } from '@/components/managers/ShippingManager';
@@ -75,7 +75,7 @@ const ShippingPage: React.FC<ShippingPageProps> = ({ userId }) => {
         return previewShippingType === 'home' ? localShipping.standard.home : localShipping.standard.desk;
     }, [previewWilaya, previewShippingType, localShipping]);
 
-    const handleCreateNew = () => {
+    const handleCreateNew = useCallback(() => {
         setEditingRule({ id: '', name: 'Nouveau Tarif', createdAt: 0, updatedAt: 0, shipping: defaultShipping });
         setLocalShipping(defaultShipping);
         setRuleName('Nouveau Tarif');
@@ -83,7 +83,7 @@ const ShippingPage: React.FC<ShippingPageProps> = ({ userId }) => {
         setPreviewWilaya('');
         setRuleLabels([]);
         setLabelInput('');
-    };
+    }, []);
 
     const handleEdit = (rule: ShippingRule) => {
         setEditingRule(rule);
@@ -95,7 +95,7 @@ const ShippingPage: React.FC<ShippingPageProps> = ({ userId }) => {
         setLabelInput('');
     };
 
-    const handleSave = async () => {
+    const handleSave = useCallback(async () => {
         if (!editingRule) return;
         setIsSaving(true);
         try {
@@ -106,7 +106,7 @@ const ShippingPage: React.FC<ShippingPageProps> = ({ userId }) => {
         } finally {
             setIsSaving(false);
         }
-    };
+    }, [editingRule, ruleName, ruleLabels, localShipping, saveRule]);
 
     const handleDelete = async (ruleId: string) => {
         if (confirm("Voulez-vous vraiment supprimer ce profil de livraison ?")) {
@@ -114,7 +114,18 @@ const ShippingPage: React.FC<ShippingPageProps> = ({ userId }) => {
         }
     };
 
-    // --- EDITOR VIEW ---
+    const editorActions = useMemo(() => (
+        <Button
+            onClick={handleSave}
+            disabled={isSaving}
+            size="sm"
+            className="h-8 rounded-lg text-xs font-bold px-4 shadow-sm"
+        >
+            {isSaving ? <Loader2 size={13} className="mr-1.5 animate-spin" /> : <Save size={13} className="mr-1.5" />}
+            Enregistrer
+        </Button>
+    ), [isSaving, handleSave]);
+
     if (editingRule) {
         const subtotal = 3500;
         const homePrice = previewWilaya
@@ -139,17 +150,7 @@ const ShippingPage: React.FC<ShippingPageProps> = ({ userId }) => {
                     icon={Truck}
                     backHref="/dashboard/rules/shipping"
                     onBack={() => setEditingRule(null)}
-                    actions={
-                        <Button
-                            onClick={handleSave}
-                            disabled={isSaving}
-                            size="sm"
-                            className="h-8 rounded-lg text-xs font-bold px-4 shadow-sm"
-                        >
-                            {isSaving ? <Loader2 size={13} className="mr-1.5 animate-spin" /> : <Save size={13} className="mr-1.5" />}
-                            Enregistrer
-                        </Button>
-                    }
+                    actions={editorActions}
                 />
 
                 {/* Labels Editor */}
@@ -267,7 +268,7 @@ const ShippingPage: React.FC<ShippingPageProps> = ({ userId }) => {
     }
 
     // --- LIST VIEW ---
-    const headerActions = (
+    const headerActions = useMemo(() => (
         <Button
             size="sm"
             onClick={handleCreateNew}
@@ -276,7 +277,7 @@ const ShippingPage: React.FC<ShippingPageProps> = ({ userId }) => {
             <Plus size={13} className="mr-1.5" />
             Nouveau Profil
         </Button>
-    );
+    ), [handleCreateNew]);
 
     return (
         <div className="max-w-[1600px] mx-auto w-full space-y-5 flex flex-col pt-2 md:pt-4 pb-8">

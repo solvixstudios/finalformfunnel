@@ -29,6 +29,8 @@ dist-ssr
 *.local
 *service-account*.json
 !*service-account.example.json
+server/finalformfunnel-service-account.json
+server/finalformfunnel-beta-service-account.json
 firebase-adminsdk-*.json
 
 # Firebase

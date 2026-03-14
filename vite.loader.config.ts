@@ -1,8 +1,9 @@
 import react from "@vitejs/plugin-react-swc";
 import autoprefixer from "autoprefixer";
 import path from "path";
+import type { AcceptedPlugin } from "postcss";
 import remToPx from "postcss-rem-to-pixel";
-import tailwindcss from "tailwindcss";
+import tailwindcss from "@tailwindcss/postcss";
 import { defineConfig } from "vite";
 
 import { readFileSync } from "fs";
@@ -20,6 +21,16 @@ export default defineConfig({
       plugins: [
         tailwindcss(),
         autoprefixer(),
+        {
+          postcssPlugin: "shadow-dom-root-fix",
+          Rule(rule) {
+            if (rule.selector === ":root") {
+              rule.selector = ":root, :host";
+            } else if (rule.selector.includes(":root")) {
+              rule.selector = rule.selector.replace(/:root/g, ":root, :host");
+            }
+          },
+        },
         remToPx({
           rootValue: 16,
           propList: ["*"],
@@ -27,7 +38,7 @@ export default defineConfig({
           replace: true,
           mediaQuery: false,
           minPixelValue: 0,
-        }),
+        }) as AcceptedPlugin,
       ],
     },
   },
