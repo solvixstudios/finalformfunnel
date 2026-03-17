@@ -21,6 +21,7 @@ interface DeliverySectionProps {
     showSection: boolean;
     hasWilaya?: boolean;
     marginStyle?: React.CSSProperties;
+    isBasicTheme?: boolean;
 }
 
 export const DeliverySection: React.FC<DeliverySectionProps> = ({
@@ -34,6 +35,7 @@ export const DeliverySection: React.FC<DeliverySectionProps> = ({
     showSection,
     hasWilaya = true,
     marginStyle,
+    isBasicTheme = false,
 }) => {
     if (!showSection) return null;
 
@@ -66,6 +68,35 @@ export const DeliverySection: React.FC<DeliverySectionProps> = ({
             enabled: isDeskEnabled,
         },
     ];
+
+    if (isBasicTheme) {
+        return (
+            <div style={{ marginBottom: '1rem', ...marginStyle }}>
+                {config.sectionSettings?.delivery?.showTitle !== false && (
+                    <strong style={{ display: 'block', marginBottom: '0.5rem' }}>{txt('delivery')}</strong>
+                )}
+                <div>
+                    {deliveryOptions.map(({ type, label, price, enabled }) => {
+                        if (!enabled) return null;
+                        const isSelected = shippingType === type;
+                        return (
+                            <label key={type} style={{ display: 'block', marginBottom: '0.25rem' }}>
+                                <input
+                                    type="radio"
+                                    name="deliveryMethod"
+                                    value={type}
+                                    checked={isSelected}
+                                    onChange={() => onSelect(type)}
+                                />
+                                {' '}
+                                {label} {shouldShowPrice && `(${price === 0 ? txt('free') || 'Gratuit' : formatCurrency(price)})`}
+                            </label>
+                        );
+                    })}
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div style={marginStyle}>

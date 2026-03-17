@@ -7,6 +7,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { db } from './config/firebase';
 import shopifyRoutes from './routes/shopify';
+import woocommerceRoutes from './routes/woocommerce';
 import capiRoutes from './routes/capi';
 import googleSheetsRoutes from './routes/googleSheets';
 import { globalErrorHandler } from './middleware/errorHandler';
@@ -78,6 +79,7 @@ app.get('/health', (_req, res) => {
 // ── Routes ──────────────────────────────────────────────────────
 
 app.use('/webhook/shopify', shopifyRoutes);
+app.use('/webhook/woocommerce', woocommerceRoutes);
 app.use('/webhook/capi', capiRoutes);
 app.use('/webhook/google-sheets', googleSheetsRoutes);
 

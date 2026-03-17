@@ -18,7 +18,7 @@ const mergeConfig = (base: unknown, override: unknown): unknown => {
     return override;
   }
 
-  const result = base ? { ...base } : {};
+  const result: any = base ? { ...(base as object) } : {};
   for (const key in override) {
     if (override[key] !== null && override[key] !== undefined) {
       if (typeof override[key] === "object" && !Array.isArray(override[key])) {
@@ -373,6 +373,66 @@ export const CONFIG_PRESETS: ConfigPreset[] = [
       showTotalInCTA: true,
       borderRadius: "8px",
       inputVariant: "outlined",
+    }),
+  },
+  {
+    id: "basic-compact",
+    name: "Basic Checkout",
+    description: "Formulaire ultra léger et dépouillé pour une rapidité absolue.",
+    config: mergeConfig(DEFAULT_FORM_CONFIG, {
+      sectionOrder: FULL_SECTION_ORDER,
+      enableOffersSection: true,
+      enableTrustBadges: true,
+      trustBadgeStyle: "minimal",
+      stickers: {
+        product: {
+          enabled: true,
+          text: { fr: "Populaire", ar: "شائع" },
+          color: "#475569",
+        },
+      },
+      urgencyText: {
+        enabled: true,
+        style: "minimal",
+        colorPreset: "gray",
+        text: {
+          fr: "Vite, peu de stock!",
+          ar: "أسرع، مخزون قليل!",
+        },
+      },
+      urgencyQuantity: {
+        enabled: true,
+        style: "minimal",
+        stockCount: 12,
+      },
+      urgencyTimer: {
+        enabled: true,
+        style: "minimal",
+        hours: 0,
+        minutes: 15,
+        seconds: 0,
+      },
+      fields: {
+        name: { visible: true, required: true, order: 0 },
+        phone: { visible: true, required: true, order: 1 },
+        wilaya: { visible: true, required: true, order: 2 },
+        commune: { visible: true, required: true, order: 3 },
+        address: { visible: false, required: false, order: 4 },
+        note: { visible: false, required: false, order: 5 },
+      },
+      borderRadius: "4px",
+      accentColor: "#2563eb",
+      ctaColor: "#1d4ed8",
+      ctaVariant: "solid",
+      sectionSpacing: 12,
+      sectionPadding: 16,
+      inputSpacing: 8,
+      inputVariant: "filled",
+      formBackground: "#ffffff",
+      inputBackground: "#f8fafc",
+      inputBorderColor: "#cbd5e1",
+      cardBackground: "#ffffff",
+      cardBorderColor: "#cbd5e1",
     }),
   },
 ];

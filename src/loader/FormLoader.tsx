@@ -173,12 +173,24 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
     const formatCurrency = (amount: number) => formatCurrencyUtil(amount, lang);
     const fontFamily = getFontFamilyCSS(config.fontFamily?.[lang] || (lang === 'fr' ? 'Inter' : 'Cairo'));
 
+    const isBasicTheme = config.themePreset?.startsWith('basic_') || false;
+
+    // Optional: Get margins from cssEngine, checking if basicTheme to zero it out if we wanted. 
+    // Wait, the user wants super basic HTML, but the spacing might still be configurable.
+    // I will restore getSectionMarginStyle strictly.
     const getSectionMarginStyle = (isFirst: boolean = false) => buildSectionMargin(config as any, isFirst);
 
     // Input styling
-    const inputSpacing = config.inputSpacing || 12;
-    const svxInputClass = `custom-input w-full px-4 py-3.5 text-[13px] font-semibold outline-none transition-all duration-300 border-2 focus:ring-4`;
-    const inputStyle = buildInputStyles(config as any, config.inputVariant || 'filled');
+    const inputSpacing = config.inputSpacing || (isBasicTheme ? 8 : 12);
+    
+    // Set minimal classes for basic themes, keeping the heavier styles for others
+    // For "super basic" we use almost no padding and rely on the browser/preset styling
+    const svxInputClass = isBasicTheme
+        ? `w-full border px-1.5 py-1 text-sm focus:outline-none focus:border-gray-400`
+        : `custom-input w-full px-4 py-3.5 text-[13px] font-semibold outline-none transition-all duration-300 border-2 focus:ring-4`;
+        
+    // Force 'outline' variant on basic themes so borders denote the fields, else prefer user config (default 'filled')
+    const inputStyle = buildInputStyles(config as any, isBasicTheme ? 'outline' : (config.inputVariant || 'filled'));
 
     // Validation Schema
     const schema = z.object({
@@ -297,9 +309,14 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
             dir={lang === 'ar' ? 'rtl' : 'ltr'}
             style={{
                 ...buildRootStyles(config as any, lang),
-                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-                border: '1px solid rgba(226, 232, 240, 0.5)',
-                borderRadius: '16px'
+                ...(isBasicTheme
+                    ? { boxShadow: 'none', border: 'none', borderRadius: '0' }
+                    : {
+                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                        border: '1px solid rgba(226, 232, 240, 0.5)',
+                        borderRadius: '16px'
+                    }
+                )
             }}
         >
             <style>{`
@@ -334,6 +351,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                         basePrice={basePrice}
                         productTitle={productTitle}
                         productImage={productImage}
+                        isBasicTheme={isBasicTheme}
                     />
                 );
 
@@ -363,6 +381,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                             basePrice={basePrice}
                             productTitle={productTitle}
                             productImage={productImage}
+                            isBasicTheme={isBasicTheme}
                         />
                     );
 
@@ -466,6 +485,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                                     deskPrice={calculations.currentRates.desk}
                                     showSection={showDeliverySection}
                                     hasWilaya={!!formData.wilaya}
+                                    isBasicTheme={isBasicTheme}
                                 />,
                                 index
                             );
@@ -483,6 +503,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                                     onSelect={(id) => setFormData({ ...formData, offerId: id })}
                                     formatCurrency={formatCurrency}
                                     basePrice={basePrice}
+                                    isBasicTheme={isBasicTheme}
                                 />,
                                 index
                             );
@@ -502,6 +523,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                                     appliedPromoCode={appliedPromoCode}
                                     onApply={handleApplyPromoCode}
                                     onRemove={handleRemovePromoCode}
+                                    isBasicTheme={isBasicTheme}
                                 />,
                                 index
                             );
@@ -521,6 +543,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                                     displayedTotal={calculations.displayedTotal}
                                     appliedPromoCode={appliedPromoCode}
                                     formatCurrency={formatCurrency}
+                                    isBasicTheme={isBasicTheme}
                                 />,
                                 index
                             );
@@ -535,6 +558,7 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                                     text={txt('cta') || (lang === 'fr' ? 'Commander maintenant' : 'اطلب الآن')}
                                     onClick={handleFormSubmit}
                                     isLoading={isSubmitting}
+                                    isBasicTheme={isBasicTheme}
                                 />,
                                 index,
                                 ctaRef

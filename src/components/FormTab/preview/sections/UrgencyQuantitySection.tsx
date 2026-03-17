@@ -13,6 +13,7 @@ interface UrgencyQuantitySectionProps {
     config: FormConfig;
     lang: Language;
     marginStyle?: React.CSSProperties;
+    isBasicTheme?: boolean;
 }
 
 const getDynamicColor = (stock: number): string => {
@@ -25,8 +26,9 @@ export const UrgencyQuantitySection: React.FC<UrgencyQuantitySectionProps> = ({
     config,
     lang,
     marginStyle,
+    isBasicTheme = false,
 }) => {
-    if (!config.urgencyQuantity?.enabled) return null;
+    if (!config.urgencyQuantity?.enabled || isBasicTheme) return null;
 
     const uq = config.urgencyQuantity as any;
     const style = uq.style || 'badge';

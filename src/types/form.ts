@@ -203,6 +203,7 @@ export interface FormConfig {
   autoHideThemeElements?: boolean;
 
   // Theme & Styling
+  themePreset?: string;
   accentColor?: string;
   ctaColor?: string;
   borderRadius?: string;

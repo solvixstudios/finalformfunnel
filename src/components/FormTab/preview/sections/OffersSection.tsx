@@ -33,6 +33,7 @@ interface OffersSectionProps {
     formatCurrency: (amount: number) => string;
     basePrice: number;
     marginStyle?: React.CSSProperties;
+    isBasicTheme?: boolean;
 }
 
 export const OffersSection: React.FC<OffersSectionProps> = ({
@@ -44,6 +45,7 @@ export const OffersSection: React.FC<OffersSectionProps> = ({
     formatCurrency,
     basePrice,
     marginStyle,
+    isBasicTheme = false,
 }) => {
     if (!offers || offers.length === 0 || config.enableOffersSection === false) return null;
 
@@ -69,6 +71,23 @@ export const OffersSection: React.FC<OffersSectionProps> = ({
                     const titleText = o.title[lang] || o.title.fr || '';
                     const descText = o.desc[lang] || o.desc.fr || '';
 
+                    if (isBasicTheme) {
+                        return (
+                            <label key={o.id} style={{ display: 'block', marginBottom: '0.25rem' }}>
+                                <input
+                                    type="radio"
+                                    name="offerSelection"
+                                    value={o.id}
+                                    checked={isSelected}
+                                    onChange={() => onSelect(o.id)}
+                                />
+                                {' '}
+                                <strong>{titleText}</strong> - {formatCurrency(Math.floor(price))}
+                                {descText && <div style={{ fontSize: '0.9em', color: '#555', marginLeft: '1.5rem' }}>{descText}</div>}
+                            </label>
+                        );
+                    }
+
                     return (
                         <button
                             key={o.id}
@@ -76,7 +95,7 @@ export const OffersSection: React.FC<OffersSectionProps> = ({
                             className={`relative w-full p-4 border-2 flex items-center gap-4 transition-all duration-200 ${isSelected ? 'shadow-lg' : ''
                                 }`}
 
-                            style={buildOptionCardStyles(config as unknown, { selected: isSelected })}
+                            style={buildOptionCardStyles(config as any, { selected: isSelected })}
                         >
                             {/* Offer Sticker */}
                             {o.sticker?.enabled && (

@@ -21,6 +21,7 @@ interface PromoCodeSectionProps {
     onApply: () => void;
     onRemove: () => void;
     marginStyle?: React.CSSProperties;
+    isBasicTheme?: boolean;
 }
 
 export const PromoCodeSection: React.FC<PromoCodeSectionProps> = ({
@@ -34,6 +35,7 @@ export const PromoCodeSection: React.FC<PromoCodeSectionProps> = ({
     onApply,
     onRemove,
     marginStyle,
+    isBasicTheme = false,
 }) => {
     if (!config.promoCode?.enabled) return null;
 
@@ -50,8 +52,31 @@ export const PromoCodeSection: React.FC<PromoCodeSectionProps> = ({
                 <SectionLabel accentColor={config.accentColor}>{txt('promoCode')}</SectionLabel>
             )}
 
-            {/* Applied promo code display */}
-            {appliedPromoCode ? (
+            {isBasicTheme ? (
+                <div>
+                    {appliedPromoCode ? (
+                        <div style={{ marginBottom: '0.5rem' }}>
+                            Code applied: <strong>{appliedPromoCode.code}</strong>{' '}
+                            <button type="button" onClick={onRemove}>[Remove]</button>
+                        </div>
+                    ) : (
+                        <div style={{ marginBottom: '0.5rem' }}>
+                            <input
+                                type="text"
+                                value={promoCodeInput}
+                                onChange={(e) => setPromoCodeInput(e.target.value)}
+                                placeholder={placeholder}
+                                onKeyDown={(e) => e.key === 'Enter' && onApply()}
+                            />
+                            <button type="button" onClick={onApply}>{buttonText}</button>
+                            {promoCodeError && <div style={{ color: 'red', fontSize: '0.9em' }}>{promoConfig?.errorText?.[lang] || promoConfig?.errorText?.fr || 'Code invalide'}</div>}
+                        </div>
+                    )}
+                </div>
+            ) : (
+                <>
+                    {/* Applied promo code display */}
+                    {appliedPromoCode ? (
                 <div
                     className="flex items-center justify-between p-3 border-2 rounded-xl"
                     style={{
@@ -83,7 +108,7 @@ export const PromoCodeSection: React.FC<PromoCodeSectionProps> = ({
                             className={`w-full px-4 py-3 text-sm font-semibold border-2 outline-none transition-all ${promoCodeError ? 'border-red-400 bg-red-50' : ''
                                 }`}
                             style={{
-                                ...buildInputStyles(config as unknown, 'filled'),
+                                ...buildInputStyles(config as any, 'filled'),
                                 marginBottom: 0, // Override default margin
                                 // Error state override
                                 ...(promoCodeError ? {
@@ -107,13 +132,16 @@ export const PromoCodeSection: React.FC<PromoCodeSectionProps> = ({
                     </button>
                 </div>
             )}
-
+            
             {/* Error message */}
             {promoCodeError && !appliedPromoCode && (
                 <p className="text-xs text-red-500 mt-1.5 font-medium">
                     {promoConfig?.errorText?.[lang] || promoConfig?.errorText?.fr || 'Code invalide'}
                 </p>
             )}
+            </>
+            )}
+
         </div>
     );
 };

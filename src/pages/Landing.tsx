@@ -1,9 +1,18 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useI18n } from '../lib/i18n/i18nContext';
+import { getStoredUser, GoogleUser, onAuthStateChange } from '../lib/authGoogle';
 
 export default function Landing() {
   const { setLanguage, dir } = useI18n();
+  const [user, setUser] = useState<GoogleUser | null>(getStoredUser());
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChange(async (authUser) => {
+      setUser(authUser);
+    });
+    return () => unsubscribe();
+  }, []);
 
   return (
     <div className="min-h-screen bg-obsidian text-white p-8 font-sans" dir={dir}>
@@ -19,9 +28,11 @@ export default function Landing() {
             Admin Dashboard
           </Link>
           
-          <Link to="/auth" className="text-blue-400 hover:text-blue-300 hover:underline">
-            Login
-          </Link>
+          {!user && (
+            <Link to="/auth" className="text-blue-400 hover:text-blue-300 hover:underline">
+              Login
+            </Link>
+          )}
         </div>
 
         <div className="mt-12">

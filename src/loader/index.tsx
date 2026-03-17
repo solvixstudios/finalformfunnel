@@ -100,9 +100,9 @@ function fetchWooCommerceProduct() {
 /**
  * Fetch config from backend webhook (Source of Truth)
  */
-async function fetchConfigFromBackend(shop: string, productId?: string, productHandle?: string) {
+async function fetchConfigFromBackend(shop: string, platform: string, productId?: string, productHandle?: string) {
     if (!shop) return null;
-    console.log('FinalForm: Fetching config from backend...');
+    console.log(`FinalForm: Fetching ${platform} config from backend...`);
 
     try {
         // Construct URL for backend webhook
@@ -111,7 +111,7 @@ async function fetchConfigFromBackend(shop: string, productId?: string, productH
             console.error('FinalForm: VITE_BACKEND_URL is not defined');
             return null;
         }
-        const WEBHOOK_URL = `${BACKEND_URL}/webhook/shopify/config`;
+        const WEBHOOK_URL = `${BACKEND_URL}/webhook/${platform}/config`;
 
         const url = new URL(WEBHOOK_URL);
         url.searchParams.append('shop', shop);
@@ -226,9 +226,9 @@ async function initLoader() {
     }
 
     // 3. Fetch config & product data IN PARALLEL — NO DOM modifications yet
-    console.log('FinalForm: Fetching config and product data concurrently...');
+    console.log(`FinalForm: Fetching ${detectedPlatform} config and product data concurrently...`);
     const [config, productData] = await Promise.all([
-        fetchConfigFromBackend(shop, productId, productHandle),
+        fetchConfigFromBackend(shop, detectedPlatform, productId, productHandle),
         detectedPlatform === 'woocommerce'
             ? Promise.resolve(fetchWooCommerceProduct())
             : fetchShopifyProduct()
@@ -402,11 +402,50 @@ async function initLoader() {
         container.style.all = 'initial';
         container.style.display = 'block';
 
-        const cartForm = document.querySelector('form[action*="/cart/add"]');
-        if (cartForm && cartForm.parentNode) {
-            cartForm.parentNode.insertBefore(container, cartForm.nextSibling);
+        if (detectedPlatform === 'woocommerce') {
+            // Priority 1: WooCommerce standard summary container
+            const summaryContainer = document.querySelector('.summary.entry-summary');
+            if (summaryContainer) {
+                const nativeForm = summaryContainer.querySelector('form.cart');
+                if (nativeForm) nativeForm.remove();
+                summaryContainer.appendChild(container);
+            } else {
+                // Priority 2: Custom themes generic add to cart button container
+                const addToCartBtn = document.querySelector('button[name="add-to-cart"]');
+                if (addToCartBtn && addToCartBtn.parentElement) {
+                    addToCartBtn.parentElement.parentElement?.appendChild(container) || addToCartBtn.parentElement.appendChild(container);
+                    addToCartBtn.remove();
+                } else {
+                    // Priority 3: Fallback container
+                    const entryContent = document.querySelector('.entry-content') || document.querySelector('.hentry');
+                    if (entryContent) {
+                        entryContent.appendChild(container);
+                    } else {
+                        document.body.appendChild(container);
+                    }
+                }
+            }
         } else {
-            document.body.appendChild(container);
+            // Shopify Fallbacks
+            // Priority 1: Standard form
+            const cartForm = document.querySelector('form[action*="/cart/add"]');
+            if (cartForm && cartForm.parentNode) {
+                cartForm.parentNode.insertBefore(container, cartForm.nextSibling);
+            } else {
+                // Priority 2: Product form class
+                const productForm = document.querySelector('.product-form') || document.querySelector('.ProductForm');
+                if (productForm && productForm.parentNode) {
+                    productForm.parentNode.insertBefore(container, productForm.nextSibling);
+                } else {
+                    // Priority 3: Any add button
+                    const addBtn = document.querySelector('button[name="add"]') || document.querySelector('[id^="add-to-cart"]');
+                    if (addBtn && addBtn.parentNode) {
+                        addBtn.parentNode.insertBefore(container, addBtn.nextSibling);
+                    } else {
+                        document.body.appendChild(container);
+                    }
+                }
+            }
         }
     }
 

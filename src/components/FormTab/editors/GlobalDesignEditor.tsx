@@ -177,6 +177,11 @@ export const GlobalDesignEditor = () => {
                     inputPlaceholderColor: preset.inputPlaceholderColor || '#94a3b8',
                     cardBackground: preset.cardBackground || '#f8fafc',
                     cardBorderColor: preset.cardBorderColor || '#e2e8f0',
+                    ...(preset.sectionSpacing !== undefined ? { sectionSpacing: preset.sectionSpacing } : {}),
+                    ...(preset.sectionPadding !== undefined ? { sectionPadding: preset.sectionPadding } : {}),
+                    ...(preset.inputSpacing !== undefined ? { inputSpacing: preset.inputSpacing } : {}),
+                    ...(preset.sectionMarginTop !== undefined ? { sectionMarginTop: preset.sectionMarginTop } : {}),
+                    ...(preset.sectionMarginBottom !== undefined ? { sectionMarginBottom: preset.sectionMarginBottom } : {}),
                   })
                 }
                 className={`p-2.5 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${isActive
@@ -382,7 +387,7 @@ export const GlobalDesignEditor = () => {
                 setFormConfig({
                   ...formConfig,
                   fontFamily: {
-                    ...(formConfig.fontFamily as unknown || { fr: "Inter", ar: "Cairo" }),
+                    ...((formConfig.fontFamily as any) || { fr: "Inter", ar: "Cairo" }),
                     fr: e.target.value
                   }
                 })
@@ -409,7 +414,7 @@ export const GlobalDesignEditor = () => {
                 setFormConfig({
                   ...formConfig,
                   fontFamily: {
-                    ...(formConfig.fontFamily as unknown || { fr: "Inter", ar: "Cairo" }),
+                    ...((formConfig.fontFamily as any) || { fr: "Inter", ar: "Cairo" }),
                     ar: e.target.value
                   }
                 })
@@ -436,7 +441,7 @@ export const GlobalDesignEditor = () => {
           <select
             value={formConfig.inputVariant}
             onChange={(e) =>
-              setFormConfig({ ...formConfig, inputVariant: e.target.value as unknown })
+              setFormConfig({ ...formConfig, inputVariant: e.target.value as any })
             }
             className="w-full text-xs border border-slate-200 rounded-lg p-2.5 font-bold"
           >

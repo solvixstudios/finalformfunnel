@@ -1,12 +1,12 @@
 {
   "name": "Final Form for WooCommerce",
-  "version": "2.3.1",
+  "version": "2.6.9",
   "slug": "finalform-woocommerce",
   "download_url": "https://finalform.app/finalform-woocommerce.zip",
   "requires": "5.8",
   "tested": "6.4",
   "requires_php": "7.4",
-  "last_updated": "2026-03-14 20:44:51",
+  "last_updated": "2026-03-17 20:57:34",
   "sections": {
     "description": "Connect your WooCommerce store to Final Form — the premium order form builder for e-commerce."
   }

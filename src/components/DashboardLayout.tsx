@@ -35,6 +35,7 @@ import { useFormStore } from '../stores';
 import { useSubscription } from '../hooks/useSubscription';
 import { DesktopSidebar, MobileMenu } from './Sidebar';
 import PlanPickerDialog from './PlanPickerDialog';
+import { DashboardFooter } from './DashboardFooter';
 
 const PlanUpgradeBanner = lazy(() => import('./PlanUpgradeBanner'));
 
@@ -315,6 +316,8 @@ const DashboardLayoutContent = ({
               : children}
           </div>
         </main>
+        
+        <DashboardFooter clientId={user.id} planName={sub.currentPlan.name} />
 
         {/* Unsaved Changes Dialog */}
         <UnsavedChangesDialog

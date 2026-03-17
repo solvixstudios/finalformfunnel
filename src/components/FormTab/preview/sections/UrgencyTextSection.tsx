@@ -13,14 +13,16 @@ interface UrgencyTextSectionProps {
     config: FormConfig;
     lang: Language;
     marginStyle?: React.CSSProperties;
+    isBasicTheme?: boolean;
 }
 
 export const UrgencyTextSection: React.FC<UrgencyTextSectionProps> = ({
     config,
     lang,
     marginStyle,
+    isBasicTheme = false,
 }) => {
-    if (!config.urgencyText?.enabled) return null;
+    if (!config.urgencyText?.enabled || isBasicTheme) return null;
 
     const style = config.urgencyText?.style || 'banner';
     const color = getUrgencyColor(

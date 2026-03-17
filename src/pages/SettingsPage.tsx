@@ -11,7 +11,6 @@ import { toast } from 'sonner';
 import { useI18n } from '../lib/i18n/i18nContext';
 import { Language } from '../lib/i18n/translations';
 import { GoogleUser } from '../lib/authGoogle';
-import ChangelogDialog from '@/components/ChangelogDialog';
 
 // __APP_VERSION__ is injected by Vite during build
 declare const __APP_VERSION__: string;
@@ -28,8 +27,6 @@ const SettingsPage = ({ user, onUserUpdate }: SettingsPageProps) => {
     const initialTab = (searchParams.get('tab') as SettingsTab) || 'profile';
     const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab);
     const { setLanguage, language } = useI18n();
-    const appVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.0';
-    const [showChangelog, setShowChangelog] = useState(false);
 
     // Profile form state
     const [displayName, setDisplayName] = useState(user.displayName || '');
@@ -213,25 +210,13 @@ const SettingsPage = ({ user, onUserUpdate }: SettingsPageProps) => {
                                             <Input value={user.email || ''} className="bg-[#FAF9F6] border-[#E2DCCF] text-[#908878] cursor-not-allowed h-9" disabled readOnly />
                                             <p className="text-[10px] text-[#A69D8A]">Managed by Google OAuth.</p>
                                         </div>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-4 border-t border-[#E2DCCF]">
+                                        <div className="grid grid-cols-1 gap-5 pt-4 border-t border-[#E2DCCF]">
                                             <div className="grid gap-1.5">
                                                 <div className="flex items-center justify-between">
                                                     <label className="text-[12px] font-bold text-[#4A443A]">User ID</label>
                                                     <button onClick={handleCopyId} className="text-[#FF5A1F] hover:underline flex items-center gap-1 text-[11px] font-semibold"><Copy size={11} /> Copy</button>
                                                 </div>
                                                 <Input value={user.id} className="bg-[#FAF9F6] border-[#E2DCCF] text-[#908878] font-mono cursor-not-allowed text-[11px] h-9" disabled readOnly />
-                                            </div>
-                                            <div className="grid gap-1.5">
-                                                <label className="text-[12px] font-bold text-[#4A443A]">App Version</label>
-                                                <div className="h-9 flex items-center justify-between px-3 rounded-md border border-[#E2DCCF] bg-[#FAF9F6]">
-                                                    <span className="text-[12px] font-mono font-semibold text-[#908878]">v{appVersion}</span>
-                                                    <button
-                                                        onClick={() => setShowChangelog(true)}
-                                                        className="flex items-center gap-1 text-[10px] font-bold text-[#FF5A1F] hover:underline"
-                                                    >
-                                                        <FileText size={11} /> Changelog
-                                                    </button>
-                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -268,8 +253,6 @@ const SettingsPage = ({ user, onUserUpdate }: SettingsPageProps) => {
                 )}
             </div>
 
-            {/* Changelog Popup */}
-            <ChangelogDialog open={showChangelog} onClose={() => setShowChangelog(false)} />
         </div>
     );
 };

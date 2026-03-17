@@ -3,7 +3,7 @@
  * Final Form WooCommerce — Script Loader
  *
  * Injects the Final Form loader script on WooCommerce product pages
- * when the connection is active and the loader toggle is enabled.
+ * when the connection is active. Always enabled — no toggle needed.
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -12,27 +12,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class FinalForm_WC_Script_Loader {
 
-    /** CDN URL for the loader script */
-    const LOADER_URL = 'https://cdn.finalform.app/loader.js';
+    /** Loader URL — injected at build time from VITE_APP_URL in .env */
+    const LOADER_URL = '%%FINALFORM_APP_URL%%/finalform-loader.js';
 
     public static function init() {
         add_action( 'wp_head', [ __CLASS__, 'maybe_inject_loader' ], 99 );
     }
 
     /**
-     * Conditionally inject the Final Form loader script
-     * Only on WooCommerce product pages when activated.
+     * Conditionally inject the Final Form loader script.
+     * Active automatically when connected — no user toggle required.
      */
     public static function maybe_inject_loader() {
         // Must have an installation key
         $key = get_option( 'finalform_installation_key', '' );
         if ( empty( $key ) ) {
-            return;
-        }
-
-        // Must be enabled
-        $active = get_option( 'finalform_loader_active', false );
-        if ( ! $active ) {
             return;
         }
 

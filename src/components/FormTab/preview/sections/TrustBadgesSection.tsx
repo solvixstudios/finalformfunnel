@@ -19,6 +19,7 @@ interface TrustBadgesSectionProps {
     config: FormConfig;
     lang: Language;
     marginStyle?: React.CSSProperties;
+    isBasicTheme?: boolean;
 }
 
 // Icon mapping for badges with proper icons
@@ -43,9 +44,13 @@ export const TrustBadgesSection: React.FC<TrustBadgesSectionProps> = ({
     config,
     lang,
     marginStyle,
+    isBasicTheme = false,
 }) => {
     const txt = (key: string) =>
         config.translations[key]?.[lang] || config.translations[key]?.fr || '';
+
+    // Hide trust badges entirely on basic themes since they are purely visual
+    if (isBasicTheme) return null;
 
     const style = config.trustBadgeStyle || 'cards';
 

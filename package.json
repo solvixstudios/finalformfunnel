@@ -1,7 +1,7 @@
 {
   "name": "vite_react_shadcn_ts",
   "private": true,
-  "version": "2.3.1",
+  "version": "2.6.9",
   "type": "module",
   "scripts": {
     "start-all": "concurrently \"npm run dev-ui\" \"npm run dev-server\" \"ngrok http 3000\"",
@@ -23,7 +23,7 @@
     "build-loader-prod": "node scripts/bump-version.js && vite build --config vite.loader.config.ts && vite build --config vite.global.config.ts && node scripts/build-loader.js",
     "build-dev": "npm run build-ui -- --mode development && npm run build-loader-dev && npm run build-plugin-wc",
     "build-prod": "npm run build-ui && npm run build-loader-prod && npm run build-plugin-wc",
-    "build-plugin-wc": "cd plugins && tar -a -c -f ../public/finalform-woocommerce.zip finalform-woocommerce",
+    "build-plugin-wc": "node scripts/build-plugin-wc.js",
     "deploy-dev": "npm run build-dev && firebase deploy --project finalformfunnel-beta",
     "deploy-prod": "npm run build-prod && firebase deploy --project finalformfunnel",
     "lint": "eslint .",
@@ -110,6 +110,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react-swc": "^4.3.0",
+    "archiver": "^7.0.1",
     "autoprefixer": "^10.4.27",
     "concurrently": "^9.2.1",
     "esbuild": "^0.27.4",

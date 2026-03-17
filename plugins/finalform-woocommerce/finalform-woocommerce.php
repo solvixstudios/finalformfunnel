@@ -3,7 +3,7 @@
  * Plugin Name: Final Form for WooCommerce
  * Plugin URI: https://finalform.app
  * Description: Connect your WooCommerce store to Final Form — the premium order form builder for e-commerce.
- * Version: 2.3.1
+ * Version: 2.6.9
  * Author: Solvix Studios
  * Author URI: https://solvixstudios.com
  * Requires at least: 5.8
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // ─── Constants ───────────────────────────────────────────────────────────────
-define( 'FINALFORM_WC_VERSION', '2.3.1' );
+define( 'FINALFORM_WC_VERSION', '2.6.9' );
 define( 'FINALFORM_WC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'FINALFORM_WC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'FINALFORM_WC_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -68,9 +68,9 @@ add_action( 'plugins_loaded', 'finalform_wc_init' );
 register_activation_hook( __FILE__, function () {
     // Set default options
     add_option( 'finalform_installation_key', '' );
-    add_option( 'finalform_loader_active', false );
-    add_option( 'finalform_connection_status', 'disconnected' ); // disconnected | connected
-    add_option( 'finalform_store_domain', '' ); // Filled by backend on verify
+    add_option( 'finalform_connection_status', 'disconnected' ); // disconnected | connected | failed
+    add_option( 'finalform_connection_error', '' );
+    add_option( 'finalform_store_domain', '' );
 } );
 
 // ─── Deactivation hook ──────────────────────────────────────────────────────
@@ -82,8 +82,8 @@ register_deactivation_hook( __FILE__, function () {
 register_uninstall_hook( __FILE__, 'finalform_wc_uninstall' );
 function finalform_wc_uninstall() {
     delete_option( 'finalform_installation_key' );
-    delete_option( 'finalform_loader_active' );
     delete_option( 'finalform_connection_status' );
+    delete_option( 'finalform_connection_error' );
     delete_option( 'finalform_store_domain' );
 }
 

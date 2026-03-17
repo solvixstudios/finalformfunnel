@@ -3,7 +3,7 @@
 export interface ThemePreset {
   id: string;
   name: string;
-  category: "light" | "dark" | "vibrant" | "minimal";
+  category: "light" | "dark" | "vibrant" | "minimal" | "basic";
   accentColor: string;
   ctaColor: string;
   formBackground: string;
@@ -19,6 +19,12 @@ export interface ThemePreset {
   cardBackground?: string;
   cardBorderColor?: string;
   preview?: string; // Optional gradient preview
+  // Spacings for compact themes
+  sectionSpacing?: number;
+  sectionPadding?: number;
+  inputSpacing?: number;
+  sectionMarginTop?: number;
+  sectionMarginBottom?: number;
 }
 
 // Helper function to calculate if background is dark
@@ -397,6 +403,67 @@ export const THEME_PRESETS: ThemePreset[] = [
     cardBackground: "#ffffff",
     cardBorderColor: "#bae6fd",
   },
+  // ===== BASIC/COMPACT THEMES =====
+  {
+    id: "basic_light",
+    name: "Basic Light",
+    category: "basic",
+    accentColor: "#2563eb",
+    ctaColor: "#1d4ed8",
+    formBackground: "#ffffff",
+    textColor: "#334155",
+    headingColor: "#0f172a",
+    borderRadius: "4px",
+    inputBackground: "#f8fafc",
+    inputBorderColor: "#cbd5e1",
+    inputTextColor: "#0f172a",
+    inputPlaceholderColor: "#94a3b8",
+    cardBackground: "#ffffff",
+    cardBorderColor: "#cbd5e1",
+    sectionSpacing: 12,
+    sectionPadding: 16,
+    inputSpacing: 8,
+  },
+  {
+    id: "basic_gray",
+    name: "Basic Gray",
+    category: "basic",
+    accentColor: "#4b5563",
+    ctaColor: "#374151",
+    formBackground: "#f9fafb",
+    textColor: "#1f2937",
+    headingColor: "#111827",
+    borderRadius: "6px",
+    inputBackground: "#ffffff",
+    inputBorderColor: "#d1d5db",
+    inputTextColor: "#111827",
+    inputPlaceholderColor: "#9ca3af",
+    cardBackground: "#ffffff",
+    cardBorderColor: "#e5e7eb",
+    sectionSpacing: 10,
+    sectionPadding: 12,
+    inputSpacing: 6,
+  },
+  {
+    id: "basic_clean",
+    name: "Basic Clean",
+    category: "basic",
+    accentColor: "#0ea5e9",
+    ctaColor: "#0284c7",
+    formBackground: "#ffffff",
+    textColor: "#1e293b",
+    headingColor: "#0f172a",
+    borderRadius: "0px", // Ultra sharp
+    inputBackground: "#ffffff",
+    inputBorderColor: "#e2e8f0",
+    inputTextColor: "#0f172a",
+    inputPlaceholderColor: "#cbd5e1",
+    cardBackground: "#ffffff",
+    cardBorderColor: "#e2e8f0",
+    sectionSpacing: 8,
+    sectionPadding: 10,
+    inputSpacing: 6,
+  },
 ];
 
 // Group presets by category for better organization in UI
@@ -416,5 +483,9 @@ export const PRESET_CATEGORIES = {
   minimal: {
     label: "Thèmes Minimaux",
     description: "Design épuré et professionnel",
+  },
+  basic: {
+    label: "Thèmes Basiques",
+    description: "Ultra-rapide, compact et sans fioritures",
   },
 };

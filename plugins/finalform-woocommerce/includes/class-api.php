@@ -47,6 +47,12 @@ class FinalForm_WC_API {
                 ],
             ],
         ] );
+
+        register_rest_route( 'finalform/v1', '/orders', [
+            'methods'             => 'POST',
+            'callback'            => [ __CLASS__, 'handle_create_order' ],
+            'permission_callback' => [ __CLASS__, 'validate_key' ],
+        ] );
     }
 
     /**
@@ -99,6 +105,10 @@ class FinalForm_WC_API {
      * Returns store info to confirm the plugin is alive and the key is valid.
      */
     public static function handle_verify( $request ) {
+        // Since this endpoint requires a valid key (validate_key), reaching here
+        // means the connection from the App was successful. We mark it locally.
+        update_option( 'finalform_connection_status', 'connected' );
+
         return rest_ensure_response( [
             'status'     => 'ok',
             'domain'     => parse_url( site_url(), PHP_URL_HOST ),
@@ -149,6 +159,118 @@ class FinalForm_WC_API {
             'per_page'   => $per_page,
             'total_pages' => ceil( $total / $per_page ),
         ] );
+    }
+
+    /**
+     * POST /finalform/v1/orders
+     * Creates a native WooCommerce order from a Final Form submission.
+     */
+    public static function handle_create_order( $request ) {
+        $params = $request->get_json_params();
+
+        if ( empty( $params ) ) {
+            return new WP_Error( 'invalid_data', 'No order data provided.', [ 'status' => 400 ] );
+        }
+
+        try {
+            // Create a new empty order
+            $order = wc_create_order();
+
+            // 1. Customer Details (Billing/Shipping)
+            $address = [
+                'first_name' => sanitize_text_field( $params['firstName'] ?? 'Guest' ),
+                'last_name'  => sanitize_text_field( $params['lastName'] ?? '.' ),
+                'address_1'  => sanitize_text_field( $params['address'] ?? 'N/A' ),
+                'city'       => sanitize_text_field( $params['commune'] ?? $params['wilaya'] ?? 'Algeria' ),
+                'state'      => sanitize_text_field( $params['wilaya'] ?? '' ),
+                'country'    => 'DZ',
+                'email'      => sanitize_email( $params['email'] ?? '' ),
+                'phone'      => sanitize_text_field( $params['phone'] ?? '' ),
+            ];
+
+            $order->set_address( $address, 'billing' );
+            $order->set_address( $address, 'shipping' );
+
+            // 2. Add Line Items
+            // params.items = [{ title, quantity, price, variantId, sku }]
+            if ( ! empty( $params['items'] ) && is_array( $params['items'] ) ) {
+                foreach ( $params['items'] as $item ) {
+                    $product_id = isset( $item['productId'] ) ? (int) $item['productId'] : 0;
+                    $variant_id = isset( $item['variantId'] ) ? (int) $item['variantId'] : 0;
+                    $quantity   = isset( $item['quantity'] ) ? (int) $item['quantity'] : 1;
+
+                    // Support adding by ID if it maps directly to a WP object, otherwise add as generic fee/item
+                    if ( $variant_id > 0 ) {
+                        $product = wc_get_product( $variant_id );
+                    } elseif ( $product_id > 0 ) {
+                        $product = wc_get_product( $product_id );
+                    } else {
+                        $product = null;
+                    }
+
+                    if ( $product ) {
+                        $item_id = $order->add_product( $product, $quantity );
+                        // Override title if variant name differs or if it's an offer bundle
+                        $order_item = $order->get_item( $item_id );
+                        if ( isset($item['title']) ) {
+                            $order_item->set_name( sanitize_text_field( $item['title'] ) );
+                            $order_item->save();
+                        }
+                    } else {
+                        // Fallback generic line item if IDs somehow don't map (or deleted product)
+                        $item_obj = new WC_Order_Item_Product();
+                        $item_obj->set_name( sanitize_text_field( $item['title'] ?? 'Generic Product' ) );
+                        $item_obj->set_quantity( $quantity );
+                        $item_obj->set_subtotal( (float) ( $item['price'] ?? 0 ) * $quantity );
+                        $item_obj->set_total( (float) ( $item['price'] ?? 0 ) * $quantity );
+                        $order->add_item( $item_obj );
+                    }
+                }
+            }
+
+            // 3. Add Shipping
+            $shipping_cost = isset( $params['shippingPrice'] ) ? (float) $params['shippingPrice'] : 0;
+            if ( $shipping_cost > 0 ) {
+                $shipping_title = ( isset( $params['shippingType'] ) && $params['shippingType'] === 'desk' ) ? 'Stop Desk' : 'Home Delivery';
+                
+                $item_fee = new WC_Order_Item_Shipping();
+                $item_fee->set_method_title( $shipping_title );
+                $item_fee->set_total( $shipping_cost );
+                $order->add_item( $item_fee );
+            }
+
+            // 4. Add Order Notes
+            if ( ! empty( $params['note'] ) ) {
+                $order->set_customer_note( sanitize_text_field( $params['note'] ) );
+            }
+
+            // 5. Custom Meta Data
+            $order->update_meta_data( 'is_finalform', 'yes' );
+            if ( ! empty( $params['formId'] ) ) {
+                $order->update_meta_data( 'finalform_id', sanitize_text_field( $params['formId'] ) );
+            }
+            if ( ! empty( $params['wilaya'] ) ) {
+                $order->update_meta_data( 'Wilaya', sanitize_text_field( $params['wilaya'] ) );
+            }
+            if ( ! empty( $params['commune'] ) ) {
+                $order->update_meta_data( 'Commune', sanitize_text_field( $params['commune'] ) );
+            }
+
+            // 6. Calculate Totals & Save
+            $order->calculate_totals();
+            
+            // Allow WooCommerce status auto-transitions or force to 'processing'
+            $order->update_status( 'processing', 'Imported from Final Form checkout.' );
+
+            return rest_ensure_response( [
+                'status'   => 'success',
+                'order_id' => $order->get_id(),
+                'message'  => 'Order created successfully.',
+            ] );
+
+        } catch ( Exception $e ) {
+            return new WP_Error( 'creation_failed', $e->getMessage(), [ 'status' => 500 ] );
+        }
     }
 
     /**

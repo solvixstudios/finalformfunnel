@@ -14,6 +14,7 @@ interface UrgencyTimerSectionProps {
     lang: Language;
     marginStyle?: React.CSSProperties;
     countdown?: { hours: number; minutes: number; seconds: number };
+    isBasicTheme?: boolean;
 }
 
 export const UrgencyTimerSection: React.FC<UrgencyTimerSectionProps> = ({
@@ -21,8 +22,9 @@ export const UrgencyTimerSection: React.FC<UrgencyTimerSectionProps> = ({
     lang,
     marginStyle,
     countdown = { hours: 2, minutes: 30, seconds: 0 },
+    isBasicTheme = false,
 }) => {
-    if (!config.urgencyTimer?.enabled) return null;
+    if (!config.urgencyTimer?.enabled || isBasicTheme) return null;
 
     const style = config.urgencyTimer?.style || 'digital';
     const color = getUrgencyColor(

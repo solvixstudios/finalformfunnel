@@ -18,6 +18,7 @@ interface CtaButtonProps {
     isSticky?: boolean;
     stickyVisible?: boolean;
     isLoading?: boolean;
+    isBasicTheme?: boolean;
 }
 
 const Spinner = () => (
@@ -32,6 +33,7 @@ export const CtaButton: React.FC<CtaButtonProps> = ({
     isSticky = false,
     stickyVisible = false,
     isLoading = false,
+    isBasicTheme = false,
 }) => {
     // Normalize animation (legacy support for ctaShake)
     const ctaAnimation = config.ctaAnimation || (config.ctaShake ? 'shake' : 'none');
@@ -53,6 +55,29 @@ export const CtaButton: React.FC<CtaButtonProps> = ({
             {isLoading ? 'Traitement...' : text}
         </>
     );
+
+    if (isBasicTheme) {
+        return (
+            <div ref={ctaRef} style={{ marginTop: '1rem' }}>
+                <button
+                    type="button"
+                    onClick={onClick}
+                    disabled={isLoading}
+                    style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        border: '1px solid #ccc',
+                        backgroundColor: '#eee',
+                        color: '#000',
+                        fontSize: '1em',
+                        cursor: isLoading ? 'not-allowed' : 'pointer'
+                    }}
+                >
+                    {buttonContent}
+                </button>
+            </div>
+        );
+    }
 
     // Sticky CTA wrapper
     if (isSticky) {

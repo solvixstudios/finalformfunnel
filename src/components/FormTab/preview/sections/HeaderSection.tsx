@@ -18,6 +18,7 @@ interface HeaderSectionProps {
     basePrice: number;
     productTitle?: string;
     productImage?: string;
+    isBasicTheme?: boolean;
 }
 
 export const HeaderSection: React.FC<HeaderSectionProps> = ({
@@ -28,8 +29,18 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
     basePrice,
     productTitle = 'Produit Demo', // Fallback
     productImage: imageUrl,
+    isBasicTheme = false,
 }) => {
     if (config.header?.enabled === false) return null;
+
+    if (isBasicTheme) {
+        return (
+            <div style={{ marginBottom: '1rem' }}>
+                <h1 style={{ fontSize: '1.5em', margin: '0 0 0.5rem 0' }}>{productTitle}</h1>
+                {config.header?.showProductPrice !== false && <div>{formatCurrency(basePrice)}</div>}
+            </div>
+        );
+    }
 
     const headerStyle = config.header?.style || 'classic';
 

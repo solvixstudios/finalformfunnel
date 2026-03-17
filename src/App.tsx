@@ -1,5 +1,4 @@
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { ConnectionStatusBanner } from "@/components/ConnectionStatusBanner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "@fontsource/plus-jakarta-sans/400.css";
 import "@fontsource/plus-jakarta-sans/600.css";
@@ -274,7 +273,6 @@ const App = () => {
         <TooltipProvider>
           <BrowserRouter>
             <Sonner />
-            <ConnectionStatusBanner />
             <AppContent />
           </BrowserRouter>
         </TooltipProvider>
