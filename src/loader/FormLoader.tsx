@@ -405,7 +405,9 @@ export const FormLoader = ({ config, product, offers, shipping, sectionWrapper, 
                         if (sectionId === 'variants') {
                             const hasEffectiveVariants = product?.variants && (
                                 product.variants.length > 1 ||
-                                (product.variants.length === 1 && product.variants[0].title !== 'Default Title')
+                                (product.variants.length === 1 && 
+                                 product.variants[0].title !== 'Default Title' && 
+                                 product.variants[0].title !== 'Default')
                             );
 
                             if (!previewMode && product && !hasEffectiveVariants) {

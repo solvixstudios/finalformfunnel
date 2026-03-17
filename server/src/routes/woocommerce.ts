@@ -290,12 +290,31 @@ router.post('/get-products', async (req: Request, res: Response): Promise<void> 
 router.post('/submit-order', async (req: Request, res: Response): Promise<void> => {
     try {
         const body = req.body;
-        const { userId, shopDomain, status, accessToken } = body;
+        const { userId, shopDomain, status } = body;
 
         if (!shopDomain || !userId) {
             res.status(400).json({ status: 'error', message: 'Missing shopDomain or userId' });
             return;
         }
+
+        // Look up the store's accessToken securely from Firebase
+        const rawDomain = shopDomain.replace(/^https?:\/\//i, '').replace(/\/$/, '').toLowerCase();
+        let storeAccessToken = '';
+        try {
+            const storesRef = db.collection('users').doc(userId).collection('stores');
+            const storeSnap = await storesRef
+                .where('platform', '==', 'woocommerce')
+                .where('storeDomain', '==', rawDomain)
+                .limit(1)
+                .get();
+            if (!storeSnap.empty) {
+                storeAccessToken = storeSnap.docs[0].data().accessToken || '';
+            }
+        } catch (lookupErr) {
+            console.warn('[WooCommerce Order] ⚠️  Could not look up store token:', lookupErr);
+        }
+
+        console.log(`[WooCommerce Order] 📦 Processing order for ${rawDomain} (userId: ${userId}, status: ${status})`);
 
         // Check plan order limit (skip for abandoned carts)
         if (status !== 'abandoned') {
@@ -336,7 +355,7 @@ router.post('/submit-order', async (req: Request, res: Response): Promise<void> 
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-FinalForm-Key': accessToken || '',
+                'X-FinalForm-Key': storeAccessToken,
                 'Accept': 'application/json',
             },
             body: JSON.stringify(body),

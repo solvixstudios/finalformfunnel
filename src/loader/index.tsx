@@ -39,30 +39,47 @@ async function fetchShopifyProduct() {
     return null;
 }
 
-/**
- * Fetch product data from WooCommerce page globals
- */
 function fetchWooCommerceProduct() {
     try {
-        // WC injects product data via various globals
-        const wcParams = (window as any).wc_single_product_params || (window as any).wc_product_params;
-        
+        let fallbackPrice = '0';
+        const priceEl = document.querySelector('.woocommerce-Price-amount bdi') || document.querySelector('.price .amount');
+        if (priceEl) {
+             const text = priceEl.textContent || '';
+             // Handle comma decimals e.g. 1,000.00 or 1000,00 -> 1000.00
+             const cleaned = text.replace(/[^\d,\.]/g, '').replace(',', '.');
+             const match = cleaned.match(/\d+(\.\d+)?/);
+             if (match) fallbackPrice = match[0];
+        }
+
         // Try JSON-LD structured data (most reliable across WC themes)
-        const jsonLd = document.querySelector('script[type="application/ld+json"]');
-        if (jsonLd) {
+        const jsonLdScripts = document.querySelectorAll('script[type="application/ld+json"]');
+        for (let i = 0; i < jsonLdScripts.length; i++) {
             try {
-                const data = JSON.parse(jsonLd.textContent || '');
-                if (data['@type'] === 'Product' && data.name) {
+                let data = JSON.parse(jsonLdScripts[i].textContent || '');
+                
+                // Handle Yoast SEO / arrays
+                if (Array.isArray(data)) {
+                     data = data.find((item: any) => item['@graph'] ? item['@graph'].some((g: any) => g['@type'] === 'Product') : item['@type'] === 'Product') || data[0];
+                }
+                if (data && data['@graph']) {
+                     data = data['@graph'].find((g: any) => g['@type'] === 'Product') || data;
+                }
+                
+                if (data && data['@type'] === 'Product' && data.name) {
+                    let price = data.offers?.price || data.offers?.lowPrice || fallbackPrice;
+                    if (Array.isArray(data.offers)) {
+                         price = data.offers[0]?.price || fallbackPrice;
+                    }
                     return {
                         id: data.sku || data.productID || window.location.pathname.split('/product/')[1]?.replace(/\/$/, ''),
                         title: data.name,
                         handle: window.location.pathname.split('/product/')[1]?.replace(/\/$/, '') || '',
                         body_html: data.description || '',
-                        variants: data.offers ? [{
+                        variants: [{
                             id: data.sku || 'default',
                             title: 'Default',
-                            price: data.offers.price || data.offers.lowPrice || '0',
-                        }] : [{ id: 'default', title: 'Default', price: '0' }],
+                            price: price,
+                        }],
                         images: data.image ? [{ src: Array.isArray(data.image) ? data.image[0] : data.image }] : [],
                         image: data.image ? { src: Array.isArray(data.image) ? data.image[0] : data.image } : null,
                     };
@@ -84,12 +101,23 @@ function fetchWooCommerceProduct() {
                     variants: productData ? JSON.parse(productData).map((v: any) => ({
                         id: v.variation_id,
                         title: Object.values(v.attributes || {}).join(' / ') || 'Default',
-                        price: v.display_price,
-                    })) : [{ id: productId, title: 'Default', price: '0' }],
+                        price: v.display_price || fallbackPrice,
+                    })) : [{ id: productId, title: 'Default', price: fallbackPrice }],
                     images: [],
                     image: null,
                 };
             }
+        }
+
+        // Final fallback: Title and DOM price
+        const titleEl = document.querySelector('.product_title, h1.entry-title');
+        if (titleEl) {
+             return {
+                 id: window.location.pathname.split('/product/')[1]?.replace(/\/$/, '') || 'default',
+                 title: titleEl.textContent?.trim() || '',
+                 handle: window.location.pathname.split('/product/')[1]?.replace(/\/$/, '') || '',
+                 variants: [{ id: 'default', title: 'Default', price: fallbackPrice }],
+             };
         }
     } catch (e) {
         console.warn('FinalForm: WooCommerce product detection failed', e);
@@ -240,7 +268,8 @@ async function initLoader() {
         return;
     }
 
-    console.log('FinalForm: Config loaded successfully.');
+    config.platform = detectedPlatform;
+    console.log(`FinalForm: Config loaded successfully for platform [${config.platform}].`);
 
     // 4. Global Pixels (non-product pages)
     const initGlobalPixels = (cfg: Record<string, unknown>) => {
@@ -403,13 +432,19 @@ async function initLoader() {
         container.style.display = 'block';
 
         if (detectedPlatform === 'woocommerce') {
-            // Priority 1: WooCommerce standard summary container
-            const summaryContainer = document.querySelector('.summary.entry-summary');
-            if (summaryContainer) {
-                const nativeForm = summaryContainer.querySelector('form.cart');
-                if (nativeForm) nativeForm.remove();
-                summaryContainer.appendChild(container);
+            // Priority 0: Specific cleanup requested by user for their custom theme
+            const customThemeDesc = document.querySelector('.col-lg-7.col-12.product-desc');
+            if (customThemeDesc) {
+                customThemeDesc.innerHTML = '';
+                customThemeDesc.appendChild(container);
             } else {
+                // Priority 1: WooCommerce standard summary container
+                const summaryContainer = document.querySelector('.summary.entry-summary');
+                if (summaryContainer) {
+                    const nativeForm = summaryContainer.querySelector('form.cart');
+                    if (nativeForm) nativeForm.remove();
+                    summaryContainer.appendChild(container);
+                } else {
                 // Priority 2: Custom themes generic add to cart button container
                 const addToCartBtn = document.querySelector('button[name="add-to-cart"]');
                 if (addToCartBtn && addToCartBtn.parentElement) {
@@ -423,6 +458,7 @@ async function initLoader() {
                     } else {
                         document.body.appendChild(container);
                     }
+                }
                 }
             }
         } else {
