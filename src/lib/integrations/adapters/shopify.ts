@@ -16,7 +16,7 @@ import type {
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://your-backend-instance.com';
 const WEBHOOK_ENV = import.meta.env.VITE_WEBHOOK_ENV || 'webhook';
 
-export const LOADER_VERSION = '2.7.7';
+export const LOADER_VERSION = '2.7.9';
 
 // Configuration
 const REQUEST_TIMEOUT_MS = 15000; // 15 second timeout

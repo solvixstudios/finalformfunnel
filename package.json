@@ -1,7 +1,7 @@
 {
   "name": "vite_react_shadcn_ts",
   "private": true,
-  "version": "2.7.7",
+  "version": "2.7.9",
   "type": "module",
   "scripts": {
     "start-all": "concurrently \"npm run dev-ui\" \"npm run dev-server\" \"ngrok http 3000\"",
